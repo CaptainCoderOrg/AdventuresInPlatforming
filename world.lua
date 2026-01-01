@@ -14,6 +14,7 @@ function world.move(obj)
     local actualX, actualY, cols, len = world.grid:move(obj, obj.x + obj.box.x, obj.y + obj.box.y)
     obj.x = actualX - obj.box.x
     obj.y = actualY - obj.box.y
+    return cols
 end
 
 return world

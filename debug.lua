@@ -1,0 +1,22 @@
+local canvas = require('canvas')
+local config = require('config')
+local debug = {}
+
+function debug.draw()
+    if not config.debug then return end
+    local h = canvas.get_height()
+    local w = canvas.get_width()
+    
+    canvas.set_font_size(24)
+    local FPS = string.format("FPS: %.0f", 1/canvas.get_delta())
+    local metrics = canvas.get_text_metrics(FPS)
+    local text_height = metrics.actual_bounding_box_ascent + metrics.actual_bounding_box_descent
+    canvas.set_text_baseline("top")
+
+    canvas.set_color("#00000051")
+    canvas.fill_rect(w - metrics.width - 4, h - text_height*2, metrics.width + 4, text_height*2)
+    canvas.set_color("#dede2bff")
+    canvas.draw_text(w - metrics.width - 4, h - text_height*2, FPS)
+end
+
+return debug

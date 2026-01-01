@@ -10,9 +10,6 @@ canvas.set_size(config.width * sprites.tile_size, config.height * sprites.tile_s
 canvas.set_image_smoothing(false)
 -- Handle input
 local function user_input()
-	-- if canvas.keys.P then
-	-- 	config.bounding_boxes = not config.bounding_boxes
-	-- end
 	player.input()
 end
 
@@ -28,7 +25,7 @@ local function draw()
 	walls.draw()
 end
 
-local function init()
+local function init_walls()
     for x = 0, config.width - 1 do 
         walls.create(x, 0) 
         walls.create(x, config.height - 1)
@@ -37,6 +34,19 @@ local function init()
         walls.create(0, y)
         walls.create(config.width - 1, y)
     end
+
+    walls.create(5, 5)
+    walls.create(5, 6)
+    walls.create(5, 7)
+
+    walls.create(7, 7)
+    walls.create(8, 7)
+    walls.create(9, 7)
+
+end
+
+local function init()
+    init_walls()
 end
 
 -- Main game loop

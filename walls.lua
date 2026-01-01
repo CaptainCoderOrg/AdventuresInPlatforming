@@ -1,6 +1,7 @@
 local canvas = require('canvas')
 local sprites = require('sprites')
 local config = require('config')
+local world = require('world')
 local walls = {}
 
 walls.all = {}
@@ -9,7 +10,9 @@ function walls.create(x, y)
     local wall = {
         x = x,
         y = y,
+		box = { x = 0, y = 0, w = 1, h = 1 }
     }
+	world.add_collider(wall)
     table.insert(walls.all, wall)
 end
 

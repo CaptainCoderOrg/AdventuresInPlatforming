@@ -2,7 +2,11 @@ local canvas = require('canvas')
 local sprites = require('sprites')
 local config = require('config')
 local world = require('world')
+local controls = require('controls')
 local player = {}
+local idle_state = {}
+local run_state = {}
+local dash_state = {}
 
 local GRAVITY = 1.5
 local JUMP_VELOCITY = GRAVITY*14
@@ -15,19 +19,20 @@ player.vx = 0
 player.vy = 0
 player.y = 2
 player.is_grounded = true
-player.box = { w = 0.9, h = 0.9, x = 0.05, y = 0.05 }
+player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
 player.speed = 7
 player.coyote_frames = 0
 player.direction = 1
 player.jumps = 2
 player.max_jumps = 2
+player.state = idle_state
 
 world.add_collider(player)
 
 local t = 0
 
 local DASH_FRAMES = 12
-local DASH_COOLDOWN_FRAMES = DASH_FRAMES * 3
+local DASH_COOLDOWN_FRAMES = DASH_FRAMES * 2
 player.dash_cooldown = 0
 player.dash = 0
 player.dash_speed = player.speed * 3
@@ -41,10 +46,15 @@ local animations = {
 player.animation = animations.IDLE
 player.animation.flipped = 1
 
+function player.set_position(x, y)
+	player.x = x
+	player.y = y
+	world.grid:update(player, player.x, player.y)
+end
 
 function player.draw() 
+	player.state.draw()
 
-  sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
   if config.bounding_boxes == true then
   	canvas.set_color("#FF0000")
   	canvas.draw_rect((player.x + player.box.x) * sprites.tile_size, (player.y + player.box.y) * sprites.tile_size, 
@@ -53,44 +63,34 @@ function player.draw()
 end
 
 function player.input()
-	player.vx = 0
-	player.vy = player.vy + GRAVITY
-
-	if player.dash_cooldown <= 0 and (canvas.is_mouse_pressed(2) or canvas.is_key_pressed(canvas.keys.SHIFT)) then
-		player.dash = DASH_FRAMES
-		player.dash_cooldown = DASH_COOLDOWN_FRAMES
-	end
-
-	if player.dash > 0 then
-		player.vx = player.direction * player.dash_speed
-	elseif canvas.is_key_down(canvas.keys.A) then
-		player.direction = -1
-		player.vx = -player.speed
-	elseif canvas.is_key_down(canvas.keys.D) then
-		player.direction = 1
-		player.vx = player.speed
-	end
-
-	if (canvas.is_key_pressed(canvas.keys.W) or canvas.is_mouse_pressed(0)) and player.jumps > 0 then
-		player.vy = -JUMP_VELOCITY
-		player.jumps = player.jumps - 1
-	end
-
-end
-
-function player.set_position(x, y)
-	player.x = x
-	player.y = y
-	world.grid:update(player, player.x, player.y)
+	player.state.input()
 end
 
 function player.update()
 	local dt = canvas.get_delta()
+	player.state.update(dt)
+
 	player.animation.flipped = player.direction
+	player.dash_cooldown = player.dash_cooldown - 1
+	
 	player.x = player.x + (player.vx * dt)
 	player.y = player.y + (player.vy * dt)
+
+	-- Check for collisions
 	local cols = world.move(player)
-	
+	check_ground(cols)
+
+	t = t + 1
+	if t % player.animation.speed == 0 then
+		player.animation.frame = (player.animation.frame + 1) % player.animation.frame_count
+	end
+end
+
+function handle_gravity()
+	player.vy = player.vy + GRAVITY
+end
+
+function check_ground(cols)
 	local on_ground = false
 	for _, col in pairs(cols) do
 		if col.normal.y < 0 then 
@@ -107,33 +107,124 @@ function player.update()
 
 	if not on_ground then
 		player.coyote_frames = player.coyote_frames + 1
-		if player.coyote_frames > MAX_COYOTE then
+		if player.is_grounded and player.coyote_frames > MAX_COYOTE then
 			player.is_grounded = false
+			player.jumps = player.max_jumps - 1
 		end
 	end
+	return on_ground
+end
 
-	if t % player.animation.speed == 0 then
-		player.animation.frame = (player.animation.frame + 1) % player.animation.frame_count
+function handle_jump()
+	if controls.jump_pressed() and player.jumps > 0 then
+		player.vy = -JUMP_VELOCITY
+		player.jumps = player.jumps - 1
+		return true
 	end
-	
-	if player.dash > 0 then 
-		player.animation = animations.DASH
-	elseif math.abs(player.vx) > 0 then 
-		player.animation = animations.RUN 
+	return false
+end
+
+function handle_dash()
+	if player.dash_cooldown > 0 then return false end
+	if controls.dash_pressed() then
+		player.set_state(dash_state)
+	end
+	return true
+end
+
+function player.set_state(state)
+	player.state = state
+	player.state.start()
+	t = 0
+end
+
+function idle_state.start()
+	animations.IDLE.frame = 0
+	player.animation = animations.IDLE
+end
+
+function idle_state.input()
+
+	if controls.left_down() then
+		player.direction = -1
+		player.set_state(run_state)
+	elseif controls.right_down() then
+		player.direction = 1
+		player.set_state(run_state)
+	end
+	handle_dash()
+	handle_jump()
+
+end
+
+function idle_state.update(dt)
+	player.vx = 0
+	handle_gravity()
+end
+
+function idle_state.draw()
+  sprites.draw_animation(animations.IDLE, player.x * sprites.tile_size, player.y * sprites.tile_size)
+end
+
+function run_state.start()
+	animations.RUN.frame = 0
+	player.animation = animations.RUN
+end
+
+
+function run_state.input()
+	if controls.left_down() then
+		player.direction = -1
+	elseif controls.right_down() then
+		player.direction = 1
 	else
-		player.animation = animations.IDLE
+		player.set_state(idle_state)
 	end
+	handle_dash()
+	handle_jump()
+end
 
-	player.dash = player.dash - 1
-	player.dash_cooldown = player.dash_cooldown - 1
+function run_state.update(dt)
+	handle_gravity()
+	player.vx = player.direction * player.speed
+end
 
-	if current_animation ~= player.animation then
-		current_animation = player.animation
-		t = 0
-	else
-		t = t + 1
+function run_state.draw()
+	sprites.draw_animation(animations.RUN, player.x * sprites.tile_size, player.y * sprites.tile_size)
+end
+
+function dash_state.start()
+	animations.DASH.frame = 0
+	dash_state.direction = player.direction
+	dash_state.duration = DASH_FRAMES
+	player.vy = 0
+	player.animation = animations.DASH
+end
+
+function dash_state.input()
+	if controls.left_down() then
+		player.direction = -1
+	elseif controls.right_down() then
+		player.direction = 1
 	end
-	
+	if dash_state.direction ~= player.direction then dash_state.duration = 0 end
+	if handle_jump() then dash_state.duration = 0 end
+end
+
+function dash_state.update()
+	player.vx = player.direction * player.dash_speed
+	dash_state.duration = dash_state.duration - 1
+
+	if dash_state.duration < 0 then
+
+		-- TODO: Determin actual state?
+		player.dash_cooldown = DASH_COOLDOWN_FRAMES
+		player.set_state(idle_state)
+	end
+end
+
+function dash_state.draw()
+	sprites.draw_animation(animations.DASH, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return player

@@ -2,6 +2,7 @@ local canvas = require("canvas")
 
 local sprites = {}
 
+local ANIM_SPEED = 7 -- Number of game frames per animation frame
 local TILE = 16
 local SCALE = 2
 
@@ -11,8 +12,9 @@ canvas.assets.add_path("assets/")
 canvas.assets.load_image("tilemap", "images/tilemap_packed.png")
 canvas.assets.load_image("player_idle", "sprites/character/idle.png")
 canvas.assets.load_image("player_run", "sprites/character/run.png")
+canvas.assets.load_image("player_dash", "sprites/character/dash.png")
 
-function sprites.draw_player(anim, x, y)
+function sprites.draw_animation(anim, x, y)
 	local x_adjust = 0
 	if anim.flipped == 1 then x_adjust = sprites.tile_size end
 	canvas.save()
@@ -34,6 +36,18 @@ function sprites.draw_tile(tx, ty, dx, dy)
 		TILE,
 		TILE -- source: x, y, width, height
 	)
+end
+
+--- Creates a sprite animation specifying the sprite_id, number of frames, speed (delay between frames)
+function sprites.create_animation(name, frame_count, speed)
+	if speed == nil then speed = ANIM_SPEED end
+    return {
+        name = name,
+        frame_count = frame_count,
+        frame = 0,
+        flipped = 1,
+		speed = speed,
+    }
 end
 
 return sprites

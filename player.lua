@@ -2,14 +2,14 @@ local canvas = require('canvas')
 local sprites = require('sprites')
 local config = require('config')
 local world = require('world')
-local animation = require("animation")
 local player = {}
 
 local GRAVITY = 1.5
 local JUMP_VELOCITY = GRAVITY*14
 local MAX_COYOTE = 3
+local current_animation = nil
 
-player.run_boost = 2
+
 player.x = 2
 player.vx = 0
 player.vy = 0
@@ -18,22 +18,29 @@ player.is_grounded = true
 player.box = { w = 0.9, h = 0.9, x = 0.05, y = 0.05 }
 player.speed = 7
 player.coyote_frames = 0
+player.direction = 1
+
 world.add_collider(player)
 
+local t = 0
+
+local DASH_FRAMES = 8
+player.dash = 0
+player.dash_speed = player.speed * 4
+
 local animations = { 
-	IDLE = animation.create("player_idle", 6), 
-	RUN = animation.create("player_run", 8),
+	IDLE = sprites.create_animation("player_idle", 6, 12), 
+	RUN = sprites.create_animation("player_run", 8, 7),
+	DASH = sprites.create_animation("player_dash", 4, 2)
 }
 
 player.animation = animations.IDLE
 player.animation.flipped = 1
 
-local ANIM_SPEED = 7 -- Number of game frames per animation frame
-local t = 0
 
 function player.draw() 
 
-  sprites.draw_player(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+  sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
   if config.bounding_boxes == true then
   	canvas.set_color("#FF0000")
   	canvas.draw_rect((player.x + player.box.x) * sprites.tile_size, (player.y + player.box.y) * sprites.tile_size, 
@@ -44,22 +51,26 @@ end
 function player.input()
 	player.vx = 0
 	player.vy = player.vy + GRAVITY
-	local speed_boost = 1
-	if canvas.is_key_down(canvas.keys.SHIFT) then
-		speed_boost = player.run_boost
+
+	if canvas.is_mouse_pressed(2) or canvas.is_key_pressed(canvas.keys.SHIFT) then
+		player.dash = DASH_FRAMES
 	end
-	if canvas.is_key_down(canvas.keys.A) then
-		player.vx = -player.speed * speed_boost
-		player.animation.flipped = -1
+
+	if player.dash > 0 then
+		player.vx = player.direction * player.dash_speed
+	elseif canvas.is_key_down(canvas.keys.A) then
+		player.direction = -1
+		player.vx = -player.speed
+	elseif canvas.is_key_down(canvas.keys.D) then
+		player.direction = 1
+		player.vx = player.speed
 	end
-	if canvas.is_key_down(canvas.keys.D) then
-		player.vx = player.speed * speed_boost
-		player.animation.flipped = 1
-	end
+
 	if (canvas.is_key_pressed(canvas.keys.W) or canvas.is_mouse_pressed(0)) and player.is_grounded then
 		player.vy = -JUMP_VELOCITY
 		player.is_grounded = false
 	end
+
 end
 
 function player.set_position(x, y)
@@ -70,6 +81,7 @@ end
 
 function player.update()
 	local dt = canvas.get_delta()
+	player.animation.flipped = player.direction
 	player.x = player.x + (player.vx * dt)
 	player.y = player.y + (player.vy * dt)
 	local cols = world.move(player)
@@ -94,17 +106,27 @@ function player.update()
 		end
 	end
 
-	if t % ANIM_SPEED == 0 then
+	if t % player.animation.speed == 0 then
 		player.animation.frame = (player.animation.frame + 1) % player.animation.frame_count
 	end
 	
-	if math.abs(player.vx) > 0 then 
+	if player.dash > 0 then 
+		player.animation = animations.DASH
+	elseif math.abs(player.vx) > 0 then 
 		player.animation = animations.RUN 
 	else
 		player.animation = animations.IDLE
 	end
 
-	t = t + 1
+	player.dash = player.dash - 1
+
+	if current_animation ~= player.animation then
+		current_animation = player.animation
+		t = 0
+	else
+		t = t + 1
+	end
+	
 end
 
 return player

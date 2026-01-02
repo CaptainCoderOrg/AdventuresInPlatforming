@@ -13,7 +13,6 @@ local JUMP_VELOCITY = GRAVITY*14
 local MAX_COYOTE = 4
 local current_animation = nil
 
-
 player.x = 2
 player.vx = 0
 player.vy = 0
@@ -34,7 +33,6 @@ local t = 0
 local DASH_FRAMES = 12
 local DASH_COOLDOWN_FRAMES = DASH_FRAMES * 2
 player.dash_cooldown = 0
-player.dash = 0
 player.dash_speed = player.speed * 3
 
 local animations = { 
@@ -87,7 +85,7 @@ function player.update()
 end
 
 function handle_gravity()
-	player.vy = player.vy + GRAVITY
+	player.vy = math.min(20, player.vy + GRAVITY)
 end
 
 function check_ground(cols)

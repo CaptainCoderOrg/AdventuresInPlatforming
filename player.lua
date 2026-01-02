@@ -2,24 +2,38 @@ local canvas = require('canvas')
 local sprites = require('sprites')
 local config = require('config')
 local world = require('world')
+local animation = require("animation")
 local player = {}
 
-local JUMP_VELOCITY = 30
-local GRAVITY = 3
+local GRAVITY = 1.5
+local JUMP_VELOCITY = GRAVITY*14
 local MAX_COYOTE = 3
 
+player.run_boost = 2
 player.x = 2
 player.vx = 0
 player.vy = 0
 player.y = 2
 player.is_grounded = true
 player.box = { w = 0.9, h = 0.9, x = 0.05, y = 0.05 }
-player.speed = 10
+player.speed = 7
 player.coyote_frames = 0
 world.add_collider(player)
 
+local animations = { 
+	IDLE = animation.create("player_idle", 6), 
+	RUN = animation.create("player_run", 8),
+}
+
+player.animation = animations.IDLE
+player.animation.flipped = 1
+
+local ANIM_SPEED = 7 -- Number of game frames per animation frame
+local t = 0
+
 function player.draw() 
-  sprites.draw_tile(1, 7, player.x * sprites.tile_size, player.y * sprites.tile_size)
+
+  sprites.draw_player(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
   if config.bounding_boxes == true then
   	canvas.set_color("#FF0000")
   	canvas.draw_rect((player.x + player.box.x) * sprites.tile_size, (player.y + player.box.y) * sprites.tile_size, 
@@ -30,13 +44,19 @@ end
 function player.input()
 	player.vx = 0
 	player.vy = player.vy + GRAVITY
+	local speed_boost = 1
+	if canvas.is_key_down(canvas.keys.SHIFT) then
+		speed_boost = player.run_boost
+	end
 	if canvas.is_key_down(canvas.keys.A) then
-		player.vx = -player.speed
+		player.vx = -player.speed * speed_boost
+		player.animation.flipped = -1
 	end
 	if canvas.is_key_down(canvas.keys.D) then
-		player.vx = player.speed
+		player.vx = player.speed * speed_boost
+		player.animation.flipped = 1
 	end
-	if canvas.is_key_pressed(canvas.keys.W) and player.is_grounded then
+	if (canvas.is_key_pressed(canvas.keys.W) or canvas.is_mouse_pressed(0)) and player.is_grounded then
 		player.vy = -JUMP_VELOCITY
 		player.is_grounded = false
 	end
@@ -74,6 +94,17 @@ function player.update()
 		end
 	end
 
+	if t % ANIM_SPEED == 0 then
+		player.animation.frame = (player.animation.frame + 1) % player.animation.frame_count
+	end
+	
+	if math.abs(player.vx) > 0 then 
+		player.animation = animations.RUN 
+	else
+		player.animation = animations.IDLE
+	end
+
+	t = t + 1
 end
 
 return player

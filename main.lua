@@ -5,7 +5,7 @@ local walls = require("walls")
 local config = require("config")
 local sprites = require("sprites")
 local level1 = require("levels/level1")
-local debug = require("debug")
+local debug = require("debugger")
 
 -- Set canvas size
 canvas.set_size(config.width * sprites.tile_size, config.height * sprites.tile_size)
@@ -27,8 +27,8 @@ end
 -- Render the game
 local function draw()
 	canvas.clear()
-	player.draw()
 	walls.draw()
+	player.draw()
     debug.draw()
 end
 

@@ -6,7 +6,7 @@ local player = {}
 
 local GRAVITY = 1.5
 local JUMP_VELOCITY = GRAVITY*14
-local MAX_COYOTE = 3
+local MAX_COYOTE = 4
 local current_animation = nil
 
 
@@ -19,19 +19,23 @@ player.box = { w = 0.9, h = 0.9, x = 0.05, y = 0.05 }
 player.speed = 7
 player.coyote_frames = 0
 player.direction = 1
+player.jumps = 2
+player.max_jumps = 2
 
 world.add_collider(player)
 
 local t = 0
 
-local DASH_FRAMES = 8
+local DASH_FRAMES = 12
+local DASH_COOLDOWN_FRAMES = DASH_FRAMES * 3
+player.dash_cooldown = 0
 player.dash = 0
-player.dash_speed = player.speed * 4
+player.dash_speed = player.speed * 3
 
 local animations = { 
 	IDLE = sprites.create_animation("player_idle", 6, 12), 
 	RUN = sprites.create_animation("player_run", 8, 7),
-	DASH = sprites.create_animation("player_dash", 4, 2)
+	DASH = sprites.create_animation("player_dash", 4, 3)
 }
 
 player.animation = animations.IDLE
@@ -52,8 +56,9 @@ function player.input()
 	player.vx = 0
 	player.vy = player.vy + GRAVITY
 
-	if canvas.is_mouse_pressed(2) or canvas.is_key_pressed(canvas.keys.SHIFT) then
+	if player.dash_cooldown <= 0 and (canvas.is_mouse_pressed(2) or canvas.is_key_pressed(canvas.keys.SHIFT)) then
 		player.dash = DASH_FRAMES
+		player.dash_cooldown = DASH_COOLDOWN_FRAMES
 	end
 
 	if player.dash > 0 then
@@ -66,9 +71,9 @@ function player.input()
 		player.vx = player.speed
 	end
 
-	if (canvas.is_key_pressed(canvas.keys.W) or canvas.is_mouse_pressed(0)) and player.is_grounded then
+	if (canvas.is_key_pressed(canvas.keys.W) or canvas.is_mouse_pressed(0)) and player.jumps > 0 then
 		player.vy = -JUMP_VELOCITY
-		player.is_grounded = false
+		player.jumps = player.jumps - 1
 	end
 
 end
@@ -92,6 +97,7 @@ function player.update()
 			on_ground = true
 			player.is_grounded = true
 			player.coyote_frames = 0
+			player.jumps = player.max_jumps
 			player.vy = 0
 			break
 		elseif col.normal.y > 0 then
@@ -119,6 +125,7 @@ function player.update()
 	end
 
 	player.dash = player.dash - 1
+	player.dash_cooldown = player.dash_cooldown - 1
 
 	if current_animation ~= player.animation then
 		current_animation = player.animation

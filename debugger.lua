@@ -1,5 +1,6 @@
 local canvas = require('canvas')
 local config = require('config')
+local player = require('player')
 local debug = {}
 
 function debug.draw()
@@ -17,6 +18,12 @@ function debug.draw()
     canvas.fill_rect(w - metrics.width - 4, h - text_height*2, metrics.width + 4, text_height*2)
     canvas.set_color("#dede2bff")
     canvas.draw_text(w - metrics.width - 4, h - text_height*2, FPS)
+
+
+    local GROUNDED = "is_grounded: " .. tostring(player.is_grounded)
+    canvas.draw_text(0, 0, GROUNDED)
+
+
 end
 
 return debug

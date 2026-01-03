@@ -13,6 +13,8 @@ canvas.assets.load_image("tilemap", "images/tilemap_packed.png")
 canvas.assets.load_image("player_idle", "sprites/character/idle.png")
 canvas.assets.load_image("player_run", "sprites/character/run.png")
 canvas.assets.load_image("player_dash", "sprites/character/dash.png")
+canvas.assets.load_image("player_fall", "sprites/character/fall.png")
+canvas.assets.load_image("player_jump_up", "sprites/character/jump_up.png")
 
 function sprites.draw_animation(anim, x, y)
 	local x_adjust = 0

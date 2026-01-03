@@ -8,6 +8,7 @@ local player = {}
 local idle_state = {}
 local run_state = {}
 local dash_state = {}
+local air_state = {}
 
 local GRAVITY = 1.5
 local JUMP_VELOCITY = GRAVITY*14
@@ -39,14 +40,20 @@ player.dash_speed = player.speed * 3
 local animations = { 
 	IDLE = sprites.create_animation("player_idle", 6, 12), 
 	RUN = sprites.create_animation("player_run", 8, 7),
-	DASH = sprites.create_animation("player_dash", 4, 3)
+	DASH = sprites.create_animation("player_dash", 4, 3),
+	FALL = sprites.create_animation("player_fall", 3, 6),
+	JUMP = sprites.create_animation("player_jump_up", 3, 6),
 }
 
 player.animation = animations.IDLE
 player.animation.flipped = 1
 
 local function handle_gravity()
+	-- if player.is_grounded then return end
 	player.vy = math.min(20, player.vy + GRAVITY)
+	if not player.is_grounded then
+		player.set_state(air_state)
+	end
 end
 
 local function check_ground(cols)
@@ -124,7 +131,7 @@ function player.update()
 
 	-- Check for collisions
 	local cols = world.move(player)
-	check_ground(cols)
+	player.is_grounded = check_ground(cols)
 
 	t = t + 1
 	if t % player.animation.speed == 0 then
@@ -133,6 +140,7 @@ function player.update()
 end
 
 function player.set_state(state)
+	if player.state == state then return end
 	player.state = state
 	player.state.start()
 	t = 0
@@ -170,7 +178,6 @@ function run_state.start()
 	animations.RUN.frame = 0
 	player.animation = animations.RUN
 end
-
 
 function run_state.input()
 	if controls.left_down() then
@@ -236,6 +243,41 @@ end
 
 function dash_state.draw()
 	sprites.draw_animation(animations.DASH, player.x * sprites.tile_size, player.y * sprites.tile_size)
+end
+
+function air_state.start()
+	animations.FALL.frame = 0
+	player.animation = animations.FALL
+end
+
+function air_state.update()
+	handle_gravity()
+	if player.is_grounded then
+		player.set_state(idle_state)
+	elseif player.vy > 0 then
+		player.animation = animations.FALL
+	elseif player.vy < 0 then
+		player.animation = animations.JUMP
+	end
+end
+
+function air_state.input() 
+	if controls.left_down() then
+		player.direction = -1
+		player.vx = player.direction * player.speed
+	elseif controls.right_down() then
+		player.direction = 1
+		player.vx = player.direction * player.speed
+	else
+		air_state.moving = false
+		player.vx = 0
+	end
+	handle_dash()
+	handle_jump()
+end
+
+function air_state.draw()
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return player

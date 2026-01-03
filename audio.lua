@@ -6,12 +6,14 @@ audio.title_screen = canvas.assets.load_music("title_screen", "music/title-scree
 audio.level1 = canvas.assets.load_music("level1", "music/level-1.ogg")
 
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
+audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")
 audio.footstep = {}
 
 for i = 0,8 do
     table.insert(audio.footstep, canvas.assets.load_sound(string.format("footstep_%d", i), string.format("sfx/footsteps/%d.ogg", i)))
 end
 local footstep_channel = "footsteps_channel"
+local sound_check_channel = "sound_check_channel"
 
 local current_track = nil
 
@@ -42,6 +44,7 @@ function audio.init()
     end
 
     canvas.channel_create(footstep_channel, { parent = sfx_group })
+    canvas.channel_create(sound_check_channel, { parent = sfx_group })
 
     initialized = true
 end
@@ -50,6 +53,12 @@ function audio.play_footstep()
     if canvas.channel_is_playing(footstep_channel) then return end
     local sfx = audio.footstep[math.random(#audio.footstep)]
     canvas.channel_play(footstep_channel, sfx, { volume = 0.3, loop = false })
+end
+
+--- Play sound check sample (skips if already playing)
+function audio.play_sound_check()
+    if canvas.channel_is_playing(sound_check_channel) then return end
+    canvas.channel_play(sound_check_channel, audio.sound_check, { volume = 1.0, loop = false })
 end
 
 function audio.play_sfx(sfx)
@@ -85,6 +94,16 @@ end
 
 function audio.stop_music()
     canvas.stop_music()
+end
+
+---@param volume number Volume level (0-1)
+function audio.set_music_volume(volume)
+    canvas.channel_set_volume(music_group, volume)
+end
+
+---@param volume number Volume level (0-1)
+function audio.set_sfx_volume(volume)
+    canvas.channel_set_volume(sfx_group, volume)
 end
 
 return audio

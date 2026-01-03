@@ -72,6 +72,7 @@ local started = false
 local function on_start()
     if started then return end
     audio.init()
+    hud.init()
     audio.play_music(audio.title_screen)
     started = true
 end

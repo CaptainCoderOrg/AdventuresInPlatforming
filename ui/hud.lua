@@ -1,5 +1,6 @@
 local canvas = require("canvas")
 local slider = require("slider")
+local audio = require("audio")
 
 local hud = {}
 
@@ -81,30 +82,48 @@ local fade_duration = 0.15
 local fade_state = "closed"
 local fade_progress = 0
 
-local function create_volume_slider(name, y_offset, color)
-    return slider.create({
-        x = 0,
-        y = y_offset,
-        width = 200,
-        height = 24,
-        color = color,
-        value = 1,
-        scale = 2,
-        animate_speed = 0.1,
-        on_input = function(event)
-            if event.type == "press" or event.type == "drag" then
-                volume_sliders[name]:set_value(event.normalized_x)
-            end
-            print(name .. ": " .. string.format("%.2f", volume_sliders[name]:get_value()))
-        end
-    })
-end
+local volume_sliders = {}
 
-local volume_sliders = {
-    master = create_volume_slider("master", 0, "#4488FF"),
-    music = create_volume_slider("music", 0, "#44FF88"),
-    sfx = create_volume_slider("sfx", 0, "#FF8844"),
-}
+volume_sliders.master = slider.create({
+    x = 0, y = 0, width = 200, height = 24,
+    color = "#4488FF", value = 0.75, scale = 2, animate_speed = 0.1,
+    on_input = function(event)
+        if event.type == "press" or event.type == "drag" then
+            volume_sliders.master:set_value(event.normalized_x)
+            canvas.set_master_volume(volume_sliders.master:get_value())
+        end
+    end
+})
+
+volume_sliders.music = slider.create({
+    x = 0, y = 0, width = 200, height = 24,
+    color = "#44FF88", value = 0.4, scale = 2, animate_speed = 0.1,
+    on_input = function(event)
+        if event.type == "press" or event.type == "drag" then
+            volume_sliders.music:set_value(event.normalized_x)
+            audio.set_music_volume(volume_sliders.music:get_value())
+        end
+    end
+})
+
+volume_sliders.sfx = slider.create({
+    x = 0, y = 0, width = 200, height = 24,
+    color = "#FF8844", value = 0.6, scale = 2, animate_speed = 0.1,
+    on_input = function(event)
+        if event.type == "press" or event.type == "drag" then
+            volume_sliders.sfx:set_value(event.normalized_x)
+            audio.set_sfx_volume(volume_sliders.sfx:get_value())
+            audio.play_sound_check()
+        end
+    end
+})
+
+--- Apply initial volume settings (call after audio.init)
+function hud.init()
+    canvas.set_master_volume(volume_sliders.master:get_value())
+    audio.set_music_volume(volume_sliders.music:get_value())
+    audio.set_sfx_volume(volume_sliders.sfx:get_value())
+end
 
 --- Process HUD input
 function hud.input()

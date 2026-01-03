@@ -33,17 +33,19 @@ local function draw()
 end
 
 local function init_walls()
+    -- Phase 1: Collect tile positions
     for y, row in ipairs(level1.map) do
         for x = 1, #row do
             local ch = row:sub(x, x)
             if ch == "#" then
-                walls.create(x - 1, y - 1)
+                walls.add_tile(x - 1, y - 1)
             elseif ch == 'S' then
                 player.set_position(x - 1, y - 1)
             end
         end
-        -- print(ix)
     end
+    -- Phase 2: Build merged colliders
+    walls.build_colliders()
 end
 
 local function init()

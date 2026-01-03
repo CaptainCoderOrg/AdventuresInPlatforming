@@ -17,4 +17,8 @@ function world.move(obj)
     return cols
 end
 
+function world.remove_collider(obj)
+    world.grid:remove(obj)
+end
+
 return world

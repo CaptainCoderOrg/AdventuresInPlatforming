@@ -72,22 +72,47 @@ function nine_slice.draw(slice, x, y, width, height, scale)
     draw_region(src_right_x, src_bottom_y, src_right,    src_bottom,   x + dst_left + dst_center_w, y + dst_top + dst_center_h, dst_right,    dst_bottom)
 end
 
-local settings_open = false
 local settings_width = 300
 local settings_height = 200
 local dialogue_slice = nine_slice.create("dialogue_lg", 144, 144, 34, 18, 34, 20)
 
+local fade_duration = 0.15
+local fade_state = "closed"
+local fade_progress = 0
+
 --- Process HUD input
 function hud.input()
     if canvas.is_key_pressed(canvas.keys.ESCAPE) then
-        settings_open = not settings_open
+        if fade_state == "closed" or fade_state == "fading_out" then
+            fade_state = "fading_in"
+        elseif fade_state == "open" or fade_state == "fading_in" then
+            fade_state = "fading_out"
+        end
+    end
+end
+
+--- Advance fade animation
+function hud.update()
+    local dt = canvas.get_delta()
+    local speed = dt / fade_duration
+
+    if fade_state == "fading_in" then
+        fade_progress = math.min(1, fade_progress + speed)
+        if fade_progress >= 1 then
+            fade_state = "open"
+        end
+    elseif fade_state == "fading_out" then
+        fade_progress = math.max(0, fade_progress - speed)
+        if fade_progress <= 0 then
+            fade_state = "closed"
+        end
     end
 end
 
 --- Check if settings menu is blocking game input
 ---@return boolean
 function hud.is_settings_open()
-    return settings_open
+    return fade_state ~= "closed"
 end
 
 local function draw_settings()
@@ -96,14 +121,16 @@ local function draw_settings()
     local x = (screen_w - settings_width) / 2
     local y = (screen_h - settings_height) / 2
 
+    canvas.set_global_alpha(fade_progress)
     canvas.set_color("#00000080")
     canvas.fill_rect(0, 0, screen_w, screen_h)
     nine_slice.draw(dialogue_slice, x, y, settings_width, settings_height, 2)
+    canvas.set_global_alpha(1)
 end
 
 --- Draw all HUD elements
 function hud.draw()
-    if settings_open then
+    if fade_state ~= "closed" then
         draw_settings()
     end
 end

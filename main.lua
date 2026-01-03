@@ -82,6 +82,7 @@ end
 local function game()
     on_start()
     audio.update()
+    hud.update()
     user_input()
     update()
     draw()

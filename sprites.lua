@@ -13,6 +13,7 @@ canvas.assets.load_image("tilemap", "images/tilemap_packed.png")
 
 canvas.assets.load_image("dialogue_lg", "sprites/ui/dialogue-lg.png")
 canvas.assets.load_image("slider", "sprites/ui/fillable-area.png")
+canvas.assets.load_image("button", "sprites/ui/button.png")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
 canvas.assets.load_image("player_idle", "sprites/character/idle.png")

@@ -1,5 +1,6 @@
 local canvas = require("canvas")
 local slider = require("slider")
+local button = require("button")
 local audio = require("audio")
 
 local hud = {}
@@ -75,7 +76,7 @@ function nine_slice.draw(slice, x, y, width, height, scale)
 end
 
 local settings_width = 300
-local settings_height = 260
+local settings_height = 310
 local dialogue_slice = nine_slice.create("dialogue_lg", 144, 144, 34, 18, 34, 20)
 
 local fade_duration = 0.15
@@ -118,6 +119,14 @@ volume_sliders.sfx = slider.create({
     end
 })
 
+local close_button = button.create({
+    x = 0, y = 0, width = 100, height = 35,
+    label = "Close", scale = 1,
+    on_click = function()
+        fade_state = "fading_out"
+    end
+})
+
 --- Apply initial volume settings (call after audio.init)
 function hud.init()
     canvas.set_master_volume(volume_sliders.master:get_value())
@@ -157,6 +166,7 @@ function hud.update()
         for _, s in pairs(volume_sliders) do
             s:update()
         end
+        close_button:update()
     end
 end
 
@@ -212,6 +222,10 @@ local function draw_settings()
     volume_sliders.sfx.x = slider_x
     volume_sliders.sfx.y = slider_start_y + slider_spacing * 2
     volume_sliders.sfx:draw()
+
+    close_button.x = x + (settings_width - close_button.width) / 2
+    close_button.y = slider_start_y + slider_spacing * 3
+    close_button:draw()
 
     canvas.set_global_alpha(1)
 end

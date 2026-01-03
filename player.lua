@@ -44,6 +44,53 @@ local animations = {
 player.animation = animations.IDLE
 player.animation.flipped = 1
 
+local function handle_gravity()
+	player.vy = math.min(20, player.vy + GRAVITY)
+end
+
+local function check_ground(cols)
+	local on_ground = false
+	for _, col in pairs(cols) do
+		if col.normal.y < 0 then
+			on_ground = true
+			player.is_grounded = true
+			player.coyote_frames = 0
+			player.jumps = player.max_jumps
+			player.vy = 0
+			break
+		elseif col.normal.y > 0 then
+			player.vy = 0
+		end
+	end
+
+	if not on_ground then
+		player.coyote_frames = player.coyote_frames + 1
+		if player.is_grounded and player.coyote_frames > MAX_COYOTE then
+			player.is_grounded = false
+			player.jumps = player.max_jumps - 1
+		end
+	end
+	return on_ground
+end
+
+local function handle_jump()
+	if controls.jump_pressed() and player.jumps > 0 then
+		player.vy = -JUMP_VELOCITY
+		player.jumps = player.jumps - 1
+		return true
+	end
+	return false
+end
+
+local function handle_dash()
+	if player.dash_cooldown > 0 then return false end
+	if controls.dash_pressed() then
+		player.set_state(dash_state)
+		return true
+	end
+	return false
+end
+
 function player.set_position(x, y)
 	player.x = x
 	player.y = y
@@ -82,52 +129,6 @@ function player.update()
 	if t % player.animation.speed == 0 then
 		player.animation.frame = (player.animation.frame + 1) % player.animation.frame_count
 	end
-end
-
-function handle_gravity()
-	player.vy = math.min(20, player.vy + GRAVITY)
-end
-
-function check_ground(cols)
-	local on_ground = false
-	for _, col in pairs(cols) do
-		if col.normal.y < 0 then 
-			on_ground = true
-			player.is_grounded = true
-			player.coyote_frames = 0
-			player.jumps = player.max_jumps
-			player.vy = 0
-			break
-		elseif col.normal.y > 0 then
-			player.vy = 0
-		end
-	end
-
-	if not on_ground then
-		player.coyote_frames = player.coyote_frames + 1
-		if player.is_grounded and player.coyote_frames > MAX_COYOTE then
-			player.is_grounded = false
-			player.jumps = player.max_jumps - 1
-		end
-	end
-	return on_ground
-end
-
-function handle_jump()
-	if controls.jump_pressed() and player.jumps > 0 then
-		player.vy = -JUMP_VELOCITY
-		player.jumps = player.jumps - 1
-		return true
-	end
-	return false
-end
-
-function handle_dash()
-	if player.dash_cooldown > 0 then return false end
-	if controls.dash_pressed() then
-		player.set_state(dash_state)
-	end
-	return true
 end
 
 function player.set_state(state)
@@ -209,15 +210,17 @@ function dash_state.input()
 	if handle_jump() then dash_state.duration = 0 end
 end
 
-function dash_state.update()
+function dash_state.update(dt)
 	player.vx = player.direction * player.dash_speed
 	dash_state.duration = dash_state.duration - 1
 
 	if dash_state.duration < 0 then
-
-		-- TODO: Determin actual state?
 		player.dash_cooldown = DASH_COOLDOWN_FRAMES
-		player.set_state(idle_state)
+		if controls.left_down() or controls.right_down() then
+			player.set_state(run_state)
+		else
+			player.set_state(idle_state)
+		end
 	end
 end
 

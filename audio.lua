@@ -5,6 +5,8 @@ canvas.assets.add_path("assets/")
 audio.title_screen = canvas.assets.load_music("title_screen", "music/title-screen.ogg")
 audio.level1 = canvas.assets.load_music("level1", "music/level-1.ogg")
 
+audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
+
 local current_track = nil
 
 local music_group = "music_group"
@@ -13,6 +15,10 @@ local main_track = music_tracks[1]
 local main_track_volume = 0
 local secondary_track = music_tracks[2]
 local secondary_track_volume = 0
+
+local sfx_group = "sfx_group"
+local sfx_ch = { "sfx_1", "sfx_2", "sfx_3", "sfx_4" }
+local next_sfx_ch = 1
 
 local initialized = false
 local FADE_TIME = 5
@@ -23,7 +29,22 @@ function audio.init()
     canvas.channel_create(music_group, { parent = nil })
     canvas.channel_create(music_tracks[1], { parent = music_group })
     canvas.channel_create(music_tracks[2], { parent = music_group })
+
+    canvas.channel_create(sfx_group, {parent = nil})
+    for _, ch in pairs(sfx_ch) do
+        canvas.channel_create(ch, { parent = sfx_group })
+    end
+
     initialized = true
+end
+
+function audio.play_sfx(sfx)
+    local ch = sfx_ch[next_sfx_ch]
+    next_sfx_ch = next_sfx_ch + 1
+    if next_sfx_ch > #sfx_ch then
+        next_sfx_ch = 1
+    end
+    canvas.channel_play(ch, sfx, { volume = 1.0, loop = false })
 end
 
 function audio.play_music(track)

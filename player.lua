@@ -1,3 +1,4 @@
+local audio = require('audio')
 local canvas = require('canvas')
 local sprites = require('sprites')
 local config = require('config')
@@ -198,6 +199,7 @@ function dash_state.start()
 	dash_state.duration = DASH_FRAMES
 	player.vy = 0
 	player.animation = animations.DASH
+	audio.play_sfx(audio.dash)
 end
 
 function dash_state.input()

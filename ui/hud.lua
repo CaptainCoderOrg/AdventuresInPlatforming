@@ -1,4 +1,5 @@
 local canvas = require("canvas")
+local slider = require("slider")
 
 local hud = {}
 
@@ -80,6 +81,31 @@ local fade_duration = 0.15
 local fade_state = "closed"
 local fade_progress = 0
 
+local function create_volume_slider(name, y_offset, color)
+    return slider.create({
+        x = 0,
+        y = y_offset,
+        width = 200,
+        height = 24,
+        color = color,
+        value = 1,
+        scale = 2,
+        animate_speed = 0.1,
+        on_input = function(event)
+            if event.type == "press" or event.type == "drag" then
+                volume_sliders[name]:set_value(event.normalized_x)
+            end
+            print(name .. ": " .. string.format("%.2f", volume_sliders[name]:get_value()))
+        end
+    })
+end
+
+local volume_sliders = {
+    master = create_volume_slider("master", 0, "#4488FF"),
+    music = create_volume_slider("music", 0, "#44FF88"),
+    sfx = create_volume_slider("sfx", 0, "#FF8844"),
+}
+
 --- Process HUD input
 function hud.input()
     if canvas.is_key_pressed(canvas.keys.ESCAPE) then
@@ -91,7 +117,7 @@ function hud.input()
     end
 end
 
---- Advance fade animation
+--- Advance fade animation and update sliders
 function hud.update()
     local dt = canvas.get_delta()
     local speed = dt / fade_duration
@@ -105,6 +131,12 @@ function hud.update()
         fade_progress = math.max(0, fade_progress - speed)
         if fade_progress <= 0 then
             fade_state = "closed"
+        end
+    end
+
+    if fade_state == "open" then
+        for _, s in pairs(volume_sliders) do
+            s:update()
         end
     end
 end
@@ -125,6 +157,24 @@ local function draw_settings()
     canvas.set_color("#00000080")
     canvas.fill_rect(0, 0, screen_w, screen_h)
     nine_slice.draw(dialogue_slice, x, y, settings_width, settings_height, 2)
+
+    local padding = 68
+    local slider_x = x + (settings_width - 200) / 2
+    local slider_start_y = y + padding
+    local slider_spacing = 34
+
+    volume_sliders.master.x = slider_x
+    volume_sliders.master.y = slider_start_y
+    volume_sliders.master:draw()
+
+    volume_sliders.music.x = slider_x
+    volume_sliders.music.y = slider_start_y + slider_spacing
+    volume_sliders.music:draw()
+
+    volume_sliders.sfx.x = slider_x
+    volume_sliders.sfx.y = slider_start_y + slider_spacing * 2
+    volume_sliders.sfx:draw()
+
     canvas.set_global_alpha(1)
 end
 

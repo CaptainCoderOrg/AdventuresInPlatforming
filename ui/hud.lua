@@ -75,7 +75,7 @@ function nine_slice.draw(slice, x, y, width, height, scale)
 end
 
 local settings_width = 300
-local settings_height = 200
+local settings_height = 260
 local dialogue_slice = nine_slice.create("dialogue_lg", 144, 144, 34, 18, 34, 20)
 
 local fade_duration = 0.15
@@ -166,6 +166,16 @@ function hud.is_settings_open()
     return fade_state ~= "closed"
 end
 
+local function draw_centered_label(text, center_x, y)
+    local metrics = canvas.get_text_metrics(text)
+    local text_x = center_x - metrics.width / 2
+    canvas.set_color("#000000")
+    canvas.set_line_width(3)
+    canvas.stroke_text(text_x, y, text)
+    canvas.set_color("#FFFFFF")
+    canvas.draw_text(text_x, y, text)
+end
+
 local function draw_settings()
     local screen_w = canvas.get_width()
     local screen_h = canvas.get_height()
@@ -177,19 +187,28 @@ local function draw_settings()
     canvas.fill_rect(0, 0, screen_w, screen_h)
     nine_slice.draw(dialogue_slice, x, y, settings_width, settings_height, 2)
 
-    local padding = 68
-    local slider_x = x + (settings_width - 200) / 2
-    local slider_start_y = y + padding
-    local slider_spacing = 34
+    local slider_width = 200
+    local slider_x = x + (settings_width - slider_width) / 2
+    local slider_center_x = slider_x + slider_width / 2
+    local slider_start_y = y + 61
+    local slider_spacing = 52
+    local label_offset = 18
 
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(26)
+    canvas.set_text_baseline("bottom")
+
+    draw_centered_label("Master Volume", slider_center_x, slider_start_y - label_offset + 16)
     volume_sliders.master.x = slider_x
     volume_sliders.master.y = slider_start_y
     volume_sliders.master:draw()
 
+    draw_centered_label("Music", slider_center_x, slider_start_y + slider_spacing - label_offset + 16)
     volume_sliders.music.x = slider_x
     volume_sliders.music.y = slider_start_y + slider_spacing
     volume_sliders.music:draw()
 
+    draw_centered_label("SFX", slider_center_x, slider_start_y + slider_spacing * 2 - label_offset + 16)
     volume_sliders.sfx.x = slider_x
     volume_sliders.sfx.y = slider_start_y + slider_spacing * 2
     volume_sliders.sfx:draw()

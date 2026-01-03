@@ -6,6 +6,12 @@ audio.title_screen = canvas.assets.load_music("title_screen", "music/title-scree
 audio.level1 = canvas.assets.load_music("level1", "music/level-1.ogg")
 
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
+audio.footstep = {}
+
+for i = 0,8 do
+    table.insert(audio.footstep, canvas.assets.load_sound(string.format("footstep_%d", i), string.format("sfx/footsteps/%d.ogg", i)))
+end
+local footstep_channel = "footsteps_channel"
 
 local current_track = nil
 
@@ -35,7 +41,15 @@ function audio.init()
         canvas.channel_create(ch, { parent = sfx_group })
     end
 
+    canvas.channel_create(footstep_channel, { parent = sfx_group })
+
     initialized = true
+end
+
+function audio.play_footstep()
+    if canvas.channel_is_playing(footstep_channel) then return end
+    local sfx = audio.footstep[math.random(#audio.footstep)]
+    canvas.channel_play(footstep_channel, sfx, { volume = 0.3, loop = false })
 end
 
 function audio.play_sfx(sfx)

@@ -184,9 +184,17 @@ function run_state.input()
 	handle_jump()
 end
 
+local footstep_cooldown = 0
+local FOOTSTEP_COOLDOWN_TIME = 0.35
 function run_state.update(dt)
 	handle_gravity()
 	player.vx = player.direction * player.speed
+	if footstep_cooldown <= 0 then
+		audio.play_footstep()
+		footstep_cooldown = FOOTSTEP_COOLDOWN_TIME
+	else
+		footstep_cooldown = footstep_cooldown - dt
+	end	
 end
 
 function run_state.draw()

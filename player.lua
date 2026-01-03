@@ -22,6 +22,7 @@ player.y = 2
 player.is_grounded = true
 player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
 player.speed = 7
+player.air_speed = player.speed * 1
 player.coyote_frames = 0
 player.direction = 1
 player.jumps = 2
@@ -49,7 +50,6 @@ player.animation = animations.IDLE
 player.animation.flipped = 1
 
 local function handle_gravity()
-	-- if player.is_grounded then return end
 	player.vy = math.min(20, player.vy + GRAVITY)
 	if not player.is_grounded then
 		player.set_state(air_state)
@@ -78,7 +78,6 @@ local function check_ground(cols)
 			player.jumps = player.max_jumps - 1
 		end
 	end
-	return on_ground
 end
 
 local function handle_jump()
@@ -131,7 +130,7 @@ function player.update()
 
 	-- Check for collisions
 	local cols = world.move(player)
-	player.is_grounded = check_ground(cols)
+	check_ground(cols)
 
 	t = t + 1
 	if t % player.animation.speed == 0 then
@@ -177,6 +176,7 @@ end
 function run_state.start()
 	animations.RUN.frame = 0
 	player.animation = animations.RUN
+	footstep_cooldown = 0
 end
 
 function run_state.input()
@@ -233,7 +233,9 @@ function dash_state.update(dt)
 
 	if dash_state.duration < 0 then
 		player.dash_cooldown = DASH_COOLDOWN_FRAMES
-		if controls.left_down() or controls.right_down() then
+		if not player.is_grounded then
+			player.set_state(air_state)
+		elseif controls.left_down() or controls.right_down() then
 			player.set_state(run_state)
 		else
 			player.set_state(idle_state)
@@ -246,30 +248,30 @@ function dash_state.draw()
 end
 
 function air_state.start()
-	animations.FALL.frame = 0
-	player.animation = animations.FALL
+	
 end
 
-function air_state.update()
+function air_state.update(dt)
 	handle_gravity()
 	if player.is_grounded then
 		player.set_state(idle_state)
-	elseif player.vy > 0 then
+	elseif player.vy > 0 and player.animation ~= animations.FALL then
 		player.animation = animations.FALL
-	elseif player.vy < 0 then
+		animations.FALL.frame = 0
+	elseif player.vy < 0 and player.animation ~= animations.JUMP then
 		player.animation = animations.JUMP
+		animations.JUMP.frame = 0
 	end
 end
 
 function air_state.input() 
 	if controls.left_down() then
 		player.direction = -1
-		player.vx = player.direction * player.speed
+		player.vx = player.direction * player.air_speed
 	elseif controls.right_down() then
 		player.direction = 1
-		player.vx = player.direction * player.speed
+		player.vx = player.direction * player.air_speed
 	else
-		air_state.moving = false
 		player.vx = 0
 	end
 	handle_dash()

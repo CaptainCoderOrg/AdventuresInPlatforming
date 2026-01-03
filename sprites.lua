@@ -10,6 +10,9 @@ sprites.tile_size = TILE * SCALE
 
 canvas.assets.add_path("assets/")
 canvas.assets.load_image("tilemap", "images/tilemap_packed.png")
+
+canvas.assets.load_image("dialogue_lg", "sprites/ui/dialogue-lg.png")
+
 canvas.assets.load_image("player_idle", "sprites/character/idle.png")
 canvas.assets.load_image("player_run", "sprites/character/run.png")
 canvas.assets.load_image("player_dash", "sprites/character/dash.png")

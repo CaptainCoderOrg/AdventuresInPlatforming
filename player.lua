@@ -30,7 +30,7 @@ world.add_collider(player)
 
 local t = 0
 
-local DASH_FRAMES = 12
+local DASH_FRAMES = 8
 local DASH_COOLDOWN_FRAMES = DASH_FRAMES * 2
 player.dash_cooldown = 0
 player.dash_speed = player.speed * 3

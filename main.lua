@@ -4,6 +4,7 @@ local player = require("player")
 local walls = require("walls")
 local config = require("config")
 local sprites = require("sprites")
+local audio = require("audio")
 local level1 = require("levels/level1")
 local debug = require("debugger")
 
@@ -15,6 +16,10 @@ local function user_input()
     if canvas.is_key_pressed(canvas.keys.P) then
         config.bounding_boxes = not config.bounding_boxes
         config.debug = not config.debug
+    elseif canvas.is_key_pressed(canvas.keys.DIGIT_1) then
+        audio.play_music(audio.level1)
+    elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
+        audio.play_music(audio.title_screen)
     end
 	player.input()
 end
@@ -52,8 +57,21 @@ local function init()
     init_walls()
 end
 
+local started = false
+
+local function on_start()
+    if started then return end
+    audio.init()
+    audio.play_music(audio.title_screen)
+    started = true
+end
+
+
+
 -- Main game loop
 local function game()
+    on_start()
+    audio.update()
 	user_input()
 	update()
 	draw()

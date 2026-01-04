@@ -62,15 +62,23 @@ function slopes.draw()
 	for _, tile in pairs(slopes.tiles) do
 		local vertices = get_slope_vertices(tile.x, tile.y, tile.slope_type)
 		if #vertices >= 3 then
-			-- Draw filled triangle
-			canvas.set_fill_style("#5a5a5a")
+			-- Save canvas state before clipping
+			canvas.save()
+
+			-- Create triangular clipping path
 			canvas.begin_path()
 			canvas.move_to(vertices[1].x * ts, vertices[1].y * ts)
 			for i = 2, #vertices do
 				canvas.line_to(vertices[i].x * ts, vertices[i].y * ts)
 			end
 			canvas.close_path()
-			canvas.fill()
+			canvas.clip()
+
+			-- Draw wall sprite within clipped area
+			sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
+
+			-- Restore canvas state (removes clipping)
+			canvas.restore()
 		end
 	end
 

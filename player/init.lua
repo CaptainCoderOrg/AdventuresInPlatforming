@@ -36,6 +36,7 @@ player.is_air_jumping = false
 player.has_wall_slide = true
 player.wall_direction = 0
 player.wall_jump_dir = 0
+player.ground_normal = { x = 0, y = -1 }
 player.state = nil
 
 player.dash_cooldown = 0

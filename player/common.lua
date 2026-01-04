@@ -35,36 +35,36 @@ function common.handle_gravity(player, max_speed)
 	end
 end
 
---- Processes collision results to update grounded state, wall contact, and coyote time.
---- Resets jump count when landing and tracks wall direction for wall mechanics.
+--- Processes collision flags to update grounded state, wall contact, and coyote time.
+--- Uses separated X/Y collision pass results from world.move().
 --- @param player table The player object
---- @param cols table Array of collision results from world.move()
+--- @param cols table Collision flags {ground, ceiling, wall_left, wall_right}
 function common.check_ground(player, cols)
-	local on_ground = false
-	player.wall_direction = 0
-	for _, col in pairs(cols) do
-		if col.normal.y < 0 then
-			on_ground = true
-			player.is_grounded = true
-			player.coyote_frames = 0
-			player.jumps = player.max_jumps
-			player.vy = 0
-			player.is_air_jumping = false
-		elseif col.normal.y > 0 then
-			player.vy = 0
-		end
-		if col.normal.x ~= 0 then
-			player.wall_direction = col.normal.x
-		end
-	end
-
-	if not on_ground then
+	-- Ground detection from Y collision pass
+	if cols.ground then
+		player.is_grounded = true
+		player.ground_normal = cols.ground_normal
+		player.coyote_frames = 0
+		player.jumps = player.max_jumps
+		player.vy = 0
+		player.is_air_jumping = false
+	else
 		player.coyote_frames = player.coyote_frames + 1
 		if player.is_grounded and player.coyote_frames > common.MAX_COYOTE then
 			player.is_grounded = false
 			player.jumps = player.max_jumps - 1
 		end
 	end
+
+	-- Ceiling detection
+	if cols.ceiling then
+		player.vy = 0
+	end
+
+	-- Wall detection for wall slide/jump
+	player.wall_direction = 0
+	if cols.wall_left then player.wall_direction = 1 end
+	if cols.wall_right then player.wall_direction = -1 end
 end
 
 --- Attempts a ground jump if the player is grounded and jump is pressed.
@@ -112,6 +112,17 @@ end
 function common.is_pressing_into_wall(player)
 	return (controls.left_down() and player.wall_direction == 1) or
 	       (controls.right_down() and player.wall_direction == -1)
+end
+
+--- Returns the tangent vector of the ground the player is standing on.
+--- Tangent points right along the surface.
+--- @param player table The player object
+--- @return table Tangent vector {x, y}
+function common.get_ground_tangent(player)
+	local nx = player.ground_normal.x
+	local ny = player.ground_normal.y
+	-- Tangent perpendicular to normal, pointing right
+	return { x = -ny, y = nx }
 end
 
 return common

@@ -5,27 +5,13 @@ local world = {}
 
 -- Configuration
 local MAX_ITERATIONS = 4
+local GROUND_PROBE_DISTANCE = 4 -- Pixels to probe downward for ground adhesion
 
 -- Initialize HC with spatial hash cell size (50 tiles * tile_size in pixels)
 world.hc = HC:new(50 * sprites.tile_size)
 
 -- Maps game objects to their HC shapes
 world.shape_map = {}
-
---- Converts HC separation vector to collision normal.
---- Uses axis-aligned snapping for platformer physics.
---- @param sx number Separation X component
---- @param sy number Separation Y component
---- @return number, number Normal X and Y (-1, 0, or 1)
-local function get_normal(sx, sy)
-	local abs_x, abs_y = math.abs(sx), math.abs(sy)
-	if abs_x > abs_y then
-		return (sx > 0) and 1 or -1, 0
-	elseif abs_y > 0 then
-		return 0, (sy > 0) and 1 or -1
-	end
-	return 0, 0
-end
 
 --- Adds a rectangular collider for an object.
 --- @param obj table Object with x, y, and box properties
@@ -42,53 +28,102 @@ function world.add_collider(obj)
 	return shape
 end
 
---- Moves an object and resolves collisions, returning collision data.
+--- Moves an object using separated X/Y collision passes.
+--- Returns collision flags for ground, ceiling, and walls.
 --- @param obj table Object with x, y, vx, vy, and box properties
---- @return table Array of collision info with normal vectors
+--- @return table Collision flags {ground, ceiling, wall_left, wall_right}
 function world.move(obj)
 	local shape = world.shape_map[obj]
-	if not shape then return {} end
+	if not shape then return { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 } } end
 
 	local ts = sprites.tile_size
-	local cols = {}
+	local cols = { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 } }
 
-	-- Calculate where the shape should be based on obj position
-	local target_x = (obj.x + obj.box.x) * ts
-	local target_y = (obj.y + obj.box.y) * ts
-
-	-- Get current shape position (top-left from bounding box)
+	-- Get current shape position
 	local x1, y1, _, _ = shape:bbox()
 
-	-- Move shape to target position
+	-- X PASS: Move horizontally first, resolve X collisions
+	local target_x = (obj.x + obj.box.x) * ts
 	local dx = target_x - x1
-	local dy = target_y - y1
-	shape:move(dx, dy)
+	if dx ~= 0 then
+		shape:move(dx, 0)
 
-	-- Collision resolution loop
-	for _ = 1, MAX_ITERATIONS do
+		for _ = 1, MAX_ITERATIONS do
+			local collisions = world.hc:collisions(shape)
+			local any_collision = false
+
+			for other, sep in pairs(collisions) do
+				if other ~= shape and sep.x ~= 0 then
+					-- Only treat as wall if more horizontal than vertical (steeper than 45°)
+					-- Slopes (<=45°) should be handled by Y pass, not blocked by X pass
+					if math.abs(sep.x) > math.abs(sep.y) then
+						any_collision = true
+						shape:move(sep.x, 0)
+						if sep.x > 0 then cols.wall_left = true end
+						if sep.x < 0 then cols.wall_right = true end
+					end
+				end
+			end
+
+			if not any_collision then break end
+		end
+	end
+
+	-- Y PASS: Move vertically, resolve Y collisions
+	local _, cur_y, _, _ = shape:bbox()
+	local target_y = (obj.y + obj.box.y) * ts
+	local dy = target_y - cur_y
+	if dy ~= 0 then
+		shape:move(0, dy)
+
+		for _ = 1, MAX_ITERATIONS do
+			local collisions = world.hc:collisions(shape)
+			local any_collision = false
+
+			for other, sep in pairs(collisions) do
+				if other ~= shape and sep.y ~= 0 then
+					any_collision = true
+					shape:move(0, sep.y)
+					if sep.y < 0 then
+						cols.ground = true
+						-- Normalize separation vector to get ground normal
+						local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+						if len > 0 then
+							cols.ground_normal = { x = sep.x / len, y = sep.y / len }
+						end
+					end
+					if sep.y > 0 then cols.ceiling = true end
+				end
+			end
+
+			if not any_collision then break end
+		end
+	end
+
+	-- GROUND PROBE: If ground not detected, probe downward to find nearby ground
+	-- This allows slope movement (moving up) while maintaining ground contact
+	if not cols.ground then
+		shape:move(0, GROUND_PROBE_DISTANCE)
 		local collisions = world.hc:collisions(shape)
-		local any_collision = false
+		local found_ground = false
 
 		for other, sep in pairs(collisions) do
-			-- Skip self-collision (shouldn't happen but safety check)
-			if other ~= shape then
-				any_collision = true
-
-				-- Apply separation to escape collision
-				shape:move(sep.x, sep.y)
-
-				-- Calculate normal from separation vector
-				local nx, ny = get_normal(sep.x, sep.y)
-
-				-- Record collision for physics processing
-				table.insert(cols, {
-					normal = { x = nx, y = ny },
-					other = other.owner
-				})
+			if other ~= shape and sep.y < 0 then
+				found_ground = true
+				shape:move(0, sep.y)
+				cols.ground = true
+				local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+				if len > 0 then
+					cols.ground_normal = { x = sep.x / len, y = sep.y / len }
+				end
+				break
 			end
 		end
 
-		if not any_collision then break end
+		if not found_ground then
+			-- No ground found, undo probe
+			shape:move(0, -GROUND_PROBE_DISTANCE)
+		end
 	end
 
 	-- Update object position from final shape position

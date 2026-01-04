@@ -116,11 +116,26 @@ function walls.add_tile(x, y)
     walls.tiles[key] = { x = x, y = y }
 end
 
---- Builds merged collision boxes from all added tiles.
-function walls.build_colliders()
-    local sorted = get_sorted_tiles(walls.tiles)
-    local colliders = merge_tiles_into_colliders(walls.tiles, sorted)
-    register_colliders(colliders)
+--- Builds collision boxes from all added tiles.
+--- @param merge? boolean Whether to merge adjacent tiles (default true)
+function walls.build_colliders(merge)
+    if merge == false then
+        -- Create individual 1x1 colliders for each tile
+        local colliders = {}
+        for _, tile in pairs(walls.tiles) do
+            table.insert(colliders, {
+                x = tile.x,
+                y = tile.y,
+                box = { x = 0, y = 0, w = 1, h = 1 },
+                tiles = { tile }
+            })
+        end
+        register_colliders(colliders)
+    else
+        local sorted = get_sorted_tiles(walls.tiles)
+        local colliders = merge_tiles_into_colliders(walls.tiles, sorted)
+        register_colliders(colliders)
+    end
 end
 
 --- Removes a tile and re-merges affected colliders.

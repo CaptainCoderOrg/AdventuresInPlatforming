@@ -155,7 +155,7 @@ function player.update()
 
 	player.animation.flipped = player.direction
 	player.dash_cooldown = player.dash_cooldown - 1
-	
+
 	player.x = player.x + (player.vx * dt)
 	player.y = player.y + (player.vy * dt)
 

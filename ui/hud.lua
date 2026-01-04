@@ -1,6 +1,6 @@
 local canvas = require("canvas")
-local slider = require("slider")
-local button = require("button")
+local slider = require("ui/slider")
+local button = require("ui/button")
 local audio = require("audio")
 
 local hud = {}

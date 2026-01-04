@@ -12,8 +12,8 @@ local air_state = {}
 
 local GRAVITY = 1.5
 local JUMP_VELOCITY = GRAVITY*14
+local AIR_JUMP_VELOCITY = GRAVITY*12.25
 local MAX_COYOTE = 4
-local current_animation = nil
 
 player.x = 2
 player.vx = 0
@@ -21,12 +21,13 @@ player.vy = 0
 player.y = 2
 player.is_grounded = true
 player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
-player.speed = 7
+player.speed = 6
 player.air_speed = player.speed * 1
 player.coyote_frames = 0
 player.direction = 1
 player.jumps = 2
 player.max_jumps = 2
+player.is_air_jumping = false
 player.state = idle_state
 
 world.add_collider(player)
@@ -44,6 +45,7 @@ local animations = {
 	DASH = sprites.create_animation("player_dash", 4, 3),
 	FALL = sprites.create_animation("player_fall", 3, 6),
 	JUMP = sprites.create_animation("player_jump_up", 3, 6),
+	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4)
 }
 
 player.animation = animations.IDLE
@@ -65,6 +67,7 @@ local function check_ground(cols)
 			player.coyote_frames = 0
 			player.jumps = player.max_jumps
 			player.vy = 0
+			player.is_air_jumping = false
 			break
 		elseif col.normal.y > 0 then
 			player.vy = 0
@@ -81,9 +84,19 @@ local function check_ground(cols)
 end
 
 local function handle_jump()
-	if controls.jump_pressed() and player.jumps > 0 then
+	if controls.jump_pressed() and player.is_grounded then
 		player.vy = -JUMP_VELOCITY
 		player.jumps = player.jumps - 1
+		return true
+	end
+	return false
+end
+
+local function handle_air_jump()
+	if controls.jump_pressed() and player.jumps > 0 then
+		player.vy = -AIR_JUMP_VELOCITY
+		player.jumps = player.jumps - 1
+		player.is_air_jumping = true
 		return true
 	end
 	return false
@@ -192,13 +205,13 @@ function run_state.input()
 end
 
 local footstep_cooldown = 0
-local FOOTSTEP_COOLDOWN_TIME = 0.35
+local FOOTSTEP_COOLDOWN_TIME = (animations.RUN.frame_count * animations.RUN.speed)/2
 function run_state.update(dt)
 	handle_gravity()
 	player.vx = player.direction * player.speed
 	if footstep_cooldown <= 0 then
 		audio.play_footstep()
-		footstep_cooldown = FOOTSTEP_COOLDOWN_TIME
+		footstep_cooldown = FOOTSTEP_COOLDOWN_TIME * dt
 	else
 		footstep_cooldown = footstep_cooldown - dt
 	end	
@@ -224,10 +237,17 @@ function dash_state.input()
 		player.direction = 1
 	end
 	if dash_state.direction ~= player.direction then dash_state.duration = 0 end
-	if handle_jump() then dash_state.duration = 0 end
+	if player.is_grounded then
+		if handle_jump() then dash_state.duration = 0 end
+	else
+		if handle_air_jump() then dash_state.duration = 0 end
+	end
 end
 
 function dash_state.update(dt)
+	if dash_state.duration > 0 then
+		player.vy = player.is_grounded and GRAVITY or 0
+	end
 	player.vx = player.direction * player.dash_speed
 	dash_state.duration = dash_state.duration - 1
 
@@ -258,9 +278,15 @@ function air_state.update(dt)
 	elseif player.vy > 0 and player.animation ~= animations.FALL then
 		player.animation = animations.FALL
 		animations.FALL.frame = 0
-	elseif player.vy < 0 and player.animation ~= animations.JUMP then
-		player.animation = animations.JUMP
-		animations.JUMP.frame = 0
+		player.is_air_jumping = false
+	elseif player.vy < 0 then
+		if player.is_air_jumping and player.animation ~= animations.AIR_JUMP then
+			player.animation = animations.AIR_JUMP
+			animations.AIR_JUMP.frame = 0
+		elseif not player.is_air_jumping and player.animation ~= animations.JUMP then
+			player.animation = animations.JUMP
+			animations.JUMP.frame = 0
+		end
 	end
 end
 
@@ -275,7 +301,7 @@ function air_state.input()
 		player.vx = 0
 	end
 	handle_dash()
-	handle_jump()
+	handle_air_jump()
 end
 
 function air_state.draw()

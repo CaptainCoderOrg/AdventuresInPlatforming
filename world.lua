@@ -7,6 +7,17 @@ local world = {}
 local MAX_ITERATIONS = 4
 local GROUND_PROBE_DISTANCE = 4 -- Pixels to probe downward for ground adhesion
 
+--- Sets ground collision flag and calculates normalized ground normal from separation vector.
+--- @param cols table Collision flags to update
+--- @param sep table Separation vector {x, y}
+local function set_ground_from_sep(cols, sep)
+	cols.ground = true
+	local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+	if len > 0 then
+		cols.ground_normal = { x = sep.x / len, y = sep.y / len }
+	end
+end
+
 -- Initialize HC with spatial hash cell size (50 tiles * tile_size in pixels)
 world.hc = HC:new(50 * sprites.tile_size)
 
@@ -84,14 +95,7 @@ function world.move(obj)
 				if other ~= shape and sep.y ~= 0 then
 					any_collision = true
 					shape:move(0, sep.y)
-					if sep.y < 0 then
-						cols.ground = true
-						-- Normalize separation vector to get ground normal
-						local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
-						if len > 0 then
-							cols.ground_normal = { x = sep.x / len, y = sep.y / len }
-						end
-					end
+					if sep.y < 0 then set_ground_from_sep(cols, sep) end
 					if sep.y > 0 then cols.ceiling = true end
 				end
 			end
@@ -111,11 +115,7 @@ function world.move(obj)
 			if other ~= shape and sep.y < 0 then
 				found_ground = true
 				shape:move(0, sep.y)
-				cols.ground = true
-				local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
-				if len > 0 then
-					cols.ground_normal = { x = sep.x / len, y = sep.y / len }
-				end
+				set_ground_from_sep(cols, sep)
 				break
 			end
 		end

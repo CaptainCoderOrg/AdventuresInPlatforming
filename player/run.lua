@@ -36,23 +36,18 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function run.update(player, dt)
-	-- Only apply slope logic when not jumping (vy >= 0)
+	player.vx = player.direction * player.speed
+
+	-- Only apply slope logic when grounded and not jumping
 	if player.vy >= 0 and player.is_grounded then
 		local is_slope = math.abs(player.ground_normal.x) > 0.01
 		if is_slope then
-			-- Slope: maintain full horizontal speed, calculate vertical from slope ratio
 			local tangent = common.get_ground_tangent(player)
-			local slope_ratio = tangent.y / tangent.x
-			player.vx = player.direction * player.speed
-			player.vy = player.direction * player.speed * slope_ratio
+			player.vy = player.direction * player.speed * (tangent.y / tangent.x)
 		else
-			-- Flat ground: horizontal movement + gravity for ground detection
-			player.vx = player.direction * player.speed
 			common.handle_gravity(player)
 		end
 	else
-		-- Jumping or in air: normal horizontal + gravity
-		player.vx = player.direction * player.speed
 		common.handle_gravity(player)
 	end
 

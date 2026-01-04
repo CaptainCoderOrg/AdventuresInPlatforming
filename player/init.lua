@@ -25,7 +25,7 @@ player.vx = 0
 player.vy = 0
 player.y = 2
 player.is_grounded = true
-player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
+player.box = { w = 0.7, h = 0.75, x = 0.15, y = 0.25 }
 player.speed = 6
 player.air_speed = player.speed
 player.coyote_frames = 0
@@ -39,7 +39,6 @@ player.wall_jump_dir = 0
 player.state = nil
 
 player.dash_cooldown = 0
-player.dash_ready = true
 player.dash_speed = player.speed * 3
 
 player.animation = common.animations.IDLE

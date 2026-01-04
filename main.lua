@@ -1,6 +1,6 @@
 local canvas = require("canvas")
 local player = require("player")
-local walls = require("walls")
+local platforms = require("platforms")
 local config = require("config")
 local sprites = require("sprites")
 local audio = require("audio")
@@ -41,30 +41,22 @@ end
 -- Render the game
 local function draw()
     canvas.clear()
-    walls.draw()
+    platforms.draw()
     player.draw()
     debug.draw()
     hud.draw()
 end
 
-local function init_walls()
-    -- Phase 1: Collect tile positions
-    for y, row in ipairs(level1.map) do
-        for x = 1, #row do
-            local ch = row:sub(x, x)
-            if ch == "#" then
-                walls.add_tile(x - 1, y - 1)
-            elseif ch == 'S' then
-                player.set_position(x - 1, y - 1)
-            end
-        end
+local function init_level()
+    local spawn = platforms.load_level(level1)
+    if spawn then
+        player.set_position(spawn.x, spawn.y)
     end
-    -- Phase 2: Build colliders
-    walls.build_colliders(true)
+    platforms.build()
 end
 
 local function init()
-    init_walls()
+    init_level()
 end
 
 local started = false

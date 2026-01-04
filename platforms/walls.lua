@@ -1,7 +1,9 @@
-local canvas = require('canvas')
-local sprites = require('sprites')
-local config = require('config')
-local world = require('world')
+local common = require('platforms/common')
+local canvas = common.canvas
+local sprites = common.sprites
+local config = common.config
+local world = common.world
+
 local walls = {}
 
 walls.tiles = {}
@@ -420,6 +422,16 @@ function walls.draw()
 			end
 		end
 	end
+end
+
+--- Clears all wall data (for level reloading).
+function walls.clear()
+	walls.tiles = {}
+	for _, col in ipairs(walls.colliders) do
+		world.remove_collider(col)
+	end
+	walls.colliders = {}
+	walls.tile_to_collider = {}
 end
 
 return walls

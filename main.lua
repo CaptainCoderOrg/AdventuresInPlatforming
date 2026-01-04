@@ -60,7 +60,7 @@ local function init_walls()
         end
     end
     -- Phase 2: Build colliders
-    walls.build_colliders(false)
+    walls.build_colliders(true)
 end
 
 local function init()

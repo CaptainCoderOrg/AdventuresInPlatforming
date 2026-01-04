@@ -54,7 +54,7 @@ world.add_collider(player)
 function player.set_position(x, y)
 	player.x = x
 	player.y = y
-	world.grid:update(player, player.x, player.y)
+	world.sync_position(player)
 end
 
 --- Transitions the player to a new state, calling the state's start function.

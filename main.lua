@@ -59,7 +59,7 @@ local function init_walls()
             end
         end
     end
-    -- Phase 2: Build merged colliders
+    -- Phase 2: Build colliders
     walls.build_colliders()
 end
 

@@ -98,7 +98,7 @@ volume_sliders.master = slider.create({
 
 volume_sliders.music = slider.create({
     x = 0, y = 0, width = 200, height = 24,
-    color = "#44FF88", value = 0.4, scale = 2, animate_speed = 0.1,
+    color = "#44FF88", value = 0.05, scale = 2, animate_speed = 0.1,
     on_input = function(event)
         if event.type == "press" or event.type == "drag" then
             volume_sliders.music:set_value(event.normalized_x)

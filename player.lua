@@ -27,6 +27,7 @@ player.vy = 0
 player.y = 2
 player.is_grounded = true
 player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
+player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
 player.speed = 6
 player.air_speed = player.speed
 player.coyote_frames = 0
@@ -100,6 +101,7 @@ local function handle_jump()
 	if controls.jump_pressed() and player.is_grounded then
 		player.vy = -JUMP_VELOCITY
 		player.jumps = player.jumps - 1
+        audio.play_jump_sound()
 		return true
 	end
 	return false
@@ -110,6 +112,7 @@ local function handle_air_jump()
 		player.vy = -AIR_JUMP_VELOCITY
 		player.jumps = player.jumps - 1
 		player.is_air_jumping = true
+        audio.play_air_jump_sound()
 		return true
 	end
 	return false
@@ -158,9 +161,10 @@ function player.update()
 
 	player.x = player.x + (player.vx * dt)
 	player.y = player.y + (player.vy * dt)
+    local cols = world.move(player)
 
 	-- Check for collisions
-	local cols = world.move(player)
+	
 	check_ground(cols)
 
 	t = t + 1
@@ -246,7 +250,7 @@ function dash_state.start()
 	dash_state.duration = DASH_FRAMES
 	player.vy = 0
 	player.animation = animations.DASH
-	audio.play_sfx(audio.dash)
+	audio.play_sfx(audio.dash, 0.15)
 end
 
 function dash_state.input()
@@ -294,6 +298,7 @@ function air_state.update(dt)
 	handle_gravity()
 	if player.is_grounded then
 		player.set_state(idle_state)
+        audio.play_landing_sound()
 	elseif player.has_wall_slide and player.vy > 0 and player.wall_direction ~= 0 then
 		if is_pressing_into_wall() then
 			player.set_state(wall_slide_state)
@@ -336,6 +341,7 @@ function wall_slide_state.start()
 	player.animation = animations.WALL_SLIDE
 	player.direction = -player.wall_direction
 	wall_slide_state.grace_frames = 0
+    audio.play_footstep()
 end
 
 function wall_slide_state.input()
@@ -391,6 +397,7 @@ function wall_jump_state.start()
 	wall_jump_state.locked_direction = -wall_dir
 	animations.JUMP.frame = 0
 	player.animation = animations.JUMP
+    audio.play_wall_jump_sound()
 end
 
 function wall_jump_state.input()

@@ -13,12 +13,13 @@ local wall_slide_state = { name = "wall_slide_state" }
 local wall_jump_state = { name = "wall_jump_state" }
 
 local GRAVITY = 1.5
-local JUMP_VELOCITY = GRAVITY * 14
-local AIR_JUMP_VELOCITY = GRAVITY * 12
+local JUMP_VELOCITY = GRAVITY*14
+local AIR_JUMP_VELOCITY = GRAVITY*12
 local MAX_COYOTE = 4
 local MAX_FALL_SPEED = 20
-local WALL_SLIDE_SPEED = 5
+local WALL_SLIDE_SPEED = 2
 local WALL_JUMP_VELOCITY = GRAVITY * 12
+local WALL_SLIDE_GRACE_FRAMES = 3
 
 player.x = 2
 player.vx = 0
@@ -27,7 +28,7 @@ player.y = 2
 player.is_grounded = true
 player.box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 }
 player.speed = 6
-player.air_speed = player.speed * 1
+player.air_speed = player.speed
 player.coyote_frames = 0
 player.direction = 1
 player.jumps = 2
@@ -203,6 +204,9 @@ function idle_state.draw()
   sprites.draw_animation(animations.IDLE, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
+local footstep_cooldown = 0
+local FOOTSTEP_COOLDOWN_TIME = (animations.RUN.frame_count * animations.RUN.speed)/2
+
 function run_state.start()
 	animations.RUN.frame = 0
 	player.animation = animations.RUN
@@ -221,8 +225,6 @@ function run_state.input()
 	handle_jump()
 end
 
-local footstep_cooldown = 0
-local FOOTSTEP_COOLDOWN_TIME = (animations.RUN.frame_count * animations.RUN.speed)/2
 function run_state.update(dt)
 	handle_gravity()
 	player.vx = player.direction * player.speed
@@ -333,6 +335,7 @@ function wall_slide_state.start()
 	animations.WALL_SLIDE.frame = 0
 	player.animation = animations.WALL_SLIDE
 	player.direction = -player.wall_direction
+	wall_slide_state.grace_frames = 0
 end
 
 function wall_slide_state.input()
@@ -342,15 +345,31 @@ function wall_slide_state.input()
 		return
 	end
 
-	if not is_pressing_into_wall() then
-		player.set_state(air_state)
+	if is_pressing_into_wall() then
+		wall_slide_state.grace_frames = 0
+	else
+		wall_slide_state.grace_frames = wall_slide_state.grace_frames + 1
+		if wall_slide_state.grace_frames >= WALL_SLIDE_GRACE_FRAMES then
+			player.set_state(air_state)
+		end
 	end
 
 	handle_dash()
 end
 
 function wall_slide_state.update(dt)
-	player.vy = math.min(WALL_SLIDE_SPEED, player.vy + GRAVITY)
+	local in_grace = wall_slide_state.grace_frames > 0
+
+	if in_grace then
+		player.vy = math.min(MAX_FALL_SPEED, player.vy + GRAVITY)
+		if player.animation ~= animations.FALL then
+			player.animation = animations.FALL
+			animations.FALL.frame = 0
+		end
+	else
+		player.vy = math.min(WALL_SLIDE_SPEED, player.vy + GRAVITY)
+	end
+
 	player.vx = -player.wall_direction * player.speed
 
 	if player.is_grounded then
@@ -361,7 +380,7 @@ function wall_slide_state.update(dt)
 end
 
 function wall_slide_state.draw()
-	sprites.draw_animation(animations.WALL_SLIDE, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 function wall_jump_state.start()

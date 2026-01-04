@@ -5,15 +5,20 @@ local config = require('config')
 local world = require('world')
 local controls = require('controls')
 local player = {}
-local idle_state = {}
-local run_state = {}
-local dash_state = {}
-local air_state = {}
+local idle_state = { name = "idle_state" }
+local run_state = { name = "run_state" }
+local dash_state = { name = "dash_state" }
+local air_state = { name = "air_state" }
+local wall_slide_state = { name = "wall_slide_state" }
+local wall_jump_state = { name = "wall_jump_state" }
 
 local GRAVITY = 1.5
-local JUMP_VELOCITY = GRAVITY*14
-local AIR_JUMP_VELOCITY = GRAVITY*12.25
+local JUMP_VELOCITY = GRAVITY * 14
+local AIR_JUMP_VELOCITY = GRAVITY * 12
 local MAX_COYOTE = 4
+local MAX_FALL_SPEED = 20
+local WALL_SLIDE_SPEED = 5
+local WALL_JUMP_VELOCITY = GRAVITY * 12
 
 player.x = 2
 player.vx = 0
@@ -28,6 +33,8 @@ player.direction = 1
 player.jumps = 2
 player.max_jumps = 2
 player.is_air_jumping = false
+player.has_wall_slide = true
+player.wall_direction = 0
 player.state = idle_state
 
 world.add_collider(player)
@@ -45,14 +52,16 @@ local animations = {
 	DASH = sprites.create_animation("player_dash", 4, 3),
 	FALL = sprites.create_animation("player_fall", 3, 6),
 	JUMP = sprites.create_animation("player_jump_up", 3, 6),
-	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4)
+	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4),
+	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, 6),
 }
 
 player.animation = animations.IDLE
 player.animation.flipped = 1
 
-local function handle_gravity()
-	player.vy = math.min(20, player.vy + GRAVITY)
+local function handle_gravity(max_speed)
+	max_speed = max_speed or MAX_FALL_SPEED
+	player.vy = math.min(max_speed, player.vy + GRAVITY)
 	if not player.is_grounded then
 		player.set_state(air_state)
 	end
@@ -60,6 +69,7 @@ end
 
 local function check_ground(cols)
 	local on_ground = false
+	player.wall_direction = 0
 	for _, col in pairs(cols) do
 		if col.normal.y < 0 then
 			on_ground = true
@@ -68,9 +78,11 @@ local function check_ground(cols)
 			player.jumps = player.max_jumps
 			player.vy = 0
 			player.is_air_jumping = false
-			break
 		elseif col.normal.y > 0 then
 			player.vy = 0
+		end
+		if col.normal.x ~= 0 then
+			player.wall_direction = col.normal.x
 		end
 	end
 
@@ -109,6 +121,11 @@ local function handle_dash()
 		return true
 	end
 	return false
+end
+
+local function is_pressing_into_wall()
+	return (controls.left_down() and player.wall_direction == 1) or
+	       (controls.right_down() and player.wall_direction == -1)
 end
 
 function player.set_position(x, y)
@@ -275,6 +292,10 @@ function air_state.update(dt)
 	handle_gravity()
 	if player.is_grounded then
 		player.set_state(idle_state)
+	elseif player.has_wall_slide and player.vy > 0 and player.wall_direction ~= 0 then
+		if is_pressing_into_wall() then
+			player.set_state(wall_slide_state)
+		end
 	elseif player.vy > 0 and player.animation ~= animations.FALL then
 		player.animation = animations.FALL
 		animations.FALL.frame = 0
@@ -305,6 +326,74 @@ function air_state.input()
 end
 
 function air_state.draw()
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+end
+
+function wall_slide_state.start()
+	animations.WALL_SLIDE.frame = 0
+	player.animation = animations.WALL_SLIDE
+	player.direction = -player.wall_direction
+end
+
+function wall_slide_state.input()
+	if controls.jump_pressed() then
+		wall_jump_state.wall_dir = player.wall_direction
+		player.set_state(wall_jump_state)
+		return
+	end
+
+	if not is_pressing_into_wall() then
+		player.set_state(air_state)
+	end
+
+	handle_dash()
+end
+
+function wall_slide_state.update(dt)
+	player.vy = math.min(WALL_SLIDE_SPEED, player.vy + GRAVITY)
+	player.vx = -player.wall_direction * player.speed
+
+	if player.is_grounded then
+		player.set_state(idle_state)
+	elseif player.wall_direction == 0 then
+		player.set_state(air_state)
+	end
+end
+
+function wall_slide_state.draw()
+	sprites.draw_animation(animations.WALL_SLIDE, player.x * sprites.tile_size, player.y * sprites.tile_size)
+end
+
+function wall_jump_state.start()
+	local wall_dir = wall_jump_state.wall_dir
+	player.vy = -WALL_JUMP_VELOCITY
+	player.vx = wall_dir * player.speed
+	player.direction = wall_dir
+	wall_jump_state.locked_direction = -wall_dir
+	animations.JUMP.frame = 0
+	player.animation = animations.JUMP
+end
+
+function wall_jump_state.input()
+	handle_dash()
+	handle_air_jump()
+end
+
+function wall_jump_state.update(dt)
+	player.vy = math.min(MAX_FALL_SPEED, player.vy + GRAVITY)
+
+	player.vx = -wall_jump_state.locked_direction * player.speed
+
+	if player.is_grounded then
+		player.set_state(idle_state)
+	elseif player.wall_direction == wall_jump_state.locked_direction then
+		player.set_state(wall_slide_state)
+	elseif player.vy > 0 then
+		player.set_state(air_state)
+	end
+end
+
+function wall_jump_state.draw()
 	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 

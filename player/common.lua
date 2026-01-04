@@ -50,6 +50,7 @@ function common.check_ground(player, cols)
 			player.jumps = player.max_jumps
 			player.vy = 0
 			player.is_air_jumping = false
+			player.dash_ready = true
 		elseif col.normal.y > 0 then
 			player.vy = 0
 		end
@@ -94,12 +95,13 @@ function common.handle_air_jump(player)
 	return false
 end
 
---- Attempts to initiate a dash if off cooldown and dash is pressed.
+--- Attempts to initiate a dash if off cooldown, grounded since last dash, and dash is pressed.
 --- @param player table The player object
 --- @return boolean True if dash was initiated
 function common.handle_dash(player)
-	if player.dash_cooldown > 0 then return false end
+	if player.dash_cooldown > 0 or not player.dash_ready then return false end
 	if controls.dash_pressed() then
+		player.dash_ready = false
 		player.set_state(player.states.dash)
 		return true
 	end

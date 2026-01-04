@@ -39,6 +39,7 @@ player.wall_jump_dir = 0
 player.state = nil
 
 player.dash_cooldown = 0
+player.dash_ready = true
 player.dash_speed = player.speed * 3
 
 player.animation = common.animations.IDLE

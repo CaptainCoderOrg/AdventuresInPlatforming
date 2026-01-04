@@ -3,6 +3,7 @@ local canvas = common.canvas
 local sprites = common.sprites
 local config = common.config
 local world = common.world
+local walls = require('platforms/walls')
 
 local slopes = {}
 
@@ -12,32 +13,61 @@ slopes.colliders = {}
 --- Adds a slope tile at the given position.
 --- @param x number Tile X coordinate
 --- @param y number Tile Y coordinate
---- @param slope_type string Type of slope ('/' for right-facing)
+--- @param slope_type string Type of slope ('/' or '\')
 function slopes.add_tile(x, y, slope_type)
 	local key = x .. "," .. y
 	slopes.tiles[key] = { x = x, y = y, slope_type = slope_type }
 end
 
+--- Checks if a wall exists at the given tile coordinates.
+--- @param x number Tile X coordinate
+--- @param y number Tile Y coordinate
+--- @return boolean
+local function has_wall_at(x, y)
+	return walls.tiles[x .. "," .. y] ~= nil
+end
+
 --- Gets the vertices for a slope type in tile coordinates.
+--- Orientation is determined by walls above the slope.
 --- @param x number Tile X coordinate
 --- @param y number Tile Y coordinate
 --- @param slope_type string Type of slope
 --- @return table[] Array of {x, y} vertices
 local function get_slope_vertices(x, y, slope_type)
 	if slope_type == "/" then
-		-- Right-facing slope: bottom-left, bottom-right, top-right
-		return {
-			{ x = x, y = y + 1 },       -- bottom-left
-			{ x = x + 1, y = y + 1 },   -- bottom-right
-			{ x = x + 1, y = y },       -- top-right
-		}
+		local wall_above = has_wall_at(x, y - 1) or has_wall_at(x - 1, y - 1)
+		if wall_above then
+			-- Wall above: slope goes up-left (open at BR)
+			return {
+				{ x = x, y = y },           -- top-left
+				{ x = x + 1, y = y },       -- top-right
+				{ x = x, y = y + 1 },       -- bottom-left
+			}
+		else
+			-- Default: slope goes down-left (open at BL)
+			return {
+				{ x = x, y = y + 1 },       -- bottom-left
+				{ x = x + 1, y = y + 1 },   -- bottom-right
+				{ x = x + 1, y = y },       -- top-right
+			}
+		end
 	elseif slope_type == "\\" then
-		-- Left-facing slope: bottom-left, bottom-right, top-left
-		return {
-			{ x = x, y = y + 1 },       -- bottom-left
-			{ x = x + 1, y = y + 1 },   -- bottom-right
-			{ x = x, y = y },           -- top-left
-		}
+		local wall_above = has_wall_at(x, y - 1) or has_wall_at(x + 1, y - 1)
+		if wall_above then
+			-- Wall above: slope goes up-right (open at BL)
+			return {
+				{ x = x, y = y },           -- top-left
+				{ x = x + 1, y = y },       -- top-right
+				{ x = x + 1, y = y + 1 },   -- bottom-right
+			}
+		else
+			-- Default: slope goes down-right (open at BR)
+			return {
+				{ x = x, y = y + 1 },       -- bottom-left
+				{ x = x + 1, y = y + 1 },   -- bottom-right
+				{ x = x, y = y },           -- top-left
+			}
+		end
 	end
 	return {}
 end

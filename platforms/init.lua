@@ -16,6 +16,8 @@ function platforms.load_level(level_data)
 				platforms.walls.add_tile(x - 1, y - 1)
 			elseif ch == "/" then
 				platforms.slopes.add_tile(x - 1, y - 1, "/")
+			elseif ch == "\\" then
+				platforms.slopes.add_tile(x - 1, y - 1, "\\")
 			elseif ch == "S" then
 				spawn = { x = x - 1, y = y - 1 }
 			end

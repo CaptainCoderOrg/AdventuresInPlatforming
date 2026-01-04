@@ -31,8 +31,14 @@ local function get_slope_vertices(x, y, slope_type)
 			{ x = x + 1, y = y + 1 },   -- bottom-right
 			{ x = x + 1, y = y },       -- top-right
 		}
+	elseif slope_type == "\\" then
+		-- Left-facing slope: bottom-left, bottom-right, top-left
+		return {
+			{ x = x, y = y + 1 },       -- bottom-left
+			{ x = x + 1, y = y + 1 },   -- bottom-right
+			{ x = x, y = y },           -- top-left
+		}
 	end
-	-- Default fallback (shouldn't happen)
 	return {}
 end
 

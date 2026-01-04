@@ -27,29 +27,56 @@ local function slideWithStep(bumpWorld, col, x, y, w, h, goalX, goalY, filter)
 
     local stepX, stepY = tch.x, tch.y
 
-    -- Calculate all four lip overlaps
-    local lipRight = (tch.x + w) - other.x
-    local lipLeft = (other.x + other.w) - tch.x
-    local lipBottom = (tch.y + h) - other.y
-    local lipTop = (other.y + other.h) - tch.y
+    -- Horizontal collision (hit wall on left/right)
+    if normal.x ~= 0 then
+        local lipBottom = (tch.y + h) - other.y
+        local lipTop = (other.y + other.h) - tch.y
+        local lipRight = (tch.x + w) - other.x
+        local lipLeft = (other.x + other.w) - tch.x
 
-    -- Step off whichever edge has tiny overlap
-    if lipRight >= 0 and lipRight < STEP_THRESHOLD then
-        local offset = lipRight + STEP_OFFSET
-        stepX = tch.x - offset
-        goalX = goalX - offset
-    elseif lipLeft >= 0 and lipLeft < STEP_THRESHOLD then
-        local offset = lipLeft + STEP_OFFSET
-        stepX = tch.x + offset
-        goalX = goalX + offset
-    elseif lipBottom >= 0 and lipBottom < STEP_THRESHOLD then
-        local offset = lipBottom + STEP_OFFSET
-        stepY = tch.y - offset
-        goalY = goalY - offset
-    elseif lipTop >= 0 and lipTop < STEP_THRESHOLD then
-        local offset = lipTop + STEP_OFFSET
-        stepY = tch.y + offset
-        goalY = goalY + offset
+        if lipRight >= 0 and lipRight < STEP_THRESHOLD then
+            local offset = lipRight + STEP_OFFSET
+            stepX = tch.x - offset
+            goalX = goalX - offset
+        elseif lipLeft >= 0 and lipLeft < STEP_THRESHOLD then
+            local offset = lipLeft + STEP_OFFSET
+            stepX = tch.x + offset
+            goalX = goalX + offset
+        elseif lipBottom >= 0 and lipBottom < STEP_THRESHOLD then
+            local offset = lipBottom + STEP_OFFSET
+            stepY = tch.y - offset
+            goalY = goalY - offset
+        elseif lipTop >= 0 and lipTop < STEP_THRESHOLD then
+            local offset = lipTop + STEP_OFFSET
+            stepY = tch.y + offset
+            goalY = goalY + offset
+        end
+    end
+
+    -- Vertical collision (hit floor/ceiling)
+    if normal.y ~= 0 then
+        local lipRight = (tch.x + w) - other.x
+        local lipLeft = (other.x + other.w) - tch.x
+        local lipBottom = (tch.y + h) - other.y
+        local lipTop = (other.y + other.h) - tch.y
+
+        if lipRight >= 0 and lipRight < STEP_THRESHOLD then
+            local offset = lipRight + STEP_OFFSET
+            stepX = tch.x - offset
+            goalX = goalX - offset
+        elseif lipLeft >= 0 and lipLeft < STEP_THRESHOLD then
+            local offset = lipLeft + STEP_OFFSET
+            stepX = tch.x + offset
+            goalX = goalX + offset
+        elseif lipBottom >= 0 and lipBottom < STEP_THRESHOLD then
+            local offset = lipBottom + STEP_OFFSET
+            stepY = tch.y - offset
+            goalY = goalY - offset
+        elseif lipTop >= 0 and lipTop < STEP_THRESHOLD then
+            local offset = lipTop + STEP_OFFSET
+            stepY = tch.y + offset
+            goalY = goalY + offset
+        end
     end
 
     local cols, len = bumpWorld:project(col.item, stepX, stepY, w, h, goalX, goalY, filter)

@@ -44,10 +44,22 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function dash.update(player, dt)
-	if dash.duration > 0 then
-		player.vy = player.is_grounded and common.GRAVITY or 0
-	end
 	player.vx = player.direction * player.dash_speed
+
+	if dash.duration > 0 then
+		if player.is_grounded then
+			local is_slope = math.abs(player.ground_normal.x) > 0.01
+			if is_slope then
+				local tangent = common.get_ground_tangent(player)
+				player.vy = player.direction * player.dash_speed * (tangent.y / tangent.x)
+			else
+				player.vy = common.GRAVITY
+			end
+		else
+			-- Air/ceiling: horizontal only, collision handles vertical positioning
+			player.vy = 0
+		end
+	end
 
 	dash.duration = dash.duration - 1
 

@@ -86,28 +86,33 @@ function world.move(obj)
 	local dy = target_y - cur_y
 	if dy ~= 0 then
 		shape:move(0, dy)
+	end
 
-		for _ = 1, MAX_ITERATIONS do
-			local collisions = world.hc:collisions(shape)
-			local any_collision = false
+	-- Always check for Y collisions (needed for ceiling slopes during horizontal dash)
+	for _ = 1, MAX_ITERATIONS do
+		local collisions = world.hc:collisions(shape)
+		local any_collision = false
 
-			for other, sep in pairs(collisions) do
-				if other ~= shape and sep.y ~= 0 then
-					any_collision = true
-					if sep.y > 0 then
-						-- Ceiling: apply full separation to prevent sliding on angled ceilings
-						shape:move(sep.x, sep.y)
-						cols.ceiling = true
-					else
-						-- Ground: only apply Y to allow slope walking
-						shape:move(0, sep.y)
-						set_ground_from_sep(cols, sep)
+		for other, sep in pairs(collisions) do
+			if other ~= shape and sep.y ~= 0 then
+				any_collision = true
+				if sep.y > 0 then
+					-- Ceiling: apply full separation to prevent sliding on angled ceilings
+					shape:move(sep.x, sep.y)
+					cols.ceiling = true
+					local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+					if len > 0 then
+						cols.ceiling_normal = { x = sep.x / len, y = sep.y / len }
 					end
+				else
+					-- Ground: only apply Y to allow slope walking
+					shape:move(0, sep.y)
+					set_ground_from_sep(cols, sep)
 				end
 			end
-
-			if not any_collision then break end
 		end
+
+		if not any_collision then break end
 	end
 
 	-- GROUND PROBE: If ground not detected, probe downward to find nearby ground

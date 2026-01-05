@@ -8,7 +8,7 @@ local audio = require('audio')
 local wall_slide = { name = "wall_slide" }
 
 local WALL_SLIDE_SPEED = 2
-local WALL_SLIDE_GRACE_FRAMES = 3
+local WALL_SLIDE_GRACE_FRAMES = 5
 
 wall_slide.grace_frames = 0
 

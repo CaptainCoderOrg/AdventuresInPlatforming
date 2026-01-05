@@ -27,6 +27,12 @@ for i = 0,8 do
     table.insert(audio.landing, canvas.assets.load_sound(string.format("landing_%d", i), string.format("sfx/footsteps/%d.ogg", i)))
 end
 
+local attack_channel = "attack_channel"
+audio.sword = {}
+for i = 0,5 do
+    table.insert(audio.sword, canvas.assets.load_sound(string.format("sword_%d", i), string.format("sfx/attack/sword_%d.ogg", i)))
+end
+
 local sound_check_channel = "sound_check_channel"
 
 local current_track = nil
@@ -93,6 +99,15 @@ end
 
 audio.play_air_jump_sound = audio.play_jump_sound
 audio.play_wall_jump_sound = audio.play_jump_sound
+
+local next_sword_sound = 1
+function audio.play_sword_sound()
+    if canvas.channel_is_playing(attack_channel) then return end
+    local sfx = audio.sword[next_sword_sound]
+    next_sword_sound = next_sword_sound + 1
+    if next_sword_sound > #audio.sword then next_sword_sound = 1 end
+    canvas.channel_play(attack_channel, sfx, { volume = REPEAT_SOUND_VOLUME, loop = false })
+end
 
 --- Play sound check sample (skips if already playing)
 function audio.play_sound_check()

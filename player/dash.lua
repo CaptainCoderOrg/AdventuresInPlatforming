@@ -39,6 +39,10 @@ function dash.input(player)
 	else
 		if common.handle_air_jump(player) then dash.duration = 0 end
 	end
+
+	if common.handle_attack(player) then
+		dash.duration = 0
+	end
 end
 
 --- Updates dash state. Moves at dash speed until duration expires.

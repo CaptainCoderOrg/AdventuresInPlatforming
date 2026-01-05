@@ -20,9 +20,16 @@ common.animations = {
 	JUMP = sprites.create_animation("player_jump_up", 3, 6),
 	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4),
 	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, 6),
+	ATTACK_0 = sprites.create_animation("player_attack_0", 5, 3, 2),
 }
 
 -- Helper functions
+
+function common.handle_attack(player)
+	if controls.attack_pressed() and player.attack_cooldown <= 0 then
+		player.set_state(player.states.attack)
+	end
+end
 
 --- Applies gravity to the player and transitions to air state if not grounded.
 --- @param player table The player object

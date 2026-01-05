@@ -14,6 +14,7 @@ local states = {
 	air = require('player.air'),
 	wall_slide = require('player.wall_slide'),
 	wall_jump = require('player.wall_jump'),
+	attack = require('player.attack'),
 }
 
 -- Expose states for direct reference
@@ -25,7 +26,7 @@ player.vx = 0
 player.vy = 0
 player.y = 2
 player.is_grounded = true
-player.box = { w = 0.7, h = 0.75, x = 0.15, y = 0.25 }
+player.box = { w = 0.7, h = 0.85, x = 0.15, y = 0.15 }
 player.speed = 6
 player.air_speed = player.speed
 player.coyote_frames = 0
@@ -38,6 +39,8 @@ player.wall_direction = 0
 player.wall_jump_dir = 0
 player.ground_normal = { x = 0, y = -1 }
 player.state = nil
+
+player.attack_cooldown = 0
 
 player.dash_cooldown = 0
 player.dash_speed = player.speed * 3
@@ -100,6 +103,7 @@ function player.update()
 
 	player.animation.flipped = player.direction
 	player.dash_cooldown = player.dash_cooldown - 1
+	player.attack_cooldown = player.attack_cooldown - 1
 
 	player.x = player.x + (player.vx * dt)
 	player.y = player.y + (player.vy * dt)

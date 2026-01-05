@@ -28,6 +28,7 @@ end
 function wall_jump.input(player)
 	common.handle_dash(player)
 	common.handle_air_jump(player)
+	common.handle_attack(player)
 end
 
 --- Updates wall jump. Applies gravity while maintaining locked horizontal direction.

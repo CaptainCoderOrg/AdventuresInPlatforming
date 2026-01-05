@@ -24,13 +24,22 @@ canvas.assets.load_image("player_jump_up", "sprites/character/jump_up.png")
 canvas.assets.load_image("player_double_jump", "sprites/character/double_jump.png")
 canvas.assets.load_image("player_wall_slide", "sprites/character/wall_slide.png")
 
+canvas.assets.load_image("player_attack_0", "sprites/character/attack_0.png")
+
 function sprites.draw_animation(anim, x, y)
-	local x_adjust = 0
-	if anim.flipped == 1 then x_adjust = sprites.tile_size end
+	local x_adjust
+	if anim.flipped == 1 then 
+		x_adjust = sprites.tile_size * anim.width
+	else -- Facing left
+		x_adjust = -(sprites.tile_size * (anim.width-1)) 
+	end
 	canvas.save()
 	canvas.translate(x + x_adjust, y)
 	canvas.scale(-anim.flipped, 1)
-	canvas.draw_image(anim.name, 0, 0, sprites.tile_size, sprites.tile_size, anim.frame*TILE, 0, TILE, TILE)
+	canvas.draw_image(anim.name, 0, 0, 
+					  sprites.tile_size*anim.width, sprites.tile_size, 
+					  anim.frame*TILE*anim.width, 0, 
+					  TILE*anim.width, TILE)
 	canvas.restore()
 end
 
@@ -49,14 +58,16 @@ function sprites.draw_tile(tx, ty, dx, dy)
 end
 
 --- Creates a sprite animation specifying the sprite_id, number of frames, speed (delay between frames)
-function sprites.create_animation(name, frame_count, speed)
+function sprites.create_animation(name, frame_count, speed, width)
 	if speed == nil then speed = ANIM_SPEED end
+	if width == nil then width = 1 end
     return {
         name = name,
         frame_count = frame_count,
         frame = 0,
         flipped = 1,
 		speed = speed,
+		width = width,
     }
 end
 

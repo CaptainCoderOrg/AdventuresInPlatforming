@@ -28,6 +28,7 @@ function run.input(player)
 	else
 		player.set_state(player.states.idle)
 	end
+	common.handle_attack(player)
 	common.handle_dash(player)
 	common.handle_jump(player)
 end

@@ -23,6 +23,7 @@ function idle.input(player)
 		player.direction = 1
 		player.set_state(player.states.run)
 	end
+	common.handle_attack(player)
 	common.handle_dash(player)
 	common.handle_jump(player)
 end

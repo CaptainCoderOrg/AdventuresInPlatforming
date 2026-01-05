@@ -51,6 +51,7 @@ function air.input(player)
 	else
 		player.vx = 0
 	end
+	common.handle_attack(player)
 	common.handle_dash(player)
 	common.handle_air_jump(player)
 end

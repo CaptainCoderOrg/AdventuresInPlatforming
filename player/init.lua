@@ -39,6 +39,7 @@ player.wall_direction = 0
 player.wall_jump_dir = 0
 player.ground_normal = { x = 0, y = -1 }
 player.state = nil
+player.attacks = 3
 
 player.attack_cooldown = 0
 

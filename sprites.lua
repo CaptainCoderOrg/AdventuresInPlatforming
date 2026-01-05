@@ -25,6 +25,8 @@ canvas.assets.load_image("player_double_jump", "sprites/character/double_jump.pn
 canvas.assets.load_image("player_wall_slide", "sprites/character/wall_slide.png")
 
 canvas.assets.load_image("player_attack_0", "sprites/character/attack_0.png")
+canvas.assets.load_image("player_attack_1", "sprites/character/attack_1.png")
+canvas.assets.load_image("player_attack_2", "sprites/character/attack_2.png")
 
 function sprites.draw_animation(anim, x, y)
 	local x_adjust

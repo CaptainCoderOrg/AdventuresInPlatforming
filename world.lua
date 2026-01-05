@@ -70,8 +70,11 @@ function world.move(obj)
 					if math.abs(sep.x) > math.abs(sep.y) then
 						any_collision = true
 						shape:move(sep.x, 0)
-						if sep.x > 0 then cols.wall_left = true end
-						if sep.x < 0 then cols.wall_right = true end
+						-- Skip wall flags for slopes to prevent wall sliding on them
+						if not (other.owner and other.owner.is_slope) then
+							if sep.x > 0 then cols.wall_left = true end
+							if sep.x < 0 then cols.wall_right = true end
+						end
 					end
 				end
 			end

@@ -7,6 +7,7 @@ local world = common.world
 local walls = {}
 
 walls.tiles = {}
+walls.solo_tiles = {}
 walls.colliders = {}
 walls.tile_to_collider = {}
 
@@ -329,6 +330,14 @@ function walls.add_tile(x, y)
 	walls.tiles[key] = { x = x, y = y }
 end
 
+--- Adds a solo tile that won't merge with adjacent tiles.
+--- @param x number
+--- @param y number
+function walls.add_solo_tile(x, y)
+	local key = x .. "," .. y
+	walls.solo_tiles[key] = { x = x, y = y }
+end
+
 --- Builds colliders from all added tiles.
 --- @param merge? boolean Whether to merge adjacent tiles (default true)
 function walls.build_colliders(merge)
@@ -348,6 +357,20 @@ function walls.build_colliders(merge)
 	else
 		local colliders = create_colliders(walls.tiles)
 		register_colliders(colliders)
+	end
+
+	-- Add solo tiles as individual 1x1 colliders (never merged)
+	for _, tile in pairs(walls.solo_tiles) do
+		local col = {
+			x = tile.x,
+			y = tile.y,
+			box = { x = 0, y = 0, w = 1, h = 1 },
+			tiles = { tile },
+			is_polygon = false
+		}
+		table.insert(walls.colliders, col)
+		world.add_collider(col)
+		walls.tile_to_collider[tile.x .. "," .. tile.y] = col
 	end
 end
 
@@ -396,6 +419,9 @@ function walls.draw()
 	for _, tile in pairs(walls.tiles) do
 		sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
 	end
+	for _, tile in pairs(walls.solo_tiles) do
+		sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+	end
 
 	if config.bounding_boxes then
 		canvas.set_color("#00ff1179")
@@ -427,6 +453,7 @@ end
 --- Clears all wall data (for level reloading).
 function walls.clear()
 	walls.tiles = {}
+	walls.solo_tiles = {}
 	for _, col in ipairs(walls.colliders) do
 		world.remove_collider(col)
 	end

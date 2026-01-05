@@ -14,6 +14,8 @@ function platforms.load_level(level_data)
 			local ch = row:sub(x, x)
 			if ch == "#" then
 				platforms.walls.add_tile(x - 1, y - 1)
+			elseif ch == "X" then
+				platforms.walls.add_solo_tile(x - 1, y - 1)
 			elseif ch == "/" then
 				platforms.slopes.add_tile(x - 1, y - 1, "/")
 			elseif ch == "\\" then

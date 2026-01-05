@@ -60,9 +60,10 @@ function sprites.draw_tile(tx, ty, dx, dy)
 end
 
 --- Creates a sprite animation specifying the sprite_id, number of frames, speed (delay between frames)
-function sprites.create_animation(name, frame_count, speed, width)
+function sprites.create_animation(name, frame_count, speed, width, loop)
 	if speed == nil then speed = ANIM_SPEED end
 	if width == nil then width = 1 end
+	if loop == nil then loop = true end
     return {
         name = name,
         frame_count = frame_count,
@@ -70,6 +71,7 @@ function sprites.create_animation(name, frame_count, speed, width)
         flipped = 1,
 		speed = speed,
 		width = width,
+		loop = loop,
     }
 end
 

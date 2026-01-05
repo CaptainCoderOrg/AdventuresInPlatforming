@@ -115,7 +115,10 @@ function player.update()
 
 	t = t + 1
 	if t % player.animation.speed == 0 then
-		player.animation.frame = (player.animation.frame + 1) % player.animation.frame_count
+		player.animation.frame = player.animation.frame + 1
+		if player.animation.frame >= player.animation.frame_count - 1 then
+			player.animation.frame = player.animation.loop and 0 or player.animation.frame_count - 1
+		end
 	end
 end
 

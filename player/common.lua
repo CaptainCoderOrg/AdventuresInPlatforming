@@ -20,9 +20,9 @@ common.animations = {
 	JUMP = sprites.create_animation("player_jump_up", 3, 6),
 	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4),
 	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, 6),
-	ATTACK_0 = sprites.create_animation("player_attack_0", 5, 3, 2),
-	ATTACK_1 = sprites.create_animation("player_attack_1", 5, 4, 2),
-	ATTACK_2 = sprites.create_animation("player_attack_2", 5, 5, 2),
+	ATTACK_0 = sprites.create_animation("player_attack_0", 5, 3, 2, false),
+	ATTACK_1 = sprites.create_animation("player_attack_1", 5, 4, 2, false),
+	ATTACK_2 = sprites.create_animation("player_attack_2", 5, 5, 2, false),
 }
 
 -- Helper functions

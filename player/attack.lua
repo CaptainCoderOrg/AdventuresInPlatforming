@@ -6,8 +6,8 @@ local audio = require('audio')
 
 local attack = { name = "attack" }
 
-local ATTACK_FRAMES = common.animations.ATTACK_0.frame_count * common.animations.ATTACK_0.speed
-local ATTACK_COOLDOWN = ATTACK_FRAMES
+local ATTACK_COOLDOWN = 12
+local HOLD_FRAMES = 4
 
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
 
@@ -15,7 +15,7 @@ local function next_animation(player)
     local animation = attack_animations[attack.next_anim_ix]
 	animation.frame = 0
 	player.animation = animation
-	attack.remaining_frames = animation.frame_count * animation.speed
+	attack.remaining_frames = (animation.frame_count * animation.speed)
     audio.play_sword_sound()
     attack.queued = false
     attack.next_anim_ix = attack.next_anim_ix + 1
@@ -50,7 +50,7 @@ function attack.update(player, dt)
         if attack.queued and player.attacks > attack.count then
             attack.count = attack.count + 1
             next_animation(player)
-        else
+        elseif attack.remaining_frames <= -HOLD_FRAMES then
             -- TODO: Decide actual state. Are we falling? Are we moving?
             player.set_state(player.states.idle)
             player.attack_cooldown = ATTACK_COOLDOWN

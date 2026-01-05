@@ -20,6 +20,7 @@ function dash.start(player)
 	dash.direction = player.direction
 	dash.duration = DASH_FRAMES
 	player.vy = 0
+	player.has_dash = false
 	player.animation = common.animations.DASH
 	audio.play_sfx(audio.dash, 0.15)
 end

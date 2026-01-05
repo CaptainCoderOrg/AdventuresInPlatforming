@@ -46,6 +46,7 @@ function common.check_ground(player, cols)
 		player.ground_normal = cols.ground_normal
 		player.coyote_frames = 0
 		player.jumps = player.max_jumps
+		player.has_dash = true
 		player.vy = 0
 		player.is_air_jumping = false
 	else
@@ -103,7 +104,7 @@ end
 --- @param player table The player object
 --- @return boolean True if dash was initiated
 function common.handle_dash(player)
-	if player.dash_cooldown > 0 then return false end
+	if player.dash_cooldown > 0 or not player.has_dash then return false end
 	if controls.dash_pressed() then
 		player.set_state(player.states.dash)
 		return true

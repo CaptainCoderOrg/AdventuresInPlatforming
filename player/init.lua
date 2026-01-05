@@ -41,6 +41,7 @@ player.state = nil
 
 player.dash_cooldown = 0
 player.dash_speed = player.speed * 3
+player.has_dash = true
 
 player.animation = common.animations.IDLE
 player.animation.flipped = 1

@@ -44,7 +44,6 @@ end
 
 function attack.update(player, dt)
 	player.vx = 0
-	-- common.handle_gravity(player)
     player.vy = 0
 	attack.remaining_frames = attack.remaining_frames - 1
 	if attack.remaining_frames <= 0 then

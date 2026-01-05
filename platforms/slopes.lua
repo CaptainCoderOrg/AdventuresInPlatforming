@@ -19,14 +19,6 @@ function slopes.add_tile(x, y, slope_type)
 	slopes.tiles[key] = { x = x, y = y, slope_type = slope_type }
 end
 
---- Checks if a wall exists at the given tile coordinates.
---- @param x number Tile X coordinate
---- @param y number Tile Y coordinate
---- @return boolean
-local function has_wall_at(x, y)
-	return walls.tiles[x .. "," .. y] ~= nil
-end
-
 --- Finds all connected groups of slope tiles using flood fill.
 --- Uses 4-directional connectivity, only groups tiles of the same type.
 --- @param tiles table<string, table> The slope tiles lookup
@@ -145,8 +137,8 @@ local function check_adjacency(min_x, min_y, max_x, max_y)
 	return adjacency
 end
 
---- Gets triangle vertices based on slope type and wall hints.
---- Character type determines hypotenuse direction, walls determine filled side.
+--- Gets triangle vertices based on slope type and neighbor hints.
+--- Character type determines hypotenuse direction, neighbors determine filled side.
 --- @param min_x number
 --- @param min_y number
 --- @param max_x number
@@ -209,16 +201,13 @@ function slopes.build_colliders()
 		local adjacency = check_adjacency(min_x, min_y, max_x, max_y)
 		local vertices = get_triangle_vertices(min_x, min_y, max_x, max_y, slope_type, adjacency)
 
-		if #vertices >= 3 then
-			local col = {
-				bounds = { min_x = min_x, min_y = min_y, max_x = max_x, max_y = max_y },
-				vertices = vertices,
-				tiles = group,
-				is_slope = true,
-			}
-			table.insert(slopes.colliders, col)
-			world.add_polygon(col, vertices)
-		end
+		local col = {
+			bounds = { min_x = min_x, min_y = min_y, max_x = max_x, max_y = max_y },
+			vertices = vertices,
+			is_slope = true,
+		}
+		table.insert(slopes.colliders, col)
+		world.add_polygon(col, vertices)
 	end
 end
 
@@ -228,30 +217,24 @@ function slopes.draw()
 
 	for _, col in ipairs(slopes.colliders) do
 		local verts = col.vertices
-		if #verts >= 3 then
-			-- Save canvas state before clipping
-			canvas.save()
 
-			-- Create triangular clipping path
-			canvas.begin_path()
-			canvas.move_to(verts[1].x * ts, verts[1].y * ts)
-			for i = 2, #verts do
-				canvas.line_to(verts[i].x * ts, verts[i].y * ts)
-			end
-			canvas.close_path()
-			canvas.clip()
-
-			-- Draw wall sprites for each tile in bounding box
-			local bounds = col.bounds
-			for y = bounds.min_y, bounds.max_y do
-				for x = bounds.min_x, bounds.max_x do
-					sprites.draw_tile(4, 3, x * ts, y * ts)
-				end
-			end
-
-			-- Restore canvas state (removes clipping)
-			canvas.restore()
+		canvas.save()
+		canvas.begin_path()
+		canvas.move_to(verts[1].x * ts, verts[1].y * ts)
+		for i = 2, #verts do
+			canvas.line_to(verts[i].x * ts, verts[i].y * ts)
 		end
+		canvas.close_path()
+		canvas.clip()
+
+		local bounds = col.bounds
+		for y = bounds.min_y, bounds.max_y do
+			for x = bounds.min_x, bounds.max_x do
+				sprites.draw_tile(4, 3, x * ts, y * ts)
+			end
+		end
+
+		canvas.restore()
 	end
 
 	-- Debug drawing

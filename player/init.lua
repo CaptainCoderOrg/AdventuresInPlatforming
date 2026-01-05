@@ -62,14 +62,13 @@ end
 --- Does nothing if already in the specified state.
 --- @param state table A state object with start, input, update, draw functions
 function player.set_state(state)
+	if player.state == state then return end
 	assert(type(state) == "table" and
 	       type(state.start) == "function" and
 	       type(state.input) == "function" and
 	       type(state.update) == "function" and
 	       type(state.draw) == "function",
 	       "Invalid state: must have start, input, update, draw functions")
-
-	if player.state == state then return end
 	player.state = state
 	player.state.start(player)
 	t = 0

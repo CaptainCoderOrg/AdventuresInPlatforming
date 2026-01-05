@@ -56,8 +56,8 @@ function common.check_ground(player, cols)
 		end
 	end
 
-	-- Ceiling detection
-	if cols.ceiling then
+	-- Ceiling detection - only stop upward velocity, don't affect falling
+	if cols.ceiling and player.vy < 0 then
 		player.vy = 0
 	end
 

@@ -94,9 +94,15 @@ function world.move(obj)
 			for other, sep in pairs(collisions) do
 				if other ~= shape and sep.y ~= 0 then
 					any_collision = true
-					shape:move(0, sep.y)
-					if sep.y < 0 then set_ground_from_sep(cols, sep) end
-					if sep.y > 0 then cols.ceiling = true end
+					if sep.y > 0 then
+						-- Ceiling: apply full separation to prevent sliding on angled ceilings
+						shape:move(sep.x, sep.y)
+						cols.ceiling = true
+					else
+						-- Ground: only apply Y to allow slope walking
+						shape:move(0, sep.y)
+						set_ground_from_sep(cols, sep)
+					end
 				end
 			end
 

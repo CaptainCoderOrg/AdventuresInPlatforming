@@ -2,6 +2,7 @@ local platforms = {}
 
 platforms.walls = require('platforms/walls')
 platforms.slopes = require('platforms/slopes')
+platforms.ladders = require('platforms/ladders')
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array
@@ -20,6 +21,8 @@ function platforms.load_level(level_data)
 				platforms.slopes.add_tile(x - 1, y - 1, "/")
 			elseif ch == "\\" then
 				platforms.slopes.add_tile(x - 1, y - 1, "\\")
+			elseif ch == "H" then
+				platforms.ladders.add_ladder(x - 1, y - 1)
 			elseif ch == "S" then
 				spawn = { x = x - 1, y = y - 1 }
 			end
@@ -39,6 +42,7 @@ end
 function platforms.draw()
 	platforms.walls.draw()
 	platforms.slopes.draw()
+	platforms.ladders.draw()
 end
 
 --- Clears all platform data (for level reloading).

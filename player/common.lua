@@ -44,6 +44,16 @@ function common.handle_gravity(player, max_speed)
 	end
 end
 
+function common.check_ladder(player, cols)
+	player.can_climb = false
+	for _, trigger in pairs(cols.triggers) do
+		if (trigger.owner.is_ladder) then
+			player.can_climb = true
+			return
+		end
+	end
+end
+
 --- Processes collision flags to update grounded state, wall contact, and coyote time.
 --- Uses separated X/Y collision pass results from world.move().
 --- @param player table The player object

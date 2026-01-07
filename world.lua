@@ -24,6 +24,9 @@ world.hc = HC:new(50 * sprites.tile_size)
 -- Maps game objects to their HC shapes
 world.shape_map = {}
 
+-- Maps game objects to their HC trigger shapes
+world.trigger_map = {}
+
 --- Adds a rectangular collider for an object.
 --- @param obj table Object with x, y, and box properties
 function world.add_collider(obj)
@@ -34,8 +37,23 @@ function world.add_collider(obj)
 	local ph = obj.box.h * ts
 
 	local shape = world.hc:rectangle(px, py, pw, ph)
+	shape.is_trigger = false
 	shape.owner = obj
 	world.shape_map[obj] = shape
+	return shape
+end
+
+function world.add_trigger_collider(obj)
+	local ts = sprites.tile_size
+	local px = (obj.x + obj.box.x) * ts
+	local py = (obj.y + obj.box.y) * ts
+	local pw = obj.box.w * ts
+	local ph = obj.box.h * ts
+
+	local shape = world.hc:rectangle(px, py, pw, ph)
+	shape.is_trigger = true
+	shape.owner = obj
+	world.trigger_map[obj] = shape
 	return shape
 end
 
@@ -48,7 +66,7 @@ function world.move(obj)
 	if not shape then return { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 } } end
 
 	local ts = sprites.tile_size
-	local cols = { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 } }
+	local cols = { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 }, triggers = {} }
 
 	-- Get current shape position
 	local x1, y1, _, _ = shape:bbox()
@@ -64,6 +82,10 @@ function world.move(obj)
 			local any_collision = false
 
 			for other, sep in pairs(collisions) do
+				if other.is_trigger then 
+					table.insert(cols.triggers, other)
+					goto skip_x_collision 
+				end
 				if other ~= shape and sep.x ~= 0 then
 					-- Only treat as wall if more horizontal than vertical (steeper than 45°)
 					-- Slopes (<=45°) should be handled by Y pass, not blocked by X pass
@@ -77,6 +99,7 @@ function world.move(obj)
 						end
 					end
 				end
+				::skip_x_collision::
 			end
 
 			if not any_collision then break end
@@ -97,6 +120,10 @@ function world.move(obj)
 		local any_collision = false
 
 		for other, sep in pairs(collisions) do
+			if other.is_trigger then 
+				table.insert(cols.triggers, other)
+				goto skip_y_collision 
+			end
 			if other ~= shape and sep.y ~= 0 then
 				any_collision = true
 				if sep.y > 0 then
@@ -113,6 +140,7 @@ function world.move(obj)
 					set_ground_from_sep(cols, sep)
 				end
 			end
+			::skip_y_collision::
 		end
 
 		if not any_collision then break end
@@ -126,12 +154,17 @@ function world.move(obj)
 		local found_ground = false
 
 		for other, sep in pairs(collisions) do
+			if other.is_trigger then
+				table.insert(cols.triggers, other)
+				goto skip_ground_collision --continue
+			end
 			if other ~= shape and sep.y < 0 then
 				found_ground = true
 				shape:move(0, sep.y)
 				set_ground_from_sep(cols, sep)
 				break
 			end
+			::skip_ground_collision::
 		end
 
 		if not found_ground then

@@ -25,6 +25,7 @@ player.vx = 0
 player.vy = 0
 player.y = 2
 player.is_grounded = true
+player.can_climb = false
 player.box = { w = 0.7, h = 0.85, x = 0.15, y = 0.15 }
 player.speed = 6
 player.air_speed = player.speed
@@ -111,6 +112,8 @@ function player.update()
 
 	-- Check for collisions
 	common.check_ground(player, cols)
+
+	common.check_ladder(player, cols)
 
 	t = t + 1
 	if t % player.animation.speed == 0 then

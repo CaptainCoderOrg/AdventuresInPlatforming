@@ -21,7 +21,11 @@ function debug.draw()
 
 
     local GROUNDED = "is_grounded: " .. tostring(player.is_grounded)
+    local POS = string.format("POS: %f.2, %f.2", player.x, player.y)
+    local CAN_CLIMB = "can_climb: " .. tostring(player.can_climb)
     canvas.draw_text(0, 0, GROUNDED)
+    canvas.draw_text(0, 24, POS)
+    canvas.draw_text(0, 48, CAN_CLIMB)
 
 
 end

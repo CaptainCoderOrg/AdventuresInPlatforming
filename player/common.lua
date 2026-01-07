@@ -20,6 +20,9 @@ common.animations = {
 	JUMP = sprites.create_animation("player_jump_up", 3, 6, 1, false),
 	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4),
 	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, 6, 1, false),
+	TURN = sprites.create_animation("player_turn", 4, 3, 1, false),
+	
+
 	CLIMB_UP = sprites.create_animation("player_climb_up", 6, 6),
 	CLIMB_DOWN = sprites.create_animation("player_climb_down", 6, 6),
 

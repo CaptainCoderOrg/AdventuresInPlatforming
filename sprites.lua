@@ -29,6 +29,7 @@ canvas.assets.load_image("player_fall", "sprites/character/fall.png")
 canvas.assets.load_image("player_jump_up", "sprites/character/jump_up.png")
 canvas.assets.load_image("player_double_jump", "sprites/character/double_jump.png")
 canvas.assets.load_image("player_wall_slide", "sprites/character/wall_slide.png")
+canvas.assets.load_image("player_turn", "sprites/character/turn.png")
 
 canvas.assets.load_image("player_attack_0", "sprites/character/attack_0.png")
 canvas.assets.load_image("player_attack_1", "sprites/character/attack_1.png")

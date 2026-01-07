@@ -7,6 +7,7 @@ local climb = { name = "climb" }
 -- Local animation state (independent of player.animation)
 local animation = common.animations.CLIMB_UP
 local frame_timer = 0
+local last_ladder = nil
 
 function climb.start(player)
 	animation = common.animations.CLIMB_UP
@@ -34,7 +35,14 @@ end
 
 function climb.input(player)
 	-- Left/Right: step off ladder
-	if controls.left_down() then
+	
+
+	-- Vertical movement
+	if controls.up_down() then
+		player.vy = -player.climb_speed
+	elseif controls.down_down() then
+		player.vy = player.climb_speed
+	elseif controls.left_down() then
 		player.direction = -1
 		player.is_climbing = false
 		player.set_state(player.states.run)
@@ -44,13 +52,6 @@ function climb.input(player)
 		player.is_climbing = false
 		player.set_state(player.states.run)
 		return
-	end
-
-	-- Vertical movement
-	if controls.up_down() then
-		player.vy = -player.climb_speed
-	elseif controls.down_down() then
-		player.vy = player.climb_speed
 	else
 		player.vy = 0
 	end
@@ -86,12 +87,22 @@ function climb.update(player, dt)
 		end
 	end
 
-	-- Exit if player left ladder area (fell off side)
+	-- Exit if player left ladder area
 	if not player.can_climb then
 		player.is_climbing = false
-		player.set_state(player.states.air)
+		-- If moving up, we exited at top - land on ladder top
+		if player.vy < 0 and last_ladder then
+			player.y = last_ladder.y - player.box.h - player.box.y + 0.2
+			player.vy = 0
+			player.set_state(player.states.idle)
+		else
+			player.set_state(player.states.air)
+		end
 		return
 	end
+
+	-- Remember ladder for when we exit at top
+	last_ladder = player.current_ladder
 
 	-- Reached bottom: climbing down and touching ground = stand on ground
 	if player.climb_touching_ground and controls.down_down() then
@@ -129,9 +140,6 @@ function climb.update(player, dt)
 			animation.frame = (animation.frame + 1) % animation.frame_count
 		end
 	else
-		-- Not moving: pause at frame 0
-		animation.frame = 0
-		frame_timer = 0
 	end
 end
 

@@ -125,8 +125,12 @@ function world.move(obj)
 				table.insert(cols.triggers, other)
 				goto skip_y_collision
 			end
-			-- One-way platform: ladder tops are pass-through from below, when pressing down, or when climbing
+			-- Detect ladder top collision before one-way platform check
+			-- This ensures standing_on_ladder_top works even when pressing down
 			if other.owner and other.owner.is_ladder_top then
+				cols.is_ladder_top = true
+				cols.ladder_from_top = other.owner.ladder
+				-- One-way platform: pass-through from below, when pressing down, or when climbing
 				if obj.vy < 0 or controls.down_down() or obj.is_climbing then
 					goto skip_y_collision
 				end
@@ -145,11 +149,6 @@ function world.move(obj)
 					-- Ground: only apply Y to allow slope walking
 					shape:move(0, sep.y)
 					set_ground_from_sep(cols, sep)
-					-- Check if standing on ladder top
-					if other.owner and other.owner.is_ladder_top then
-						cols.is_ladder_top = true
-						cols.ladder_from_top = other.owner.ladder
-					end
 				end
 			end
 			::skip_y_collision::

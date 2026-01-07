@@ -56,9 +56,13 @@ function common.handle_climb(player)
 		return  -- Don't allow up to enter climb from top
 	end
 	-- Entry from middle of ladder (up or down while overlapping ladder)
-	-- When grounded, only allow UP to enter climb (down when grounded = at bottom, should stay on ground)
+	-- Grounded + UP = start climbing from bottom
+	-- In air + DOWN = grab ladder while falling
+	-- In air + UP = grab ladder while jumping (but not at top, to prevent flicker)
+	local up_pressed_on_ground = controls.up_down() and player.is_grounded
 	local down_pressed_in_air = controls.down_down() and not player.is_grounded
-	if (controls.up_down() or down_pressed_in_air) and player.can_climb then
+	local up_pressed_in_air = controls.up_down() and not player.is_grounded and not player.on_ladder_top
+	if (up_pressed_on_ground or down_pressed_in_air or up_pressed_in_air) and player.can_climb then
 		player.set_state(player.states.climb)
 	end
 end
@@ -110,7 +114,14 @@ function common.check_ground(player, cols)
 		end
 	else
 		player.climb_touching_ground = false
-		player.standing_on_ladder_top = false
+		-- Check for ladder top even when ground collision was skipped (one-way platform)
+		if cols.is_ladder_top and cols.ladder_from_top then
+			player.standing_on_ladder_top = true
+			player.current_ladder = cols.ladder_from_top
+			player.can_climb = true
+		else
+			player.standing_on_ladder_top = false
+		end
 		player.coyote_frames = player.coyote_frames + 1
 		if player.is_grounded and player.coyote_frames > common.MAX_COYOTE then
 			player.is_grounded = false

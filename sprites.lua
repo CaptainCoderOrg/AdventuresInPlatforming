@@ -10,8 +10,12 @@ sprites.tile_size = TILE * SCALE
 
 canvas.assets.add_path("assets/")
 canvas.assets.load_image("tilemap", "images/tilemap_packed.png")
+local LADDER_TOP = "ladder_top"
 local LADDER_MID = "ladder_mid"
+local LADDER_BOTTOM = "ladder_bottom"
+canvas.assets.load_image(LADDER_TOP, "sprites/environment/ladder_top.png")
 canvas.assets.load_image(LADDER_MID, "sprites/environment/ladder_mid.png")
+canvas.assets.load_image(LADDER_BOTTOM, "sprites/environment/ladder_bottom.png")
 
 canvas.assets.load_image("dialogue_lg", "sprites/ui/dialogue-lg.png")
 canvas.assets.load_image("slider", "sprites/ui/fillable-area.png")
@@ -50,8 +54,9 @@ function sprites.draw_animation(anim, x, y)
 	canvas.restore()
 end
 
-function sprites.draw_ladder(dx, dy)
-	canvas.draw_image(LADDER_MID, dx, dy, TILE * SCALE, TILE * SCALE)
+function sprites.draw_ladder(dx, dy, sprite)
+	if sprite == nil then sprite = LADDER_MID end
+	canvas.draw_image(sprite, dx, dy, TILE * SCALE, TILE * SCALE)
 end
 
 function sprites.draw_tile(tx, ty, dx, dy)

@@ -47,6 +47,9 @@ function common.handle_gravity(player, max_speed)
 	end
 end
 
+--- Checks for ladder climb entry conditions and transitions to climb state.
+--- Entry points: standing on ladder top + down, grounded + up, in air + down/up.
+--- @param player table The player object
 function common.handle_climb(player)
 	-- Entry from top of ladder (down while standing on ladder top)
 	if player.standing_on_ladder_top and player.is_grounded then
@@ -67,6 +70,10 @@ function common.handle_climb(player)
 	end
 end
 
+--- Updates ladder-related player flags based on trigger collisions.
+--- Sets can_climb, current_ladder, on_ladder_top from overlapping ladder triggers.
+--- @param player table The player object
+--- @param cols table Collision results from world.move()
 function common.check_ladder(player, cols)
 	player.can_climb = false
 	player.current_ladder = nil

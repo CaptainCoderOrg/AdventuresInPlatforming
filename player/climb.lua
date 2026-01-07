@@ -4,11 +4,22 @@ local sprites = require('sprites')
 
 local climb = { name = "climb" }
 
--- Local animation state (independent of player.animation)
+-- Local state for climb animation (independent of player.animation)
 local animation = common.animations.CLIMB_UP
 local frame_timer = 0
-local last_ladder = nil
+local last_ladder = nil  -- Preserved for landing on ladder top when exiting
 
+--- Advances the local climb animation by one frame.
+local function advance_animation()
+	frame_timer = frame_timer + 1
+	if frame_timer >= animation.speed then
+		frame_timer = 0
+		animation.frame = (animation.frame + 1) % animation.frame_count
+	end
+end
+
+--- Initializes the climb state, setting velocity based on input direction.
+--- @param player table The player object
 function climb.start(player)
 	animation = common.animations.CLIMB_UP
 	animation.frame = 0
@@ -33,11 +44,10 @@ function climb.start(player)
 	end
 end
 
+--- Handles climb input: vertical movement, step off with left/right, jump, dash.
+--- @param player table The player object
 function climb.input(player)
-	-- Left/Right: step off ladder
-	
-
-	-- Vertical movement
+	-- Vertical movement (left/right exits to run state)
 	if controls.up_down() then
 		player.vy = -player.climb_speed
 	elseif controls.down_down() then
@@ -71,6 +81,9 @@ function climb.input(player)
 	end
 end
 
+--- Updates climb state: centering, exit conditions, and animation.
+--- @param player table The player object
+--- @param dt number Delta time
 function climb.update(player, dt)
 	player.is_grounded = false
 
@@ -114,37 +127,25 @@ function climb.update(player, dt)
 
 	-- Animation switching based on velocity
 	if player.vy < 0 then
-		-- Moving up
 		if animation ~= common.animations.CLIMB_UP then
 			animation = common.animations.CLIMB_UP
 			animation.frame = 0
 			frame_timer = 0
 		end
-		-- Advance animation
-		frame_timer = frame_timer + 1
-		if frame_timer >= animation.speed then
-			frame_timer = 0
-			animation.frame = (animation.frame + 1) % animation.frame_count
-		end
+		advance_animation()
 	elseif player.vy > 0 then
-		-- Moving down
 		if animation ~= common.animations.CLIMB_DOWN then
 			animation = common.animations.CLIMB_DOWN
 			animation.frame = 0
 			frame_timer = 0
 		end
-		-- Advance animation
-		frame_timer = frame_timer + 1
-		if frame_timer >= animation.speed then
-			frame_timer = 0
-			animation.frame = (animation.frame + 1) % animation.frame_count
-		end
-	else
+		advance_animation()
 	end
 end
 
+--- Renders the player using the local climb animation.
+--- @param player table The player object
 function climb.draw(player)
-	-- Use local animation, not player.animation
 	sprites.draw_animation(animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 

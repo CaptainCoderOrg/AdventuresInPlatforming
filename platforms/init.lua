@@ -32,10 +32,11 @@ function platforms.load_level(level_data)
 	return spawn
 end
 
---- Builds all colliders for walls and slopes.
+--- Builds all colliders for walls, slopes, and ladder tops.
 function platforms.build()
 	platforms.walls.build_colliders(true)
 	platforms.slopes.build_colliders()
+	platforms.ladders.build_colliders()
 end
 
 --- Draws all platforms (walls and slopes).

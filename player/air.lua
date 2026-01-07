@@ -54,6 +54,7 @@ function air.input(player)
 	common.handle_attack(player)
 	common.handle_dash(player)
 	common.handle_air_jump(player)
+	common.handle_climb(player)
 end
 
 --- Renders the player with current air animation (jump, air jump, or fall).

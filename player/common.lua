@@ -20,6 +20,9 @@ common.animations = {
 	JUMP = sprites.create_animation("player_jump_up", 3, 6, 1, false),
 	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4),
 	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, 6, 1, false),
+	CLIMB_UP = sprites.create_animation("player_climb_up", 6, 6),
+	CLIMB_DOWN = sprites.create_animation("player_climb_down", 6, 6),
+
 	ATTACK_0 = sprites.create_animation("player_attack_0", 5, 3, 2, false),
 	ATTACK_1 = sprites.create_animation("player_attack_1", 5, 4, 2, false),
 	ATTACK_2 = sprites.create_animation("player_attack_2", 5, 5, 2, false),
@@ -44,13 +47,37 @@ function common.handle_gravity(player, max_speed)
 	end
 end
 
+function common.handle_climb(player)
+	-- Entry from top of ladder (down while standing on ladder top)
+	if player.standing_on_ladder_top and player.is_grounded then
+		if controls.down_down() then
+			player.set_state(player.states.climb)
+		end
+		return  -- Don't allow up to enter climb from top
+	end
+	-- Entry from middle of ladder (up or down while overlapping ladder)
+	-- When grounded, only allow UP to enter climb (down when grounded = at bottom, should stay on ground)
+	local down_pressed_in_air = controls.down_down() and not player.is_grounded
+	if (controls.up_down() or down_pressed_in_air) and player.can_climb then
+		player.set_state(player.states.climb)
+	end
+end
+
 function common.check_ladder(player, cols)
 	player.can_climb = false
+	player.current_ladder = nil
+	player.on_ladder_top = false
 	for _, trigger in pairs(cols.triggers) do
-		if (trigger.owner.is_ladder) then
+		if trigger.owner.is_ladder then
 			player.can_climb = true
-			return
+			player.current_ladder = trigger.owner
+			if trigger.owner.is_top then
+				player.on_ladder_top = true
+			end
 		end
+	end
+	if not player.can_climb then
+		player.is_climbing = false
 	end
 end
 
@@ -61,14 +88,29 @@ end
 function common.check_ground(player, cols)
 	-- Ground detection from Y collision pass
 	if cols.ground then
-		player.is_grounded = true
-		player.ground_normal = cols.ground_normal
-		player.coyote_frames = 0
-		player.jumps = player.max_jumps
-		player.has_dash = true
-		player.vy = 0
-		player.is_air_jumping = false
+		if not player.is_climbing then
+			player.is_grounded = true
+			player.ground_normal = cols.ground_normal
+			player.coyote_frames = 0
+			player.jumps = player.max_jumps
+			player.has_dash = true
+			player.vy = 0
+			player.is_air_jumping = false
+			player.climb_touching_ground = false  -- Clear when not climbing
+			-- Track if standing on ladder top
+			player.standing_on_ladder_top = cols.is_ladder_top or false
+			-- Set ladder info when standing on ladder top (for entering climb from top)
+			if cols.is_ladder_top and cols.ladder_from_top then
+				player.current_ladder = cols.ladder_from_top
+				player.can_climb = true
+			end
+		else
+			-- Climbing but touching ground - store for climb state to check
+			player.climb_touching_ground = true
+		end
 	else
+		player.climb_touching_ground = false
+		player.standing_on_ladder_top = false
 		player.coyote_frames = player.coyote_frames + 1
 		if player.is_grounded and player.coyote_frames > common.MAX_COYOTE then
 			player.is_grounded = false
@@ -96,7 +138,7 @@ end
 --- @param player table The player object
 --- @return boolean True if jump was performed
 function common.handle_jump(player)
-	if controls.jump_pressed() and player.is_grounded then
+	if controls.jump_pressed() and (player.is_grounded or player.is_climbing) then
 		player.vy = -common.JUMP_VELOCITY
 		player.jumps = player.jumps - 1
 		audio.play_jump_sound()

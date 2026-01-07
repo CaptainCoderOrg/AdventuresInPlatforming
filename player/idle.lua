@@ -26,6 +26,7 @@ function idle.input(player)
 	common.handle_attack(player)
 	common.handle_dash(player)
 	common.handle_jump(player)
+	common.handle_climb(player)
 end
 
 --- Updates idle state. Stops horizontal movement and applies gravity.

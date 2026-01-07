@@ -1,6 +1,16 @@
 local canvas = require("canvas")
 local controls = {}
 
+function controls.up_down()
+	return canvas.is_key_down(canvas.keys.W)
+		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_UP) > 0
+end
+
+function controls.down_down()
+	return canvas.is_key_down(canvas.keys.S)
+		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_DOWN) > 0
+end
+
 function controls.jump_pressed()
 	return canvas.is_key_pressed(canvas.keys.SPACE)
 		or canvas.is_gamepad_button_pressed(1, canvas.buttons.SOUTH)

@@ -14,6 +14,7 @@ local states = {
 	wall_slide = require('player.wall_slide'),
 	wall_jump = require('player.wall_jump'),
 	attack = require('player.attack'),
+	climb = require('player.climb'),
 }
 
 -- Expose states for direct reference
@@ -26,8 +27,14 @@ player.vy = 0
 player.y = 2
 player.is_grounded = true
 player.can_climb = false
+player.is_climbing = false
+player.current_ladder = nil
+player.on_ladder_top = false
+player.standing_on_ladder_top = false
+player.climb_touching_ground = false
 player.box = { w = 0.7, h = 0.85, x = 0.15, y = 0.15 }
 player.speed = 6
+player.climb_speed = player.speed / 2
 player.air_speed = player.speed
 player.coyote_frames = 0
 player.direction = 1
@@ -49,6 +56,8 @@ player.has_dash = true
 
 player.animation = common.animations.IDLE
 player.animation.flipped = 1
+
+
 
 local t = 0
 
@@ -112,7 +121,6 @@ function player.update()
 
 	-- Check for collisions
 	common.check_ground(player, cols)
-
 	common.check_ladder(player, cols)
 
 	t = t + 1

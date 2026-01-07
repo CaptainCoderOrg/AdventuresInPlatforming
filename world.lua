@@ -1,5 +1,6 @@
 local HC = require('hc')
 local sprites = require('sprites')
+local controls = require('controls')
 
 local world = {}
 
@@ -120,9 +121,15 @@ function world.move(obj)
 		local any_collision = false
 
 		for other, sep in pairs(collisions) do
-			if other.is_trigger then 
+			if other.is_trigger then
 				table.insert(cols.triggers, other)
-				goto skip_y_collision 
+				goto skip_y_collision
+			end
+			-- One-way platform: ladder tops are pass-through from below, when pressing down, or when climbing
+			if other.owner and other.owner.is_ladder_top then
+				if obj.vy < 0 or controls.down_down() or obj.is_climbing then
+					goto skip_y_collision
+				end
 			end
 			if other ~= shape and sep.y ~= 0 then
 				any_collision = true
@@ -138,6 +145,11 @@ function world.move(obj)
 					-- Ground: only apply Y to allow slope walking
 					shape:move(0, sep.y)
 					set_ground_from_sep(cols, sep)
+					-- Check if standing on ladder top
+					if other.owner and other.owner.is_ladder_top then
+						cols.is_ladder_top = true
+						cols.ladder_from_top = other.owner.ladder
+					end
 				end
 			end
 			::skip_y_collision::
@@ -148,7 +160,8 @@ function world.move(obj)
 
 	-- GROUND PROBE: If ground not detected, probe downward to find nearby ground
 	-- This allows slope movement (moving up) while maintaining ground contact
-	if not cols.ground then
+	-- Skip when climbing to allow upward movement on ladders
+	if not cols.ground and not obj.is_climbing then
 		shape:move(0, GROUND_PROBE_DISTANCE)
 		local collisions = world.hc:collisions(shape)
 		local found_ground = false

@@ -1,3 +1,4 @@
+local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
@@ -69,7 +70,8 @@ function climb.input(player)
 	-- Jump off ladder
 	if controls.jump_pressed() then
 		player.is_climbing = false
-		common.handle_jump(player)
+		player.vy = -common.AIR_JUMP_VELOCITY
+		audio.play_jump_sound()
 		player.set_state(player.states.air)
 		return
 	end

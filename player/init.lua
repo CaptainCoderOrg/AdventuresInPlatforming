@@ -3,7 +3,6 @@ local sprites = require('sprites')
 local config = require('config')
 local world = require('world')
 local common = require('player.common')
-
 local player = {}
 
 -- Load all states

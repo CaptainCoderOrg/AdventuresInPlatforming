@@ -1,4 +1,4 @@
-local HC = require('APIS.hc')
+local HC = require('hc')
 local sprites = require('sprites')
 
 local world = {}

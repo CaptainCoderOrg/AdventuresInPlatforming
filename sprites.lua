@@ -41,6 +41,8 @@ canvas.assets.load_image("player_attack_hammer", "sprites/character/attack_hamme
 canvas.assets.load_image("player_climb_up", "sprites/character/climb_up.png")
 canvas.assets.load_image("player_climb_down", "sprites/character/climb_down.png")
 
+canvas.assets.load_image("player_hit", "sprites/character/hit.png")
+
 function sprites.draw_animation(anim, x, y)
 	local x_adjust
 	if anim.flipped == 1 then 

@@ -31,10 +31,11 @@ common.animations = {
 	ATTACK_1 = sprites.create_animation("player_attack_1", 5, 4, 2, false),
 	ATTACK_2 = sprites.create_animation("player_attack_2", 5, 5, 2, false),
     HAMMER = sprites.create_animation("player_attack_hammer", 7, 9, 2, false),
+
+    HIT = sprites.create_animation("player_hit", 3, 4, 1, false),
 }
 
 -- Helper functions
-
 function common.handle_hammer(player)
     if controls.hammer_pressed() then
         player.set_state(player.states.hammer)
@@ -59,7 +60,9 @@ end
 function common.handle_gravity(player, max_speed)
 	max_speed = max_speed or common.MAX_FALL_SPEED
 	player.vy = math.min(max_speed, player.vy + common.GRAVITY)
-	if not player.is_grounded and player.state ~= player.states.block then
+	if not player.is_grounded and 
+           player.state ~= player.states.block and
+           player.state ~= player.states.hit then
 		player.set_state(player.states.air)
 	end
 end
@@ -85,6 +88,13 @@ function common.handle_climb(player)
 	if (up_pressed_on_ground or down_pressed_in_air or up_pressed_in_air) and player.can_climb then
 		player.set_state(player.states.climb)
 	end
+end
+
+function common.check_hit(player, cols)
+    local canvas = require('canvas')
+    if canvas.is_key_pressed(canvas.keys.Y) then
+        player.set_state(player.states.hit)
+    end
 end
 
 --- Updates ladder-related player flags based on trigger collisions.

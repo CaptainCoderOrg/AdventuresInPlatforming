@@ -17,6 +17,7 @@ local states = {
 	climb = require('player.climb'),
 	block = require('player.block'),
 	hammer = require('player.hammer'),
+	hit = require('player.hit')
 }
 
 -- Expose states for direct reference
@@ -124,6 +125,7 @@ function player.update()
 	-- Check for collisions
 	common.check_ground(player, cols)
 	common.check_ladder(player, cols)
+	common.check_hit(player, cols)
 
 	t = t + 1
 	if t % player.animation.speed == 0 then

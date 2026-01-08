@@ -30,9 +30,16 @@ common.animations = {
 	ATTACK_0 = sprites.create_animation("player_attack_0", 5, 3, 2, false),
 	ATTACK_1 = sprites.create_animation("player_attack_1", 5, 4, 2, false),
 	ATTACK_2 = sprites.create_animation("player_attack_2", 5, 5, 2, false),
+    HAMMER = sprites.create_animation("player_attack_hammer", 7, 9, 2, false),
 }
 
 -- Helper functions
+
+function common.handle_hammer(player)
+    if controls.hammer_pressed() then
+        player.set_state(player.states.hammer)
+    end
+end
 
 function common.handle_attack(player)
 	if controls.attack_pressed() and player.attack_cooldown <= 0 then

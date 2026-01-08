@@ -36,6 +36,7 @@ canvas.assets.load_image("player_turn", "sprites/character/turn.png")
 canvas.assets.load_image("player_attack_0", "sprites/character/attack_0.png")
 canvas.assets.load_image("player_attack_1", "sprites/character/attack_1.png")
 canvas.assets.load_image("player_attack_2", "sprites/character/attack_2.png")
+canvas.assets.load_image("player_attack_hammer", "sprites/character/attack_hammer.png")
 
 canvas.assets.load_image("player_climb_up", "sprites/character/climb_up.png")
 canvas.assets.load_image("player_climb_down", "sprites/character/climb_down.png")

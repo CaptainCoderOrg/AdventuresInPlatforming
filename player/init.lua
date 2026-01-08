@@ -16,6 +16,7 @@ local states = {
 	attack = require('player.attack'),
 	climb = require('player.climb'),
 	block = require('player.block'),
+	hammer = require('player.hammer'),
 }
 
 -- Expose states for direct reference

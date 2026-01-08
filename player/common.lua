@@ -14,6 +14,7 @@ common.MAX_FALL_SPEED = 20
 -- Animations
 common.animations = {
 	IDLE = sprites.create_animation("player_idle", 6, 12),
+    BLOCK = sprites.create_animation("player_block", 1, 1, 1, false),
 	RUN = sprites.create_animation("player_run", 8, 7),
 	DASH = sprites.create_animation("player_dash", 4, 3),
 	FALL = sprites.create_animation("player_fall", 3, 6),
@@ -39,13 +40,19 @@ function common.handle_attack(player)
 	end
 end
 
+function common.handle_block(player)
+    if controls.block_down() then
+		player.set_state(player.states.block)
+	end
+end
+
 --- Applies gravity to the player and transitions to air state if not grounded.
 --- @param player table The player object
 --- @param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
 function common.handle_gravity(player, max_speed)
 	max_speed = max_speed or common.MAX_FALL_SPEED
 	player.vy = math.min(max_speed, player.vy + common.GRAVITY)
-	if not player.is_grounded then
+	if not player.is_grounded and player.state ~= player.states.block then
 		player.set_state(player.states.air)
 	end
 end

@@ -53,6 +53,7 @@ function run.input(player)
 	player.direction = new_direction
 	previous_direction = new_direction
 
+	common.handle_block(player)
 	common.handle_attack(player)
 	common.handle_dash(player)
 	common.handle_jump(player)

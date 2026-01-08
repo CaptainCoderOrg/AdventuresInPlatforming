@@ -1,6 +1,11 @@
 local canvas = require("canvas")
 local controls = {}
 
+function controls.block_down()
+	return canvas.is_key_down(canvas.keys.U)
+		or canvas.get_gamepad_button(1, canvas.buttons.RT) > 0.1
+end
+
 function controls.up_down()
 	return canvas.is_key_down(canvas.keys.W)
 		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_UP) > 0

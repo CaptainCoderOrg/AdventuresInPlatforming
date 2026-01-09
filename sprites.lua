@@ -9,6 +9,8 @@ local SCALE = 2
 sprites.tile_size = TILE * SCALE
 
 canvas.assets.add_path("assets/")
+sprites.HEART = "heart"
+canvas.assets.load_image(sprites.HEART, "sprites/ui/heart.png")
 canvas.assets.load_image("tilemap", "images/tilemap_packed.png")
 local LADDER_TOP = "ladder_top"
 local LADDER_MID = "ladder_mid"

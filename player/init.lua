@@ -137,6 +137,16 @@ function Player:is_invincible()
 	return self.invincible_time > 0
 end
 
+function Player:health()
+	return math.max(0, self.max_health - self.damage)
+end
+
+function Player:take_damage(amount)
+	if amount <= 0 then return end
+	self.damage = self.damage + amount
+	self:set_state(self.states.hit)
+end
+
 --- Teleports the player to the specified position and updates collision grid.
 --- @param x number World x coordinate
 --- @param y number World y coordinate

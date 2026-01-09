@@ -93,7 +93,7 @@ end
 function common.check_hit(player, cols)
     local canvas = require('canvas')
     if canvas.is_key_pressed(canvas.keys.Y) and not player:is_invincible() then
-        player:set_state(player.states.hit)
+        player:take_damage(1)
     end
 end
 

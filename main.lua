@@ -46,7 +46,7 @@ local function draw()
     platforms.draw()
     player:draw()
     debug.draw(player)
-    hud.draw()
+    hud.draw(player)
 end
 
 local function init_level()

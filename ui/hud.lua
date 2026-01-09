@@ -2,6 +2,7 @@ local canvas = require("canvas")
 local slider = require("ui/slider")
 local button = require("ui/button")
 local audio = require("audio")
+local sprites = require("sprites")
 
 local hud = {}
 
@@ -230,11 +231,29 @@ local function draw_settings()
     canvas.set_global_alpha(1)
 end
 
+function hud.draw_player_health(player)
+    local heart_size = 32
+    local damage_size = 24
+    local damage_off = (heart_size - damage_size) / 2
+    local spacing_x = 32 + 4
+    local off_x = canvas.get_width() - (player.max_health * spacing_x)
+    local off_y = canvas.get_height() - 48
+    for ix = 1, player:health() do
+        canvas.draw_image(sprites.HEART, off_x + (ix - 1) * (32 + 4), off_y, heart_size, heart_size)
+    end
+    for ix = player:health() + 1, player.max_health do
+        canvas.draw_image(sprites.HEART, damage_off + off_x + (ix - 1) * (32 + 4), damage_off + off_y, damage_size, damage_size)
+    end
+end
+
 --- Draw all HUD elements
-function hud.draw()
+function hud.draw(player)
+    hud.draw_player_health(player)
     if fade_state ~= "closed" then
         draw_settings()
     end
 end
+
+
 
 return hud

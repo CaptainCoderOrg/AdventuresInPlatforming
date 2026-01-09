@@ -1,13 +1,12 @@
 local canvas = require('canvas')
 local config = require('config')
-local player = require('player')
 local debug = {}
 
-function debug.draw()
+function debug.draw(player)
     if not config.debug then return end
     local h = canvas.get_height()
     local w = canvas.get_width()
-    
+
     canvas.set_font_size(24)
     local FPS = string.format("FPS: %.0f", 1/canvas.get_delta())
     local metrics = canvas.get_text_metrics(FPS)

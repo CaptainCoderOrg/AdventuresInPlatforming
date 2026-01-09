@@ -12,21 +12,21 @@ local HOLD_FRAMES = 4
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
 
 local function next_animation(player)
-    local animation = attack_animations[attack.next_anim_ix]
+    local animation = attack_animations[player.attack_state.next_anim_ix]
 	animation.frame = 0
 	player.animation = animation
-	attack.remaining_frames = (animation.frame_count * animation.speed)
+	player.attack_state.remaining_frames = (animation.frame_count * animation.speed)
     audio.play_sword_sound()
-    attack.queued = false
-    attack.next_anim_ix = attack.next_anim_ix + 1
-    if attack.next_anim_ix > #attack_animations then
-        attack.next_anim_ix = 1
+    player.attack_state.queued = false
+    player.attack_state.next_anim_ix = player.attack_state.next_anim_ix + 1
+    if player.attack_state.next_anim_ix > #attack_animations then
+        player.attack_state.next_anim_ix = 1
     end
 end
 
 function attack.start(player)
-    attack.count = 1
-    attack.next_anim_ix = 1
+    player.attack_state.count = 1
+    player.attack_state.next_anim_ix = 1
     next_animation(player)
 end
 
@@ -37,7 +37,7 @@ function attack.input(player)
 		player.direction = 1
 	end
     if controls.attack_pressed() then
-        attack.queued = true
+        player.attack_state.queued = true
     end
 end
 
@@ -45,16 +45,16 @@ end
 function attack.update(player, dt)
 	player.vx = 0
     player.vy = 0
-	attack.remaining_frames = attack.remaining_frames - 1
-	if attack.remaining_frames <= 0 then
-        if attack.queued and player.attacks > attack.count then
-            attack.count = attack.count + 1
+	player.attack_state.remaining_frames = player.attack_state.remaining_frames - 1
+	if player.attack_state.remaining_frames <= 0 then
+        if player.attack_state.queued and player.attacks > player.attack_state.count then
+            player.attack_state.count = player.attack_state.count + 1
             next_animation(player)
-        elseif attack.remaining_frames <= -HOLD_FRAMES then
+        elseif player.attack_state.remaining_frames <= -HOLD_FRAMES then
             -- TODO: Decide actual state. Are we falling? Are we moving?
-            player.set_state(player.states.idle)
+            player:set_state(player.states.idle)
             player.attack_cooldown = ATTACK_COOLDOWN
-        end 
+        end
 	end
 end
 

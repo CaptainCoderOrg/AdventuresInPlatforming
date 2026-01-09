@@ -38,19 +38,19 @@ common.animations = {
 -- Helper functions
 function common.handle_hammer(player)
     if controls.hammer_pressed() then
-        player.set_state(player.states.hammer)
+        player:set_state(player.states.hammer)
     end
 end
 
 function common.handle_attack(player)
 	if controls.attack_pressed() and player.attack_cooldown <= 0 then
-		player.set_state(player.states.attack)
+		player:set_state(player.states.attack)
 	end
 end
 
 function common.handle_block(player)
     if controls.block_down() then
-		player.set_state(player.states.block)
+		player:set_state(player.states.block)
 	end
 end
 
@@ -63,7 +63,7 @@ function common.handle_gravity(player, max_speed)
 	if not player.is_grounded and 
            player.state ~= player.states.block and
            player.state ~= player.states.hit then
-		player.set_state(player.states.air)
+		player:set_state(player.states.air)
 	end
 end
 
@@ -74,7 +74,7 @@ function common.handle_climb(player)
 	-- Entry from top of ladder (down while standing on ladder top)
 	if player.standing_on_ladder_top and player.is_grounded then
 		if controls.down_down() then
-			player.set_state(player.states.climb)
+			player:set_state(player.states.climb)
 		end
 		return  -- Don't allow up to enter climb from top
 	end
@@ -86,14 +86,14 @@ function common.handle_climb(player)
 	local down_pressed_in_air = controls.down_down() and not player.is_grounded
 	local up_pressed_in_air = controls.up_down() and not player.is_grounded and not player.on_ladder_top
 	if (up_pressed_on_ground or down_pressed_in_air or up_pressed_in_air) and player.can_climb then
-		player.set_state(player.states.climb)
+		player:set_state(player.states.climb)
 	end
 end
 
 function common.check_hit(player, cols)
     local canvas = require('canvas')
     if canvas.is_key_pressed(canvas.keys.Y) then
-        player.set_state(player.states.hit)
+        player:set_state(player.states.hit)
     end
 end
 
@@ -212,7 +212,7 @@ end
 function common.handle_dash(player)
 	if player.dash_cooldown > 0 or not player.has_dash then return false end
 	if controls.dash_pressed() then
-		player.set_state(player.states.dash)
+		player:set_state(player.states.dash)
 		return true
 	end
 	return false

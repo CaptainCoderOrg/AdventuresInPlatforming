@@ -28,7 +28,7 @@ function block.input(player)
 		player.direction = 1
 	end
 	if not controls.block_down() then
-		player.set_state(player.states.idle)
+		player:set_state(player.states.idle)
 	end
 	common.handle_block(player)
 	

@@ -18,11 +18,11 @@ end
 function air.update(player, dt)
 	common.handle_gravity(player)
 	if player.is_grounded then
-		player.set_state(player.states.idle)
+		player:set_state(player.states.idle)
 		audio.play_landing_sound()
 	elseif player.has_wall_slide and player.vy > 0 and player.wall_direction ~= 0 then
 		if common.is_pressing_into_wall(player) then
-			player.set_state(player.states.wall_slide)
+			player:set_state(player.states.wall_slide)
 		end
 	elseif player.vy > 0 and player.animation ~= common.animations.FALL then
 		player.animation = common.animations.FALL

@@ -18,10 +18,10 @@ end
 function idle.input(player)
 	if controls.left_down() then
 		player.direction = -1
-		player.set_state(player.states.run)
+		player:set_state(player.states.run)
 	elseif controls.right_down() then
 		player.direction = 1
-		player.set_state(player.states.run)
+		player:set_state(player.states.run)
 	end
 	common.handle_hammer(player)
 	common.handle_block(player)

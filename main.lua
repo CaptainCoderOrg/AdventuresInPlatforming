@@ -1,5 +1,5 @@
 local canvas = require("canvas")
-local player = require("player")
+local Player = require("player")
 local platforms = require("platforms")
 local config = require("config")
 local sprites = require("sprites")
@@ -7,6 +7,8 @@ local audio = require("audio")
 local level1 = require("levels/level1")
 local debug = require("debugger")
 local hud = require("ui/hud")
+
+local player  -- Instance created in init_level
 
 -- Set canvas size
 canvas.set_size(config.width * sprites.tile_size, config.height * sprites.tile_size)
@@ -27,7 +29,7 @@ local function user_input()
     elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
         audio.play_music(audio.title_screen)
     end
-    player.input()
+    player:input()
 end
 
 -- Update game state
@@ -35,22 +37,23 @@ local function update()
     if hud.is_settings_open() then
         return
     end
-    player.update()
+    player:update()
 end
 
 -- Render the game
 local function draw()
     canvas.clear()
     platforms.draw()
-    player.draw()
-    debug.draw()
+    player:draw()
+    debug.draw(player)
     hud.draw()
 end
 
 local function init_level()
+    player = Player.new()
     local spawn = platforms.load_level(level1)
     if spawn then
-        player.set_position(spawn.x, spawn.y)
+        player:set_position(spawn.x, spawn.y)
     end
     platforms.build()
 end

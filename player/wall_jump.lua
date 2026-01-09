@@ -8,8 +8,6 @@ local wall_jump = { name = "wall_jump" }
 
 local WALL_JUMP_VELOCITY = common.GRAVITY * 12
 
-wall_jump.locked_direction = 0
-
 --- Called when entering wall jump. Applies upward and outward velocity away from wall.
 --- @param player table The player object
 function wall_jump.start(player)
@@ -17,7 +15,7 @@ function wall_jump.start(player)
 	player.vy = -WALL_JUMP_VELOCITY
 	player.vx = wall_dir * player.speed
 	player.direction = wall_dir
-	wall_jump.locked_direction = -wall_dir
+	player.wall_jump_state.locked_direction = -wall_dir
 	common.animations.JUMP.frame = 0
 	player.animation = common.animations.JUMP
 	audio.play_wall_jump_sound()
@@ -37,14 +35,14 @@ end
 function wall_jump.update(player, dt)
 	player.vy = math.min(common.MAX_FALL_SPEED, player.vy + common.GRAVITY)
 
-	player.vx = -wall_jump.locked_direction * player.speed
+	player.vx = -player.wall_jump_state.locked_direction * player.speed
 
 	if player.is_grounded then
-		player.set_state(player.states.idle)
-	elseif player.wall_direction == wall_jump.locked_direction then
-		player.set_state(player.states.wall_slide)
+		player:set_state(player.states.idle)
+	elseif player.wall_direction == player.wall_jump_state.locked_direction then
+		player:set_state(player.states.wall_slide)
 	elseif player.vy > 0 then
-		player.set_state(player.states.air)
+		player:set_state(player.states.air)
 	end
 end
 

@@ -5,26 +5,21 @@ local sprites = require('sprites')
 
 local climb = { name = "climb" }
 
--- Local state for climb animation (independent of player.animation)
-local animation = common.animations.CLIMB_UP
-local frame_timer = 0
-local last_ladder = nil  -- Preserved for landing on ladder top when exiting
-
 --- Advances the local climb animation by one frame.
-local function advance_animation()
-	frame_timer = frame_timer + 1
-	if frame_timer >= animation.speed then
-		frame_timer = 0
-		animation.frame = (animation.frame + 1) % animation.frame_count
+local function advance_animation(player)
+	player.climb_state.frame_timer = player.climb_state.frame_timer + 1
+	if player.climb_state.frame_timer >= player.climb_state.animation.speed then
+		player.climb_state.frame_timer = 0
+		player.climb_state.animation.frame = (player.climb_state.animation.frame + 1) % player.climb_state.animation.frame_count
 	end
 end
 
 --- Initializes the climb state, setting velocity based on input direction.
 --- @param player table The player object
 function climb.start(player)
-	animation = common.animations.CLIMB_UP
-	animation.frame = 0
-	frame_timer = 0
+	player.climb_state.animation = common.animations.CLIMB_UP
+	player.climb_state.animation.frame = 0
+	player.climb_state.frame_timer = 0
 	player.vx = 0
 	player.is_climbing = true
 
@@ -56,12 +51,12 @@ function climb.input(player)
 	elseif controls.left_down() then
 		player.direction = -1
 		player.is_climbing = false
-		player.set_state(player.states.run)
+		player:set_state(player.states.run)
 		return
 	elseif controls.right_down() then
 		player.direction = 1
 		player.is_climbing = false
-		player.set_state(player.states.run)
+		player:set_state(player.states.run)
 		return
 	else
 		player.vy = 0
@@ -72,7 +67,7 @@ function climb.input(player)
 		player.is_climbing = false
 		player.vy = -common.AIR_JUMP_VELOCITY
 		audio.play_jump_sound()
-		player.set_state(player.states.air)
+		player:set_state(player.states.air)
 		return
 	end
 
@@ -106,49 +101,49 @@ function climb.update(player, dt)
 	if not player.can_climb then
 		player.is_climbing = false
 		-- If moving up, we exited at top - land on ladder top
-		if player.vy < 0 and last_ladder then
-			player.y = last_ladder.y - player.box.h - player.box.y + 0.2
+		if player.vy < 0 and player.climb_state.last_ladder then
+			player.y = player.climb_state.last_ladder.y - player.box.h - player.box.y + 0.2
 			player.vy = 0
-			player.set_state(player.states.idle)
+			player:set_state(player.states.idle)
 		else
-			player.set_state(player.states.air)
+			player:set_state(player.states.air)
 		end
 		return
 	end
 
 	-- Remember ladder for when we exit at top
-	last_ladder = player.current_ladder
+	player.climb_state.last_ladder = player.current_ladder
 
 	-- Reached bottom: climbing down and touching ground = stand on ground
 	if player.climb_touching_ground and controls.down_down() then
 		player.is_climbing = false
 		player.is_grounded = true
-		player.set_state(player.states.idle)
+		player:set_state(player.states.idle)
 		return
 	end
 
 	-- Animation switching based on velocity
 	if player.vy < 0 then
-		if animation ~= common.animations.CLIMB_UP then
-			animation = common.animations.CLIMB_UP
-			animation.frame = 0
-			frame_timer = 0
+		if player.climb_state.animation ~= common.animations.CLIMB_UP then
+			player.climb_state.animation = common.animations.CLIMB_UP
+			player.climb_state.animation.frame = 0
+			player.climb_state.frame_timer = 0
 		end
-		advance_animation()
+		advance_animation(player)
 	elseif player.vy > 0 then
-		if animation ~= common.animations.CLIMB_DOWN then
-			animation = common.animations.CLIMB_DOWN
-			animation.frame = 0
-			frame_timer = 0
+		if player.climb_state.animation ~= common.animations.CLIMB_DOWN then
+			player.climb_state.animation = common.animations.CLIMB_DOWN
+			player.climb_state.animation.frame = 0
+			player.climb_state.frame_timer = 0
 		end
-		advance_animation()
+		advance_animation(player)
 	end
 end
 
 --- Renders the player using the local climb animation.
 --- @param player table The player object
 function climb.draw(player)
-	sprites.draw_animation(animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	sprites.draw_animation(player.climb_state.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return climb

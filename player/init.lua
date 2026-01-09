@@ -19,7 +19,8 @@ local states = {
 	climb = require('player.climb'),
 	block = require('player.block'),
 	hammer = require('player.hammer'),
-	hit = require('player.hit')
+	hit = require('player.hit'),
+	death = require('player.death')
 }
 
 -- Expose states for direct reference
@@ -144,7 +145,11 @@ end
 function Player:take_damage(amount)
 	if amount <= 0 then return end
 	self.damage = self.damage + amount
-	self:set_state(self.states.hit)
+	if self:health() > 0 then
+		self:set_state(self.states.hit)
+	else
+		self:set_state(self.states.death)
+	end
 end
 
 --- Teleports the player to the specified position and updates collision grid.

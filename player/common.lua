@@ -33,6 +33,7 @@ common.animations = {
     HAMMER = sprites.create_animation("player_attack_hammer", 7, 9, 2, false),
 
     HIT = sprites.create_animation("player_hit", 3, 4, 1, false),
+	DEATH = sprites.create_animation("player_death", 12, 6, 1, false),
 }
 
 -- Helper functions

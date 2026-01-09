@@ -6,6 +6,9 @@ local sprites = require("sprites")
 
 local hud = {}
 
+canvas.assets.add_path("assets/")
+canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
+
 --- 9-slice drawing utility for scalable UI panels
 local nine_slice = {}
 
@@ -246,9 +249,26 @@ function hud.draw_player_health(player)
     end
 end
 
+local function draw_game_over(player)
+    if player.is_dead then
+        canvas.set_font_family("menu_font")
+        canvas.set_font_size(52)
+        canvas.set_text_baseline("middle")
+        canvas.set_text_align("center")
+        local x = canvas.get_width() / 2
+        local y = canvas.get_height() / 2
+        canvas.set_color("#472727ff")
+        canvas.draw_text(x + 2, y + 2, "GAME OVER", {})
+        canvas.set_color("#ebe389ff")
+        canvas.draw_text(x, y, "GAME OVER", {})
+        canvas.set_text_align("left")
+    end
+end
+
 --- Draw all HUD elements
 function hud.draw(player)
     hud.draw_player_health(player)
+    draw_game_over(player)
     if fade_state ~= "closed" then
         draw_settings()
     end

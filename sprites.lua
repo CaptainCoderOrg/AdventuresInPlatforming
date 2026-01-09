@@ -22,7 +22,6 @@ canvas.assets.load_image(LADDER_BOTTOM, "sprites/environment/ladder_bottom.png")
 canvas.assets.load_image("dialogue_lg", "sprites/ui/dialogue-lg.png")
 canvas.assets.load_image("slider", "sprites/ui/fillable-area.png")
 canvas.assets.load_image("button", "sprites/ui/button.png")
-canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
 canvas.assets.load_image("player_block", "sprites/character/block.png")
 canvas.assets.load_image("player_idle", "sprites/character/idle.png")
@@ -34,6 +33,7 @@ canvas.assets.load_image("player_double_jump", "sprites/character/double_jump.pn
 canvas.assets.load_image("player_wall_slide", "sprites/character/wall_slide.png")
 canvas.assets.load_image("player_turn", "sprites/character/turn.png")
 canvas.assets.load_image("player_turn", "sprites/character/turn.png")
+canvas.assets.load_image("player_death", "sprites/character/death.png")
 
 canvas.assets.load_image("player_attack_0", "sprites/character/attack_0.png")
 canvas.assets.load_image("player_attack_1", "sprites/character/attack_1.png")

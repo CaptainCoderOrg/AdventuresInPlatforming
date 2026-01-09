@@ -30,6 +30,11 @@ Player.states = states
 function Player.new()
 	local self = setmetatable({}, Player)
 
+	-- Player Health
+	self.max_health = 3
+	self.damage = 0
+	self.invincible_time = 0
+
 	-- Position and velocity
 	self.x = 2
 	self.y = 2
@@ -128,6 +133,10 @@ function Player.new()
 	return self
 end
 
+function Player:is_invincible()
+	return self.invincible_time > 0
+end
+
 --- Teleports the player to the specified position and updates collision grid.
 --- @param x number World x coordinate
 --- @param y number World y coordinate
@@ -174,11 +183,12 @@ end
 --- Should be called once per frame.
 function Player:update()
 	local dt = canvas.get_delta()
+	self.invincible_time = math.max(0, self.invincible_time - dt)
 	self.state.update(self, dt)
 
 	self.animation.flipped = self.direction
-	self.dash_cooldown = self.dash_cooldown - 1
-	self.attack_cooldown = self.attack_cooldown - 1
+	self.dash_cooldown = self.dash_cooldown - dt
+	self.attack_cooldown = self.attack_cooldown - dt
 
 	self.x = self.x + (self.vx * dt)
 	self.y = self.y + (self.vy * dt)

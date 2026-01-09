@@ -5,7 +5,7 @@ local audio = require('audio')
 
 
 local hit = { name = "hit" }
-
+local INVINCIBLE_TIME = 0.5 -- In seconds
 
 function hit.start(player)
 	player.hit_state.knockback_speed = 2
@@ -22,6 +22,7 @@ function hit.update(player, dt)
 	player.hit_state.remaining_frames = player.hit_state.remaining_frames - 1
 	if player.hit_state.remaining_frames < 0 then
 		player:set_state(player.states.idle)
+		player.invincible_time = INVINCIBLE_TIME
 	end
 end
 

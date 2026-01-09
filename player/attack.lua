@@ -6,7 +6,7 @@ local audio = require('audio')
 
 local attack = { name = "attack" }
 
-local ATTACK_COOLDOWN = 12
+local ATTACK_COOLDOWN = 0.2
 local HOLD_FRAMES = 4
 
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }

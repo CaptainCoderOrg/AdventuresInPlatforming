@@ -8,7 +8,7 @@ local audio = require('audio')
 local dash = { name = "dash" }
 
 local DASH_FRAMES = 8
-local DASH_COOLDOWN_FRAMES = DASH_FRAMES * 2
+local DASH_COOLDOWN_FRAMES = (DASH_FRAMES * 2)/60
 
 --- Called when entering dash state. Locks direction and cancels vertical velocity.
 --- @param player table The player object

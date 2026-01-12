@@ -43,6 +43,7 @@ function Player.new()
 	self.vx = 0
 	self.vy = 0
 	self.box = { w = 0.7, h = 0.85, x = 0.15, y = 0.15 }
+	self.is_player = true
 
 	-- Movement
 	self.speed = 6

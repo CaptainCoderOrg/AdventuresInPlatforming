@@ -227,7 +227,7 @@ end
 --- Used for teleportation or direct position changes.
 --- @param obj table Object with x, y, and box properties
 function world.sync_position(obj)
-	local shape = world.shape_map[obj]
+	local shape = world.shape_map[obj] or world.trigger_map[obj]
 	if not shape then return end
 
 	local ts = sprites.tile_size

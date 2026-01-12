@@ -1,5 +1,6 @@
 local sprites = require('sprites')
 local canvas = require('canvas')
+local world = require('world')
 local Projectile = {}
 
 Projectile.__index = Projectile
@@ -11,26 +12,53 @@ Projectile.animations = {
 }
 
 function Projectile.update(dt)
-    -- print(dt)
-    for _, projectile in ipairs(Projectile.all) do
-        -- print("Updating " .. projectile.id)
+    local to_remove = {}
+
+    for projectile, _ in pairs(Projectile.all) do
         projectile.x = projectile.x + projectile.vx * dt
-
-        projectile.vy = math.min(5, projectile.vy + projectile.gravity_scale*dt)
-
+        projectile.vy = math.min(20, projectile.vy + projectile.gravity_scale*dt)
         projectile.y = projectile.y + projectile.vy * dt
 
+        if projectile.x < -2 or projectile.x > 34 or projectile.y > 34 then
+            projectile.marked_for_destruction = true
+        end
+
+        world.sync_position(projectile)
+        if projectile.shape then
+            local collisions = world.hc:collisions(projectile.shape)
+            for other, sep in pairs(collisions) do
+                -- Only collide with solid world geometry, not other triggers or player
+                if world.shape_map[other.owner] == other and not (other.owner and other.owner.is_player) then
+                    projectile:on_collision(other)
+                end
+            end
+        end
+
+        if projectile.marked_for_destruction then
+            table.insert(to_remove, projectile)
+        end
+    end
+
+    for _, projectile in ipairs(to_remove) do
+        world.remove_collider(projectile)
+        Projectile.all[projectile] = nil
     end
 end
 
 function Projectile.draw()
     canvas.save()
-    for _, projectile in ipairs(Projectile.all) do
-        sprites.draw_animation(projectile.animation, 
-            projectile.x * sprites.tile_size, 
+    for projectile, _ in pairs(Projectile.all) do
+        sprites.draw_animation(projectile.animation,
+            projectile.x * sprites.tile_size,
             projectile.y * sprites.tile_size)
     end
     canvas.restore()
+end
+
+function Projectile:on_collision(other)
+    if other.owner then
+        self.marked_for_destruction = true
+    end
 end
 
 function Projectile.new(name, animation, x, y, vx, vy, gravity_scale)
@@ -43,17 +71,19 @@ function Projectile.new(name, animation, x, y, vx, vy, gravity_scale)
     self.vx = vx
     self.vy = vy
     self.gravity_scale = gravity_scale
-    table.insert(Projectile.all, self)
-    print(#Projectile.all, "Projectiles")
+    self.box = { w = 0.25, h = 0.25, x = 0, y = 0 }
+    self.is_projectile = true
+    self.marked_for_destruction = false
+    self.shape = world.add_trigger_collider(self)
+    Projectile.all[self] = true
     return self
 end
 
 function Projectile.create_axe(x, y, direction)
-    print("Created axe")
-    local axe_vx = direction*15
-    local axe_vy = -2
-    local axe_gravity = 8
-    return Projectile.new("axe", Projectile.animations.AXE, x, y, axe_vx, axe_vy, axe_gravity)
+    local axe_vx = direction*16
+    local axe_vy = -3
+    local axe_gravity = 20
+    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity)
 end
 
 return Projectile

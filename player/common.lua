@@ -30,7 +30,7 @@ common.animations = {
 	ATTACK_1 = sprites.create_animation("player_attack_1", 5, { speed = 4, width = 32, loop = false }),
 	ATTACK_2 = sprites.create_animation("player_attack_2", 5, { speed = 5, width = 32, loop = false }),
     HAMMER = sprites.create_animation("player_attack_hammer", 7, { speed = 9, width = 32, loop = false }),
-	THROW = sprites.create_animation("player_throw", 7, { speed = 5, loop = false }),
+	THROW = sprites.create_animation("player_throw", 7, { speed = 3, loop = false }),
 
     HIT = sprites.create_animation("player_hit", 3, { speed = 4, loop = false }),
 	DEATH = sprites.create_animation("player_death", 12, { loop = false }),

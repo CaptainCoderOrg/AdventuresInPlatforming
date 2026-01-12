@@ -2,6 +2,7 @@ local sprites = require('sprites')
 local canvas = require('canvas')
 local world = require('world')
 local Animation = require('Animation')
+local config = require('config')
 local Projectile = {}
 
 Projectile.__index = Projectile
@@ -59,12 +60,24 @@ function Projectile.draw()
         projectile.animation:draw(
             projectile.x * sprites.tile_size,
             projectile.y * sprites.tile_size)
+
+        -- Draw debug hitbox in bright yellow
+        if config.bounding_boxes == true then
+            canvas.set_color("#FFFF00")  -- Bright yellow
+            canvas.draw_rect(
+                (projectile.x + projectile.box.x) * sprites.tile_size,
+                (projectile.y + projectile.box.y) * sprites.tile_size,
+                projectile.box.w * sprites.tile_size,
+                projectile.box.h * sprites.tile_size)
+        end
     end
     canvas.restore()
 end
 
 function Projectile:on_collision(other)
     if other.owner then
+        local Effects = require("Effects")
+        Effects.create_hit(self.x - 0.25, self.y - 0.25)
         self.marked_for_destruction = true
     end
 end
@@ -81,7 +94,7 @@ function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direct
 	self.vx = vx
 	self.vy = vy
 	self.gravity_scale = gravity_scale
-	self.box = { w = 0.25, h = 0.25, x = 0, y = 0 }
+	self.box = { w = 0.5, h = 0.5, x = 0, y = 0 }
 	self.is_projectile = true
 	self.marked_for_destruction = false
 	self.shape = world.add_trigger_collider(self)

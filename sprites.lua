@@ -45,6 +45,8 @@ canvas.assets.load_image("player_hit", "sprites/character/hit.png")
 
 canvas.assets.load_image("throwable_axe", "sprites/throwables/throwable_axe.png")
 
+canvas.assets.load_image("effect_hit", "sprites/effects/hit.png")
+
 function sprites.draw_ladder(dx, dy, sprite)
 	if sprite == nil then sprite = LADDER_MID end
 	canvas.draw_image(sprite, dx, dy, config.ui.TILE * config.ui.SCALE, config.ui.TILE * config.ui.SCALE)

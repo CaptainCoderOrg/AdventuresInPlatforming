@@ -8,6 +8,7 @@ local level1 = require("levels/level1")
 local debug = require("debugger")
 local hud = require("ui/hud")
 local Projectile = require("Projectile")
+local Effects = require("Effects")
 
 local player  -- Instance created in init_level
 
@@ -42,6 +43,7 @@ local function update()
     if dt > 0.5 then dt = 0.5 end
     player:update(dt)
     Projectile.update(dt)
+    Effects.update(dt)
 end
 
 -- Render the game
@@ -50,6 +52,7 @@ local function draw()
     platforms.draw()
     player:draw()
     Projectile.draw()
+    Effects.draw()
     debug.draw(player)
     hud.draw(player)
 end

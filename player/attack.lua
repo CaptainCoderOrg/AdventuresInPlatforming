@@ -8,7 +8,7 @@ local Animation = require('Animation')
 local attack = { name = "attack" }
 
 local ATTACK_COOLDOWN = 0.2
-local HOLD_FRAMES = 4
+local HOLD_TIME = 0.16
 
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
 
@@ -44,17 +44,18 @@ end
 
 function attack.update(player, dt)
 	player.vx = 0
-    player.vy = 0
+	player.vy = 0
 	player.attack_state.remaining_time = player.attack_state.remaining_time - dt
 	if player.attack_state.remaining_time <= 0 then
-        if player.attack_state.queued and player.attacks > player.attack_state.count then
-            player.attack_state.count = player.attack_state.count + 1
-            next_animation(player)
-        else
-            -- TODO: Decide actual state. Are we falling? Are we moving?
-            player:set_state(player.states.idle)
-            player.attack_cooldown = ATTACK_COOLDOWN
-        end
+		if player.attack_state.queued and player.attacks > player.attack_state.count then
+			player.attack_state.count = player.attack_state.count + 1
+			next_animation(player)
+		elseif player.attack_state.remaining_time <= -HOLD_TIME then
+			-- Hold time expired, transition back to idle
+			player:set_state(player.states.idle)
+			player.attack_cooldown = ATTACK_COOLDOWN
+		end
+		-- else: animation finished but still in hold period, waiting for combo input
 	end
 end
 

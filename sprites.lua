@@ -2,7 +2,6 @@ local canvas = require("canvas")
 
 local sprites = {}
 
-local ANIM_SPEED = 7 -- Number of game frames per animation frame
 local TILE = 16
 local SCALE = 2
 
@@ -88,43 +87,6 @@ function sprites.draw_tile(tx, ty, dx, dy)
 		TILE,
 		TILE -- source: x, y, width, height
 	)
-end
-
-
---- DEPRECATED: Use Animation.create_definition() instead
---- Creates a sprite animation definition (immutable template)
-function sprites.create_animation(name, frame_count, options)
-	print("DEPRECATED: sprites.create_animation() is deprecated. Use Animation.create_definition() with ms_per_frame instead.")
-	options = options ~= nil and options or {}
-	options.speed = options.speed ~= nil and options.speed or 6
-	options.width = options.width ~= nil and options.width or TILE
-	options.height = options.height ~= nil and options.height or TILE
-	if options.loop == nil then options.loop = true end
-	return {
-		name = name,
-		frame_count = frame_count,
-		frame = 0,
-		flipped = 1,
-		speed = options.speed,
-		width = options.width,
-		height = options.height,
-		loop = options.loop,
-	}
-end
-
---- DEPRECATED: Use Animation.new() instead
---- Creates a per-entity animation state from an animation definition
----@param definition table The animation definition from create_animation
----@param options table Optional parameters (frame, flipped)
-function sprites.create_animation_state(definition, options)
-	print("DEPRECATED: sprites.create_animation_state() is deprecated. Use Animation.new() instead.")
-	options = options or {}
-	return {
-		definition = definition,
-		frame = options.frame or 0,
-		flipped = options.flipped or 1,
-		timer = 0
-	}
 end
 
 return sprites

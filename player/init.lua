@@ -19,6 +19,7 @@ local states = {
 	climb = require('player.climb'),
 	block = require('player.block'),
 	hammer = require('player.hammer'),
+	throw = require('player.throw'),
 	hit = require('player.hit'),
 	death = require('player.death')
 }
@@ -214,6 +215,7 @@ function Player:update()
 	common.check_ladder(self, cols)
 	common.check_hit(self, cols)
 
+	-- TODO: Should update animation to be time based rather than frame based
 	self.t = self.t + 1
 	if self.t % self.animation.speed == 0 then
 		self.animation.frame = self.animation.frame + 1

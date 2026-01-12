@@ -39,26 +39,30 @@ canvas.assets.load_image("player_attack_0", "sprites/character/attack_0.png")
 canvas.assets.load_image("player_attack_1", "sprites/character/attack_1.png")
 canvas.assets.load_image("player_attack_2", "sprites/character/attack_2.png")
 canvas.assets.load_image("player_attack_hammer", "sprites/character/attack_hammer.png")
+canvas.assets.load_image("player_throw", "sprites/character/throw.png")
 
 canvas.assets.load_image("player_climb_up", "sprites/character/climb_up.png")
 canvas.assets.load_image("player_climb_down", "sprites/character/climb_down.png")
 
 canvas.assets.load_image("player_hit", "sprites/character/hit.png")
 
+canvas.assets.load_image("throwable_axe", "sprites/throwables/throwable_axe.png")
+
 function sprites.draw_animation(anim, x, y)
-	local x_adjust
+	local x_adjust = 0
 	if anim.flipped == 1 then 
-		x_adjust = sprites.tile_size * anim.width
-	else -- Facing left
-		x_adjust = -(sprites.tile_size * (anim.width-1)) 
+		x_adjust = anim.width
+	elseif anim.width > TILE then -- Facing left
+		x_adjust = -TILE
 	end
+	
 	canvas.save()
-	canvas.translate(x + x_adjust, y)
+	canvas.translate(x + (x_adjust*SCALE), y)
 	canvas.scale(-anim.flipped, 1)
 	canvas.draw_image(anim.name, 0, 0, 
-					  sprites.tile_size*anim.width, sprites.tile_size, 
-					  anim.frame*TILE*anim.width, 0, 
-					  TILE*anim.width, TILE)
+					  anim.width*SCALE, anim.height*SCALE, 
+					  anim.frame*anim.width, 0, 
+					  anim.width, anim.height)
 	canvas.restore()
 end
 
@@ -81,19 +85,23 @@ function sprites.draw_tile(tx, ty, dx, dy)
 	)
 end
 
+
 --- Creates a sprite animation specifying the sprite_id, number of frames, speed (delay between frames)
-function sprites.create_animation(name, frame_count, speed, width, loop)
-	if speed == nil then speed = ANIM_SPEED end
-	if width == nil then width = 1 end
-	if loop == nil then loop = true end
+function sprites.create_animation(name, frame_count, options)
+	options = options ~= nil and options or {}
+	options.speed = options.speed ~= nil and options.speed or 6
+	options.width = options.width ~= nil and options.width or TILE
+	options.height = options.height ~= nil and options.height or TILE
+	if options.loop == nil then options.loop = true end
     return {
         name = name,
         frame_count = frame_count,
         frame = 0,
         flipped = 1,
-		speed = speed,
-		width = width,
-		loop = loop,
+		speed = options.speed,
+		width = options.width,
+		height = options.height,
+		loop = options.loop,
     }
 end
 

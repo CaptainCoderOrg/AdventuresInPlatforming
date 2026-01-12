@@ -51,6 +51,7 @@ function air.input(player)
 	else
 		player.vx = 0
 	end
+	common.handle_throw(player)
 	common.handle_block(player)
 	common.handle_attack(player)
 	common.handle_dash(player)

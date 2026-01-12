@@ -1,6 +1,10 @@
 local canvas = require("canvas")
 local controls = {}
 
+function controls.throw_pressed()
+	return canvas.is_key_pressed(canvas.keys.L)
+		or canvas.is_gamepad_button_pressed(1, canvas.buttons.NORTH)
+end
 
 function controls.hammer_pressed()
 	return canvas.is_key_pressed(canvas.keys.I)

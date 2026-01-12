@@ -7,6 +7,7 @@ local audio = require("audio")
 local level1 = require("levels/level1")
 local debug = require("debugger")
 local hud = require("ui/hud")
+local Projectile = require("Projectile")
 
 local player  -- Instance created in init_level
 
@@ -37,7 +38,9 @@ local function update()
     if hud.is_settings_open() then
         return
     end
+    local dt = canvas.get_delta()
     player:update()
+    Projectile.update(dt)
 end
 
 -- Render the game
@@ -45,6 +48,7 @@ local function draw()
     canvas.clear()
     platforms.draw()
     player:draw()
+    Projectile.draw()
     debug.draw(player)
     hud.draw(player)
 end

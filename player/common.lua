@@ -13,33 +13,39 @@ common.MAX_FALL_SPEED = 20
 
 -- Animations
 common.animations = {
-	IDLE = sprites.create_animation("player_idle", 6, 12),
-    BLOCK = sprites.create_animation("player_block", 1, 1, 1, false),
-	RUN = sprites.create_animation("player_run", 8, 7),
-	DASH = sprites.create_animation("player_dash", 4, 3),
-	FALL = sprites.create_animation("player_fall", 3, 6),
-	JUMP = sprites.create_animation("player_jump_up", 3, 6, 1, false),
-	AIR_JUMP = sprites.create_animation("player_double_jump", 4, 4),
-	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, 6, 1, false),
-	TURN = sprites.create_animation("player_turn", 4, 3, 1, false),
-	
+	IDLE = sprites.create_animation("player_idle", 6, { speed = 12 }),
+    BLOCK = sprites.create_animation("player_block", 1, { speed = 1, loop = false}),
+	RUN = sprites.create_animation("player_run", 8, { speed = 7 }),
+	DASH = sprites.create_animation("player_dash", 4, { speed = 3 }),
+	FALL = sprites.create_animation("player_fall", 3),
+	JUMP = sprites.create_animation("player_jump_up", 3, { loop = false}),
+	AIR_JUMP = sprites.create_animation("player_double_jump", 4, { speed = 4 }),
+	WALL_SLIDE = sprites.create_animation("player_wall_slide", 3, { loop = false}),
+	TURN = sprites.create_animation("player_turn", 4, { speed = 3, loop = false}),
 
-	CLIMB_UP = sprites.create_animation("player_climb_up", 6, 6),
-	CLIMB_DOWN = sprites.create_animation("player_climb_down", 6, 6),
+	CLIMB_UP = sprites.create_animation("player_climb_up", 6),
+	CLIMB_DOWN = sprites.create_animation("player_climb_down", 6),
 
-	ATTACK_0 = sprites.create_animation("player_attack_0", 5, 3, 2, false),
-	ATTACK_1 = sprites.create_animation("player_attack_1", 5, 4, 2, false),
-	ATTACK_2 = sprites.create_animation("player_attack_2", 5, 5, 2, false),
-    HAMMER = sprites.create_animation("player_attack_hammer", 7, 9, 2, false),
+	ATTACK_0 = sprites.create_animation("player_attack_0", 5, { speed = 3, width = 32, loop = false }),
+	ATTACK_1 = sprites.create_animation("player_attack_1", 5, { speed = 4, width = 32, loop = false }),
+	ATTACK_2 = sprites.create_animation("player_attack_2", 5, { speed = 5, width = 32, loop = false }),
+    HAMMER = sprites.create_animation("player_attack_hammer", 7, { speed = 9, width = 32, loop = false }),
+	THROW = sprites.create_animation("player_throw", 7, { speed = 5, loop = false }),
 
-    HIT = sprites.create_animation("player_hit", 3, 4, 1, false),
-	DEATH = sprites.create_animation("player_death", 12, 6, 1, false),
+    HIT = sprites.create_animation("player_hit", 3, { speed = 4, loop = false }),
+	DEATH = sprites.create_animation("player_death", 12, { loop = false }),
 }
 
 -- Helper functions
 function common.handle_hammer(player)
     if controls.hammer_pressed() then
         player:set_state(player.states.hammer)
+    end
+end
+
+function common.handle_throw(player)
+    if controls.throw_pressed() then
+        player:set_state(player.states.throw)
     end
 end
 
@@ -63,7 +69,9 @@ function common.handle_gravity(player, max_speed)
 	player.vy = math.min(max_speed, player.vy + common.GRAVITY)
 	if not player.is_grounded and 
            player.state ~= player.states.block and
-           player.state ~= player.states.hit then
+           player.state ~= player.states.hit and 
+		   player.state ~= player.states.throw
+		   then
 		player:set_state(player.states.air)
 	end
 end

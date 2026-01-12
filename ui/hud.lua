@@ -102,7 +102,7 @@ volume_sliders.master = slider.create({
 
 volume_sliders.music = slider.create({
     x = 0, y = 0, width = 200, height = 24,
-    color = "#44FF88", value = 0.03, scale = 2, animate_speed = 0.1,
+    color = "#44FF88", value = 0.00, scale = 2, animate_speed = 0.1,
     on_input = function(event)
         if event.type == "press" or event.type == "drag" then
             volume_sliders.music:set_value(event.normalized_x)
@@ -235,6 +235,8 @@ local function draw_settings()
 end
 
 function hud.draw_player_health(player)
+    player.max_health = 7
+    player.damage = 0
     local heart_size = 32
     local damage_size = 24
     local damage_off = (heart_size - damage_size) / 2

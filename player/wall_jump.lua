@@ -1,6 +1,7 @@
 local common = require('player.common')
 local sprites = require('sprites')
 local audio = require('audio')
+local Animation = require('Animation')
 
 --- Wall jump state: Player leaps away from a wall with locked horizontal direction.
 --- Transitions to idle on landing, wall_slide if hitting same wall, or air when falling.
@@ -16,7 +17,7 @@ function wall_jump.start(player)
 	player.vx = wall_dir * player.speed
 	player.direction = wall_dir
 	player.wall_jump_state.locked_direction = -wall_dir
-	player.animation = sprites.create_animation_state(common.animations.JUMP)
+	player.animation = Animation.new(common.animations.JUMP)
 	audio.play_wall_jump_sound()
 end
 

@@ -2,13 +2,14 @@ local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
+local Animation = require('Animation')
 
 
 local block = { name = "block" }
 
 
 function block.start(player)
-	player.animation = sprites.create_animation_state(common.animations.BLOCK)
+	player.animation = Animation.new(common.animations.BLOCK)
 end
 
 

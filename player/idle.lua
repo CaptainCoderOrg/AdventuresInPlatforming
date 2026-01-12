@@ -1,6 +1,7 @@
 local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
+local Animation = require('Animation')
 
 --- Idle state: Player is standing still on the ground.
 --- Transitions to run on movement input, or dash/jump when triggered.
@@ -9,7 +10,7 @@ local idle = { name = "idle" }
 --- Called when entering idle state. Resets animation to idle.
 --- @param player table The player object
 function idle.start(player)
-	player.animation = sprites.create_animation_state(common.animations.IDLE)
+	player.animation = Animation.new(common.animations.IDLE)
 end
 
 --- Handles input while idle. Movement transitions to run state.

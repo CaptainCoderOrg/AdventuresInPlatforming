@@ -2,6 +2,7 @@ local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
+local Animation = require('Animation')
 
 --- Wall slide state: Player is sliding down a wall at reduced speed.
 --- Transitions to wall_jump on jump, air if releasing wall, or idle on landing.
@@ -13,7 +14,7 @@ local WALL_SLIDE_GRACE_FRAMES = 5
 --- Called when entering wall slide. Faces away from wall and resets grace frames.
 --- @param player table The player object
 function wall_slide.start(player)
-	player.animation = sprites.create_animation_state(common.animations.WALL_SLIDE)
+	player.animation = Animation.new(common.animations.WALL_SLIDE)
 	player.direction = -player.wall_direction
 	player.wall_slide_state.grace_frames = 0
 	audio.play_footstep()
@@ -49,7 +50,7 @@ function wall_slide.update(player, dt)
 	if in_grace then
 		player.vy = math.min(common.MAX_FALL_SPEED, player.vy + common.GRAVITY)
 		if player.animation.definition ~= common.animations.FALL then
-			player.animation = sprites.create_animation_state(common.animations.FALL)
+			player.animation = Animation.new(common.animations.FALL)
 		end
 	else
 		player.vy = math.min(WALL_SLIDE_SPEED, player.vy + common.GRAVITY)

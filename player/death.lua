@@ -4,19 +4,20 @@ local sprites = require('sprites')
 local audio = require('audio')
 local canvas = require('canvas')
 local config = require('config')
+local Animation = require('Animation')
 
 
 local death = { name = "death" }
 
 function death.start(player)
-	player.animation = sprites.create_animation_state(common.animations.DEATH)
+	player.animation = Animation.new(common.animations.DEATH)
 	player.vx = 0
 	player.vy = 0
 end
 
 
 function death.update(player, dt)
-	if player.animation.frame == player.animation.definition.frame_count - 1 then
+	if player.animation:is_finished() then
 		player.is_dead = true
 	end
 end

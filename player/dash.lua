@@ -2,6 +2,7 @@ local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
+local Animation = require('Animation')
 
 --- Dash state: Player performs a quick horizontal burst of speed.
 --- Ignores gravity during dash. Can be cancelled by jumping or changing direction.
@@ -17,7 +18,7 @@ function dash.start(player)
 	player.dash_state.duration = DASH_FRAMES
 	player.vy = 0
 	player.has_dash = false
-	player.animation = sprites.create_animation_state(common.animations.DASH)
+	player.animation = Animation.new(common.animations.DASH)
 	audio.play_sfx(audio.dash, 0.15)
 end
 
@@ -79,7 +80,7 @@ end
 --- Renders the player in dash animation.
 --- @param player table The player object
 function dash.draw(player)
-	sprites.draw_animation(common.animations.DASH, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return dash

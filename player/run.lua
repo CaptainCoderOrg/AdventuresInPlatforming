@@ -2,17 +2,18 @@ local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
+local Animation = require('Animation')
 
 --- Run state: Player is moving horizontally on the ground.
 --- Transitions to idle when stopping, or dash/jump when triggered.
 local run = { name = "run" }
 
-local FOOTSTEP_COOLDOWN_TIME = (common.animations.RUN.frame_count * common.animations.RUN.speed) / 2
+local FOOTSTEP_COOLDOWN_TIME = (common.animations.RUN.frame_count * common.animations.RUN.ms_per_frame) / 2000
 
 --- Called when entering run state. Resets animation and footstep timer.
 --- @param player table The player object
 function run.start(player)
-	player.animation = sprites.create_animation_state(common.animations.RUN)
+	player.animation = Animation.new(common.animations.RUN)
 	player.run_state.footstep_cooldown = 0
 	player.run_state.is_turning = false
 	player.run_state.turn_remaining_frames = 0
@@ -36,8 +37,8 @@ function run.input(player)
 	-- Check for direction change (only when not already turning)
 	if not player.run_state.is_turning and player.run_state.previous_direction and new_direction ~= player.run_state.previous_direction then
 		player.run_state.is_turning = true
-		player.run_state.turn_remaining_frames = common.animations.TURN.frame_count * common.animations.TURN.speed
-		player.animation = sprites.create_animation_state(common.animations.TURN)
+		player.run_state.turn_remaining_time = (common.animations.TURN.frame_count * common.animations.TURN.ms_per_frame) / 1000
+		player.animation = Animation.new(common.animations.TURN)
 		player.run_state.turn_visual_direction = player.run_state.previous_direction
 	end
 
@@ -58,11 +59,11 @@ end
 function run.update(player, dt)
 	-- Handle turn animation countdown
 	if player.run_state.is_turning then
-		player.run_state.turn_remaining_frames = player.run_state.turn_remaining_frames - 1
-		if player.run_state.turn_remaining_frames <= 0 then
+		player.run_state.turn_remaining_time = player.run_state.turn_remaining_time - dt
+		if player.run_state.turn_remaining_time <= 0 then
 			player.run_state.is_turning = false
 			player.run_state.turn_visual_direction = nil
-			player.animation = sprites.create_animation_state(common.animations.RUN)
+			player.animation = Animation.new(common.animations.RUN)
 		end
 	end
 

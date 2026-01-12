@@ -2,6 +2,7 @@ local common = require('player.common')
 local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
+local Animation = require('Animation')
 
 --- Air state: Player is airborne (jumping or falling).
 --- Transitions to idle on landing, wall_slide when pressing into wall, or allows air jump/dash.
@@ -25,13 +26,13 @@ function air.update(player, dt)
 			player:set_state(player.states.wall_slide)
 		end
 	elseif player.vy > 0 and player.animation.definition ~= common.animations.FALL then
-		player.animation = sprites.create_animation_state(common.animations.FALL)
+		player.animation = Animation.new(common.animations.FALL)
 		player.is_air_jumping = false
 	elseif player.vy < 0 then
 		if player.is_air_jumping and player.animation.definition ~= common.animations.AIR_JUMP then
-			player.animation = sprites.create_animation_state(common.animations.AIR_JUMP)
+			player.animation = Animation.new(common.animations.AIR_JUMP)
 		elseif not player.is_air_jumping and player.animation.definition ~= common.animations.JUMP then
-			player.animation = sprites.create_animation_state(common.animations.JUMP)
+			player.animation = Animation.new(common.animations.JUMP)
 		end
 	end
 end

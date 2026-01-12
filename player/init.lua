@@ -3,6 +3,7 @@ local sprites = require('sprites')
 local config = require('config')
 local world = require('world')
 local common = require('player.common')
+local Animation = require('Animation')
 
 local Player = {}
 Player.__index = Player
@@ -82,8 +83,7 @@ function Player.new()
 	self.has_dash = true
 
 	-- Animation
-	self.animation = sprites.create_animation_state(common.animations.IDLE)
-	self.t = 0
+	self.animation = Animation.new(common.animations.IDLE)
 
 	-- State machine
 	self.state = nil
@@ -104,7 +104,7 @@ function Player.new()
 	self.attack_state = {
 		count = 0,
 		next_anim_ix = 1,
-		remaining_frames = 0,
+		remaining_time = 0,
 		queued = false
 	}
 	self.climb_state = {
@@ -117,11 +117,11 @@ function Player.new()
 		locked_direction = 0
 	}
 	self.hammer_state = {
-		remaining_frames = 0
+		remaining_time = 0
 	}
 	self.hit_state = {
 		knockback_speed = 2,
-		remaining_frames = 0
+		remaining_time = 0
 	}
 
 	-- Register with collision system
@@ -173,7 +173,6 @@ function Player:set_state(state)
 	       "Invalid state: must have start, input, update, draw functions")
 	self.state = state
 	self.state.start(self)
-	self.t = 0
 end
 
 --- Renders the player using the current state's draw function.
@@ -201,6 +200,7 @@ function Player:update()
 	self.state.update(self, dt)
 
 	self.animation.flipped = self.direction
+	self.animation:play(dt)  -- Self-managing delta-time based animation
 	self.dash_cooldown = self.dash_cooldown - dt
 	self.attack_cooldown = self.attack_cooldown - dt
 
@@ -212,15 +212,6 @@ function Player:update()
 	common.check_ground(self, cols)
 	common.check_ladder(self, cols)
 	common.check_hit(self, cols)
-
-	-- TODO: Should update animation to be time based rather than frame based
-	self.t = self.t + 1
-	if self.t % self.animation.definition.speed == 0 then
-		self.animation.frame = self.animation.frame + 1
-		if self.animation.frame >= self.animation.definition.frame_count - 1 then
-			self.animation.frame = self.animation.definition.loop and 0 or self.animation.definition.frame_count - 1
-		end
-	end
 end
 
 return Player

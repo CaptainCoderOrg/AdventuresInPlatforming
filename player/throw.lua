@@ -3,22 +3,23 @@ local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
 local Projectile = require('Projectile')
+local Animation = require('Animation')
 
 
 local throw = { name = "throw" }
 
 
 function throw.start(player)
-	player.animation = sprites.create_animation_state(common.animations.THROW)
-	throw.remaining_frames = common.animations.THROW.frame_count * common.animations.THROW.speed
+	player.animation = Animation.new(common.animations.THROW)
+	throw.remaining_time = (common.animations.THROW.frame_count * common.animations.THROW.ms_per_frame) / 1000
 	Projectile.create_axe(player.x, player.y, player.direction)
 end
 
 
 function throw.update(player, dt)
 	common.handle_gravity(player)
-	throw.remaining_frames = throw.remaining_frames - 1
-	if throw.remaining_frames < 0 then
+	throw.remaining_time = throw.remaining_time - dt
+	if throw.remaining_time < 0 then
 		player:set_state(player.states.idle)
 	end
 end

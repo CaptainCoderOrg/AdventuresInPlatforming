@@ -39,7 +39,8 @@ local function update()
         return
     end
     local dt = canvas.get_delta()
-    player:update()
+    if dt > 0.5 then dt = 0.5 end
+    player:update(dt)
     Projectile.update(dt)
 end
 

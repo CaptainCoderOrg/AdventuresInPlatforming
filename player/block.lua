@@ -36,7 +36,7 @@ end
 
 
 function block.draw(player)
-	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return block

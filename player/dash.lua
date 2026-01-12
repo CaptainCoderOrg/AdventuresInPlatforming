@@ -80,7 +80,7 @@ end
 --- Renders the player in dash animation.
 --- @param player table The player object
 function dash.draw(player)
-	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return dash

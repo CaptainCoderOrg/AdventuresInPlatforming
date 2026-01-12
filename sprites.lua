@@ -1,11 +1,9 @@
 local canvas = require("canvas")
+local config = require("config")
 
 local sprites = {}
 
-local TILE = 16
-local SCALE = 2
-
-sprites.tile_size = TILE * SCALE
+sprites.tile_size = config.ui.TILE * config.ui.SCALE
 
 canvas.assets.add_path("assets/")
 sprites.HEART = "heart"
@@ -47,32 +45,9 @@ canvas.assets.load_image("player_hit", "sprites/character/hit.png")
 
 canvas.assets.load_image("throwable_axe", "sprites/throwables/throwable_axe.png")
 
-function sprites.draw_animation(anim, x, y)
-	-- Support both old API (direct animation) and new API (animation state)
-	local definition = anim.definition or anim
-	local frame = anim.definition and anim.frame or definition.frame
-	local flipped = anim.definition and anim.flipped or definition.flipped
-
-	local x_adjust = 0
-	if flipped == 1 then
-		x_adjust = definition.width
-	elseif definition.width > TILE then -- Facing left
-		x_adjust = -TILE
-	end
-
-	canvas.save()
-	canvas.translate(x + (x_adjust*SCALE), y)
-	canvas.scale(-flipped, 1)
-	canvas.draw_image(definition.name, 0, 0,
-					  definition.width*SCALE, definition.height*SCALE,
-					  frame*definition.width, 0,
-					  definition.width, definition.height)
-	canvas.restore()
-end
-
 function sprites.draw_ladder(dx, dy, sprite)
 	if sprite == nil then sprite = LADDER_MID end
-	canvas.draw_image(sprite, dx, dy, TILE * SCALE, TILE * SCALE)
+	canvas.draw_image(sprite, dx, dy, config.ui.TILE * config.ui.SCALE, config.ui.TILE * config.ui.SCALE)
 end
 
 function sprites.draw_tile(tx, ty, dx, dy)
@@ -80,12 +55,12 @@ function sprites.draw_tile(tx, ty, dx, dy)
 		"tilemap",
 		dx,
 		dy,
-		TILE * SCALE,
-		TILE * SCALE, -- destination: x, y, width, height
-		tx * TILE,
-		ty * TILE,
-		TILE,
-		TILE -- source: x, y, width, height
+		config.ui.TILE * config.ui.SCALE,
+		config.ui.TILE * config.ui.SCALE, -- destination: x, y, width, height
+		tx * config.ui.TILE,
+		ty * config.ui.TILE,
+		config.ui.TILE,
+		config.ui.TILE -- source: x, y, width, height
 	)
 end
 

@@ -60,7 +60,7 @@ end
 --- Renders the player with current air animation (jump, air jump, or fall).
 --- @param player table The player object
 function air.draw(player)
-	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return air

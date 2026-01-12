@@ -95,7 +95,7 @@ end
 function run.draw(player)
 	local visual_dir = player.run_state.turn_visual_direction or player.direction
 	player.animation.flipped = visual_dir
-	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return run

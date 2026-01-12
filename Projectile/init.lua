@@ -56,7 +56,7 @@ end
 function Projectile.draw()
     canvas.save()
     for projectile, _ in pairs(Projectile.all) do
-        sprites.draw_animation(projectile.animation,
+        projectile.animation:draw(
             projectile.x * sprites.tile_size,
             projectile.y * sprites.tile_size)
     end

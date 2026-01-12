@@ -194,8 +194,7 @@ end
 
 --- Updates player physics, state logic, collision detection, and animation.
 --- Should be called once per frame.
-function Player:update()
-	local dt = canvas.get_delta()
+function Player:update(dt)
 	self.invincible_time = math.max(0, self.invincible_time - dt)
 	self.state.update(self, dt)
 

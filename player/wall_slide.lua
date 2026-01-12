@@ -68,7 +68,7 @@ end
 --- Renders the player with wall slide or fall animation.
 --- @param player table The player object
 function wall_slide.draw(player)
-	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return wall_slide

@@ -1,3 +1,6 @@
+local canvas = require('canvas')
+local config = require('config')
+
 local Animation = {}
 Animation.__index = Animation
 
@@ -96,6 +99,31 @@ end
 --- @return boolean
 function Animation:is_finished()
 	return self.finished
+end
+
+--- Draws the animation at the specified position
+--- @param x number X coordinate in pixels
+--- @param y number Y coordinate in pixels
+function Animation:draw(x, y)
+	local definition = self.definition
+	local frame = self.frame
+	local flipped = self.flipped
+
+	local x_adjust = 0
+	if flipped == 1 then
+		x_adjust = definition.width
+	elseif definition.width > config.ui.TILE then
+		x_adjust = -config.ui.TILE
+	end
+
+	canvas.save()
+	canvas.translate(x + (x_adjust * config.ui.SCALE), y)
+	canvas.scale(-flipped, 1)
+	canvas.draw_image(definition.name, 0, 0,
+		definition.width * config.ui.SCALE, definition.height * config.ui.SCALE,
+		frame * definition.width, 0,
+		definition.width, definition.height)
+	canvas.restore()
 end
 
 return Animation

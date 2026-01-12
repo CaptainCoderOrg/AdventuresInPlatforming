@@ -9,15 +9,14 @@ local config = require('config')
 local death = { name = "death" }
 
 function death.start(player)
-	common.animations.DEATH.frame = 0
-	player.animation = common.animations.DEATH
+	player.animation = sprites.create_animation_state(common.animations.DEATH)
 	player.vx = 0
 	player.vy = 0
 end
 
 
 function death.update(player, dt)
-	if common.animations.DEATH.frame == common.animations.DEATH.frame_count - 1 then
+	if player.animation.frame == player.animation.definition.frame_count - 1 then
 		player.is_dead = true
 	end
 end

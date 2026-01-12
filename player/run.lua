@@ -12,8 +12,7 @@ local FOOTSTEP_COOLDOWN_TIME = (common.animations.RUN.frame_count * common.anima
 --- Called when entering run state. Resets animation and footstep timer.
 --- @param player table The player object
 function run.start(player)
-	common.animations.RUN.frame = 0
-	player.animation = common.animations.RUN
+	player.animation = sprites.create_animation_state(common.animations.RUN)
 	player.run_state.footstep_cooldown = 0
 	player.run_state.is_turning = false
 	player.run_state.turn_remaining_frames = 0
@@ -38,8 +37,7 @@ function run.input(player)
 	if not player.run_state.is_turning and player.run_state.previous_direction and new_direction ~= player.run_state.previous_direction then
 		player.run_state.is_turning = true
 		player.run_state.turn_remaining_frames = common.animations.TURN.frame_count * common.animations.TURN.speed
-		common.animations.TURN.frame = 0
-		player.animation = common.animations.TURN
+		player.animation = sprites.create_animation_state(common.animations.TURN)
 		player.run_state.turn_visual_direction = player.run_state.previous_direction
 	end
 
@@ -64,8 +62,7 @@ function run.update(player, dt)
 		if player.run_state.turn_remaining_frames <= 0 then
 			player.run_state.is_turning = false
 			player.run_state.turn_visual_direction = nil
-			common.animations.RUN.frame = 0
-			player.animation = common.animations.RUN
+			player.animation = sprites.create_animation_state(common.animations.RUN)
 		end
 	end
 
@@ -95,10 +92,9 @@ end
 --- Renders the player in running animation.
 --- @param player table The player object
 function run.draw(player)
-	local anim = player.run_state.is_turning and common.animations.TURN or common.animations.RUN
 	local visual_dir = player.run_state.turn_visual_direction or player.direction
-	anim.flipped = visual_dir
-	sprites.draw_animation(anim, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	player.animation.flipped = visual_dir
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return run

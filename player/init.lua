@@ -82,8 +82,7 @@ function Player.new()
 	self.has_dash = true
 
 	-- Animation
-	self.animation = common.animations.IDLE
-	self.animation.flipped = 1
+	self.animation = sprites.create_animation_state(common.animations.IDLE)
 	self.t = 0
 
 	-- State machine
@@ -109,8 +108,6 @@ function Player.new()
 		queued = false
 	}
 	self.climb_state = {
-		animation = common.animations.CLIMB_UP,
-		frame_timer = 0,
 		last_ladder = nil
 	}
 	self.wall_slide_state = {
@@ -218,10 +215,10 @@ function Player:update()
 
 	-- TODO: Should update animation to be time based rather than frame based
 	self.t = self.t + 1
-	if self.t % self.animation.speed == 0 then
+	if self.t % self.animation.definition.speed == 0 then
 		self.animation.frame = self.animation.frame + 1
-		if self.animation.frame >= self.animation.frame_count - 1 then
-			self.animation.frame = self.animation.loop and 0 or self.animation.frame_count - 1
+		if self.animation.frame >= self.animation.definition.frame_count - 1 then
+			self.animation.frame = self.animation.definition.loop and 0 or self.animation.definition.frame_count - 1
 		end
 	end
 end

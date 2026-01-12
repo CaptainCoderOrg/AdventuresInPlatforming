@@ -24,17 +24,14 @@ function air.update(player, dt)
 		if common.is_pressing_into_wall(player) then
 			player:set_state(player.states.wall_slide)
 		end
-	elseif player.vy > 0 and player.animation ~= common.animations.FALL then
-		player.animation = common.animations.FALL
-		common.animations.FALL.frame = 0
+	elseif player.vy > 0 and player.animation.definition ~= common.animations.FALL then
+		player.animation = sprites.create_animation_state(common.animations.FALL)
 		player.is_air_jumping = false
 	elseif player.vy < 0 then
-		if player.is_air_jumping and player.animation ~= common.animations.AIR_JUMP then
-			player.animation = common.animations.AIR_JUMP
-			common.animations.AIR_JUMP.frame = 0
-		elseif not player.is_air_jumping and player.animation ~= common.animations.JUMP then
-			player.animation = common.animations.JUMP
-			common.animations.JUMP.frame = 0
+		if player.is_air_jumping and player.animation.definition ~= common.animations.AIR_JUMP then
+			player.animation = sprites.create_animation_state(common.animations.AIR_JUMP)
+		elseif not player.is_air_jumping and player.animation.definition ~= common.animations.JUMP then
+			player.animation = sprites.create_animation_state(common.animations.JUMP)
 		end
 	end
 end

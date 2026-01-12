@@ -8,8 +8,7 @@ local block = { name = "block" }
 
 
 function block.start(player)
-	common.animations.BLOCK.frame = 0
-	player.animation = common.animations.BLOCK
+	player.animation = sprites.create_animation_state(common.animations.BLOCK)
 end
 
 

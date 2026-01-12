@@ -8,8 +8,7 @@ local hammer = { name = "hammer" }
 
 
 function hammer.start(player)
-	common.animations.HAMMER.frame = 0
-	player.animation = common.animations.HAMMER
+	player.animation = sprites.create_animation_state(common.animations.HAMMER)
 	player.hammer_state.remaining_frames = common.animations.HAMMER.frame_count * common.animations.HAMMER.speed
 end
 

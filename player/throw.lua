@@ -9,8 +9,7 @@ local throw = { name = "throw" }
 
 
 function throw.start(player)
-	common.animations.THROW.frame = 0
-	player.animation = common.animations.THROW
+	player.animation = sprites.create_animation_state(common.animations.THROW)
 	throw.remaining_frames = common.animations.THROW.frame_count * common.animations.THROW.speed
 	Projectile.create_axe(player.x, player.y, player.direction)
 end

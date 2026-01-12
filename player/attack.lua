@@ -13,8 +13,7 @@ local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK
 
 local function next_animation(player)
     local animation = attack_animations[player.attack_state.next_anim_ix]
-	animation.frame = 0
-	player.animation = animation
+	player.animation = sprites.create_animation_state(animation)
 	player.attack_state.remaining_frames = (animation.frame_count * animation.speed)
     audio.play_sword_sound()
     player.attack_state.queued = false

@@ -9,8 +9,7 @@ local idle = { name = "idle" }
 --- Called when entering idle state. Resets animation to idle.
 --- @param player table The player object
 function idle.start(player)
-	common.animations.IDLE.frame = 0
-	player.animation = common.animations.IDLE
+	player.animation = sprites.create_animation_state(common.animations.IDLE)
 end
 
 --- Handles input while idle. Movement transitions to run state.
@@ -43,7 +42,7 @@ end
 --- Renders the player in idle pose.
 --- @param player table The player object
 function idle.draw(player)
-	sprites.draw_animation(common.animations.IDLE, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return idle

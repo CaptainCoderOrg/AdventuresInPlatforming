@@ -49,20 +49,25 @@ canvas.assets.load_image("player_hit", "sprites/character/hit.png")
 canvas.assets.load_image("throwable_axe", "sprites/throwables/throwable_axe.png")
 
 function sprites.draw_animation(anim, x, y)
+	-- Support both old API (direct animation) and new API (animation state)
+	local definition = anim.definition or anim
+	local frame = anim.definition and anim.frame or definition.frame
+	local flipped = anim.definition and anim.flipped or definition.flipped
+
 	local x_adjust = 0
-	if anim.flipped == 1 then 
-		x_adjust = anim.width
-	elseif anim.width > TILE then -- Facing left
+	if flipped == 1 then
+		x_adjust = definition.width
+	elseif definition.width > TILE then -- Facing left
 		x_adjust = -TILE
 	end
-	
+
 	canvas.save()
 	canvas.translate(x + (x_adjust*SCALE), y)
-	canvas.scale(-anim.flipped, 1)
-	canvas.draw_image(anim.name, 0, 0, 
-					  anim.width*SCALE, anim.height*SCALE, 
-					  anim.frame*anim.width, 0, 
-					  anim.width, anim.height)
+	canvas.scale(-flipped, 1)
+	canvas.draw_image(definition.name, 0, 0,
+					  definition.width*SCALE, definition.height*SCALE,
+					  frame*definition.width, 0,
+					  definition.width, definition.height)
 	canvas.restore()
 end
 
@@ -86,7 +91,7 @@ function sprites.draw_tile(tx, ty, dx, dy)
 end
 
 
---- Creates a sprite animation specifying the sprite_id, number of frames, speed (delay between frames)
+--- Creates a sprite animation definition (immutable template)
 function sprites.create_animation(name, frame_count, options)
 	options = options ~= nil and options or {}
 	options.speed = options.speed ~= nil and options.speed or 6
@@ -103,6 +108,19 @@ function sprites.create_animation(name, frame_count, options)
 		height = options.height,
 		loop = options.loop,
     }
+end
+
+--- Creates a per-entity animation state from an animation definition
+---@param definition table The animation definition from create_animation
+---@param options table Optional parameters (frame, flipped)
+function sprites.create_animation_state(definition, options)
+	options = options or {}
+	return {
+		definition = definition,
+		frame = options.frame or 0,
+		flipped = options.flipped or 1,
+		timer = 0
+	}
 end
 
 return sprites

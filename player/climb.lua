@@ -5,21 +5,10 @@ local sprites = require('sprites')
 
 local climb = { name = "climb" }
 
---- Advances the local climb animation by one frame.
-local function advance_animation(player)
-	player.climb_state.frame_timer = player.climb_state.frame_timer + 1
-	if player.climb_state.frame_timer >= player.climb_state.animation.speed then
-		player.climb_state.frame_timer = 0
-		player.climb_state.animation.frame = (player.climb_state.animation.frame + 1) % player.climb_state.animation.frame_count
-	end
-end
-
 --- Initializes the climb state, setting velocity based on input direction.
 --- @param player table The player object
 function climb.start(player)
-	player.climb_state.animation = common.animations.CLIMB_UP
-	player.climb_state.animation.frame = 0
-	player.climb_state.frame_timer = 0
+	player.animation = sprites.create_animation_state(common.animations.CLIMB_UP)
 	player.vx = 0
 	player.is_climbing = true
 
@@ -124,26 +113,23 @@ function climb.update(player, dt)
 
 	-- Animation switching based on velocity
 	if player.vy < 0 then
-		if player.climb_state.animation ~= common.animations.CLIMB_UP then
-			player.climb_state.animation = common.animations.CLIMB_UP
-			player.climb_state.animation.frame = 0
-			player.climb_state.frame_timer = 0
+		if player.animation.definition ~= common.animations.CLIMB_UP then
+			player.animation = sprites.create_animation_state(common.animations.CLIMB_UP)
 		end
-		advance_animation(player)
 	elseif player.vy > 0 then
-		if player.climb_state.animation ~= common.animations.CLIMB_DOWN then
-			player.climb_state.animation = common.animations.CLIMB_DOWN
-			player.climb_state.animation.frame = 0
-			player.climb_state.frame_timer = 0
+		if player.animation.definition ~= common.animations.CLIMB_DOWN then
+			player.animation = sprites.create_animation_state(common.animations.CLIMB_DOWN)
 		end
-		advance_animation(player)
+	else
+		-- Not moving - reset animation timer to freeze animation
+		player.t = 0
 	end
 end
 
---- Renders the player using the local climb animation.
+--- Renders the player using the climb animation.
 --- @param player table The player object
 function climb.draw(player)
-	sprites.draw_animation(player.climb_state.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
+	sprites.draw_animation(player.animation, player.x * sprites.tile_size, player.y * sprites.tile_size)
 end
 
 return climb

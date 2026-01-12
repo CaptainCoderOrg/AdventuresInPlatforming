@@ -16,8 +16,7 @@ function wall_jump.start(player)
 	player.vx = wall_dir * player.speed
 	player.direction = wall_dir
 	player.wall_jump_state.locked_direction = -wall_dir
-	common.animations.JUMP.frame = 0
-	player.animation = common.animations.JUMP
+	player.animation = sprites.create_animation_state(common.animations.JUMP)
 	audio.play_wall_jump_sound()
 end
 

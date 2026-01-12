@@ -13,12 +13,11 @@ local DASH_COOLDOWN_FRAMES = (DASH_FRAMES * 2)/60
 --- Called when entering dash state. Locks direction and cancels vertical velocity.
 --- @param player table The player object
 function dash.start(player)
-	common.animations.DASH.frame = 0
 	player.dash_state.direction = player.direction
 	player.dash_state.duration = DASH_FRAMES
 	player.vy = 0
 	player.has_dash = false
-	player.animation = common.animations.DASH
+	player.animation = sprites.create_animation_state(common.animations.DASH)
 	audio.play_sfx(audio.dash, 0.15)
 end
 

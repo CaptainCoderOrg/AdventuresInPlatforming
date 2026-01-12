@@ -9,8 +9,7 @@ local INVINCIBLE_TIME = 0.5 -- In seconds
 
 function hit.start(player)
 	player.hit_state.knockback_speed = 2
-	common.animations.HIT.frame = 0
-	player.animation = common.animations.HIT
+	player.animation = sprites.create_animation_state(common.animations.HIT)
 	player.hit_state.remaining_frames = common.animations.HIT.frame_count * common.animations.HIT.speed
 	player.vy = math.max(0, player.vy)
 end

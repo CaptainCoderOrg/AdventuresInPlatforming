@@ -19,6 +19,13 @@ function Projectile.update(dt)
         projectile.vy = math.min(20, projectile.vy + projectile.gravity_scale*dt)
         projectile.y = projectile.y + projectile.vy * dt
 
+        -- Advance animation
+        projectile.animation.timer = projectile.animation.timer + 1
+        if projectile.animation.timer >= projectile.animation.definition.speed then
+            projectile.animation.timer = 0
+            projectile.animation.frame = (projectile.animation.frame + 1) % projectile.animation.definition.frame_count
+        end
+
         if projectile.x < -2 or projectile.x > 34 or projectile.y > 34 then
             projectile.marked_for_destruction = true
         end
@@ -61,11 +68,13 @@ function Projectile:on_collision(other)
     end
 end
 
-function Projectile.new(name, animation, x, y, vx, vy, gravity_scale)
+function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction)
     local self = setmetatable({}, Projectile)
     self.id = name .. "_" .. Projectile.next_id
     Projectile.next_id = Projectile.next_id + 1
-    self.animation = animation
+    self.animation = sprites.create_animation_state(animation_def, {
+        flipped = direction > 0 and 1 or -1
+    })
     self.x = x
     self.y = y
     self.vx = vx
@@ -83,7 +92,7 @@ function Projectile.create_axe(x, y, direction)
     local axe_vx = direction*16
     local axe_vy = -3
     local axe_gravity = 20
-    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity)
+    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction)
 end
 
 return Projectile

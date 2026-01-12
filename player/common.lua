@@ -31,7 +31,7 @@ common.animations = {
 	ATTACK_1 = Animation.create_definition("player_attack_1", 5, { ms_per_frame = 67, width = 32, loop = false }),
 	ATTACK_2 = Animation.create_definition("player_attack_2", 5, { ms_per_frame = 83, width = 32, loop = false }),
 	HAMMER = Animation.create_definition("player_attack_hammer", 7, { ms_per_frame = 150, width = 32, loop = false }),
-	THROW = Animation.create_definition("player_throw", 7, { ms_per_frame = 50, loop = false }),
+	THROW = Animation.create_definition("player_throw", 7, { ms_per_frame = 33, loop = false }),
 
 	HIT = Animation.create_definition("player_hit", 3, { ms_per_frame = 67, loop = false }),
 	DEATH = Animation.create_definition("player_death", 12, { ms_per_frame = 100, loop = false }),

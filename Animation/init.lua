@@ -14,7 +14,7 @@ function Animation.create_definition(name, frame_count, options)
 	return {
 		name = name,
 		frame_count = frame_count,
-		ms_per_frame = options.ms_per_frame or 100,  -- Default 100ms (was 6 frames)
+		ms_per_frame = options.ms_per_frame or 80,  -- Default 100ms (was 6 frames)
 		width = options.width or 16,
 		height = options.height or 16,
 		loop = options.loop ~= false  -- Default true

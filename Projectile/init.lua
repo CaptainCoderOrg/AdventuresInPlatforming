@@ -77,7 +77,9 @@ end
 function Projectile:on_collision(other)
     if other.owner then
         local Effects = require("Effects")
-        Effects.create_hit(self.x - 0.25, self.y - 0.25)
+        -- Determine direction from velocity (positive = right, negative = left)
+        local direction = self.vx >= 0 and 1 or -1
+        Effects.create_hit(self.x - 0.25, self.y - 0.25, direction)
         self.marked_for_destruction = true
     end
 end

@@ -75,9 +75,13 @@ end
 --- Factory: Creates a hit effect at specified location
 --- @param x number X position in tile coordinates
 --- @param y number Y position in tile coordinates
+--- @param direction number Direction for flipping (1 = right, -1 = left)
 --- @return table Hit effect instance
-function Effects.create_hit(x, y)
-	return Effects.new("hit", Effects.animations.HIT, x, y)
+function Effects.create_hit(x, y, direction)
+	direction = direction or 1
+	local effect = Effects.new("hit", Effects.animations.HIT, x, y)
+	effect.animation.flipped = direction
+	return effect
 end
 
 return Effects

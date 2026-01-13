@@ -35,6 +35,9 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	-- Ground-based vertical framing
 	self._ground_y = nil
 
+	-- Lerp speeds
+	self._fall_lerp_factor = 0.15  -- Faster lerp when falling at terminal velocity
+
 	return self
 end
 
@@ -68,6 +71,12 @@ function Camera:set_look_ahead(distance_x, distance_y, speed_x, speed_y)
 	self._look_ahead_speed_y = speed_y or 0.03
 end
 
+--- Sets the lerp factor for falling camera (when at terminal velocity)
+--- @param factor number Interpolation speed (0-1, default 0.15)
+function Camera:set_fall_lerp_factor(factor)
+	self._fall_lerp_factor = factor
+end
+
 
 --- Updates camera position to follow target (call each frame)
 --- @param tile_size number Pixels per tile (for conversion)
@@ -98,11 +107,28 @@ function Camera:update(tile_size, dt, lerp_factor)
 		self._ground_y = self._target.y
 	end
 
-	-- Use stored Y (or player Y if no stored position yet)
-	local reference_y = self._ground_y or self._target.y
+	-- Check if falling at terminal velocity
+	local is_falling_fast = self._target.vy and self._target.vy >= 20
 
-	-- Center camera on reference Y
-	local target_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
+	-- Determine reference Y based on fall speed
+	local reference_y
+	if is_falling_fast then
+		-- Falling at max speed: use player's current position
+		reference_y = self._target.y
+	else
+		-- Normal: use stored stable position
+		reference_y = self._ground_y or self._target.y
+	end
+
+	-- Calculate camera target based on fall speed
+	local target_cam_y
+	if is_falling_fast then
+		-- Position player at 1/3 from top when falling fast (show landing area below)
+		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.33
+	else
+		-- Center on stable position
+		target_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
+	end
 
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
 	local max_cam_y = self._world_height - (self._viewport_height / tile_size)
@@ -121,10 +147,13 @@ function Camera:update(tile_size, dt, lerp_factor)
 		self._x = self._x + delta_x * lerp_factor
 	end
 
+	-- Use faster lerp speed for Y axis when falling at terminal velocity
+	local y_lerp = is_falling_fast and self._fall_lerp_factor or lerp_factor
+
 	if math.abs(delta_y) < epsilon then
 		self._y = target_cam_y
 	else
-		self._y = self._y + delta_y * lerp_factor
+		self._y = self._y + delta_y * y_lerp
 	end
 end
 

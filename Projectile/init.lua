@@ -89,7 +89,8 @@ function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direct
 	self.id = name .. "_" .. Projectile.next_id
 	Projectile.next_id = Projectile.next_id + 1
 	self.animation = Animation.new(animation_def, {
-		flipped = direction > 0 and 1 or -1
+		flipped = direction > 0 and 1 or -1,
+		reverse = true  -- Always play in reverse for correct spin direction
 	})
 	self.x = x
 	self.y = y

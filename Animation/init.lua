@@ -30,7 +30,13 @@ function Animation.new(definition, options)
 	local self = setmetatable({}, Animation)
 
 	self.definition = definition
-	self.frame = options.start_frame or 0
+	self.reverse = options.reverse or false
+	-- Set starting frame based on playback direction
+	if options.start_frame then
+		self.frame = options.start_frame
+	else
+		self.frame = self.reverse and (definition.frame_count - 1) or 0
+	end
 	self.flipped = options.flipped or 1
 	self.elapsed = 0  -- Accumulated time in milliseconds
 	self.playing = true
@@ -60,16 +66,33 @@ function Animation:play(dt)
 		local frames_to_advance = math.floor(self.elapsed / self.definition.ms_per_frame)
 		self.elapsed = self.elapsed % self.definition.ms_per_frame  -- Keep remainder
 
-		self.frame = self.frame + frames_to_advance
+		if self.reverse then
+			-- Reverse playback: decrement frames
+			self.frame = self.frame - frames_to_advance
 
-		-- Handle frame wrapping/clamping
-		if self.frame >= self.definition.frame_count then
-			if self.definition.loop then
-				self.frame = self.frame % self.definition.frame_count
-			else
-				self.frame = self.definition.frame_count - 1
-				self.finished = true
-				self.playing = false
+			if self.frame < 0 then
+				if self.definition.loop then
+					-- Wrap to end for looping reverse animations
+					self.frame = (self.definition.frame_count - 1) - (math.abs(self.frame + 1) % self.definition.frame_count)
+				else
+					self.frame = 0
+					self.finished = true
+					self.playing = false
+				end
+			end
+		else
+			-- Forward playback: increment frames
+			self.frame = self.frame + frames_to_advance
+
+			-- Handle frame wrapping/clamping
+			if self.frame >= self.definition.frame_count then
+				if self.definition.loop then
+					self.frame = self.frame % self.definition.frame_count
+				else
+					self.frame = self.definition.frame_count - 1
+					self.finished = true
+					self.playing = false
+				end
 			end
 		end
 	end

@@ -78,12 +78,12 @@ function climb.update(player, dt)
 	if player.vy ~= 0 and player.current_ladder then
 		local ladder = player.current_ladder
 		local target_x = ladder.x + 0.5 - (player.box.w / 2) - player.box.x
-		local center_speed = 0.1
+		local CENTER_SPEED = 6.0  -- tiles/second (0.1 tiles/frame * 60 fps)
 
 		if player.x < target_x then
-			player.x = math.min(player.x + center_speed, target_x)
+			player.x = math.min(player.x + (CENTER_SPEED * dt), target_x)
 		elseif player.x > target_x then
-			player.x = math.max(player.x - center_speed, target_x)
+			player.x = math.max(player.x - (CENTER_SPEED * dt), target_x)
 		end
 	end
 

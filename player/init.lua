@@ -57,7 +57,7 @@ function Player.new()
 	self.jumps = 2
 	self.max_jumps = 2
 	self.is_air_jumping = false
-	self.coyote_frames = 0
+	self.coyote_time = 0
 
 	-- Wall movement
 	self.has_wall_slide = true
@@ -99,7 +99,7 @@ function Player.new()
 	}
 	self.dash_state = {
 		direction = 1,
-		duration = 0
+		elapsed_time = 0
 	}
 	self.attack_state = {
 		count = 0,
@@ -111,7 +111,8 @@ function Player.new()
 		last_ladder = nil
 	}
 	self.wall_slide_state = {
-		grace_frames = 0
+		grace_time = 0,
+		holding_wall = false
 	}
 	self.wall_jump_state = {
 		locked_direction = 0
@@ -208,7 +209,7 @@ function Player:update(dt)
 	local cols = world.move(self)
 
 	-- Check for collisions
-	common.check_ground(self, cols)
+	common.check_ground(self, cols, dt)
 	common.check_ladder(self, cols)
 	common.check_hit(self, cols)
 end

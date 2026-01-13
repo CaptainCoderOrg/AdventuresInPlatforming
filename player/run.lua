@@ -84,7 +84,7 @@ function run.update(player, dt)
 
 	if player.run_state.footstep_cooldown <= 0 then
 		audio.play_footstep()
-		player.run_state.footstep_cooldown = FOOTSTEP_COOLDOWN_TIME * dt
+		player.run_state.footstep_cooldown = FOOTSTEP_COOLDOWN_TIME
 	else
 		player.run_state.footstep_cooldown = player.run_state.footstep_cooldown - dt
 	end

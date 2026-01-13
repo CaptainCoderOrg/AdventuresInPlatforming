@@ -8,14 +8,14 @@ local Animation = require('Animation')
 --- Ignores gravity during dash. Can be cancelled by jumping or changing direction.
 local dash = { name = "dash" }
 
-local DASH_FRAMES = 8
-local DASH_COOLDOWN_FRAMES = (DASH_FRAMES * 2)/60
+local DASH_DURATION = 8 / 60  -- 0.1333 seconds (8 frames at 60 FPS)
+local DASH_COOLDOWN_FRAMES = DASH_DURATION * 2
 
 --- Called when entering dash state. Locks direction and cancels vertical velocity.
 --- @param player table The player object
 function dash.start(player)
 	player.dash_state.direction = player.direction
-	player.dash_state.duration = DASH_FRAMES
+	player.dash_state.elapsed_time = 0
 	player.vy = 0
 	player.has_dash = false
 	player.animation = Animation.new(common.animations.DASH)
@@ -30,15 +30,15 @@ function dash.input(player)
 	elseif controls.right_down() then
 		player.direction = 1
 	end
-	if player.dash_state.direction ~= player.direction then player.dash_state.duration = 0 end
+	if player.dash_state.direction ~= player.direction then player.dash_state.elapsed_time = DASH_DURATION end
 	if player.is_grounded then
-		if common.handle_jump(player) then player.dash_state.duration = 0 end
+		if common.handle_jump(player) then player.dash_state.elapsed_time = DASH_DURATION end
 	else
-		if common.handle_air_jump(player) then player.dash_state.duration = 0 end
+		if common.handle_air_jump(player) then player.dash_state.elapsed_time = DASH_DURATION end
 	end
 
 	if common.handle_attack(player) then
-		player.dash_state.duration = 0
+		player.dash_state.elapsed_time = DASH_DURATION
 	end
 end
 
@@ -48,7 +48,7 @@ end
 function dash.update(player, dt)
 	player.vx = player.direction * player.dash_speed
 
-	if player.dash_state.duration > 0 then
+	if player.dash_state.elapsed_time < DASH_DURATION then
 		if player.is_grounded then
 			local is_slope = math.abs(player.ground_normal.x) > 0.01
 			if is_slope then
@@ -63,9 +63,9 @@ function dash.update(player, dt)
 		end
 	end
 
-	player.dash_state.duration = player.dash_state.duration - 1
+	player.dash_state.elapsed_time = player.dash_state.elapsed_time + dt
 
-	if player.dash_state.duration < 0 then
+	if player.dash_state.elapsed_time >= DASH_DURATION then
 		player.dash_cooldown = DASH_COOLDOWN_FRAMES
 		if not player.is_grounded then
 			player:set_state(player.states.air)

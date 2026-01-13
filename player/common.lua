@@ -9,7 +9,7 @@ local common = {}
 common.GRAVITY = 1.5
 common.JUMP_VELOCITY = common.GRAVITY * 14
 common.AIR_JUMP_VELOCITY = common.GRAVITY * 11
-common.MAX_COYOTE = 4
+common.MAX_COYOTE_TIME = 4 / 60  -- 0.0667 seconds (4 frames at 60 FPS)
 common.MAX_FALL_SPEED = 20
 
 -- Animations (converted to delta-time based, milliseconds per frame)
@@ -133,13 +133,14 @@ end
 --- Uses separated X/Y collision pass results from world.move().
 --- @param player table The player object
 --- @param cols table Collision flags {ground, ceiling, wall_left, wall_right}
-function common.check_ground(player, cols)
+--- @param dt number Delta time
+function common.check_ground(player, cols, dt)
 	-- Ground detection from Y collision pass
 	if cols.ground then
 		if not player.is_climbing then
 			player.is_grounded = true
 			player.ground_normal = cols.ground_normal
-			player.coyote_frames = 0
+			player.coyote_time = 0
 			player.jumps = player.max_jumps
 			player.has_dash = true
 			player.vy = 0
@@ -166,8 +167,8 @@ function common.check_ground(player, cols)
 		else
 			player.standing_on_ladder_top = false
 		end
-		player.coyote_frames = player.coyote_frames + 1
-		if player.is_grounded and player.coyote_frames > common.MAX_COYOTE then
+		player.coyote_time = player.coyote_time + dt
+		if player.is_grounded and player.coyote_time > common.MAX_COYOTE_TIME then
 			player.is_grounded = false
 			player.jumps = player.max_jumps - 1
 		end

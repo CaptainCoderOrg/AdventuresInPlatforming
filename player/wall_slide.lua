@@ -9,14 +9,14 @@ local Animation = require('Animation')
 local wall_slide = { name = "wall_slide" }
 
 local WALL_SLIDE_SPEED = 2
-local WALL_SLIDE_GRACE_FRAMES = 5
+local WALL_SLIDE_GRACE_TIME = 5 / 60  -- 0.0833 seconds (5 frames at 60 FPS)
 
---- Called when entering wall slide. Faces away from wall and resets grace frames.
+--- Called when entering wall slide. Faces away from wall and resets grace time.
 --- @param player table The player object
 function wall_slide.start(player)
 	player.animation = Animation.new(common.animations.WALL_SLIDE)
 	player.direction = -player.wall_direction
-	player.wall_slide_state.grace_frames = 0
+	player.wall_slide_state.grace_time = 0
 	audio.play_footstep()
 end
 
@@ -30,12 +30,9 @@ function wall_slide.input(player)
 	end
 
 	if common.is_pressing_into_wall(player) then
-		player.wall_slide_state.grace_frames = 0
+		player.wall_slide_state.holding_wall = true
 	else
-		player.wall_slide_state.grace_frames = player.wall_slide_state.grace_frames + 1
-		if player.wall_slide_state.grace_frames >= WALL_SLIDE_GRACE_FRAMES then
-			player:set_state(player.states.air)
-		end
+		player.wall_slide_state.holding_wall = false
 	end
 
 	common.handle_dash(player)
@@ -45,7 +42,18 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function wall_slide.update(player, dt)
-	local in_grace = player.wall_slide_state.grace_frames > 0
+	-- Handle grace period timing
+	if player.wall_slide_state.holding_wall then
+		player.wall_slide_state.grace_time = 0
+	else
+		player.wall_slide_state.grace_time = player.wall_slide_state.grace_time + dt
+		if player.wall_slide_state.grace_time >= WALL_SLIDE_GRACE_TIME then
+			player:set_state(player.states.air)
+			return
+		end
+	end
+
+	local in_grace = player.wall_slide_state.grace_time > 0
 
 	if in_grace then
 		player.vy = math.min(common.MAX_FALL_SPEED, player.vy + common.GRAVITY)

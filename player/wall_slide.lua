@@ -10,6 +10,7 @@ local wall_slide = { name = "wall_slide" }
 
 local WALL_SLIDE_SPEED = 2
 local WALL_SLIDE_GRACE_TIME = 5 / 60  -- 0.0833 seconds (5 frames at 60 FPS)
+local WALL_SLIDE_DELAY = 0.2  -- 0.2 seconds before starting to slide down
 
 --- Called when entering wall slide. Faces away from wall and resets grace time.
 --- @param player table The player object
@@ -17,6 +18,7 @@ function wall_slide.start(player)
 	player.animation = Animation.new(common.animations.WALL_SLIDE)
 	player.direction = -player.wall_direction
 	player.wall_slide_state.grace_time = 0
+	player.wall_slide_state.slide_delay_timer = 0
 	audio.play_footstep()
 end
 
@@ -42,7 +44,7 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function wall_slide.update(player, dt)
-	-- Handle grace period timing
+	-- Handle grace period timing (for releasing wall)
 	if player.wall_slide_state.holding_wall then
 		player.wall_slide_state.grace_time = 0
 	else
@@ -53,14 +55,22 @@ function wall_slide.update(player, dt)
 		end
 	end
 
+	-- Handle slide delay timer
+	player.wall_slide_state.slide_delay_timer = player.wall_slide_state.slide_delay_timer + dt
+
 	local in_grace = player.wall_slide_state.grace_time > 0
+	local in_slide_delay = player.wall_slide_state.slide_delay_timer < WALL_SLIDE_DELAY
 
 	if in_grace then
 		player.vy = math.min(common.MAX_FALL_SPEED, player.vy + common.GRAVITY)
 		if player.animation.definition ~= common.animations.FALL then
 			player.animation = Animation.new(common.animations.FALL)
 		end
+	elseif in_slide_delay then
+		-- Stick to wall during delay (no sliding)
+		player.vy = 0
 	else
+		-- Slide down at reduced speed after delay
 		player.vy = math.min(WALL_SLIDE_SPEED, player.vy + common.GRAVITY)
 	end
 

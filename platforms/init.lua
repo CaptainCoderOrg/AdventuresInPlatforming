@@ -6,11 +6,18 @@ platforms.ladders = require('platforms/ladders')
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array
---- @return table|nil spawn Player spawn position {x, y} or nil if not found
+--- @return table spawn Player spawn position {x, y}, level width and height
 function platforms.load_level(level_data)
 	local spawn = nil
+	local width = 0
+	local height = #level_data.map
 
 	for y, row in ipairs(level_data.map) do
+		-- Infer width from first row
+		if y == 1 then
+			width = #row
+		end
+
 		for x = 1, #row do
 			local ch = row:sub(x, x)
 			if ch == "#" then
@@ -29,7 +36,11 @@ function platforms.load_level(level_data)
 		end
 	end
 
-	return spawn
+	return {
+		spawn = spawn,
+		width = width,
+		height = height
+	}
 end
 
 --- Builds all colliders for walls, slopes, and ladder tops.

@@ -212,10 +212,20 @@ function slopes.build_colliders()
 end
 
 --- Draws all slope colliders.
-function slopes.draw()
+--- @param camera table Camera instance for viewport culling
+function slopes.draw(camera)
 	local ts = sprites.tile_size
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
 
 	for _, col in ipairs(slopes.colliders) do
+		local bounds = col.bounds
+
+		-- Cull entire slope if completely off-screen
+		if bounds.max_x < min_x or bounds.min_x > max_x or
+		   bounds.max_y < min_y or bounds.min_y > max_y then
+			goto continue
+		end
+
 		local verts = col.vertices
 
 		canvas.save()
@@ -227,14 +237,21 @@ function slopes.draw()
 		canvas.close_path()
 		canvas.clip()
 
-		local bounds = col.bounds
-		for y = bounds.min_y, bounds.max_y do
-			for x = bounds.min_x, bounds.max_x do
+		-- Cull individual tiles within slope bounds
+		local start_x = math.max(bounds.min_x, min_x)
+		local end_x = math.min(bounds.max_x, max_x)
+		local start_y = math.max(bounds.min_y, min_y)
+		local end_y = math.min(bounds.max_y, max_y)
+
+		for y = start_y, end_y do
+			for x = start_x, end_x do
 				sprites.draw_tile(4, 3, x * ts, y * ts)
 			end
 		end
 
 		canvas.restore()
+
+		::continue::
 	end
 
 	-- Debug drawing

@@ -415,12 +415,20 @@ function walls.remove_tile(x, y)
 end
 
 --- Draws all wall tiles and debug bounding boxes.
-function walls.draw()
+--- @param camera table Camera instance for viewport culling
+function walls.draw(camera)
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(sprites.tile_size)
+
 	for _, tile in pairs(walls.tiles) do
-		sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
+			sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+		end
 	end
+
 	for _, tile in pairs(walls.solo_tiles) do
-		sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
+			sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+		end
 	end
 
 	if config.bounding_boxes then

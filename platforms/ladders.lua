@@ -48,15 +48,25 @@ function ladders.build_colliders()
 end
 
 --- Draws all ladder tiles and debug bounding boxes.
-function ladders.draw()
+--- @param camera table Camera instance for viewport culling
+function ladders.draw(camera)
+	local ts = sprites.tile_size
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
+
 	for _, ladder in pairs(ladders.tiles) do
+		if ladder.x < min_x or ladder.x > max_x or ladder.y < min_y or ladder.y > max_y then
+			goto continue
+		end
+
 		local sprite = nil  -- nil = LADDER_MID (default)
 		if ladder.is_top then
 			sprite = "ladder_top"
 		elseif ladder.is_bottom then
 			sprite = "ladder_bottom"
 		end
-		sprites.draw_ladder(ladder.x * sprites.tile_size, ladder.y * sprites.tile_size, sprite)
+		sprites.draw_ladder(ladder.x * ts, ladder.y * ts, sprite)
+
+		::continue::
 	end
 
 	if config.bounding_boxes then

@@ -51,10 +51,11 @@ function platforms.build()
 end
 
 --- Draws all platforms (walls and slopes).
-function platforms.draw()
-	platforms.walls.draw()
-	platforms.slopes.draw()
-	platforms.ladders.draw()
+--- @param camera table Camera instance for viewport culling
+function platforms.draw(camera)
+	platforms.walls.draw(camera)
+	platforms.slopes.draw(camera)
+	platforms.ladders.draw(camera)
 end
 
 --- Clears all platform data (for level reloading).

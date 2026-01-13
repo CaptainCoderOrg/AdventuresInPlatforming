@@ -49,19 +49,36 @@ end
 
 --- Updates camera position to follow target (call each frame)
 --- @param tile_size number Pixels per tile (for conversion)
-function Camera:update(tile_size)
+--- @param lerp_factor? number Interpolation factor (0-1, default 1.0)
+function Camera:update(tile_size, lerp_factor)
 	if not self._target then return end
 
-	-- Center camera on target
+	lerp_factor = lerp_factor or 1.0  -- Default: instant
+
 	local target_cam_x = self._target.x - (self._viewport_width / 2 / tile_size)
 	local target_cam_y = self._target.y - (self._viewport_height / 2 / tile_size)
 
-	-- Clamp to world bounds (prevent showing outside level)
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
 	local max_cam_y = self._world_height - (self._viewport_height / tile_size)
 
-	self._x = math.max(0, math.min(target_cam_x, max_cam_x))
-	self._y = math.max(0, math.min(target_cam_y, max_cam_y))
+	target_cam_x = math.max(0, math.min(target_cam_x, max_cam_x))
+	target_cam_y = math.max(0, math.min(target_cam_y, max_cam_y))
+
+	-- Lerp towards target
+	self._x = self._x + (target_cam_x - self._x) * lerp_factor
+	self._y = self._y + (target_cam_y - self._y) * lerp_factor
+end
+
+--- Gets the visible tile bounds for culling
+--- @param tile_size number Pixels per tile
+--- @return number, number, number, number min_x, min_y, max_x, max_y in tiles
+function Camera:get_visible_bounds(tile_size)
+	local min_x = math.floor(self._x)
+	local min_y = math.floor(self._y)
+	local max_x = math.ceil(self._x + (self._viewport_width / tile_size))
+	local max_y = math.ceil(self._y + (self._viewport_height / tile_size))
+
+	return min_x, min_y, max_x, max_y
 end
 
 --- Applies camera transform to canvas (call before drawing world)

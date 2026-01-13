@@ -44,7 +44,7 @@ local function update()
     end
     local dt = canvas.get_delta()
     if dt > 0.5 then dt = 0.5 end
-    camera:update(sprites.tile_size, 0.3)
+    camera:update(sprites.tile_size, dt, 0.3)
     player:update(dt)
     Projectile.update(dt)
     Effects.update(dt)
@@ -84,6 +84,7 @@ local function init_level()
         level_info.height         -- World height in tiles (from level)
     )
     camera:set_target(player)
+    camera:set_look_ahead(3, 2, 0.05, 0.03)
 end
 
 local function init()

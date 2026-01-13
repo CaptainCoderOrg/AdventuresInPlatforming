@@ -26,6 +26,18 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	-- Target to follow (typically player)
 	self._target = nil
 
+	-- Look-ahead offset state
+	self._look_ahead_offset_x = 0
+	self._look_ahead_offset_y = 0
+	self._look_ahead_distance_x = 3
+	self._look_ahead_distance_y = 2
+	self._look_ahead_speed_x = 0.05
+	self._look_ahead_speed_y = 0.03
+
+	-- Grace period timer for wall state transitions
+	self._wall_grace_timer = 0
+	self._wall_grace_duration = 0.3
+
 	return self
 end
 
@@ -47,16 +59,58 @@ function Camera:set_target(target)
 	self._target = target
 end
 
+--- Configures look-ahead behavior
+--- @param distance_x? number Horizontal look-ahead distance in tiles (default 3)
+--- @param distance_y? number Vertical look-ahead distance in tiles (default 2)
+--- @param speed_x? number Horizontal interpolation speed (default 0.05)
+--- @param speed_y? number Vertical interpolation speed (default 0.03)
+function Camera:set_look_ahead(distance_x, distance_y, speed_x, speed_y)
+	self._look_ahead_distance_x = distance_x or 3
+	self._look_ahead_distance_y = distance_y or 2
+	self._look_ahead_speed_x = speed_x or 0.05
+	self._look_ahead_speed_y = speed_y or 0.03
+end
+
 --- Updates camera position to follow target (call each frame)
 --- @param tile_size number Pixels per tile (for conversion)
+--- @param dt number Delta time in seconds
 --- @param lerp_factor? number Interpolation factor (0-1, default 1.0)
-function Camera:update(tile_size, lerp_factor)
+function Camera:update(tile_size, dt, lerp_factor)
 	if not self._target then return end
 
-	lerp_factor = lerp_factor or 1.0  -- Default: instant
+	lerp_factor = lerp_factor or 1.0
 
-	local target_cam_x = self._target.x - (self._viewport_width / 2 / tile_size)
-	local target_cam_y = self._target.y - (self._viewport_height / 2 / tile_size)
+	local in_wall_state = (self._target.state and
+	                       (self._target.state.name == "wall_jump" or
+	                        self._target.state.name == "wall_slide"))
+
+	if in_wall_state then
+		self._wall_grace_timer = self._wall_grace_duration
+	elseif self._wall_grace_timer > 0 then
+		self._wall_grace_timer = self._wall_grace_timer - dt
+	end
+
+	local target_offset_x = 0
+	if not in_wall_state and self._wall_grace_timer <= 0 then
+		target_offset_x = self._target.direction * self._look_ahead_distance_x
+	end
+
+	local target_offset_y = 0
+	if self._target.vy and math.abs(self._target.vy) > 2 then
+		local vy_normalized = math.max(-1, math.min(self._target.vy / 20, 1))  -- Normalize by max fall speed
+		target_offset_y = vy_normalized * self._look_ahead_distance_y
+	end
+
+	-- Smoothly interpolate offsets (slower vertical for wall jump stability)
+	self._look_ahead_offset_x = self._look_ahead_offset_x +
+		(target_offset_x - self._look_ahead_offset_x) * self._look_ahead_speed_x
+	self._look_ahead_offset_y = self._look_ahead_offset_y +
+		(target_offset_y - self._look_ahead_offset_y) * self._look_ahead_speed_y
+
+	local target_cam_x = self._target.x + self._look_ahead_offset_x -
+		(self._viewport_width / 2 / tile_size)
+	local target_cam_y = self._target.y + self._look_ahead_offset_y -
+		(self._viewport_height / 2 / tile_size)
 
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
 	local max_cam_y = self._world_height - (self._viewport_height / tile_size)

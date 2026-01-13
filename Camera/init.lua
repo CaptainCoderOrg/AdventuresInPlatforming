@@ -38,6 +38,12 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._wall_grace_timer = 0
 	self._wall_grace_duration = 0.3
 
+	-- Vertical deadzone for wall jump sequences
+	self._vertical_deadzone_active = false
+	self._vertical_deadzone_timer = 0
+	self._vertical_deadzone_grace_duration = 0.25
+	self._vertical_deadzone_high_water_mark = 0
+
 	return self
 end
 
@@ -84,6 +90,29 @@ function Camera:update(tile_size, dt, lerp_factor)
 	                       (self._target.state.name == "wall_jump" or
 	                        self._target.state.name == "wall_slide"))
 
+	local in_wall_jump = (self._target.state and self._target.state.name == "wall_jump")
+
+	-- Manage vertical deadzone activation and grace period (only for wall_jump)
+	if in_wall_jump then
+		if not self._vertical_deadzone_active then
+			self._vertical_deadzone_active = true
+			self._vertical_deadzone_high_water_mark = self._y
+		else
+			self._vertical_deadzone_high_water_mark = math.min(
+				self._vertical_deadzone_high_water_mark,
+				self._y
+			)
+		end
+		self._vertical_deadzone_timer = self._vertical_deadzone_grace_duration
+	elseif self._vertical_deadzone_timer > 0 then
+		self._vertical_deadzone_timer = self._vertical_deadzone_timer - dt
+		if self._vertical_deadzone_timer <= 0 then
+			self._vertical_deadzone_active = false
+		end
+	else
+		self._vertical_deadzone_active = false
+	end
+
 	if in_wall_state then
 		self._wall_grace_timer = self._wall_grace_duration
 	elseif self._wall_grace_timer > 0 then
@@ -99,6 +128,11 @@ function Camera:update(tile_size, dt, lerp_factor)
 	if self._target.vy and math.abs(self._target.vy) > 2 then
 		local vy_normalized = math.max(-1, math.min(self._target.vy / 20, 1))  -- Normalize by max fall speed
 		target_offset_y = vy_normalized * self._look_ahead_distance_y
+
+		-- During wall sequences, ignore downward look-ahead to prevent bobbing
+		if self._vertical_deadzone_active and target_offset_y > 0 then
+			target_offset_y = 0
+		end
 	end
 
 	-- Smoothly interpolate offsets (slower vertical for wall jump stability)
@@ -112,13 +146,18 @@ function Camera:update(tile_size, dt, lerp_factor)
 	local target_cam_y = self._target.y + self._look_ahead_offset_y -
 		(self._viewport_height / 2 / tile_size)
 
+	-- Apply vertical deadzone constraint during wall sequences
+	if self._vertical_deadzone_active then
+		-- Lock camera at highest point
+		target_cam_y = math.min(target_cam_y, self._vertical_deadzone_high_water_mark)
+	end
+
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
 	local max_cam_y = self._world_height - (self._viewport_height / tile_size)
 
 	target_cam_x = math.max(0, math.min(target_cam_x, max_cam_x))
 	target_cam_y = math.max(0, math.min(target_cam_y, max_cam_y))
 
-	-- Lerp towards target
 	self._x = self._x + (target_cam_x - self._x) * lerp_factor
 	self._y = self._y + (target_cam_y - self._y) * lerp_factor
 end

@@ -1,4 +1,5 @@
 local canvas = require('canvas')
+local world = require('world')
 
 local Camera = {}
 Camera.__index = Camera
@@ -44,6 +45,9 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._vertical_deadzone_grace_duration = 0.25
 	self._vertical_deadzone_high_water_mark = 0
 
+	-- Ground-based vertical framing
+	self._ground_y = nil
+
 	return self
 end
 
@@ -76,6 +80,7 @@ function Camera:set_look_ahead(distance_x, distance_y, speed_x, speed_y)
 	self._look_ahead_speed_x = speed_x or 0.05
 	self._look_ahead_speed_y = speed_y or 0.03
 end
+
 
 --- Updates camera position to follow target (call each frame)
 --- @param tile_size number Pixels per tile (for conversion)
@@ -124,32 +129,53 @@ function Camera:update(tile_size, dt, lerp_factor)
 		target_offset_x = self._target.direction * self._look_ahead_distance_x
 	end
 
-	local target_offset_y = 0
-	if self._target.vy and math.abs(self._target.vy) > 2 then
-		local vy_normalized = math.max(-1, math.min(self._target.vy / 20, 1))  -- Normalize by max fall speed
-		target_offset_y = vy_normalized * self._look_ahead_distance_y
-
-		-- During wall sequences, ignore downward look-ahead to prevent bobbing
-		if self._vertical_deadzone_active and target_offset_y > 0 then
-			target_offset_y = 0
-		end
-	end
-
-	-- Smoothly interpolate offsets (slower vertical for wall jump stability)
+	-- Smoothly interpolate horizontal offset
 	self._look_ahead_offset_x = self._look_ahead_offset_x +
 		(target_offset_x - self._look_ahead_offset_x) * self._look_ahead_speed_x
-	self._look_ahead_offset_y = self._look_ahead_offset_y +
-		(target_offset_y - self._look_ahead_offset_y) * self._look_ahead_speed_y
 
 	local target_cam_x = self._target.x + self._look_ahead_offset_x -
 		(self._viewport_width / 2 / tile_size)
-	local target_cam_y = self._target.y + self._look_ahead_offset_y -
-		(self._viewport_height / 2 / tile_size)
 
-	-- Apply vertical deadzone constraint during wall sequences
+	-- Vertical camera positioning
+	local target_cam_y
 	if self._vertical_deadzone_active then
+		-- Wall jump: use velocity-based offset system
+		local target_offset_y = 0
+		if self._target.vy and math.abs(self._target.vy) > 2 then
+			local vy_normalized = math.max(-1, math.min(self._target.vy / 20, 1))
+			target_offset_y = vy_normalized * self._look_ahead_distance_y
+
+			if in_wall_jump and target_offset_y > 0 then
+				target_offset_y = 0
+			end
+		end
+
+		self._look_ahead_offset_y = self._look_ahead_offset_y +
+			(target_offset_y - self._look_ahead_offset_y) * self._look_ahead_speed_y
+
+		target_cam_y = self._target.y + self._look_ahead_offset_y -
+			(self._viewport_height / 2 / tile_size)
+
 		-- Lock camera at highest point
 		target_cam_y = math.min(target_cam_y, self._vertical_deadzone_high_water_mark)
+	else
+		-- Normal gameplay: track ground Y when player is grounded and not moving upward
+		local is_grounded = self._target.is_grounded
+		local is_moving_up = self._target.vy and self._target.vy < 0
+
+		if is_grounded and not is_moving_up then
+			-- Update stored ground position only when truly on ground
+			self._ground_y = self._target.y
+			print("Player grounded at Y:", self._ground_y)
+		end
+
+		-- Use stored ground Y (or player Y if no ground stored yet)
+		local reference_y = self._ground_y or self._target.y
+
+		-- Center camera on reference Y
+		target_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
+
+		print("is_grounded:", is_grounded, "is_moving_up:", is_moving_up, "reference_y:", reference_y, "target_cam_y:", target_cam_y)
 	end
 
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
@@ -158,8 +184,27 @@ function Camera:update(tile_size, dt, lerp_factor)
 	target_cam_x = math.max(0, math.min(target_cam_x, max_cam_x))
 	target_cam_y = math.max(0, math.min(target_cam_y, max_cam_y))
 
-	self._x = self._x + (target_cam_x - self._x) * lerp_factor
-	self._y = self._y + (target_cam_y - self._y) * lerp_factor
+	print("Before lerp - camera._y:", self._y, "target_cam_y (clamped):", target_cam_y, "delta:", (target_cam_y - self._y))
+
+	-- Lerp with epsilon snapping to prevent endless drift
+	local epsilon = 0.01
+	local delta_x = target_cam_x - self._x
+	local delta_y = target_cam_y - self._y
+
+	if math.abs(delta_x) < epsilon then
+		self._x = target_cam_x
+	else
+		self._x = self._x + delta_x * lerp_factor
+	end
+
+	if math.abs(delta_y) < epsilon then
+		self._y = target_cam_y
+	else
+		self._y = self._y + delta_y * lerp_factor
+	end
+
+	print("After lerp - camera._y:", self._y)
+	print("---")
 end
 
 --- Gets the visible tile bounds for culling

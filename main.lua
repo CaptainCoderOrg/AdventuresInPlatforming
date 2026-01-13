@@ -84,7 +84,7 @@ local function init_level()
         level_info.height         -- World height in tiles (from level)
     )
     camera:set_target(player)
-    camera:set_look_ahead(6, 6, 0.025, 1)
+    camera:set_look_ahead(3, 4, 0.025, 1)
 end
 
 local function init()

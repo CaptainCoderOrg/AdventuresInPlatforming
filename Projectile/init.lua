@@ -17,7 +17,7 @@ Projectile.animations = {
 	}),
 }
 
-function Projectile.update(dt)
+function Projectile.update(dt, level_info)
     local to_remove = {}
 
     for projectile, _ in pairs(Projectile.all) do
@@ -28,7 +28,7 @@ function Projectile.update(dt)
         -- Self-managing animation with delta time
         projectile.animation:play(dt)
 
-        if projectile.x < -2 or projectile.x > 34 or projectile.y > 34 then
+        if projectile.x < -2 or projectile.x > level_info.width + 2 or projectile.y > level_info.height + 2 then
             projectile.marked_for_destruction = true
         end
 

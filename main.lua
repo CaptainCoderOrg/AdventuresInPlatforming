@@ -47,7 +47,7 @@ local function update()
     if dt > 0.5 then dt = 0.5 end
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
     player:update(dt)
-    Projectile.update(dt)
+    Projectile.update(dt, level_info)
     Effects.update(dt)
 end
 

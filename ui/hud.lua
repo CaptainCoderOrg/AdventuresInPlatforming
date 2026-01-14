@@ -235,19 +235,17 @@ local function draw_settings()
 end
 
 function hud.draw_player_health(player)
-    player.max_health = 7
-    player.damage = 0
-    local heart_size = 32
-    local damage_size = 24
+    local heart_size = 64
+    local damage_size = 40
     local damage_off = (heart_size - damage_size) / 2
-    local spacing_x = 32 + 4
+    local spacing_x = 64 + 4
     local off_x = canvas.get_width() - (player.max_health * spacing_x)
-    local off_y = canvas.get_height() - 48
+    local off_y = canvas.get_height() - 84
     for ix = 1, player:health() do
-        canvas.draw_image(sprites.HEART, off_x + (ix - 1) * (32 + 4), off_y, heart_size, heart_size)
+        canvas.draw_image(sprites.HEART, off_x + (ix - 1) * spacing_x, off_y, heart_size, heart_size)
     end
     for ix = player:health() + 1, player.max_health do
-        canvas.draw_image(sprites.HEART, damage_off + off_x + (ix - 1) * (32 + 4), damage_off + off_y, damage_size, damage_size)
+        canvas.draw_image(sprites.HEART, damage_off + off_x + (ix - 1) * spacing_x, damage_off + off_y, damage_size, damage_size)
     end
 end
 

@@ -96,7 +96,6 @@ function Player.new()
 	
 	self.projectile_ix = 1
 	self.projectile = self.projectile_options[self.projectile_ix]
-	print(self.projectile.name)
 
 	-- State-specific storage (for states with module-level variables)
 	self.run_state = {

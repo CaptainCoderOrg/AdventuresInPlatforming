@@ -12,9 +12,13 @@ Effects.animations = {
 	HIT = Animation.create_definition("effect_hit", 4, {
 		width = 16,
 		height = 16,
-		ms_per_frame = 80,
-		loop = false  -- One-shot animation
-	})
+		loop = false
+	}),
+	SHURIKEN_HIT = Animation.create_definition("shuriken_hit", 6, {
+		width = 8,
+		height = 8,
+		loop = false
+	}),
 }
 
 --- Updates all active effects, removes finished ones
@@ -81,6 +85,14 @@ function Effects.create_hit(x, y, direction)
 	direction = direction or 1
 	local effect = Effects.new("hit", Effects.animations.HIT, x, y)
 	effect.animation.flipped = direction
+	return effect
+end
+
+function Effects.create_shuriken_hit(x, y, direction)
+	direction = direction or 1
+	local off_x = direction > 0 and -0.05 or 0.55
+	local effect = Effects.new("shuriken_hit", Effects.animations.SHURIKEN_HIT, x + off_x, y + 0.25)
+	effect.animation.flipped = -direction
 	return effect
 end
 

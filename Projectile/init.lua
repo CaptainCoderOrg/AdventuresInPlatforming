@@ -3,6 +3,7 @@ local canvas = require('canvas')
 local world = require('world')
 local Animation = require('Animation')
 local config = require('config')
+local Effects = require("Effects")
 local Projectile = {}
 
 Projectile.__index = Projectile
@@ -47,7 +48,6 @@ function Projectile.update(dt, level_info)
 
         -- Self-managing animation with delta time
         projectile.animation:play(dt)
-
         if projectile.x < -2 or projectile.x > level_info.width + 2 or projectile.y > level_info.height + 2 then
             projectile.marked_for_destruction = true
         end
@@ -96,16 +96,19 @@ end
 
 function Projectile:on_collision(other)
     if other.owner then
-        local Effects = require("Effects")
         -- Determine direction from velocity (positive = right, negative = left)
+
         local direction = self.vx >= 0 and 1 or -1
-        Effects.create_hit(self.x - 0.25, self.y - 0.25, direction)
+        -- TO DO: Add raycast here to find the distance to the other object and shift so the effect appears directly at the collision point
+        self.create_effect(self.x - 0.25, self.y - 0.25, direction)
         self.marked_for_destruction = true
     end
 end
 
-function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction)
+function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback)
+    if effect_callback == nil then effect_callback = Effects.create_hit end
 	local self = setmetatable({}, Projectile)
+    self.create_effect = effect_callback
 	self.id = name .. "_" .. Projectile.next_id
 	Projectile.next_id = Projectile.next_id + 1
 	self.animation = Animation.new(animation_def, {
@@ -136,7 +139,8 @@ function Projectile.create_shuriken(x, y, direction)
     local velocity_x = direction*24
     local velocity_y = 0
     local gravity = 0
-    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction)
+    local effect_callback = Effects.create_shuriken_hit
+    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction, effect_callback)
 end
 
 return Projectile

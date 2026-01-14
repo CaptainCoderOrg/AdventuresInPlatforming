@@ -49,6 +49,7 @@ sprites.SHURIKEN_SPRITE = "shuriken"
 canvas.assets.load_image(sprites.SHURIKEN_SPRITE, "sprites/throwables/shuriken.png")
 
 canvas.assets.load_image("effect_hit", "sprites/effects/hit.png")
+canvas.assets.load_image("shuriken_hit", "sprites/effects/shuriken_hit.png")
 
 function sprites.draw_ladder(dx, dy, sprite)
 	if sprite == nil then sprite = LADDER_MID end

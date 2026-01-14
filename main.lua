@@ -10,6 +10,7 @@ local hud = require("ui/hud")
 local Projectile = require("Projectile")
 local Effects = require("Effects")
 local Camera = require("Camera")
+local camera_cfg = require("config/camera")
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
@@ -44,7 +45,7 @@ local function update()
     end
     local dt = canvas.get_delta()
     if dt > 0.5 then dt = 0.5 end
-    camera:update(sprites.tile_size, dt, 0.05)
+    camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
     player:update(dt)
     Projectile.update(dt)
     Effects.update(dt)
@@ -78,13 +79,13 @@ local function init_level()
 
     -- Initialize camera after player
     camera = Camera.new(
-        config.ui.canvas_width,   -- Viewport width in pixels
-        config.ui.canvas_height,  -- Viewport height in pixels
-        level_info.width,         -- World width in tiles (from level)
-        level_info.height         -- World height in tiles (from level)
+        config.ui.canvas_width,
+        config.ui.canvas_height,
+        level_info.width,
+        level_info.height
     )
     camera:set_target(player)
-    camera:set_look_ahead(3, 4, 0.025, 1)
+    camera:set_look_ahead()
 end
 
 local function init()

@@ -417,17 +417,18 @@ end
 --- Draws all wall tiles and debug bounding boxes.
 --- @param camera table Camera instance for viewport culling
 function walls.draw(camera)
-	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(sprites.tile_size)
+	local ts = sprites.tile_size
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
 
 	for _, tile in pairs(walls.tiles) do
 		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
-			sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+			sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
 		end
 	end
 
 	for _, tile in pairs(walls.solo_tiles) do
 		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
-			sprites.draw_tile(4, 3, tile.x * sprites.tile_size, tile.y * sprites.tile_size)
+			sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
 		end
 	end
 
@@ -440,18 +441,18 @@ function walls.draw(camera)
 					local v1 = verts[i]
 					local v2 = verts[i % #verts + 1]
 					canvas.draw_line(
-						v1.x * sprites.tile_size,
-						v1.y * sprites.tile_size,
-						v2.x * sprites.tile_size,
-						v2.y * sprites.tile_size
+						v1.x * ts,
+						v1.y * ts,
+						v2.x * ts,
+						v2.y * ts
 					)
 				end
 			elseif col.box then
 				canvas.draw_rect(
-					col.x * sprites.tile_size,
-					col.y * sprites.tile_size,
-					col.box.w * sprites.tile_size,
-					col.box.h * sprites.tile_size
+					col.x * ts,
+					col.y * ts,
+					col.box.w * ts,
+					col.box.h * ts
 				)
 			end
 		end

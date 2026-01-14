@@ -99,10 +99,10 @@ function ladders.draw(camera)
 		canvas.set_color("#FFFF00")
 		for _, ladder in pairs(ladders.tiles) do
 			canvas.draw_rect(
-				ladder.x * sprites.tile_size,
-				ladder.y * sprites.tile_size,
-				sprites.tile_size,
-				sprites.tile_size
+				ladder.x * ts,
+				ladder.y * ts,
+				ts,
+				ts
 			)
 		end
 
@@ -110,10 +110,10 @@ function ladders.draw(camera)
 		canvas.set_color("#FF0000")
 		for _, top in ipairs(ladders.top_colliders) do
 			canvas.draw_rect(
-				(top.x + top.box.x) * sprites.tile_size,
-				(top.y + top.box.y) * sprites.tile_size,
-				top.box.w * sprites.tile_size,
-				top.box.h * sprites.tile_size
+				(top.x + top.box.x) * ts,
+				(top.y + top.box.y) * ts,
+				top.box.w * ts,
+				top.box.h * ts
 			)
 		end
 	end

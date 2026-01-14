@@ -239,70 +239,72 @@ function world.sync_position(obj)
 end
 
 --- Raycasts downward to find the ground below a position
---- @param x number World X position (in tiles)
---- @param y number World Y position (in tiles)
+--- @param player table Player object (to filter out player's own collider)
 --- @param max_distance number Maximum search distance downward (in tiles)
---- @param box table Player hitbox {x, y, w, h} for collision shape
 --- @return number|nil Landing Y position (in tiles), or nil if no ground found
-function world.raycast_down(x, y, max_distance, box)
+function world.raycast_down(player, max_distance)
 	local tile_size = sprites.tile_size
+	local box = player.box
 
-	-- Create a tall shape directly below player collision box
-	local test_x = (x + box.x) * tile_size
-	local player_bottom_y = (y + box.y + box.h) * tile_size
-	local test_w = box.w * tile_size
-	local search_pixels = max_distance * tile_size
-	local test_h = search_pixels
+	-- Get player's collision shape to filter it out
+	local player_shape = world.shape_map[player]
 
-	-- Create tall rectangle starting at player bottom, extending downward
-	local test_shape = world.hc:rectangle(test_x, player_bottom_y, test_w, test_h)
-	local tx1, ty1, tx2, ty2 = test_shape:bbox()
+	-- Cast a ray downward from player's center
+	local center_x = (player.x + box.x + box.w / 2) * tile_size
+	local player_bottom_y = (player.y + box.y + box.h) * tile_size
+	local ray_start_x, ray_start_y = center_x, player_bottom_y
+	local ray_dx, ray_dy = 0, 1  -- Pointing straight down
+	local ray_range = max_distance * tile_size
 
-	-- Check for collisions
-	local collisions = world.hc:collisions(test_shape)
+	print(">>> RAYCAST DEBUG <<<")
+	print("Player position (tiles):", player.x, player.y)
+	print("Ray start (pixels):", ray_start_x, ray_start_y)
+	print("Ray direction:", ray_dx, ray_dy)
+	print("Ray range (pixels):", ray_range)
+
+	-- Use HC's raycast method to find intersections
+	local intersections = world.hc:raycast(ray_start_x, ray_start_y, ray_dx, ray_dy, ray_range)
+
 	local closest_ground_y = nil
+	local collision_count = 0
 
-	for other, sep in pairs(collisions) do
-		-- Skip trigger colliders
-		local is_trigger = world.trigger_map[other.owner] ~= nil
-		if not is_trigger then
-			-- Get the bounding box of the colliding shape
-			local ox1, oy1, ox2, oy2 = other:bbox()
+	for shape, hits in pairs(intersections) do
+		-- Skip player's own collider
+		if shape == player_shape then
+			print("Skipping player's own collider")
+			goto continue
+		end
 
-			-- Find the intersection of the two rectangles
-			local intersect_top = math.max(ty1, oy1)
-			local intersect_bottom = math.min(ty2, oy2)
+		-- Skip triggers
+		local is_trigger = world.trigger_map[shape.owner] ~= nil
+		if is_trigger then
+			print("Skipping trigger")
+			goto continue
+		end
 
-			-- Check if there's actual vertical overlap
-			if intersect_top < intersect_bottom then
-				-- Determine ground surface based on which shape extends further down
-				local ground_surface_y
-				if oy2 < ty2 then
-					-- Boundary shape ends before test shape (test extends past boundary)
-					-- Ground is at the bottom of the boundary shape
-					ground_surface_y = oy2
-				else
-					-- Boundary shape extends past test shape (or equal)
-					-- Ground is at the top of the intersection (where test enters boundary)
-					ground_surface_y = intersect_top
-				end
+		collision_count = collision_count + 1
+		print("Collision #" .. collision_count .. " - shape:", shape.owner)
 
-				-- Only consider if ground is below player bottom
-				if ground_surface_y >= player_bottom_y then
-					-- Calculate where the player would stand
-					local stand_y = (ground_surface_y / tile_size) - box.y - box.h
+		-- Process each hit point
+		for _, hit in ipairs(hits) do
+			print("  Hit at (pixels):", hit.x, hit.y)
 
-					-- Track the closest (highest, which means smallest Y value) ground
-					if not closest_ground_y or stand_y < closest_ground_y then
-						closest_ground_y = stand_y
-					end
-				end
+			-- Convert hit Y to player standing position (tiles)
+			local stand_y = (hit.y / tile_size) - box.y - box.h
+			print("  Calculated stand_y (tiles):", stand_y)
+
+			if not closest_ground_y or stand_y < closest_ground_y then
+				print("  -> NEW CLOSEST!")
+				closest_ground_y = stand_y
 			end
 		end
+
+		::continue::
 	end
 
-	-- Clean up temporary shape
-	world.hc:remove(test_shape)
+	print("Total collisions found:", collision_count)
+	print("Final closest_ground_y:", closest_ground_y)
+	print(">>> END RAYCAST <<<")
 
 	return closest_ground_y
 end

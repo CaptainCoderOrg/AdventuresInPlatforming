@@ -1,5 +1,5 @@
 return {
-    debug = false,
+	debug = false,
 	bounding_boxes = false,
 	ui = {
 		TILE = 16,

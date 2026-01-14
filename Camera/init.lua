@@ -1,5 +1,6 @@
 local canvas = require('canvas')
 local world = require('world')
+local cfg = require('config/camera')
 
 local Camera = {}
 Camera.__index = Camera
@@ -12,34 +13,25 @@ Camera.__index = Camera
 function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	local self = setmetatable({}, Camera)
 
-	-- Viewport properties (in pixels)
 	self._viewport_width = viewport_width
 	self._viewport_height = viewport_height
-
-	-- World bounds (in tiles)
 	self._world_width = world_width
 	self._world_height = world_height
-
-	-- Camera position (in tiles, represents top-left corner of viewport)
 	self._x = 0
 	self._y = 0
-
-	-- Target to follow (typically player)
 	self._target = nil
 
-	-- Look-ahead offset state
+	-- Horizontal look-ahead state
 	self._look_ahead_offset_x = 0
-	self._look_ahead_distance_x = 3
-	self._look_ahead_speed_x = 0.05
+	self._look_ahead_distance_x = cfg.look_ahead_distance_x
+	self._look_ahead_speed_x = cfg.look_ahead_speed_x
 
-	-- Ground-based vertical framing
+	-- Vertical framing state
 	self._ground_y = nil
-
-	-- Falling camera state
-	self._fall_time = 0  -- Track duration of falling at terminal velocity
-	self._fall_lerp_min = 0.05  -- Starting lerp speed (normal)
-	self._fall_lerp_max = 0.30  -- Maximum lerp speed when falling
-	self._fall_lerp_ramp_duration = 0.5  -- Seconds to ramp from min to max
+	self._fall_time = 0
+	self._fall_lerp_min = cfg.fall_lerp_min
+	self._fall_lerp_max = cfg.fall_lerp_max
+	self._fall_lerp_ramp_duration = cfg.fall_lerp_ramp_duration
 
 	return self
 end
@@ -62,26 +54,116 @@ function Camera:set_target(target)
 	self._target = target
 end
 
---- Configures look-ahead behavior
---- @param distance_x? number Horizontal look-ahead distance in tiles (default 3)
---- @param distance_y? number Vertical look-ahead distance in tiles (default 2)
---- @param speed_x? number Horizontal interpolation speed (default 0.05)
---- @param speed_y? number Vertical interpolation speed (default 0.03)
-function Camera:set_look_ahead(distance_x, distance_y, speed_x, speed_y)
-	self._look_ahead_distance_x = distance_x or 3
-	self._look_ahead_distance_y = distance_y or 2
-	self._look_ahead_speed_x = speed_x or 0.05
-	self._look_ahead_speed_y = speed_y or 0.03
+--- Calculates target Y for falling state
+--- @param reference_y number Player Y position
+--- @param tile_size number Pixels per tile
+--- @return number Target camera Y
+function Camera:_calculate_falling_target_y(reference_y, tile_size)
+	local viewport_tiles = self._viewport_height / tile_size
+	local desired_y = reference_y - viewport_tiles * cfg.framing_falling
+
+	print("=== FALLING CAMERA DEBUG ===")
+	print("Player Y:", reference_y)
+	print("Viewport tiles:", viewport_tiles)
+	print("Desired cam Y (10% framing):", desired_y)
+	print("Player screen position would be:", (reference_y - desired_y) / viewport_tiles * 100, "%")
+
+	-- Clamp to prevent camera from overshooting landing position
+	if self._target.box then
+		local landing_y = world.raycast_down(
+			self._target,
+			cfg.raycast_distance
+		)
+
+		print("Detected landing Y:", landing_y)
+
+		if landing_y then
+			local distance_to_landing = landing_y - reference_y
+			print("Distance to landing:", distance_to_landing, "tiles")
+
+			-- Clamp camera to position landing at 2/3 from top (grounded framing)
+			-- This ensures smooth transition from falling camera to grounded camera
+			local max_cam_y = landing_y - viewport_tiles * cfg.framing_default
+			print("Max cam Y (landing at 2/3 framing):", max_cam_y)
+			print("Before clamp:", desired_y)
+
+			-- Clamp: don't let camera go too low (high Y value) which would overshoot landing
+			-- When Y increases downward: higher Y = camera positioned lower = shows more above
+			if desired_y > max_cam_y then
+				desired_y = max_cam_y
+				print("Applied clamp - positioning landing at 2/3")
+			else
+				print("No clamp needed - landing will be visible")
+			end
+
+			print("After clamp:", desired_y)
+			print("Landing would be at:", (landing_y - desired_y) / viewport_tiles * 100, "% from top")
+		else
+			print("No ground detected within", cfg.raycast_distance, "tiles")
+		end
+	end
+
+	print("Final cam Y:", desired_y)
+	print("========================")
+
+	return desired_y
+end
+
+--- Calculates target Y for climbing state
+--- @param reference_y number Player Y position
+--- @param tile_size number Pixels per tile
+--- @return number Target camera Y
+function Camera:_calculate_climbing_target_y(reference_y, tile_size)
+	local viewport_tiles = self._viewport_height / tile_size
+	local desired_y
+
+	if self._target.vy < 0 then
+		desired_y = reference_y - viewport_tiles * cfg.framing_default
+	elseif self._target.vy > 0 then
+		desired_y = reference_y - viewport_tiles * cfg.framing_climbing_down
+	else
+		desired_y = reference_y - viewport_tiles * cfg.framing_climbing_idle
+	end
+
+	if self._target.current_ladder then
+		if self._target.vy < 0 and self._target.current_ladder.ladder_top then
+			local exit_y = self._target.current_ladder.ladder_top.y - cfg.ladder_exit_offset
+			local max_y = exit_y - viewport_tiles * cfg.framing_default
+			desired_y = math.max(desired_y, max_y)
+		elseif self._target.vy > 0 and self._target.current_ladder.ladder_bottom then
+			local exit_y = self._target.current_ladder.ladder_bottom.y
+			local min_y = exit_y - viewport_tiles * cfg.framing_default
+			desired_y = math.min(desired_y, min_y)
+		end
+	end
+
+	return desired_y
+end
+
+--- Calculates target Y for default state
+--- @param reference_y number Player Y position
+--- @param tile_size number Pixels per tile
+--- @return number Target camera Y
+function Camera:_calculate_default_target_y(reference_y, tile_size)
+	return reference_y - (self._viewport_height / tile_size) * cfg.framing_default
+end
+
+--- Configures horizontal look-ahead behavior
+--- @param distance_x? number Look-ahead distance in tiles (default from config)
+--- @param speed_x? number Interpolation speed (default from config)
+function Camera:set_look_ahead(distance_x, speed_x)
+	self._look_ahead_distance_x = distance_x or cfg.look_ahead_distance_x
+	self._look_ahead_speed_x = speed_x or cfg.look_ahead_speed_x
 end
 
 --- Sets the falling camera lerp parameters
---- @param min_lerp? number Starting lerp speed when falling starts (default 0.05)
---- @param max_lerp? number Maximum lerp speed after ramp (default 0.15)
---- @param ramp_duration? number Seconds to ramp from min to max (default 0.5)
+--- @param min_lerp? number Starting lerp speed when falling starts (default from config)
+--- @param max_lerp? number Maximum lerp speed after ramp (default from config)
+--- @param ramp_duration? number Seconds to ramp from min to max (default from config)
 function Camera:set_fall_lerp(min_lerp, max_lerp, ramp_duration)
-	self._fall_lerp_min = min_lerp or 0.05
-	self._fall_lerp_max = max_lerp or 0.15
-	self._fall_lerp_ramp_duration = ramp_duration or 0.5
+	self._fall_lerp_min = min_lerp or cfg.fall_lerp_min
+	self._fall_lerp_max = max_lerp or cfg.fall_lerp_max
+	self._fall_lerp_ramp_duration = ramp_duration or cfg.fall_lerp_ramp_duration
 end
 
 
@@ -93,6 +175,12 @@ function Camera:update(tile_size, dt, lerp_factor)
 	if not self._target then return end
 
 	lerp_factor = lerp_factor or 1.0
+
+	print("=== CAMERA UPDATE ===")
+	print("Player pos (tiles):", self._target.x, self._target.y)
+	print("Player velocity:", "vx=" .. (self._target.vx or 0), "vy=" .. (self._target.vy or 0))
+	print("Player state:", self._target.state and self._target.state.name or "nil")
+	print("Player is_grounded:", self._target.is_grounded)
 
 	-- Horizontal look-ahead
 	local target_offset_x = self._target.direction * self._look_ahead_distance_x
@@ -110,13 +198,20 @@ function Camera:update(tile_size, dt, lerp_factor)
 	local is_climbing = self._target.state and self._target.state.name == "climb"
 	local is_moving_up = self._target.vy and self._target.vy < 0
 
+	print("is_grounded:", is_grounded)
+	print("is_wall_sliding:", is_wall_sliding)
+	print("is_climbing:", is_climbing)
+	print("is_moving_up:", is_moving_up)
+
 	-- Update stored Y when in stable state (grounded or wall sliding) and not moving up
 	if (is_grounded or is_wall_sliding) and not is_moving_up then
 		self._ground_y = self._target.y
+		print("Updated ground_y to:", self._ground_y)
 	end
 
 	-- Check if falling at terminal velocity
-	local is_falling_fast = self._target.vy and self._target.vy >= 20
+	local is_falling_fast = self._target.vy and self._target.vy >= cfg.terminal_velocity
+	print("is_falling_fast:", is_falling_fast, "(terminal_velocity=" .. cfg.terminal_velocity .. ")")
 
 	-- Track falling duration for lerp speed ramping
 	if is_falling_fast then
@@ -138,60 +233,14 @@ function Camera:update(tile_size, dt, lerp_factor)
 	-- Calculate camera target based on player state
 	local target_cam_y
 	if is_falling_fast then
-		-- Position player at top when falling fast (show landing area below)
-		local desired_cam_y = reference_y - (self._viewport_height / tile_size) * 0.10
-
-		-- Clamp to ground if detected below
-		if self._target.box then
-			local max_search = 20  -- Search 20 tiles down
-			local landing_y = world.raycast_down(
-				self._target.x,
-				self._target.y,
-				max_search,
-				self._target.box
-			)
-
-			if landing_y then
-				-- Don't let camera go below landing position with 2/3 framing
-				local min_cam_y = landing_y - (self._viewport_height / tile_size) * 0.667
-				desired_cam_y = math.min(desired_cam_y, min_cam_y)
-			end
-		end
-
-		target_cam_y = desired_cam_y
+		print(">>> Using FALLING camera calculation")
+		target_cam_y = self:_calculate_falling_target_y(reference_y, tile_size)
 	elseif is_climbing then
-		-- Calculate normal climbing camera position
-		local desired_cam_y
-		if self._target.vy < 0 then
-			-- Climbing up: 2/3 from top (show more below)
-			desired_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667
-		elseif self._target.vy > 0 then
-			-- Climbing down: 1/3 from top (show more above)
-			desired_cam_y = reference_y - (self._viewport_height / tile_size) * 0.333
-		else
-			-- Stationary on ladder: centered
-			desired_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
-		end
-
-		-- Clamp to ladder boundaries
-		if self._target.current_ladder then
-			if self._target.vy < 0 and self._target.current_ladder.ladder_top then
-				-- Climbing up: clamp to exit position at top
-				local exit_y = self._target.current_ladder.ladder_top.y - 0.8
-				local max_cam_y = exit_y - (self._viewport_height / tile_size) * 0.667
-				desired_cam_y = math.max(desired_cam_y, max_cam_y)
-			elseif self._target.vy > 0 and self._target.current_ladder.ladder_bottom then
-				-- Climbing down: clamp to exit position at bottom
-				local exit_y = self._target.current_ladder.ladder_bottom.y
-				local min_cam_y = exit_y - (self._viewport_height / tile_size) * 0.667
-				desired_cam_y = math.min(desired_cam_y, min_cam_y)
-			end
-		end
-
-		target_cam_y = desired_cam_y
+		print(">>> Using CLIMBING camera calculation")
+		target_cam_y = self:_calculate_climbing_target_y(reference_y, tile_size)
 	else
-		-- Default: position player at 2/3 from top (show more below)
-		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667
+		print(">>> Using DEFAULT camera calculation")
+		target_cam_y = self:_calculate_default_target_y(reference_y, tile_size)
 	end
 
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
@@ -200,12 +249,13 @@ function Camera:update(tile_size, dt, lerp_factor)
 	target_cam_x = math.max(0, math.min(target_cam_x, max_cam_x))
 	target_cam_y = math.max(0, math.min(target_cam_y, max_cam_y))
 
-	-- Lerp with epsilon snapping to prevent endless drift
-	local epsilon = 0.01
+	--- Apply epsilon snapping to prevent floating-point drift.
+	--- When delta is below epsilon (0.01 tiles ~0.5 pixels), snap to target
+	--- instead of lerping to prevent endless approach without arrival.
 	local delta_x = target_cam_x - self._x
 	local delta_y = target_cam_y - self._y
 
-	if math.abs(delta_x) < epsilon then
+	if math.abs(delta_x) < cfg.epsilon then
 		self._x = target_cam_x
 	else
 		self._x = self._x + delta_x * lerp_factor
@@ -214,16 +264,19 @@ function Camera:update(tile_size, dt, lerp_factor)
 	-- Calculate Y lerp speed based on falling duration
 	local y_lerp = lerp_factor
 	if is_falling_fast then
-		-- Ramp lerp speed from min to max over time
 		local ramp_progress = math.min(self._fall_time / self._fall_lerp_ramp_duration, 1.0)
 		y_lerp = self._fall_lerp_min + (self._fall_lerp_max - self._fall_lerp_min) * ramp_progress
 	end
 
-	if math.abs(delta_y) < epsilon then
+	if math.abs(delta_y) < cfg.epsilon then
 		self._y = target_cam_y
 	else
 		self._y = self._y + delta_y * y_lerp
 	end
+
+	print("Final camera Y:", self._y)
+	print("=== END CAMERA UPDATE ===")
+	print("")
 end
 
 --- Gets the visible tile bounds for culling
@@ -241,7 +294,6 @@ end
 --- Applies camera transform to canvas (call before drawing world)
 --- @param tile_size number Pixels per tile
 function Camera:apply_transform(tile_size)
-	-- Translate canvas by negative camera position
 	canvas.translate(-self._x * tile_size, -self._y * tile_size)
 end
 

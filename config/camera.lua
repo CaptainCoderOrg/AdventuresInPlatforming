@@ -1,0 +1,25 @@
+return {
+	-- Lerp speeds
+	default_lerp = 0.05,
+	fall_lerp_min = 0.08,  -- Slower initial fall tracking
+	fall_lerp_max = 0.25,  -- Moderate speed at terminal velocity
+	fall_lerp_ramp_duration = 0.5,  -- Gradual ramp
+
+	-- Look-ahead
+	look_ahead_distance_x = 3,
+	look_ahead_speed_x = 0.05,
+
+	-- Framing ratios (from top of viewport)
+	framing_falling = 0.10,         -- Player at 10% when falling fast
+	framing_default = 0.667,        -- Player at 2/3 (show more below)
+	framing_climbing_down = 0.333,  -- Player at 1/3 (show more above)
+	framing_climbing_idle = 0.5,    -- Centered on ladder
+
+	-- Ground detection
+	raycast_distance = 20,          -- Tiles to search below player
+	terminal_velocity = 20,         -- Pixels/frame threshold for "falling fast"
+
+	-- Misc
+	ladder_exit_offset = 0.8,       -- Tiles above ladder top for exit
+	epsilon = 0.01,                 -- Snap threshold to prevent drift
+}

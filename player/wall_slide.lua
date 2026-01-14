@@ -44,7 +44,6 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function wall_slide.update(player, dt)
-	-- Handle grace period timing (for releasing wall)
 	if player.wall_slide_state.holding_wall then
 		player.wall_slide_state.grace_time = 0
 	else
@@ -55,7 +54,6 @@ function wall_slide.update(player, dt)
 		end
 	end
 
-	-- Handle slide delay timer
 	player.wall_slide_state.slide_delay_timer = player.wall_slide_state.slide_delay_timer + dt
 
 	local in_grace = player.wall_slide_state.grace_time > 0

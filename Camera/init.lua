@@ -76,6 +76,8 @@ function Camera:_calculate_falling_target_y(reference_y, tile_size)
 		)
 
 		if landing_y then
+			self._ground_y = landing_y
+
 			-- Clamp camera to position landing at 2/3 from top (grounded framing)
 			-- This ensures smooth transition from falling camera to grounded camera
 			local max_cam_y = landing_y - viewport_tiles * cfg.framing_default
@@ -85,6 +87,8 @@ function Camera:_calculate_falling_target_y(reference_y, tile_size)
 			if desired_y > max_cam_y then
 				desired_y = max_cam_y
 			end
+		else
+			self._ground_y = self._target.y
 		end
 	end
 

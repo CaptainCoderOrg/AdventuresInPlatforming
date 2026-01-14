@@ -22,7 +22,7 @@ return {
 	framing_climbing_idle = 0.5,    -- Centered on ladder
 
 	-- Ground detection
-	raycast_distance = 10,          -- Tiles to search below player
+	raycast_distance = 5,          -- Tiles to search below player
 	terminal_velocity = 20,         -- Pixels/frame threshold for "falling fast"
 
 	-- Misc

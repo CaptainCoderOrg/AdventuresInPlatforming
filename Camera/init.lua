@@ -141,17 +141,35 @@ function Camera:update(tile_size, dt, lerp_factor)
 		-- Position player at top when falling fast (show landing area below)
 		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.10
 	elseif is_climbing then
-		-- Climbing: position based on direction
+		-- Calculate normal climbing camera position
+		local desired_cam_y
 		if self._target.vy < 0 then
 			-- Climbing up: 2/3 from top (show more below)
-			target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667
+			desired_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667
 		elseif self._target.vy > 0 then
 			-- Climbing down: 1/3 from top (show more above)
-			target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.333
+			desired_cam_y = reference_y - (self._viewport_height / tile_size) * 0.333
 		else
 			-- Stationary on ladder: centered
-			target_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
+			desired_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
 		end
+
+		-- Clamp to ladder boundaries
+		if self._target.current_ladder then
+			if self._target.vy < 0 and self._target.current_ladder.ladder_top then
+				-- Climbing up: clamp to exit position at top
+				local exit_y = self._target.current_ladder.ladder_top.y - 0.8
+				local max_cam_y = exit_y - (self._viewport_height / tile_size) * 0.667
+				desired_cam_y = math.max(desired_cam_y, max_cam_y)
+			elseif self._target.vy > 0 and self._target.current_ladder.ladder_bottom then
+				-- Climbing down: clamp to exit position at bottom
+				local exit_y = self._target.current_ladder.ladder_bottom.y
+				local min_cam_y = exit_y - (self._viewport_height / tile_size) * 0.667
+				desired_cam_y = math.min(desired_cam_y, min_cam_y)
+			end
+		end
+
+		target_cam_y = desired_cam_y
 	else
 		-- Default: position player at 2/3 from top (show more below)
 		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667

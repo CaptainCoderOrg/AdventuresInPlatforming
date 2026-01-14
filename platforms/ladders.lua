@@ -45,6 +45,31 @@ function ladders.build_colliders()
 			ladder.is_bottom = true
 		end
 	end
+
+	-- Second pass: Cache ladder boundaries on each tile for camera clamping
+	for key, ladder in pairs(ladders.tiles) do
+		-- Find top of this ladder column
+		local top_tile = ladder
+		while true do
+			local above_key = top_tile.x .. "," .. (top_tile.y - 1)
+			local above = ladders.tiles[above_key]
+			if not above then break end
+			top_tile = above
+		end
+
+		-- Find bottom of this ladder column
+		local bottom_tile = ladder
+		while true do
+			local below_key = bottom_tile.x .. "," .. (bottom_tile.y + 1)
+			local below = ladders.tiles[below_key]
+			if not below then break end
+			bottom_tile = below
+		end
+
+		-- Store references
+		ladder.ladder_top = top_tile
+		ladder.ladder_bottom = bottom_tile
+	end
 end
 
 --- Draws all ladder tiles and debug bounding boxes.

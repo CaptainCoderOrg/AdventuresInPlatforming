@@ -35,8 +35,11 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	-- Ground-based vertical framing
 	self._ground_y = nil
 
-	-- Lerp speeds
-	self._fall_lerp_factor = 0.15  -- Faster lerp when falling at terminal velocity
+	-- Falling camera state
+	self._fall_time = 0  -- Track duration of falling at terminal velocity
+	self._fall_lerp_min = 0.05  -- Starting lerp speed (normal)
+	self._fall_lerp_max = 0.30  -- Maximum lerp speed when falling
+	self._fall_lerp_ramp_duration = 0.5  -- Seconds to ramp from min to max
 
 	return self
 end
@@ -71,10 +74,14 @@ function Camera:set_look_ahead(distance_x, distance_y, speed_x, speed_y)
 	self._look_ahead_speed_y = speed_y or 0.03
 end
 
---- Sets the lerp factor for falling camera (when at terminal velocity)
---- @param factor number Interpolation speed (0-1, default 0.15)
-function Camera:set_fall_lerp_factor(factor)
-	self._fall_lerp_factor = factor
+--- Sets the falling camera lerp parameters
+--- @param min_lerp? number Starting lerp speed when falling starts (default 0.05)
+--- @param max_lerp? number Maximum lerp speed after ramp (default 0.15)
+--- @param ramp_duration? number Seconds to ramp from min to max (default 0.5)
+function Camera:set_fall_lerp(min_lerp, max_lerp, ramp_duration)
+	self._fall_lerp_min = min_lerp or 0.05
+	self._fall_lerp_max = max_lerp or 0.15
+	self._fall_lerp_ramp_duration = ramp_duration or 0.5
 end
 
 
@@ -100,6 +107,7 @@ function Camera:update(tile_size, dt, lerp_factor)
 	-- Vertical camera positioning: track Y when in stable states
 	local is_grounded = self._target.is_grounded
 	local is_wall_sliding = self._target.state and self._target.state.name == "wall_slide"
+	local is_climbing = self._target.state and self._target.state.name == "climb"
 	local is_moving_up = self._target.vy and self._target.vy < 0
 
 	-- Update stored Y when in stable state (grounded or wall sliding) and not moving up
@@ -110,24 +118,43 @@ function Camera:update(tile_size, dt, lerp_factor)
 	-- Check if falling at terminal velocity
 	local is_falling_fast = self._target.vy and self._target.vy >= 20
 
-	-- Determine reference Y based on fall speed
-	local reference_y
+	-- Track falling duration for lerp speed ramping
 	if is_falling_fast then
-		-- Falling at max speed: use player's current position
+		self._fall_time = self._fall_time + dt
+	else
+		self._fall_time = 0
+	end
+
+	-- Determine reference Y based on player state
+	local reference_y
+	if is_climbing or is_falling_fast then
+		-- Climbing or falling at max speed: use player's current position
 		reference_y = self._target.y
 	else
 		-- Normal: use stored stable position
 		reference_y = self._ground_y or self._target.y
 	end
 
-	-- Calculate camera target based on fall speed
+	-- Calculate camera target based on player state
 	local target_cam_y
 	if is_falling_fast then
-		-- Position player at 1/3 from top when falling fast (show landing area below)
-		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.33
+		-- Position player at top when falling fast (show landing area below)
+		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.10
+	elseif is_climbing then
+		-- Climbing: position based on direction
+		if self._target.vy < 0 then
+			-- Climbing up: 2/3 from top (show more below)
+			target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667
+		elseif self._target.vy > 0 then
+			-- Climbing down: 1/3 from top (show more above)
+			target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.333
+		else
+			-- Stationary on ladder: centered
+			target_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
+		end
 	else
-		-- Center on stable position
-		target_cam_y = reference_y - (self._viewport_height / 2 / tile_size)
+		-- Default: position player at 2/3 from top (show more below)
+		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.667
 	end
 
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
@@ -147,8 +174,13 @@ function Camera:update(tile_size, dt, lerp_factor)
 		self._x = self._x + delta_x * lerp_factor
 	end
 
-	-- Use faster lerp speed for Y axis when falling at terminal velocity
-	local y_lerp = is_falling_fast and self._fall_lerp_factor or lerp_factor
+	-- Calculate Y lerp speed based on falling duration
+	local y_lerp = lerp_factor
+	if is_falling_fast then
+		-- Ramp lerp speed from min to max over time
+		local ramp_progress = math.min(self._fall_time / self._fall_lerp_ramp_duration, 1.0)
+		y_lerp = self._fall_lerp_min + (self._fall_lerp_max - self._fall_lerp_min) * ramp_progress
+	end
 
 	if math.abs(delta_y) < epsilon then
 		self._y = target_cam_y

@@ -51,6 +51,19 @@ canvas.assets.load_image(sprites.SHURIKEN_SPRITE, "sprites/throwables/shuriken.p
 canvas.assets.load_image("effect_hit", "sprites/effects/hit.png")
 canvas.assets.load_image("shuriken_hit", "sprites/effects/shuriken_hit.png")
 
+sprites.ratto = { 
+	idle = "ratto_idle",
+	run = "ratto_run",
+	hit = "ratto_hit",
+	death = "ratto_death",
+}
+canvas.assets.load_image(sprites.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
+canvas.assets.load_image(sprites.ratto.run, "sprites/enemies/ratto/ratto_run.png")
+canvas.assets.load_image(sprites.ratto.hit, "sprites/enemies/ratto/ratto_hit.png")
+canvas.assets.load_image(sprites.ratto.death, "sprites/enemies/ratto/ratto_death.png")
+
+
+
 function sprites.draw_ladder(dx, dy, sprite)
 	if sprite == nil then sprite = LADDER_MID end
 	canvas.draw_image(sprite, dx, dy, config.ui.TILE * config.ui.SCALE, config.ui.TILE * config.ui.SCALE)

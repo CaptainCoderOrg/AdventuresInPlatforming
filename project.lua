@@ -3,8 +3,8 @@ return {
   main = "main.lua",
   type = "canvas",
   canvas = {
-    width = 512,
-    height = 512,
+    width = 1920,
+    height = 1080,
     background_color = "#000000",
     scale = "full",  -- "full" | "fit" | "1x"
   },

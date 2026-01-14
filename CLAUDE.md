@@ -83,14 +83,20 @@ Visual feedback system for transient particle effects. Manages one-shot animatio
 
 **Current Effects:**
 - `HIT` - Impact effect (16×16px, 4 frames, 80ms/frame, non-looping)
+- `SHURIKEN_HIT` - Shuriken impact (8×8px, 6 frames, non-looping)
 
 **Usage:**
 ```lua
-Effects.create_hit(x, y, direction)  -- Spawns effect at tile coordinates
--- Effect automatically removed after animation completes
+Effects.create_hit(x, y, direction)          -- Generic hit effect
+Effects.create_shuriken_hit(x, y, direction) -- Shuriken-specific effect
 ```
 
 Effects are positioned in tile coordinates and converted to screen pixels for rendering.
+
+**Creating Custom Effects:**
+Effects use the object pool pattern. New effect types require:
+1. Animation definition in `Effects/init.lua`
+2. Factory method (e.g., `Effects.create_shuriken_hit`)
 
 ### Projectile System
 
@@ -99,18 +105,15 @@ Physics-based throwable objects with collision detection.
 **Architecture:**
 - Object pool with `Projectile.all` table
 - Full physics: velocity (vx, vy), gravity scaling
-- Collision via HC trigger volumes (`world.add_trigger_collider`)
+- Collision via sweeping trigger movement (`world.move_trigger`)
 - Auto-cleanup on collision or out-of-bounds
-- Spawns hit effects on world collision
+- Custom hit effect callbacks per projectile type
 
 **Projectile Properties:**
 - Position in tile coordinates
 - Box hitbox (0.5×0.5 tiles)
 - Velocity in pixels/frame
 - Direction-aware (for rendering and effects)
-
-**Current Projectiles:**
-- `AXE` - Throwing axe (8×8px sprite, 4-frame spin, 100ms/frame, gravity-affected)
 
 **Physics:**
 ```lua
@@ -121,6 +124,53 @@ gravity = 20                 -- gravity scale
 ```
 
 Projectiles only collide with solid world geometry (walls, platforms, slopes). Filtered to ignore triggers and player.
+
+**Projectile Switching:**
+- Player can toggle between projectile types (0 key or Gamepad SELECT)
+- Available: `Projectile.get_axe()`, `Projectile.get_shuriken()`
+- Current projectile stored in `player.projectile`
+
+**Current Projectiles:**
+- `AXE` - Throwing axe (8×8px, 4-frame spin, 100ms/frame, gravity-affected arc)
+- `SHURIKEN` - Throwing star (8×8px, 5-frame spin, 24 px/frame velocity, no gravity)
+
+**Custom Effect Callbacks:**
+Projectiles support custom hit effects via factory pattern:
+```lua
+Projectile.new(x, y, direction, spec, Effects.create_shuriken_hit)
+```
+
+### Camera System
+
+Complete camera management system in `Camera/init.lua` with entity following and dynamic framing.
+
+**Architecture:**
+- Entity following with smooth interpolation
+- State-based vertical framing (default, falling, climbing)
+- Horizontal look-ahead in movement direction
+- Manual look control via right analog stick
+- Epsilon snapping to prevent floating-point drift
+
+**Framing Modes:**
+- **Default**: Player at 2/3 from top (shows more below)
+- **Falling**: Player at 10% from top (uses raycast to predict landing)
+- **Climbing**: Varies with direction (0.333 down, 0.5 idle)
+
+**Key Methods:**
+```lua
+Camera.new(viewport_w, viewport_h, world_w, world_h)
+Camera:set_target(target)           -- Follow an entity
+Camera:update(tile_size, dt, lerp)  -- Call each frame
+Camera:apply_transform(tile_size)   -- Apply before drawing world
+Camera:get_visible_bounds(tile_size) -- For culling
+```
+
+**Features:**
+- **Look-ahead**: Camera leads 3 tiles in movement direction
+- **Manual Look**: Right analog stick adjusts view (0.333 to 0.833 vertical range)
+- **Falling Lerp Ramp**: Camera follows fall progressively faster (0.08 → 0.25 over 0.5s)
+
+Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead distance).
 
 ### Combat System
 
@@ -137,7 +187,7 @@ Player combat abilities managed through state machine.
    - All attacks 5 frames, 32px wide, non-looping
 
 2. **Throw** - `player/throw.lua`
-   - Launches AXE projectile on entry
+   - Launches selected projectile on entry (Axe or Shuriken)
    - Can move horizontally during throw
    - Duration: animation length (7 frames, 33ms/frame)
 
@@ -168,6 +218,17 @@ Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
 - Trigger volumes for ladders and hit zones
 - One-way platform support
 
+**Trigger Movement:**
+- `world.move_trigger(obj)` - Sweeping collision for trigger objects (projectiles)
+- Moves shape and detects first collision along path
+- Returns `{other, x, y}` collision info or nil
+
+**Raycasting:**
+- `world.raycast_down(player, max_distance)` - Finds solid ground below player
+- Used by camera to predict landing during falls
+- Filters out player collider and triggers
+- Returns landing Y position (in tiles) or nil
+
 ### Level Format
 
 Levels in `levels/` use ASCII tile maps:
@@ -195,10 +256,14 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - **Throw** - L key or Gamepad NORTH (projectile)
 - **Hammer** - I key or Gamepad EAST (heavy attack)
 - **Block** - U key or Gamepad RT (hold to defend)
+- **Switch Projectile** - 0 key or Gamepad SELECT (toggle Axe/Shuriken)
 
 **Movement:**
 - Arrow keys or Gamepad D-pad/Left Stick
 - Space or Gamepad SOUTH for jump
+
+**Camera:**
+- Right analog stick - Manual camera look (gamepad only, 0.15 deadzone)
 
 **Debug:**
 - P - Toggle debug overlay (FPS, state info, collision boxes)
@@ -213,17 +278,19 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `Animation/init.lua` - Delta-time animation system
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)
 - `Projectile/init.lua` - Throwable projectiles with physics
+- `Camera/init.lua` - Camera system with following and framing
 - `player/attack.lua` - Combat combo system
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance
-- `world.lua` - HC collision engine wrapper
+- `world.lua` - HC collision engine wrapper (includes raycast)
 - `platforms/init.lua` - Level geometry loader
 - `sprites.lua` - Asset loading
 - `controls.lua` - Unified keyboard/gamepad input
 - `config.lua` - Debug flags, game settings, UI scaling
   - `config.ui.TILE` - Base tile size (16px)
   - `config.ui.SCALE` - Display scale multiplier (3x = 48px tiles on screen)
+- `config/camera.lua` - Camera configuration (lerp, framing, look-ahead)
 
 ## Conventions
 

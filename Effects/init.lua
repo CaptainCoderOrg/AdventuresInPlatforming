@@ -90,7 +90,7 @@ end
 
 function Effects.create_shuriken_hit(x, y, direction)
 	direction = direction or 1
-	local off_x = direction > 0 and -0.05 or 0.55
+	local off_x = 0.25
 	local effect = Effects.new("shuriken_hit", Effects.animations.SHURIKEN_HIT, x + off_x, y + 0.25)
 	effect.animation.flipped = -direction
 	return effect

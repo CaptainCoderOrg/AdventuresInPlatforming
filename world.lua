@@ -193,6 +193,45 @@ function world.move(obj)
 	return cols
 end
 
+--- Moves a trigger object and detects first collision along path.
+--- @param obj table The trigger object to move
+--- @return table|nil collision info {other, x, y} or nil if no collision
+function world.move_trigger(obj)
+	local shape = world.trigger_map[obj]
+	if not shape then return nil end
+
+	local ts = sprites.tile_size
+	local old_x, old_y, _, _ = shape:bbox()
+	local new_x = (obj.x + obj.box.x) * ts
+	local new_y = (obj.y + obj.box.y) * ts
+
+	local dx = new_x - old_x
+	local dy = new_y - old_y
+
+	if dx == 0 and dy == 0 then return nil end
+
+	shape:move(dx, dy)
+
+	local collisions = world.hc:collisions(shape)
+	for other, sep in pairs(collisions) do
+		if world.shape_map[other.owner] == other and not (other.owner and other.owner.is_player) then
+			shape:move(sep.x, sep.y)
+
+			local x, y, _, _ = shape:bbox()
+			obj.x = x / ts - obj.box.x
+			obj.y = y / ts - obj.box.y
+
+			return {
+				other = other,
+				x = obj.x,
+				y = obj.y
+			}
+		end
+	end
+
+	return nil
+end
+
 --- Removes a collider for an object.
 --- @param obj table The object to remove
 function world.remove_collider(obj)

@@ -46,21 +46,15 @@ function Projectile.update(dt, level_info)
         projectile.vy = math.min(20, projectile.vy + projectile.gravity_scale*dt)
         projectile.y = projectile.y + projectile.vy * dt
 
-        -- Self-managing animation with delta time
         projectile.animation:play(dt)
+
         if projectile.x < -2 or projectile.x > level_info.width + 2 or projectile.y > level_info.height + 2 then
             projectile.marked_for_destruction = true
         end
 
-        world.sync_position(projectile)
-        if projectile.shape then
-            local collisions = world.hc:collisions(projectile.shape)
-            for other, sep in pairs(collisions) do
-                -- Only collide with solid world geometry, not other triggers or player
-                if world.shape_map[other.owner] == other and not (other.owner and other.owner.is_player) then
-                    projectile:on_collision(other)
-                end
-            end
+        local collision = world.move_trigger(projectile)
+        if collision then
+            projectile:on_collision(collision)
         end
 
         if projectile.marked_for_destruction then
@@ -94,15 +88,11 @@ function Projectile.draw()
     canvas.restore()
 end
 
-function Projectile:on_collision(other)
-    if other.owner then
-        -- Determine direction from velocity (positive = right, negative = left)
-
-        local direction = self.vx >= 0 and 1 or -1
-        -- TO DO: Add raycast here to find the distance to the other object and shift so the effect appears directly at the collision point
-        self.create_effect(self.x - 0.25, self.y - 0.25, direction)
-        self.marked_for_destruction = true
-    end
+---@param collision table {other, x, y}
+function Projectile:on_collision(collision)
+    local direction = self.vx >= 0 and 1 or -1
+    self.create_effect(collision.x - 0.25, collision.y - 0.25, direction)
+    self.marked_for_destruction = true
 end
 
 function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback)

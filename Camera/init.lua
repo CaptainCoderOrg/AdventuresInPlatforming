@@ -62,12 +62,6 @@ function Camera:_calculate_falling_target_y(reference_y, tile_size)
 	local viewport_tiles = self._viewport_height / tile_size
 	local desired_y = reference_y - viewport_tiles * cfg.framing_falling
 
-	print("=== FALLING CAMERA DEBUG ===")
-	print("Player Y:", reference_y)
-	print("Viewport tiles:", viewport_tiles)
-	print("Desired cam Y (10% framing):", desired_y)
-	print("Player screen position would be:", (reference_y - desired_y) / viewport_tiles * 100, "%")
-
 	-- Clamp to prevent camera from overshooting landing position
 	if self._target.box then
 		local landing_y = world.raycast_down(
@@ -75,36 +69,18 @@ function Camera:_calculate_falling_target_y(reference_y, tile_size)
 			cfg.raycast_distance
 		)
 
-		print("Detected landing Y:", landing_y)
-
 		if landing_y then
-			local distance_to_landing = landing_y - reference_y
-			print("Distance to landing:", distance_to_landing, "tiles")
-
 			-- Clamp camera to position landing at 2/3 from top (grounded framing)
 			-- This ensures smooth transition from falling camera to grounded camera
 			local max_cam_y = landing_y - viewport_tiles * cfg.framing_default
-			print("Max cam Y (landing at 2/3 framing):", max_cam_y)
-			print("Before clamp:", desired_y)
 
 			-- Clamp: don't let camera go too low (high Y value) which would overshoot landing
 			-- When Y increases downward: higher Y = camera positioned lower = shows more above
 			if desired_y > max_cam_y then
 				desired_y = max_cam_y
-				print("Applied clamp - positioning landing at 2/3")
-			else
-				print("No clamp needed - landing will be visible")
 			end
-
-			print("After clamp:", desired_y)
-			print("Landing would be at:", (landing_y - desired_y) / viewport_tiles * 100, "% from top")
-		else
-			print("No ground detected within", cfg.raycast_distance, "tiles")
 		end
 	end
-
-	print("Final cam Y:", desired_y)
-	print("========================")
 
 	return desired_y
 end
@@ -176,12 +152,6 @@ function Camera:update(tile_size, dt, lerp_factor)
 
 	lerp_factor = lerp_factor or 1.0
 
-	print("=== CAMERA UPDATE ===")
-	print("Player pos (tiles):", self._target.x, self._target.y)
-	print("Player velocity:", "vx=" .. (self._target.vx or 0), "vy=" .. (self._target.vy or 0))
-	print("Player state:", self._target.state and self._target.state.name or "nil")
-	print("Player is_grounded:", self._target.is_grounded)
-
 	-- Horizontal look-ahead
 	local target_offset_x = self._target.direction * self._look_ahead_distance_x
 
@@ -198,20 +168,13 @@ function Camera:update(tile_size, dt, lerp_factor)
 	local is_climbing = self._target.state and self._target.state.name == "climb"
 	local is_moving_up = self._target.vy and self._target.vy < 0
 
-	print("is_grounded:", is_grounded)
-	print("is_wall_sliding:", is_wall_sliding)
-	print("is_climbing:", is_climbing)
-	print("is_moving_up:", is_moving_up)
-
 	-- Update stored Y when in stable state (grounded or wall sliding) and not moving up
 	if (is_grounded or is_wall_sliding) and not is_moving_up then
 		self._ground_y = self._target.y
-		print("Updated ground_y to:", self._ground_y)
 	end
 
 	-- Check if falling at terminal velocity
 	local is_falling_fast = self._target.vy and self._target.vy >= cfg.terminal_velocity
-	print("is_falling_fast:", is_falling_fast, "(terminal_velocity=" .. cfg.terminal_velocity .. ")")
 
 	-- Track falling duration for lerp speed ramping
 	if is_falling_fast then
@@ -233,13 +196,10 @@ function Camera:update(tile_size, dt, lerp_factor)
 	-- Calculate camera target based on player state
 	local target_cam_y
 	if is_falling_fast then
-		print(">>> Using FALLING camera calculation")
 		target_cam_y = self:_calculate_falling_target_y(reference_y, tile_size)
 	elseif is_climbing then
-		print(">>> Using CLIMBING camera calculation")
 		target_cam_y = self:_calculate_climbing_target_y(reference_y, tile_size)
 	else
-		print(">>> Using DEFAULT camera calculation")
 		target_cam_y = self:_calculate_default_target_y(reference_y, tile_size)
 	end
 
@@ -273,10 +233,6 @@ function Camera:update(tile_size, dt, lerp_factor)
 	else
 		self._y = self._y + delta_y * y_lerp
 	end
-
-	print("Final camera Y:", self._y)
-	print("=== END CAMERA UPDATE ===")
-	print("")
 end
 
 --- Gets the visible tile bounds for culling

@@ -139,7 +139,26 @@ function Camera:update(tile_size, dt, lerp_factor)
 	local target_cam_y
 	if is_falling_fast then
 		-- Position player at top when falling fast (show landing area below)
-		target_cam_y = reference_y - (self._viewport_height / tile_size) * 0.10
+		local desired_cam_y = reference_y - (self._viewport_height / tile_size) * 0.10
+
+		-- Clamp to ground if detected below
+		if self._target.box then
+			local max_search = 20  -- Search 20 tiles down
+			local landing_y = world.raycast_down(
+				self._target.x,
+				self._target.y,
+				max_search,
+				self._target.box
+			)
+
+			if landing_y then
+				-- Don't let camera go below landing position with 2/3 framing
+				local min_cam_y = landing_y - (self._viewport_height / tile_size) * 0.667
+				desired_cam_y = math.min(desired_cam_y, min_cam_y)
+			end
+		end
+
+		target_cam_y = desired_cam_y
 	elseif is_climbing then
 		-- Calculate normal climbing camera position
 		local desired_cam_y

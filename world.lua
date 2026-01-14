@@ -238,4 +238,73 @@ function world.sync_position(obj)
 	shape:move(target_x - x1, target_y - y1)
 end
 
+--- Raycasts downward to find the ground below a position
+--- @param x number World X position (in tiles)
+--- @param y number World Y position (in tiles)
+--- @param max_distance number Maximum search distance downward (in tiles)
+--- @param box table Player hitbox {x, y, w, h} for collision shape
+--- @return number|nil Landing Y position (in tiles), or nil if no ground found
+function world.raycast_down(x, y, max_distance, box)
+	local tile_size = sprites.tile_size
+
+	-- Create a tall shape directly below player collision box
+	local test_x = (x + box.x) * tile_size
+	local player_bottom_y = (y + box.y + box.h) * tile_size
+	local test_w = box.w * tile_size
+	local search_pixels = max_distance * tile_size
+	local test_h = search_pixels
+
+	-- Create tall rectangle starting at player bottom, extending downward
+	local test_shape = world.hc:rectangle(test_x, player_bottom_y, test_w, test_h)
+	local tx1, ty1, tx2, ty2 = test_shape:bbox()
+
+	-- Check for collisions
+	local collisions = world.hc:collisions(test_shape)
+	local closest_ground_y = nil
+
+	for other, sep in pairs(collisions) do
+		-- Skip trigger colliders
+		local is_trigger = world.trigger_map[other.owner] ~= nil
+		if not is_trigger then
+			-- Get the bounding box of the colliding shape
+			local ox1, oy1, ox2, oy2 = other:bbox()
+
+			-- Find the intersection of the two rectangles
+			local intersect_top = math.max(ty1, oy1)
+			local intersect_bottom = math.min(ty2, oy2)
+
+			-- Check if there's actual vertical overlap
+			if intersect_top < intersect_bottom then
+				-- Determine ground surface based on which shape extends further down
+				local ground_surface_y
+				if oy2 < ty2 then
+					-- Boundary shape ends before test shape (test extends past boundary)
+					-- Ground is at the bottom of the boundary shape
+					ground_surface_y = oy2
+				else
+					-- Boundary shape extends past test shape (or equal)
+					-- Ground is at the top of the intersection (where test enters boundary)
+					ground_surface_y = intersect_top
+				end
+
+				-- Only consider if ground is below player bottom
+				if ground_surface_y >= player_bottom_y then
+					-- Calculate where the player would stand
+					local stand_y = (ground_surface_y / tile_size) - box.y - box.h
+
+					-- Track the closest (highest, which means smallest Y value) ground
+					if not closest_ground_y or stand_y < closest_ground_y then
+						closest_ground_y = stand_y
+					end
+				end
+			end
+		end
+	end
+
+	-- Clean up temporary shape
+	world.hc:remove(test_shape)
+
+	return closest_ground_y
+end
+
 return world

@@ -9,6 +9,12 @@ return {
 	look_ahead_distance_x = 3,
 	look_ahead_speed_x = 0.05,
 
+	-- Manual look controls
+	manual_look_up_framing = 0.333,
+	manual_look_down_framing = 0.833,
+	manual_look_speed = 0.1,
+	manual_look_horizontal_distance = 4,
+
 	-- Framing ratios (from top of viewport)
 	framing_falling = 0.10,         -- Player at 10% when falling fast
 	framing_default = 0.667,        -- Player at 2/3 (show more below)
@@ -16,7 +22,7 @@ return {
 	framing_climbing_idle = 0.5,    -- Centered on ladder
 
 	-- Ground detection
-	raycast_distance = 20,          -- Tiles to search below player
+	raycast_distance = 10,          -- Tiles to search below player
 	terminal_velocity = 20,         -- Pixels/frame threshold for "falling fast"
 
 	-- Misc

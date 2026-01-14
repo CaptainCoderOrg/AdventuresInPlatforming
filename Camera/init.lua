@@ -1,5 +1,6 @@
 local canvas = require('canvas')
 local world = require('world')
+local controls = require('controls')
 local cfg = require('config/camera')
 
 local Camera = {}
@@ -32,6 +33,11 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._fall_lerp_min = cfg.fall_lerp_min
 	self._fall_lerp_max = cfg.fall_lerp_max
 	self._fall_lerp_ramp_duration = cfg.fall_lerp_ramp_duration
+
+	-- Manual look state
+	self._manual_x_target = nil
+	self._manual_y_target = nil
+	self._manual_look_speed = cfg.manual_look_speed
 
 	return self
 end
@@ -201,6 +207,61 @@ function Camera:update(tile_size, dt, lerp_factor)
 		target_cam_y = self:_calculate_climbing_target_y(reference_y, tile_size)
 	else
 		target_cam_y = self:_calculate_default_target_y(reference_y, tile_size)
+	end
+
+	-- Manual look controls (right analog stick with proportional adjustment)
+	local viewport_tiles = self._viewport_height / tile_size
+	local look_x = controls.get_camera_look_x()
+	local look_y = controls.get_camera_look_y()
+
+	if look_y ~= 0 then
+		local target_framing
+		if look_y < 0 then
+			-- Looking up: interpolate between default and up framing
+			local t = math.abs(look_y)
+			target_framing = cfg.framing_default + (cfg.manual_look_down_framing - cfg.framing_default) * t
+		else
+			-- Looking down: interpolate between default and down framing
+			local t = look_y
+			target_framing = cfg.framing_default + (cfg.manual_look_up_framing - cfg.framing_default) * t
+		end
+
+		local manual_target_y = reference_y - viewport_tiles * target_framing
+		self._manual_y_target = self._manual_y_target or target_cam_y
+		self._manual_y_target = self._manual_y_target +
+			(manual_target_y - self._manual_y_target) * self._manual_look_speed
+		target_cam_y = self._manual_y_target
+	else
+		-- Fade back to state-calculated position
+		if self._manual_y_target then
+			self._manual_y_target = self._manual_y_target +
+				(target_cam_y - self._manual_y_target) * self._manual_look_speed
+			target_cam_y = self._manual_y_target
+
+			if math.abs(self._manual_y_target - target_cam_y) < cfg.epsilon then
+				self._manual_y_target = nil
+			end
+		end
+	end
+
+	if look_x ~= 0 then
+		local manual_offset_x = look_x * cfg.manual_look_horizontal_distance
+		self._manual_x_target = self._manual_x_target or 0
+		self._manual_x_target = self._manual_x_target +
+			(manual_offset_x - self._manual_x_target) * self._manual_look_speed
+		target_cam_x = target_cam_x + self._manual_x_target
+	else
+		-- Fade back to no horizontal offset
+		if self._manual_x_target then
+			self._manual_x_target = self._manual_x_target +
+				(0 - self._manual_x_target) * self._manual_look_speed
+
+			if math.abs(self._manual_x_target) < cfg.epsilon then
+				self._manual_x_target = nil
+			else
+				target_cam_x = target_cam_x + self._manual_x_target
+			end
+		end
 	end
 
 	local max_cam_x = self._world_width - (self._viewport_width / tile_size)

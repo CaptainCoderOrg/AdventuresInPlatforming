@@ -26,6 +26,20 @@ function controls.down_down()
 		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_DOWN) > 0
 end
 
+-- Camera look controls (right analog stick)
+-- X: -1 (left) to +1 (right), Y: -1 (up) to +1 (down)
+function controls.get_camera_look_x()
+	local right_stick_x = canvas.get_gamepad_axis(1, canvas.axes.RIGHT_STICK_X)
+	if math.abs(right_stick_x) < 0.15 then return 0 end
+	return right_stick_x
+end
+
+function controls.get_camera_look_y()
+	local right_stick_y = canvas.get_gamepad_axis(1, canvas.axes.RIGHT_STICK_Y)
+	if math.abs(right_stick_y) < 0.15 then return 0 end
+	return right_stick_y
+end
+
 function controls.jump_pressed()
 	return canvas.is_key_pressed(canvas.keys.SPACE)
 		or canvas.is_gamepad_button_pressed(1, canvas.buttons.SOUTH)

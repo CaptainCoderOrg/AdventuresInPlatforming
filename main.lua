@@ -65,8 +65,8 @@ local function draw()
     canvas.restore()
 
     -- Draw screen-space UI (not affected by camera)
-    debug.draw(player)
     hud.draw(player)
+    debug.draw(player)
 end
 
 local function init_level()

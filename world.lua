@@ -285,17 +285,42 @@ function world.raycast_down(player, max_distance)
 		collision_count = collision_count + 1
 		print("Collision #" .. collision_count .. " - shape:", shape.owner)
 
-		-- Process each hit point
-		for _, hit in ipairs(hits) do
-			print("  Hit at (pixels):", hit.x, hit.y)
+		-- Find the closest hit by distance from ray origin
+		-- Note: HC uses sparse arrays with pairs(), not ipairs()
+		local hit_count = 0
+		for _ in pairs(hits) do hit_count = hit_count + 1 end
 
-			-- Convert hit Y to player standing position (tiles)
-			local stand_y = (hit.y / tile_size) - box.y - box.h
-			print("  Calculated stand_y (tiles):", stand_y)
+		if hit_count > 0 then
+			-- Debug: print ALL hits to see what we're dealing with
+			print("  Total hits on this shape:", hit_count)
+			for i, hit in pairs(hits) do
+				local distance = hit.y - ray_start_y
+				local stand_y = (hit.y / tile_size) - box.y - box.h
+				print("    Hit #" .. i .. ": y=" .. hit.y .. " pixels, distance=" .. distance .. ", stand_y=" .. stand_y .. " tiles")
+			end
 
-			if not closest_ground_y or stand_y < closest_ground_y then
-				print("  -> NEW CLOSEST!")
-				closest_ground_y = stand_y
+			local closest_hit = nil
+			local closest_distance = math.huge
+
+			for _, hit in pairs(hits) do
+				local distance = hit.y - ray_start_y
+				if distance >= 0 and distance < closest_distance then
+					closest_hit = hit
+					closest_distance = distance
+				end
+			end
+
+			if closest_hit then
+				print("  SELECTED: y=" .. closest_hit.y .. " pixels, distance=" .. closest_distance)
+
+				-- Convert hit Y to player standing position (tiles)
+				local stand_y = (closest_hit.y / tile_size) - box.y - box.h
+				print("  Calculated stand_y (tiles):", stand_y)
+
+				if not closest_ground_y or stand_y < closest_ground_y then
+					print("  -> NEW CLOSEST!")
+					closest_ground_y = stand_y
+				end
 			end
 		end
 

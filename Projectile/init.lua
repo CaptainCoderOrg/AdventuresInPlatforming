@@ -13,9 +13,29 @@ Projectile.animations = {
 	AXE = Animation.create_definition("throwable_axe", 4, {
 		width = 8,
 		height = 8,
-		ms_per_frame = 100  -- 6 frames at 60 FPS
 	}),
+
+    SHURIKEN = Animation.create_definition("shuriken", 5, {
+        width = 8,
+        height = 8,
+    })
 }
+
+function Projectile.get_axe()
+    return {
+        name = "Axe",
+        sprite = "axe",
+        create = Projectile.create_axe,
+    }
+end
+
+function Projectile.get_shuriken()
+    return {
+        name = "Shuriken",
+        sprite = "shuriken",
+        create = Projectile.create_shuriken,
+    }
+end
 
 function Projectile.update(dt, level_info)
     local to_remove = {}
@@ -110,6 +130,13 @@ function Projectile.create_axe(x, y, direction)
     local axe_vy = -3
     local axe_gravity = 20
     return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction)
+end
+
+function Projectile.create_shuriken(x, y, direction)
+    local velocity_x = direction*24
+    local velocity_y = 0
+    local gravity = 0
+    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction)
 end
 
 return Projectile

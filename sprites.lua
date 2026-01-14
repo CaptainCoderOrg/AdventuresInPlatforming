@@ -43,7 +43,10 @@ canvas.assets.load_image("player_climb_down", "sprites/character/climb_down.png"
 
 canvas.assets.load_image("player_hit", "sprites/character/hit.png")
 
-canvas.assets.load_image("throwable_axe", "sprites/throwables/throwable_axe.png")
+sprites.AXE_SPRITE = "throwable_axe"
+canvas.assets.load_image(sprites.AXE_SPRITE, "sprites/throwables/throwable_axe.png")
+sprites.SHURIKEN_SPRITE = "shuriken"
+canvas.assets.load_image(sprites.SHURIKEN_SPRITE, "sprites/throwables/shuriken.png")
 
 canvas.assets.load_image("effect_hit", "sprites/effects/hit.png")
 

@@ -12,7 +12,7 @@ local throw = { name = "throw" }
 function throw.start(player)
 	player.animation = Animation.new(common.animations.THROW)
 	throw.remaining_time = (common.animations.THROW.frame_count * common.animations.THROW.ms_per_frame) / 1000
-	Projectile.create_axe(player.x, player.y, player.direction)
+	player.projectile.create(player.x, player.y, player.direction)
 end
 
 

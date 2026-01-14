@@ -4,6 +4,8 @@ local config = require('config')
 local world = require('world')
 local common = require('player.common')
 local Animation = require('Animation')
+local Projectile = require('Projectile')
+local controls = require('controls')
 
 local Player = {}
 Player.__index = Player
@@ -89,6 +91,13 @@ function Player.new()
 	self.state = nil
 	self.states = states  -- Reference for state transitions
 
+	-- Projectile Selected
+	self.projectile_options = { Projectile.get_axe(), Projectile.get_shuriken() }
+	
+	self.projectile_ix = 1
+	self.projectile = self.projectile_options[self.projectile_ix]
+	print(self.projectile.name)
+
 	-- State-specific storage (for states with module-level variables)
 	self.run_state = {
 		footstep_cooldown = 0,
@@ -132,6 +141,12 @@ function Player.new()
 	self:set_state(states.idle)
 
 	return self
+end
+
+function Player:next_projectile()
+	self.projectile_ix = self.projectile_ix + 1
+	if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
+	self.projectile = self.projectile_options[self.projectile_ix]
 end
 
 function Player:is_invincible()
@@ -191,6 +206,7 @@ end
 --- Processes player input by delegating to the current state's input handler.
 function Player:input()
 	self.state.input(self)
+	if controls.next_projectile_pressed() then self:next_projectile() end
 end
 
 --- Updates player physics, state logic, collision detection, and animation.

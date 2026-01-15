@@ -201,7 +201,7 @@ function Enemy:on_hit(source_type, source)
 
 	if self.health <= 0 then
 		self:die()
-	elseif source_type == "projectile" and self.states.hit then
+	elseif (source_type == "projectile" or source_type == "weapon") and self.states.hit then
 		self:set_state(self.states.hit)
 	end
 end

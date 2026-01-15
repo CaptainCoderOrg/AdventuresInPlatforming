@@ -78,6 +78,7 @@ function Player.new()
 	-- Combat
 	self.attacks = 3
 	self.attack_cooldown = 0
+	self.weapon_damage = 2.5
 
 	-- Dash
 	self.dash_cooldown = 0
@@ -113,7 +114,9 @@ function Player.new()
 		count = 0,
 		next_anim_ix = 1,
 		remaining_time = 0,
-		queued = false
+		queued = false,
+		queued_jump = false,
+		hit_enemies = {}
 	}
 	self.climb_state = {
 		last_ladder = nil

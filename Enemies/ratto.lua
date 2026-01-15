@@ -188,7 +188,7 @@ ratto.states.hit = {
 		})
 		-- Knockback velocity (set by on_hit before transitioning)
 		-- enemy.hit_direction is set by Enemy:on_hit()
-		local knockback_speed = 8
+		local knockback_speed = 12
 		enemy.vx = (enemy.hit_direction or -1) * knockback_speed
 		enemy.vy = -5  -- Small upward pop
 	end,

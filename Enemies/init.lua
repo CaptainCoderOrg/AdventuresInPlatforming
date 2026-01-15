@@ -168,7 +168,7 @@ function Enemy:check_player_overlap(player)
 
 	local collides, _ = self.shape:collidesWith(player_shape)
 	if collides then
-		self:on_hit("player", player)
+		player:take_damage(self.damage)
 	end
 end
 

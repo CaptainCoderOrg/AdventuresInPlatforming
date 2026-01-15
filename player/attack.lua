@@ -15,7 +15,7 @@ local HOLD_TIME = 0.16
 
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
 
-local SWORD_WIDTH = 0.75
+local SWORD_WIDTH = 1.0
 
 local function get_sword_hitbox(player)
 	-- ATTACK_2 shows sword on frame 2 (index 1), others on frame 3 (index 2)

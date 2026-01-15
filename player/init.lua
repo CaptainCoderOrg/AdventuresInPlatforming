@@ -133,7 +133,9 @@ function Player.new()
 	}
 	self.hit_state = {
 		knockback_speed = 2,
-		remaining_time = 0
+		remaining_time = 0,
+		queued_jump = false,
+		queued_attack = false
 	}
 
 	-- Register with collision system
@@ -161,6 +163,8 @@ end
 
 function Player:take_damage(amount)
 	if amount <= 0 then return end
+	if self:is_invincible() then return end
+	if self.state == self.states.hit then return end
 	self.damage = self.damage + amount
 	if self:health() > 0 then
 		self:set_state(self.states.hit)
@@ -196,7 +200,15 @@ end
 --- Renders the player using the current state's draw function.
 --- Also draws debug bounding box if enabled in config.
 function Player:draw()
+	if self:is_invincible() then
+		canvas.set_global_alpha(0.75 + 0.25 * math.sin(self.invincible_time * 20))
+	end
+
 	self.state.draw(self)
+
+	if self:is_invincible() then
+		canvas.set_global_alpha(1)
+	end
 
 	if config.bounding_boxes == true then
 		canvas.set_color("#FF0000")

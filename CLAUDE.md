@@ -13,6 +13,7 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Red boxes: Player hitbox
   - Yellow boxes: Projectile hitboxes
   - Green boxes: World collision geometry
+  - Cyan boxes: Enemy hitboxes
 - `Y` - Test hit state
 - `1`/`2` - Switch between level1/title music
 
@@ -140,6 +141,67 @@ Projectiles support custom hit effects via factory pattern:
 Projectile.new(x, y, direction, spec, Effects.create_shuriken_hit)
 ```
 
+### Enemy System
+
+AI-controlled enemies with state machines and combat integration.
+
+**Architecture:**
+- Object pool pattern with `Enemy.all` table
+- State machine identical to player (start, update, draw functions)
+- Registration system: `Enemy.register(key, definition)` in main.lua
+- Spawning from level data: `Enemy.spawn(type_key, x, y)`
+
+**Enemy Properties:**
+```lua
+enemy = {
+    x, y,                    -- Position in tile coordinates
+    vx, vy,                  -- Velocity in pixels/frame
+    direction,               -- Facing (-1 left, 1 right)
+    health, max_health,      -- Health tracking
+    damage,                  -- Contact damage to player
+    is_enemy = true,         -- Collision filter flag
+    states,                  -- State machine definition
+    state,                   -- Current active state
+}
+```
+
+**State Machine:**
+Each enemy type defines states with the same pattern as player:
+```lua
+state = {
+    name = "state_name",
+    start = function(enemy, definition) end,
+    update = function(enemy, dt) end,
+    draw = function(enemy) end,
+}
+```
+
+**Current Enemies:**
+- **Ratto** - Rat enemy with patrol/chase AI
+  - States: idle, run, chase, hit, death
+  - Detection range: 5 tiles
+  - Health: 5 HP, Contact damage: 1
+  - Chase speed: 6 px/frame (faster than patrol)
+
+**Damage System:**
+Enemies can take damage from multiple sources:
+```lua
+enemy:on_hit("weapon", { damage = player.weapon_damage, x = player.x })
+enemy:on_hit("projectile", projectile)
+```
+- Knockback direction calculated from damage source
+- Transitions to hit state, then death if health <= 0
+
+**Player Contact:**
+- `Enemy:check_player_overlap(player)` called each frame
+- Deals `enemy.damage` to player on collision
+- Player invincibility frames prevent rapid hits
+
+**Creating New Enemies:**
+1. Create definition file in `Enemies/` (animations, states, properties)
+2. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
+3. Add spawn character to level format (e.g., `R` for ratto)
+
 ### Camera System
 
 Complete camera management system in `Camera/init.lua` with entity following and dynamic framing.
@@ -185,6 +247,10 @@ Player combat abilities managed through state machine.
    - Cooldown: 0.2s between combo chains
    - Frame speeds increase per hit: 50ms → 67ms → 83ms
    - All attacks 5 frames, 32px wide, non-looping
+   - **Sword Hitbox**: 1.0 tile wide, extends from player's front edge
+   - **Active Frames**: Frame 2-3 (ATTACK_2 starts on frame 1)
+   - **Damage**: `player.weapon_damage` (2.5) applied via `enemy:on_hit()`
+   - **Hit Tracking**: `attack_state.hit_enemies` prevents double-hits per swing
 
 2. **Throw** - `player/throw.lua`
    - Launches selected projectile on entry (Axe or Shuriken)
@@ -201,12 +267,32 @@ Player combat abilities managed through state machine.
    - Stops horizontal movement when grounded
    - Gravity still applies
 
+5. **Hit** - `player/hit.lua`
+   - Entered when player takes damage
+   - Knockback away from damage source (2 px/frame)
+   - Animation duration: 240ms (3 frames @ 80ms)
+   - **Input Queueing**: Can buffer jump or attack during hit stun
+   - **Priority**: Attack > Jump > Idle (on hit animation end)
+
+**Invincibility System:**
+- **Duration**: 1.2 seconds after hit animation completes
+- **Visual Feedback**: Alpha blinking (oscillates 0.5-1.0)
+- **Check**: `Player:is_invincible()` returns true during immunity
+- Prevents rapid consecutive hits from enemies
+
 **Player Properties:**
 ```lua
+self.max_health = 3             -- Starting health
+self.damage = 0                 -- Cumulative damage taken
+self.invincible_time = 0        -- Invincibility countdown (seconds)
+self.weapon_damage = 2.5        -- Damage per sword hit
 self.attacks = 3                -- Max combo hits
 self.attack_cooldown = 0        -- Countdown timer
 self.attack_state = {           -- Combo tracking
-    count, next_anim_ix, remaining_time, queued
+    count, next_anim_ix, remaining_time, queued, hit_enemies
+}
+self.hit_state = {              -- Hit stun tracking
+    knockback_speed, remaining_time, queued_jump, queued_attack
 }
 ```
 
@@ -218,9 +304,16 @@ Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
 - Trigger volumes for ladders and hit zones
 - One-way platform support
 
+**Entity Filtering:**
+- Players and enemies pass through each other (no physical collision)
+- `should_skip_collision()` in world.lua handles filtering
+- Enemies also pass through other enemies
+- Contact damage handled separately via `Enemy:check_player_overlap()`
+
 **Trigger Movement:**
 - `world.move_trigger(obj)` - Sweeping collision for trigger objects (projectiles)
 - Moves shape and detects first collision along path
+- Prioritizes enemy collisions over solid geometry
 - Returns `{other, x, y}` collision info or nil
 
 **Raycasting:**
@@ -237,7 +330,8 @@ Levels in `levels/` use ASCII tile maps:
 - `/` = right-leaning slope
 - `\` = left-leaning slope
 - `H` = ladder segment
-- `S` = spawn point
+- `S` = spawn point (player)
+- `R` = ratto enemy spawn
 
 ### Physics Constants
 
@@ -279,11 +373,14 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Camera/init.lua` - Camera system with following and framing
-- `player/attack.lua` - Combat combo system
+- `Enemies/init.lua` - Enemy manager and base class
+- `Enemies/ratto.lua` - Ratto enemy (states, animations, AI)
+- `player/attack.lua` - Combat combo system (includes sword hitbox)
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance
-- `world.lua` - HC collision engine wrapper (includes raycast)
+- `player/hit.lua` - Hit stun with invincibility and input queueing
+- `world.lua` - HC collision engine wrapper (includes raycast, enemy filtering)
 - `platforms/init.lua` - Level geometry loader
 - `sprites.lua` - Asset loading
 - `controls.lua` - Unified keyboard/gamepad input
@@ -298,6 +395,6 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - Module pattern (files return tables with functions)
 - Snake_case for functions and variables
 - Delta-time based animation (milliseconds per frame)
-- Object pool pattern for entities (Effects, Projectiles)
+- Object pool pattern for entities (Effects, Projectiles, Enemies)
 - Tile coordinates for game logic (converted to pixels for rendering)
 - Directional rendering via `flipped` property (1 = right, -1 = left)

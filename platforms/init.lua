@@ -6,9 +6,10 @@ platforms.ladders = require('platforms/ladders')
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array
---- @return table spawn Player spawn position {x, y}, level width and height
+--- @return table spawn Player spawn position {x, y}, level width and height, enemy spawns
 function platforms.load_level(level_data)
 	local spawn = nil
+	local enemies = {}
 	local width = 0
 	local height = #level_data.map
 
@@ -32,12 +33,15 @@ function platforms.load_level(level_data)
 				platforms.ladders.add_ladder(x - 1, y - 1)
 			elseif ch == "S" then
 				spawn = { x = x - 1, y = y - 1 }
+			elseif ch == "R" then
+				table.insert(enemies, { x = x - 1, y = y - 1, type = "ratto" })
 			end
 		end
 	end
 
 	return {
 		spawn = spawn,
+		enemies = enemies,
 		width = width,
 		height = height
 	}

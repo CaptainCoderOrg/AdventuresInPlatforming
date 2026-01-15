@@ -4,6 +4,7 @@ local world = require('world')
 local Animation = require('Animation')
 local config = require('config')
 local Effects = require("Effects")
+
 local Projectile = {}
 
 Projectile.__index = Projectile
@@ -26,6 +27,7 @@ function Projectile.get_axe()
     return {
         name = "Axe",
         sprite = "axe",
+        damage = 1,
         create = Projectile.create_axe,
     }
 end
@@ -34,6 +36,7 @@ function Projectile.get_shuriken()
     return {
         name = "Shuriken",
         sprite = "shuriken",
+        damage = 1,
         create = Projectile.create_shuriken,
     }
 end
@@ -91,11 +94,18 @@ end
 ---@param collision table {other, x, y}
 function Projectile:on_collision(collision)
     local direction = self.vx >= 0 and 1 or -1
+
+    -- Check if we hit an enemy
+    if collision.other and collision.other.owner and collision.other.owner.is_enemy then
+        local enemy = collision.other.owner
+        enemy:on_hit("projectile", self)
+    end
+
     self.create_effect(collision.x - 0.25, collision.y - 0.25, direction)
     self.marked_for_destruction = true
 end
 
-function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback)
+function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage)
     if effect_callback == nil then effect_callback = Effects.create_hit end
 	local self = setmetatable({}, Projectile)
     self.create_effect = effect_callback
@@ -110,6 +120,7 @@ function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direct
 	self.vx = vx
 	self.vy = vy
 	self.gravity_scale = gravity_scale
+	self.damage = damage or 1
 	self.box = { w = 0.5, h = 0.5, x = 0, y = 0 }
 	self.is_projectile = true
 	self.marked_for_destruction = false
@@ -122,7 +133,8 @@ function Projectile.create_axe(x, y, direction)
     local axe_vx = direction*16
     local axe_vy = -3
     local axe_gravity = 20
-    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction)
+    local damage = 1
+    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction, nil, damage)
 end
 
 function Projectile.create_shuriken(x, y, direction)
@@ -130,7 +142,8 @@ function Projectile.create_shuriken(x, y, direction)
     local velocity_y = 0
     local gravity = 0
     local effect_callback = Effects.create_shuriken_hit
-    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction, effect_callback)
+    local damage = 2
+    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction, effect_callback, damage)
 end
 
 return Projectile

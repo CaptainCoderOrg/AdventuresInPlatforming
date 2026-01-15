@@ -11,6 +11,8 @@ local Projectile = require("Projectile")
 local Effects = require("Effects")
 local Camera = require("Camera")
 local camera_cfg = require("config/camera")
+local Enemy = require("Enemies")
+Enemy.register("ratto", require("Enemies/ratto"))
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
@@ -49,6 +51,7 @@ local function update()
     player:update(dt)
     Projectile.update(dt, level_info)
     Effects.update(dt)
+    Enemy.update(dt, player)
 end
 
 -- Render the game
@@ -59,6 +62,7 @@ local function draw()
     canvas.save()
     camera:apply_transform(sprites.tile_size)
     platforms.draw(camera)
+    Enemy.draw()
     player:draw()
     Projectile.draw()
     Effects.draw()
@@ -77,7 +81,10 @@ local function init_level()
     end
     platforms.build()
 
-    -- Initialize camera after player
+    for _, spawn in ipairs(level_info.enemies) do
+        Enemy.spawn(spawn.type, spawn.x, spawn.y)
+    end
+
     camera = Camera.new(
         config.ui.canvas_width,
         config.ui.canvas_height,

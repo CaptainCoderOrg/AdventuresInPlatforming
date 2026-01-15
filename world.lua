@@ -19,6 +19,17 @@ local function set_ground_from_sep(cols, sep)
 	end
 end
 
+--- Checks if collision should be skipped (player/enemy pass through each other).
+--- @param obj table First collision object
+--- @param other_owner table Owner of the other collision shape
+--- @return boolean True if collision should be skipped
+local function should_skip_collision(obj, other_owner)
+	if obj.is_player and other_owner and other_owner.is_enemy then return true end
+	if obj.is_enemy and other_owner and other_owner.is_player then return true end
+	if obj.is_enemy and other_owner and other_owner.is_enemy then return true end
+	return false
+end
+
 -- Initialize HC with spatial hash cell size (50 tiles * tile_size in pixels)
 world.hc = HC:new(50 * sprites.tile_size)
 
@@ -83,9 +94,12 @@ function world.move(obj)
 			local any_collision = false
 
 			for other, sep in pairs(collisions) do
-				if other.is_trigger then 
+				if other.is_trigger then
 					table.insert(cols.triggers, other)
-					goto skip_x_collision 
+					goto skip_x_collision
+				end
+				if should_skip_collision(obj, other.owner) then
+					goto skip_x_collision
 				end
 				if other ~= shape and sep.x ~= 0 then
 					-- Only treat as wall if more horizontal than vertical (steeper than 45°)
@@ -123,6 +137,9 @@ function world.move(obj)
 		for other, sep in pairs(collisions) do
 			if other.is_trigger then
 				table.insert(cols.triggers, other)
+				goto skip_y_collision
+			end
+			if should_skip_collision(obj, other.owner) then
 				goto skip_y_collision
 			end
 			-- Detect ladder top collision before one-way platform check
@@ -168,7 +185,10 @@ function world.move(obj)
 		for other, sep in pairs(collisions) do
 			if other.is_trigger then
 				table.insert(cols.triggers, other)
-				goto skip_ground_collision --continue
+				goto skip_ground_collision
+			end
+			if should_skip_collision(obj, other.owner) then
+				goto skip_ground_collision
 			end
 			if other ~= shape and sep.y < 0 then
 				found_ground = true
@@ -213,20 +233,35 @@ function world.move_trigger(obj)
 	shape:move(dx, dy)
 
 	local collisions = world.hc:collisions(shape)
+
+	-- First pass: prioritize enemy collisions
+	local enemy_hit = nil
+	local solid_hit = nil
+
 	for other, sep in pairs(collisions) do
 		if world.shape_map[other.owner] == other and not (other.owner and other.owner.is_player) then
-			shape:move(sep.x, sep.y)
-
-			local x, y, _, _ = shape:bbox()
-			obj.x = x / ts - obj.box.x
-			obj.y = y / ts - obj.box.y
-
-			return {
-				other = other,
-				x = obj.x,
-				y = obj.y
-			}
+			if other.owner and other.owner.is_enemy then
+				enemy_hit = { shape = other, sep = sep }
+			elseif not solid_hit then
+				solid_hit = { shape = other, sep = sep }
+			end
 		end
+	end
+
+	-- Return enemy hit if found, otherwise solid hit
+	local hit = enemy_hit or solid_hit
+	if hit then
+		shape:move(hit.sep.x, hit.sep.y)
+
+		local x, y, _, _ = shape:bbox()
+		obj.x = x / ts - obj.box.x
+		obj.y = y / ts - obj.box.y
+
+		return {
+			other = hit.shape,
+			x = obj.x,
+			y = obj.y
+		}
 	end
 
 	return nil

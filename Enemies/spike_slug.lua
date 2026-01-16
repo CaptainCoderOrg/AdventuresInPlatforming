@@ -91,4 +91,5 @@ return {
 	states = spike_slug.states,
 	animations = spike_slug.animations,
 	initial_state = "run",
+	rotate_to_slope = true,
 }

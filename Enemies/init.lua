@@ -2,6 +2,7 @@ local sprites = require('sprites')
 local canvas = require('canvas')
 local world = require('world')
 local config = require('config')
+local common = require('Enemies/common')
 
 local Enemy = {}
 Enemy.__index = Enemy
@@ -45,6 +46,7 @@ function Enemy.spawn(type_key, x, y)
 	self.box = definition.box
 	self.gravity = definition.gravity or 1.5
 	self.max_fall_speed = definition.max_fall_speed or 20
+	self.rotate_to_slope = definition.rotate_to_slope or false
 
 	-- State machine
 	self.states = definition.states
@@ -96,6 +98,9 @@ function Enemy.update(dt, player)
 		enemy.edge_left = enemy.is_grounded and not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
 		enemy.edge_right = enemy.is_grounded and not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
 
+		-- Update slope rotation (visual only)
+		common.update_slope_rotation(enemy, dt)
+
 		-- Store player reference for state logic
 		enemy.target_player = player
 
@@ -131,7 +136,7 @@ function Enemy.draw()
 	for enemy, _ in pairs(Enemy.all) do
 		enemy.state.draw(enemy)
 
-		-- Draw debug hitbox in cyan
+		-- Draw debug hitbox in cyan (axis-aligned, collision box doesn't rotate)
 		if config.bounding_boxes then
 			canvas.set_color("#00FFFF")  -- Cyan for enemies
 			canvas.draw_rect(

@@ -127,7 +127,8 @@ end
 --- Draws the animation at the specified position
 --- @param x number X coordinate in pixels
 --- @param y number Y coordinate in pixels
-function Animation:draw(x, y)
+--- @param rotation number Optional rotation in radians
+function Animation:draw(x, y, rotation)
 	local definition = self.definition
 	local frame = self.frame
 	local flipped = self.flipped
@@ -142,6 +143,14 @@ function Animation:draw(x, y)
 	canvas.save()
 	canvas.translate(x + (x_adjust * config.ui.SCALE), y)
 	canvas.scale(-flipped, 1)
+	if rotation and rotation ~= 0 then
+		-- Rotate around bottom-center so sprite stays grounded
+		local cx = definition.width * config.ui.SCALE / 2
+		local cy = definition.height * config.ui.SCALE
+		canvas.translate(cx, cy)
+		canvas.rotate(rotation * flipped)  -- Flip rotation direction with sprite
+		canvas.translate(-cx, -cy)
+	end
 	canvas.draw_image(definition.name, 0, 0,
 		definition.width * config.ui.SCALE, definition.height * config.ui.SCALE,
 		frame * definition.width, 0,

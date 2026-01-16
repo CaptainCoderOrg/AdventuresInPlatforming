@@ -35,6 +35,7 @@ function throw.input(player)
 	else
 		player.vx = 0
 	end
+	common.handle_jump(player)
 end
 
 

@@ -92,6 +92,10 @@ function Enemy.update(dt, player)
 		enemy.wall_left = cols.wall_left
 		enemy.wall_right = cols.wall_right
 
+		local probe_y = enemy.y + enemy.box.y + enemy.box.h + 0.5  -- tiles below feet
+		enemy.edge_left = enemy.is_grounded and not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
+		enemy.edge_right = enemy.is_grounded and not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
+
 		-- Store player reference for state logic
 		enemy.target_player = player
 

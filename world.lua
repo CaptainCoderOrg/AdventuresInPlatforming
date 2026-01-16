@@ -312,6 +312,24 @@ function world.sync_position(obj)
 	shape:move(target_x - x1, target_y - y1)
 end
 
+--- Checks if a point has solid ground.
+--- @param x number X position in tiles
+--- @param y number Y position in tiles
+--- @return boolean True if solid ground exists at point
+function world.point_has_ground(x, y)
+	local ts = sprites.tile_size
+	local px, py = x * ts, y * ts
+	local probe = world.hc:rectangle(px - ts/2, py - ts, ts, ts)
+	local collisions = world.hc:collisions(probe)
+	world.hc:remove(probe)
+
+	for other, _ in pairs(collisions) do
+		local dominated = other.is_trigger or (other.owner and other.owner.is_enemy)
+		if not dominated then return true end
+	end
+	return false
+end
+
 --- Raycasts downward to find the ground below a position
 --- @param player table Player object (to filter out player's own collider)
 --- @param max_distance number Maximum search distance downward (in tiles)

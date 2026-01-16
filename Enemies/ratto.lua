@@ -102,9 +102,8 @@ ratto.states.run = {
 		-- Move in current direction
 		enemy.vx = enemy.direction * enemy.run_speed
 
-		-- Check for wall collision and turn around
-		if (enemy.direction == -1 and enemy.wall_left) or
-		   (enemy.direction == 1 and enemy.wall_right) then
+		if (enemy.direction == -1 and (enemy.wall_left or enemy.edge_left)) or
+		   (enemy.direction == 1 and (enemy.wall_right or enemy.edge_right)) then
 			enemy.direction = -enemy.direction
 			enemy.animation.flipped = enemy.direction
 		end
@@ -144,11 +143,19 @@ ratto.states.chase = {
 		-- Move in current direction
 		enemy.vx = enemy.direction * enemy.chase_speed
 
-		-- Check for wall collision - return to random search
-		if (enemy.direction == -1 and enemy.wall_left) or
-		   (enemy.direction == 1 and enemy.wall_right) then
+		if (enemy.direction == -1 and (enemy.wall_left or enemy.edge_left)) or
+		   (enemy.direction == 1 and (enemy.wall_right or enemy.edge_right)) then
 			enemy.direction = -enemy.direction
-			enemy:set_state(ratto.states.idle)
+			enemy.animation.flipped = enemy.direction
+			enemy.retreat_timer = 1.0
+		end
+
+		if enemy.retreat_timer then
+			enemy.retreat_timer = enemy.retreat_timer - dt
+			if enemy.retreat_timer <= 0 then
+				enemy.retreat_timer = nil
+				enemy:set_state(ratto.states.idle)
+			end
 			return
 		end
 

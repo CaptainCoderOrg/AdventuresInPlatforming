@@ -58,6 +58,24 @@ function world.add_collider(obj)
 	return shape
 end
 
+--- Adds a circle collider for an object.
+--- Uses the smaller of width/height as diameter.
+--- @param obj table Object with x, y, and box properties
+function world.add_circle_collider(obj)
+	local ts = sprites.tile_size
+	local radius = math.min(obj.box.w, obj.box.h) * ts / 2
+	local cx = (obj.x + obj.box.x + obj.box.w / 2) * ts
+	local cy = (obj.y + obj.box.y + obj.box.h / 2) * ts
+
+	local shape = world.hc:circle(cx, cy, radius)
+	shape.is_trigger = false
+	shape.is_circle = true
+	shape.radius = radius
+	shape.owner = obj
+	world.shape_map[obj] = shape
+	return shape
+end
+
 function world.add_trigger_collider(obj)
 	local ts = sprites.tile_size
 	local px = (obj.x + obj.box.x) * ts

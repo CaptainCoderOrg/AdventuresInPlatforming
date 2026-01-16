@@ -66,11 +66,12 @@ function Enemy.spawn(type_key, x, y)
 	self.is_enemy = true
 
 	-- Create physical collider (for ground/wall detection)
-	self.shape = world.add_collider(self)
-
-	-- Create combat hitbox for slope-rotating enemies (rotates with sprite)
+	-- Use circle for slope-rotating enemies (slides smoothly on slopes)
 	if self.rotate_to_slope then
+		self.shape = world.add_circle_collider(self)
 		self.hitbox = world.add_hitbox(self)
+	else
+		self.shape = world.add_collider(self)
 	end
 
 	-- Register in pool
@@ -150,13 +151,21 @@ function Enemy.draw()
 
 		-- Draw debug shapes
 		if config.bounding_boxes then
-			-- Draw physics shape (cyan) - axis-aligned for world collision
+			-- Draw physics shape (cyan) - for world collision
 			canvas.set_color("#00FFFF")  -- Cyan
-			canvas.draw_rect(
-				(enemy.x + enemy.box.x) * sprites.tile_size,
-				(enemy.y + enemy.box.y) * sprites.tile_size,
-				enemy.box.w * sprites.tile_size,
-				enemy.box.h * sprites.tile_size)
+			if enemy.shape and enemy.shape.is_circle then
+				-- Circle collider
+				local cx = (enemy.x + enemy.box.x + enemy.box.w / 2) * sprites.tile_size
+				local cy = (enemy.y + enemy.box.y + enemy.box.h / 2) * sprites.tile_size
+				canvas.draw_circle(cx, cy, enemy.shape.radius)
+			else
+				-- Rectangle collider
+				canvas.draw_rect(
+					(enemy.x + enemy.box.x) * sprites.tile_size,
+					(enemy.y + enemy.box.y) * sprites.tile_size,
+					enemy.box.w * sprites.tile_size,
+					enemy.box.h * sprites.tile_size)
+			end
 
 			-- Draw combat hitbox (magenta) - rotates with sprite
 			if enemy.hitbox then

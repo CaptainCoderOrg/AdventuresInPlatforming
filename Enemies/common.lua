@@ -108,10 +108,13 @@ function common.get_slope_rotation(enemy)
 end
 
 --- Get Y offset to keep sprite/hitbox grounded when rotated
+--- Only needed for rectangle physics colliders; circle colliders sit naturally on slopes
 --- @param enemy table The enemy
 --- @return number Y offset in pixels
 function common.get_slope_y_offset(enemy)
 	if not enemy.rotate_to_slope or not enemy.animation then return 0 end
+	-- Circle colliders don't need Y offset - they naturally conform to slopes
+	if enemy.shape and enemy.shape.is_circle then return 0 end
 	local rotation = enemy.slope_rotation or 0
 	if rotation == 0 then return 0 end
 	local sprite_width = enemy.animation.definition.width * config.ui.SCALE

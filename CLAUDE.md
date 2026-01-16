@@ -182,6 +182,16 @@ state = {
   - Detection range: 5 tiles
   - Health: 5 HP, Contact damage: 1
   - Chase speed: 6 px/frame (faster than patrol)
+- **Worm** - Simple patrol enemy
+  - States: run, death
+  - Health: 1 HP, Contact damage: 1
+  - Patrol speed: 0.5 px/frame
+  - Reverses at walls and platform edges
+- **Spike Slug** - Defensive enemy with invincibility mechanic
+  - States: run, defend, stop_defend, hit, death
+  - Health: 3 HP, Contact damage: 1
+  - Detection range: 6 tiles (triggers defense)
+  - `is_defending` flag blocks all damage while in defend state
 
 **Damage System:**
 Enemies can take damage from multiple sources:
@@ -197,10 +207,26 @@ enemy:on_hit("projectile", projectile)
 - Deals `enemy.damage` to player on collision
 - Player invincibility frames prevent rapid hits
 
+**Common Utilities (`Enemies/common.lua`):**
+Shared functions to reduce duplication across enemy types:
+- `common.player_in_range(enemy, range)` - Distance check in tiles
+- `common.direction_to_player(enemy)` - Returns -1 or 1 toward player
+- `common.draw(enemy)` - Standard sprite rendering
+- `common.is_blocked(enemy)` - Checks wall or edge in current direction
+- `common.reverse_direction(enemy)` - Flip direction and animation
+- `common.create_death_state(animation)` - Factory for standard death state
+
+**Edge Detection:**
+Enemies automatically detect platform edges to avoid falling:
+- `enemy.edge_left` / `enemy.edge_right` - True if no ground ahead
+- Uses `world.point_has_ground(x, y)` to probe for solid geometry
+- Combined with `enemy.wall_left` / `wall_right` in `common.is_blocked()`
+
 **Creating New Enemies:**
 1. Create definition file in `Enemies/` (animations, states, properties)
-2. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-3. Add spawn character to level format (e.g., `R` for ratto)
+2. Use `common.*` utilities for shared behaviors
+3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug)
 
 ### Camera System
 
@@ -316,6 +342,11 @@ Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
 - Prioritizes enemy collisions over solid geometry
 - Returns `{other, x, y}` collision info or nil
 
+**Ground Probing:**
+- `world.point_has_ground(x, y)` - Checks if solid ground exists at point
+- Used for enemy edge detection (avoid walking off platforms)
+- Filters out triggers and enemy colliders
+
 **Raycasting:**
 - `world.raycast_down(player, max_distance)` - Finds solid ground below player
 - Used by camera to predict landing during falls
@@ -332,6 +363,8 @@ Levels in `levels/` use ASCII tile maps:
 - `H` = ladder segment
 - `S` = spawn point (player)
 - `R` = ratto enemy spawn
+- `W` = worm enemy spawn
+- `G` = spike_slug enemy spawn
 
 ### Physics Constants
 
@@ -374,7 +407,10 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Camera/init.lua` - Camera system with following and framing
 - `Enemies/init.lua` - Enemy manager and base class
-- `Enemies/ratto.lua` - Ratto enemy (states, animations, AI)
+- `Enemies/common.lua` - Shared enemy utilities (draw, is_blocked, create_death_state)
+- `Enemies/ratto.lua` - Ratto enemy (patrol/chase AI)
+- `Enemies/worm.lua` - Worm enemy (simple patrol)
+- `Enemies/spike_slug.lua` - Spike slug enemy (defensive behavior)
 - `player/attack.lua` - Combat combo system (includes sword hitbox)
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state

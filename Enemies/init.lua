@@ -48,7 +48,7 @@ function Enemy.spawn(type_key, x, y)
 
 	-- State machine
 	self.states = definition.states
-	self.state = self.states.idle
+	self.state = self.states[definition.initial_state] or self.states.idle
 
 	-- Animation
 	self.animation = nil

@@ -62,6 +62,13 @@ canvas.assets.load_image(sprites.ratto.run, "sprites/enemies/ratto/ratto_run.png
 canvas.assets.load_image(sprites.ratto.hit, "sprites/enemies/ratto/ratto_hit.png")
 canvas.assets.load_image(sprites.ratto.death, "sprites/enemies/ratto/ratto_death.png")
 
+sprites.worm = {
+	run = "worm_run",
+	death = "worm_death",
+}
+canvas.assets.load_image(sprites.worm.run, "sprites/enemies/worm/worm_run.png")
+canvas.assets.load_image(sprites.worm.death, "sprites/enemies/worm/worm_death.png")
+
 
 
 function sprites.draw_ladder(dx, dy, sprite)

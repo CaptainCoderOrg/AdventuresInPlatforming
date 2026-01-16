@@ -35,6 +35,8 @@ function platforms.load_level(level_data)
 				spawn = { x = x - 1, y = y - 1 }
 			elseif ch == "R" then
 				table.insert(enemies, { x = x - 1, y = y - 1, type = "ratto" })
+			elseif ch == "W" then
+				table.insert(enemies, { x = x - 1, y = y - 1, type = "worm" })
 			end
 		end
 	end

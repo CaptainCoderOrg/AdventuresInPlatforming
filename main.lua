@@ -13,6 +13,7 @@ local Camera = require("Camera")
 local camera_cfg = require("config/camera")
 local Enemy = require("Enemies")
 Enemy.register("ratto", require("Enemies/ratto"))
+Enemy.register("worm", require("Enemies/worm"))
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level

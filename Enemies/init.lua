@@ -68,6 +68,11 @@ function Enemy.spawn(type_key, x, y)
 	-- Create physical collider (for ground/wall detection)
 	self.shape = world.add_collider(self)
 
+	-- Create combat hitbox for slope-rotating enemies (rotates with sprite)
+	if self.rotate_to_slope then
+		self.hitbox = world.add_hitbox(self)
+	end
+
 	-- Register in pool
 	Enemy.all[self] = true
 
@@ -101,6 +106,12 @@ function Enemy.update(dt, player)
 		-- Update slope rotation (visual only)
 		common.update_slope_rotation(enemy, dt)
 
+		-- Update combat hitbox position and rotation
+		if enemy.hitbox then
+			local y_offset = common.get_slope_y_offset(enemy)
+			world.update_hitbox(enemy, y_offset)
+		end
+
 		-- Store player reference for state logic
 		enemy.target_player = player
 
@@ -126,6 +137,7 @@ function Enemy.update(dt, player)
 	-- Cleanup destroyed enemies
 	for _, enemy in ipairs(to_remove) do
 		world.remove_collider(enemy)
+		world.remove_hitbox(enemy)
 		Enemy.all[enemy] = nil
 	end
 end
@@ -136,14 +148,38 @@ function Enemy.draw()
 	for enemy, _ in pairs(Enemy.all) do
 		enemy.state.draw(enemy)
 
-		-- Draw debug hitbox in cyan (axis-aligned, collision box doesn't rotate)
+		-- Draw debug shapes
 		if config.bounding_boxes then
-			canvas.set_color("#00FFFF")  -- Cyan for enemies
+			-- Draw physics shape (cyan) - axis-aligned for world collision
+			canvas.set_color("#00FFFF")  -- Cyan
 			canvas.draw_rect(
 				(enemy.x + enemy.box.x) * sprites.tile_size,
 				(enemy.y + enemy.box.y) * sprites.tile_size,
 				enemy.box.w * sprites.tile_size,
 				enemy.box.h * sprites.tile_size)
+
+			-- Draw combat hitbox (magenta) - rotates with sprite
+			if enemy.hitbox then
+				canvas.set_color("#FF00FF")  -- Magenta
+				local y_offset = common.get_slope_y_offset(enemy)
+				local box_x = (enemy.x + enemy.box.x) * sprites.tile_size
+				local box_y = (enemy.y + enemy.box.y) * sprites.tile_size + y_offset
+				local box_w = enemy.box.w * sprites.tile_size
+				local box_h = enemy.box.h * sprites.tile_size
+				local rotation = -(enemy.slope_rotation or 0)  -- Negate to match hitbox
+
+				if rotation ~= 0 then
+					canvas.save()
+					local cx = box_x + box_w / 2
+					local cy = box_y + box_h / 2
+					canvas.translate(cx, cy)
+					canvas.rotate(rotation)
+					canvas.draw_rect(-box_w / 2, -box_h / 2, box_w, box_h)
+					canvas.restore()
+				else
+					canvas.draw_rect(box_x, box_y, box_w, box_h)
+				end
+			end
 		end
 	end
 	canvas.restore()
@@ -153,6 +189,7 @@ end
 function Enemy.clear()
 	for enemy, _ in pairs(Enemy.all) do
 		world.remove_collider(enemy)
+		world.remove_hitbox(enemy)
 	end
 	Enemy.all = {}
 end
@@ -173,9 +210,13 @@ end
 --- @param player table The player object
 function Enemy:check_player_overlap(player)
 	local player_shape = world.shape_map[player]
-	if not player_shape or not self.shape then return end
+	if not player_shape then return end
 
-	local collides, _ = self.shape:collidesWith(player_shape)
+	-- Use combat hitbox if available, otherwise fall back to physics shape
+	local enemy_shape = self.hitbox or self.shape
+	if not enemy_shape then return end
+
+	local collides, _ = enemy_shape:collidesWith(player_shape)
 	if collides then
 		player:take_damage(self.damage)
 	end
@@ -218,9 +259,11 @@ end
 
 --- Called when enemy health reaches 0.
 function Enemy:die()
-	-- Remove collider immediately so nothing else can hit it
+	-- Remove colliders immediately so nothing else can hit it
 	world.remove_collider(self)
+	world.remove_hitbox(self)
 	self.shape = nil
+	self.hitbox = nil
 
 	-- Transition to death state if available, otherwise destroy immediately
 	if self.states.death then

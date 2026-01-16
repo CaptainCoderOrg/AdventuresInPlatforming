@@ -33,11 +33,14 @@ end
 -- Initialize HC with spatial hash cell size (50 tiles * tile_size in pixels)
 world.hc = HC:new(50 * sprites.tile_size)
 
--- Maps game objects to their HC shapes
+-- Maps game objects to their HC shapes (physics collisions)
 world.shape_map = {}
 
 -- Maps game objects to their HC trigger shapes
 world.trigger_map = {}
+
+-- Maps game objects to their combat hitboxes (for hit detection, can rotate)
+world.hitbox_map = {}
 
 --- Adds a rectangular collider for an object.
 --- @param obj table Object with x, y, and box properties
@@ -67,6 +70,58 @@ function world.add_trigger_collider(obj)
 	shape.owner = obj
 	world.trigger_map[obj] = shape
 	return shape
+end
+
+--- Adds a combat hitbox for an object (separate from physics shape).
+--- Used for hit detection with projectiles/attacks. Can be rotated.
+--- @param obj table Object with x, y, and box properties
+function world.add_hitbox(obj)
+	local ts = sprites.tile_size
+	local px = (obj.x + obj.box.x) * ts
+	local py = (obj.y + obj.box.y) * ts
+	local pw = obj.box.w * ts
+	local ph = obj.box.h * ts
+
+	local shape = world.hc:rectangle(px, py, pw, ph)
+	shape.is_hitbox = true
+	shape.owner = obj
+	world.hitbox_map[obj] = shape
+	return shape
+end
+
+--- Removes a combat hitbox for an object.
+--- @param obj table The object whose hitbox to remove
+function world.remove_hitbox(obj)
+	local shape = world.hitbox_map[obj]
+	if shape then
+		world.hc:remove(shape)
+		world.hitbox_map[obj] = nil
+	end
+end
+
+--- Updates a combat hitbox position and rotation.
+--- @param obj table Object with x, y, box, and optional slope_rotation
+--- @param y_offset number Y offset in pixels (for sprite grounding)
+function world.update_hitbox(obj, y_offset)
+	local shape = world.hitbox_map[obj]
+	if not shape then return end
+
+	local ts = sprites.tile_size
+	local px = (obj.x + obj.box.x) * ts
+	local py = (obj.y + obj.box.y) * ts + (y_offset or 0)
+
+	-- Move shape to new position
+	local old_x, old_y, _, _ = shape:bbox()
+	local dx = px - old_x
+	local dy = py - old_y
+	shape:move(dx, dy)
+
+	-- Apply rotation if available (negate to match visual rotation)
+	if obj.slope_rotation then
+		local cx = px + (obj.box.w * ts / 2)
+		local cy = py + (obj.box.h * ts / 2)
+		shape:setRotation(-obj.slope_rotation, cx, cy)
+	end
 end
 
 --- Moves an object using separated X/Y collision passes.
@@ -239,10 +294,23 @@ function world.move_trigger(obj)
 	local solid_hit = nil
 
 	for other, sep in pairs(collisions) do
-		if world.shape_map[other.owner] == other and not (other.owner and other.owner.is_player) then
-			if other.owner and other.owner.is_enemy then
+		local owner = other.owner
+		local is_player = owner and owner.is_player
+		local is_enemy = owner and owner.is_enemy
+
+		-- Check if this is a valid collision target
+		local is_physics_shape = world.shape_map[owner] == other
+		local is_combat_hitbox = world.hitbox_map[owner] == other
+
+		if not is_player then
+			if is_enemy and is_combat_hitbox then
+				-- Enemy with combat hitbox - use hitbox for detection
 				enemy_hit = { shape = other, sep = sep }
-			elseif not solid_hit then
+			elseif is_enemy and is_physics_shape and not world.hitbox_map[owner] then
+				-- Enemy without combat hitbox - fall back to physics shape
+				enemy_hit = { shape = other, sep = sep }
+			elseif is_physics_shape and not is_enemy and not solid_hit then
+				-- Non-enemy physics shape (walls, platforms)
 				solid_hit = { shape = other, sep = sep }
 			end
 		end

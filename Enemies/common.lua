@@ -30,13 +30,7 @@ end
 function common.draw(enemy)
 	if enemy.animation then
 		local rotation = common.get_slope_rotation(enemy)
-		local y_offset = 0
-
-		-- Offset Y to keep sprite grounded when rotated
-		if rotation ~= 0 then
-			local sprite_width = enemy.animation.definition.width * config.ui.SCALE
-			y_offset = (sprite_width / 2) * math.abs(math.sin(rotation))
-		end
+		local y_offset = common.get_slope_y_offset(enemy)
 
 		enemy.animation:draw(
 			enemy.x * sprites.tile_size,
@@ -111,6 +105,17 @@ end
 function common.get_slope_rotation(enemy)
 	if not enemy.rotate_to_slope then return 0 end
 	return enemy.slope_rotation or 0
+end
+
+--- Get Y offset to keep sprite/hitbox grounded when rotated
+--- @param enemy table The enemy
+--- @return number Y offset in pixels
+function common.get_slope_y_offset(enemy)
+	if not enemy.rotate_to_slope or not enemy.animation then return 0 end
+	local rotation = enemy.slope_rotation or 0
+	if rotation == 0 then return 0 end
+	local sprite_width = enemy.animation.definition.width * config.ui.SCALE
+	return (sprite_width / 2) * math.abs(math.sin(rotation))
 end
 
 return common

@@ -180,7 +180,8 @@ end
 --- @param source_type string "player", "weapon", or "projectile"
 --- @param source table The object that hit this enemy
 function Enemy:on_hit(source_type, source)
-	-- Determine damage amount from source
+	if self.is_defending then return end
+
 	local damage = 1
 	if source and source.damage then
 		damage = source.damage

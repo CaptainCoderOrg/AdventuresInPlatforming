@@ -69,7 +69,18 @@ sprites.worm = {
 canvas.assets.load_image(sprites.worm.run, "sprites/enemies/worm/worm_run.png")
 canvas.assets.load_image(sprites.worm.death, "sprites/enemies/worm/worm_death.png")
 
-
+sprites.spikeslug = {
+	run = "spikeslug_run",
+	hit = "spikeslug_hit",
+	defense = "spikeslug_defense",
+	stop_defend = "spikeslug_stop_defend",
+	death = "spikeslug_death",
+}
+canvas.assets.load_image(sprites.spikeslug.run, "sprites/enemies/spike_slug/spikeslug_run.png")
+canvas.assets.load_image(sprites.spikeslug.hit, "sprites/enemies/spike_slug/spikeslug_hit.png")
+canvas.assets.load_image(sprites.spikeslug.defense, "sprites/enemies/spike_slug/spikeslug_defense.png")
+canvas.assets.load_image(sprites.spikeslug.stop_defend, "sprites/enemies/spike_slug/spikeslug_stop_defend.png")
+canvas.assets.load_image(sprites.spikeslug.death, "sprites/enemies/spike_slug/spikeslug_death.png")
 
 function sprites.draw_ladder(dx, dy, sprite)
 	if sprite == nil then sprite = LADDER_MID end

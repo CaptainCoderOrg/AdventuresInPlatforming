@@ -27,19 +27,6 @@ ratto.animations = {
 	}),
 }
 
-local function player_in_range(enemy, range)
-	if not enemy.target_player then return false end
-	local dx = enemy.target_player.x - enemy.x
-	local dy = enemy.target_player.y - enemy.y
-	local dist = math.sqrt(dx * dx + dy * dy)
-	return dist <= range
-end
-
-local function direction_to_player(enemy)
-	if not enemy.target_player then return enemy.direction end
-	return enemy.target_player.x < enemy.x and -1 or 1
-end
-
 ratto.states = {}
 
 ratto.states.idle = {
@@ -50,7 +37,7 @@ ratto.states.idle = {
 		enemy.idle_timer = 2.0
 	end,
 	update = function(enemy, dt)
-		if player_in_range(enemy, 5) then
+		if common.player_in_range(enemy, 5) then
 			enemy:set_state(ratto.states.chase)
 			return
 		end
@@ -72,7 +59,7 @@ ratto.states.run = {
 		enemy.run_speed = 3
 	end,
 	update = function(enemy, dt)
-		if player_in_range(enemy, 5) then
+		if common.player_in_range(enemy, 5) then
 			enemy:set_state(ratto.states.chase)
 			return
 		end
@@ -97,7 +84,7 @@ ratto.states.chase = {
 		enemy.animation = Animation.new(ratto.animations.RUN, { flipped = enemy.direction })
 		enemy.chase_speed = 6
 		enemy.overshoot_timer = nil
-		enemy.direction = direction_to_player(enemy)
+		enemy.direction = common.direction_to_player(enemy)
 		enemy.animation.flipped = enemy.direction
 	end,
 	update = function(enemy, dt)
@@ -123,7 +110,7 @@ ratto.states.chase = {
 				enemy:set_state(ratto.states.idle)
 			end
 		else
-			local dir_to_player = direction_to_player(enemy)
+			local dir_to_player = common.direction_to_player(enemy)
 			if dir_to_player ~= enemy.direction then
 				enemy.overshoot_timer = 1.0
 			end

@@ -3,6 +3,25 @@ local sprites = require('sprites')
 
 local common = {}
 
+--- Check if player is within range of enemy
+--- @param enemy table The enemy
+--- @param range number Distance in tiles
+--- @return boolean
+function common.player_in_range(enemy, range)
+	if not enemy.target_player then return false end
+	local dx = enemy.target_player.x - enemy.x
+	local dy = enemy.target_player.y - enemy.y
+	return math.sqrt(dx * dx + dy * dy) <= range
+end
+
+--- Get direction toward player (-1 or 1)
+--- @param enemy table The enemy
+--- @return number Direction (-1 left, 1 right)
+function common.direction_to_player(enemy)
+	if not enemy.target_player then return enemy.direction end
+	return enemy.target_player.x < enemy.x and -1 or 1
+end
+
 --- Standard enemy draw function
 --- @param enemy table The enemy to draw
 function common.draw(enemy)

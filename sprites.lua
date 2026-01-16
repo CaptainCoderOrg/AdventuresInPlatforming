@@ -16,9 +16,14 @@ canvas.assets.load_image(LADDER_TOP, "sprites/environment/ladder_top.png")
 canvas.assets.load_image(LADDER_MID, "sprites/environment/ladder_mid.png")
 canvas.assets.load_image(LADDER_BOTTOM, "sprites/environment/ladder_bottom.png")
 
+sprites.ui = {}
 canvas.assets.load_image("dialogue_lg", "sprites/ui/dialogue-lg.png")
 canvas.assets.load_image("slider", "sprites/ui/fillable-area.png")
 canvas.assets.load_image("button", "sprites/ui/button.png")
+sprites.ui.circle_ui = "circle_ui"
+canvas.assets.load_image(sprites.circle_ui, "sprites/ui/circle_ui.png")
+sprites.ui.small_circle_ui = "small_circle_ui"
+canvas.assets.load_image(sprites.ui.small_circle_ui, "sprites/ui/small_circle_ui.png")
 
 canvas.assets.load_image("player_block", "sprites/character/block.png")
 canvas.assets.load_image("player_idle", "sprites/character/idle.png")

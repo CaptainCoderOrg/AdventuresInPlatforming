@@ -3,6 +3,7 @@ local slider = require("ui/slider")
 local button = require("ui/button")
 local audio = require("audio")
 local sprites = require("sprites")
+local config = require("config")
 
 local hud = {}
 
@@ -265,9 +266,24 @@ local function draw_game_over(player)
     end
 end
 
+local function draw_selected_projectile(player)
+    local scale = config.ui.SCALE
+    canvas.save()
+    -- canvas.translate(8, 8)
+    canvas.set_global_alpha(0.9)
+    canvas.translate(8, canvas.get_height() - 24*scale - 8)
+    canvas.scale(scale, scale)
+    canvas.draw_image(sprites.ui.small_circle_ui, 0, 0)
+    canvas.translate(8, 8)
+    canvas.draw_image(player.projectile.sprite, 0, 0, 8, 8, 0, 0, 8, 8)
+
+    canvas.restore()
+end
+
 --- Draw all HUD elements
 function hud.draw(player)
     hud.draw_player_health(player)
+    draw_selected_projectile(player)
     draw_game_over(player)
     if fade_state ~= "closed" then
         draw_settings()

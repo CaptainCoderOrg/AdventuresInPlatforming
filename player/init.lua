@@ -78,6 +78,7 @@ function Player.new()
 	-- Combat
 	self.attacks = 3
 	self.attack_cooldown = 0
+	self.throw_cooldown = 0
 	self.weapon_damage = 2.5
 
 	-- Dash
@@ -115,7 +116,6 @@ function Player.new()
 		next_anim_ix = 1,
 		remaining_time = 0,
 		queued = false,
-		queued_jump = false,
 		hit_enemies = {}
 	}
 	self.climb_state = {
@@ -131,11 +131,22 @@ function Player.new()
 	self.hammer_state = {
 		remaining_time = 0
 	}
+	self.throw_state = {
+		remaining_time = 0
+	}
 	self.hit_state = {
 		knockback_speed = 2,
-		remaining_time = 0,
-		queued_jump = false,
-		queued_attack = false
+		remaining_time = 0
+	}
+
+	-- Centralized input queue for locked states (hit, throw, attack).
+	-- Inputs are queued during locked states and processed on state exit.
+	-- Attack/throw entries persist across state transitions until cooldown expires,
+	-- allowing check_cooldown_queues() to execute them in idle/run/air states.
+	self.input_queue = {
+		jump = false,
+		attack = false,
+		throw = false
 	}
 
 	-- Register with collision system
@@ -233,6 +244,7 @@ function Player:update(dt)
 	self.animation:play(dt)  -- Self-managing delta-time based animation
 	self.dash_cooldown = self.dash_cooldown - dt
 	self.attack_cooldown = self.attack_cooldown - dt
+	self.throw_cooldown = self.throw_cooldown - dt
 
 	self.x = self.x + (self.vx * dt)
 	self.y = self.y + (self.vy * dt)

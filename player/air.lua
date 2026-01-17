@@ -40,6 +40,8 @@ end
 --- Handles input while airborne. Allows horizontal movement, dash, and air jump.
 --- @param player table The player object
 function air.input(player)
+	if common.check_cooldown_queues(player) then return end
+
 	if controls.left_down() then
 		player.direction = -1
 		player.vx = player.direction * player.air_speed

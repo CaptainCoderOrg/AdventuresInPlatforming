@@ -16,6 +16,8 @@ end
 --- Handles input while idle. Movement transitions to run state.
 --- @param player table The player object
 function idle.input(player)
+	if common.check_cooldown_queues(player) then return end
+
 	if controls.left_down() then
 		player.direction = -1
 		player:set_state(player.states.run)

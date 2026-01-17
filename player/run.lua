@@ -24,6 +24,8 @@ end
 --- Handles input while running. Updates direction or transitions to idle.
 --- @param player table The player object
 function run.input(player)
+	if common.check_cooldown_queues(player) then return end
+
 	local new_direction = nil
 	if controls.left_down() then
 		new_direction = -1

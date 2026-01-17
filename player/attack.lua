@@ -8,6 +8,8 @@ local config = require('config')
 local canvas = require('canvas')
 
 
+--- Attack state: Player performs melee combo attacks.
+--- Supports 3-hit combo chain with input queueing for smooth chaining.
 local attack = { name = "attack" }
 
 local ATTACK_COOLDOWN = 0.2
@@ -69,10 +71,12 @@ local function next_animation(player)
 	end
 end
 
+--- Called when entering attack state. Initializes combo and clears input queue.
+--- @param player table The player object
 function attack.start(player)
     player.attack_state.count = 1
     player.attack_state.next_anim_ix = 1
-    player.attack_state.queued_jump = false
+    common.clear_input_queue(player)
     next_animation(player)
 end
 
@@ -82,6 +86,9 @@ local function can_cancel(player)
 	return on_last_frame or in_hold_time
 end
 
+--- Handles input during attack. Queues combo continuation, jump, or throw.
+--- Allows direction change and early state cancels during hold window.
+--- @param player table The player object
 function attack.input(player)
 	if controls.left_down() then
 		player.direction = -1
@@ -90,18 +97,28 @@ function attack.input(player)
 	end
 	if controls.attack_pressed() then
 		player.attack_state.queued = true
-		player.attack_state.queued_jump = false
+		-- Clear jump/throw queues when combo is queued (combo takes priority)
+		player.input_queue.jump = false
+		player.input_queue.throw = false
 	end
 	if controls.jump_pressed() then
-		player.attack_state.queued_jump = true
+		common.queue_input(player, "jump")
+	end
+	if controls.throw_pressed() then
+		common.queue_input(player, "throw")
 	end
 
 	if can_cancel(player) then
 		local combo_available = player.attack_state.queued and player.attacks > player.attack_state.count
-		if not combo_available and player.attack_state.queued_jump and player.is_grounded then
+		if not combo_available and player.input_queue.jump and player.is_grounded then
 			player.vy = -common.JUMP_VELOCITY
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.air)
+			return
+		end
+		if not combo_available and player.input_queue.throw then
+			player.attack_cooldown = ATTACK_COOLDOWN
+			player:set_state(player.states.throw)
 			return
 		end
 		if not combo_available and (controls.left_down() or controls.right_down()) then
@@ -112,7 +129,10 @@ function attack.input(player)
 	end
 end
 
-
+--- Updates attack state. Checks for hits, advances combo, and handles timing.
+--- Transitions to idle after hold window expires if no combo queued.
+--- @param player table The player object
+--- @param dt number Delta time
 function attack.update(player, dt)
 	check_attack_hits(player)
 	player.vx = 0
@@ -131,7 +151,8 @@ function attack.update(player, dt)
 	end
 end
 
-
+--- Renders the player in attack animation with optional debug hitbox.
+--- @param player table The player object
 function attack.draw(player)
 	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 

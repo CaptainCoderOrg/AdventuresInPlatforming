@@ -46,13 +46,22 @@ end
 
 function common.handle_throw(player)
     if controls.throw_pressed() then
-        player:set_state(player.states.throw)
+        if player.throw_cooldown <= 0 then
+            player:set_state(player.states.throw)
+        else
+            common.queue_input(player, "throw")
+        end
     end
 end
 
 function common.handle_attack(player)
-	if controls.attack_pressed() and player.attack_cooldown <= 0 then
-		player:set_state(player.states.attack)
+	if controls.attack_pressed() then
+		if player.attack_cooldown <= 0 then
+			player:set_state(player.states.attack)
+		else
+			-- Queue attack during cooldown
+			common.queue_input(player, "attack")
+		end
 	end
 end
 
@@ -246,6 +255,98 @@ function common.get_ground_tangent(player)
 	local ny = player.ground_normal.y
 	-- Tangent perpendicular to normal, pointing right
 	return { x = -ny, y = nx }
+end
+
+-- Input Queue System
+
+--- Queues an input for later execution.
+--- @param player table The player object
+--- @param input_name string The input to queue ("jump", "attack", or "throw")
+function common.queue_input(player, input_name)
+	player.input_queue[input_name] = true
+end
+
+--- Clears all queued inputs.
+--- @param player table The player object
+function common.clear_input_queue(player)
+	player.input_queue.jump = false
+	player.input_queue.attack = false
+	player.input_queue.throw = false
+end
+
+--- Transitions to a state, restarting if already in that state.
+--- Note: The restart branch is defensive code for future-proofing; current usage
+--- always transitions to a different state, but this handles same-state queueing.
+--- @param player table The player object
+--- @param state table The target state
+local function transition_or_restart(player, state)
+	if player.state == state then
+		state.start(player)
+	else
+		player:set_state(state)
+	end
+end
+
+--- Processes queued inputs with priority (attack > throw > jump).
+--- Called when exiting locked states (throw, hammer, hit) to chain actions.
+--- Respects cooldowns - blocked entries persist for check_cooldown_queues.
+--- @param player table The player object
+--- @return boolean True if a state transition occurred
+function common.process_input_queue(player)
+	if player.input_queue.attack and player.attack_cooldown <= 0 then
+		common.clear_input_queue(player)
+		transition_or_restart(player, player.states.attack)
+		return true
+	end
+	if player.input_queue.throw and player.throw_cooldown <= 0 then
+		common.clear_input_queue(player)
+		transition_or_restart(player, player.states.throw)
+		return true
+	end
+	if player.input_queue.jump then
+		-- Jump can't be deferred, clear it regardless of success
+		player.input_queue.jump = false
+		if player.is_grounded then
+			player.vy = -common.JUMP_VELOCITY
+			player:set_state(player.states.air)
+			return true
+		end
+	end
+	-- Don't clear attack/throw - they persist for check_cooldown_queues
+	return false
+end
+
+--- Standard queue input handler for locked states.
+--- Call this in the input() function of locked states.
+--- @param player table The player object
+function common.queue_inputs(player)
+	if controls.jump_pressed() then
+		common.queue_input(player, "jump")
+	end
+	if controls.attack_pressed() then
+		common.queue_input(player, "attack")
+	end
+	if controls.throw_pressed() then
+		common.queue_input(player, "throw")
+	end
+end
+
+--- Checks for queued attack or throw that were waiting on cooldown.
+--- Call this in input() of states that allow attacking/throwing (idle, run, air).
+--- @param player table The player object
+--- @return boolean True if a state transition occurred
+function common.check_cooldown_queues(player)
+	if player.input_queue.attack and player.attack_cooldown <= 0 then
+		player.input_queue.attack = false
+		player:set_state(player.states.attack)
+		return true
+	end
+	if player.input_queue.throw and player.throw_cooldown <= 0 then
+		player.input_queue.throw = false
+		player:set_state(player.states.throw)
+		return true
+	end
+	return false
 end
 
 return common

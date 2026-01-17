@@ -6,10 +6,11 @@ platforms.ladders = require('platforms/ladders')
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array and optional symbols table
---- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], width: number, height: number}
+--- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], signs: {x: number, y: number, text: string}[], width: number, height: number}
 function platforms.load_level(level_data)
 	local spawn = nil
 	local enemies = {}
+	local signs = {}
 	local width = level_data.map[1] and #level_data.map[1] or 0
 	local height = #level_data.map
 	local symbols = level_data.symbols or {}
@@ -36,6 +37,8 @@ function platforms.load_level(level_data)
 					spawn = { x = tx, y = ty }
 				elseif def.type == "enemy" then
 					table.insert(enemies, { x = tx, y = ty, type = def.key })
+				elseif def.type == "sign" then
+					table.insert(signs, { x = tx, y = ty, text = def.text })
 				end
 			end
 		end
@@ -44,6 +47,7 @@ function platforms.load_level(level_data)
 	return {
 		spawn = spawn,
 		enemies = enemies,
+		signs = signs,
 		width = width,
 		height = height
 	}

@@ -15,6 +15,7 @@ local Enemy = require("Enemies")
 Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
+local Sign = require("Sign")
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
@@ -54,6 +55,7 @@ local function update()
     Projectile.update(dt, level_info)
     Effects.update(dt)
     Enemy.update(dt, player)
+    Sign.update(dt, player)
 end
 
 -- Render the game
@@ -64,6 +66,7 @@ local function draw()
     canvas.save()
     camera:apply_transform(sprites.tile_size)
     platforms.draw(camera)
+    Sign.draw()
     Enemy.draw()
     player:draw()
     Projectile.draw()
@@ -85,6 +88,11 @@ local function init_level()
 
     for _, spawn in ipairs(level_info.enemies) do
         Enemy.spawn(spawn.type, spawn.x, spawn.y)
+    end
+
+    Sign.clear()
+    for _, sign_data in ipairs(level_info.signs) do
+        Sign.new(sign_data.x, sign_data.y, sign_data.text)
     end
 
     camera = Camera.new(

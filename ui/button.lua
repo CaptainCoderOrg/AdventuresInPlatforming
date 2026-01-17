@@ -6,14 +6,15 @@ local utils = require("ui/utils")
 local button = {}
 button.__index = button
 
+-- Offsets at 1x scale (canvas transform handles scaling)
 local OFFSET_NORMAL = 0
-local OFFSET_HOVER = -2
-local OFFSET_PRESSED = 2
+local OFFSET_HOVER = -1
+local OFFSET_PRESSED = 1
 
-local button_slice = nine_slice.create("button", 100, 35, 13, 8, 14, 9)
+local button_slice = nine_slice.create("button", 100, 35, 14, 9, 14, 9)
 
 --- Create a new button component
----@param opts {x: number, y: number, width: number, height: number, label: string, scale: number, on_click: function}
+---@param opts {x: number, y: number, width: number, height: number, label: string, on_click: function}
 ---@return table button
 function button.create(opts)
     local self = setmetatable({}, button)
@@ -22,16 +23,15 @@ function button.create(opts)
     self.width = opts.width or 100
     self.height = opts.height or 35
     self.label = opts.label or ""
-    self.scale = opts.scale or 1
     self.on_click = opts.on_click
     self.state = "normal"
     return self
 end
 
 --- Update button state based on mouse input
-function button:update()
-    local mx = canvas.get_mouse_x()
-    local my = canvas.get_mouse_y()
+---@param mx number Mouse X in local coordinates (from parent)
+---@param my number Mouse Y in local coordinates (from parent)
+function button:update(mx, my)
     local inside = utils.point_in_rect(mx, my, self.x, self.y, self.width, self.height)
 
     if inside then
@@ -60,10 +60,10 @@ function button:draw()
 
     local draw_y = self.y + y_offset
 
-    nine_slice.draw(button_slice, self.x, draw_y, self.width, self.height, self.scale)
+    nine_slice.draw(button_slice, self.x, draw_y, self.width, self.height)
 
     canvas.set_font_family("menu_font")
-    canvas.set_font_size(26)
+    canvas.set_font_size(9)
     canvas.set_text_baseline("middle")
 
     local metrics = canvas.get_text_metrics(self.label)

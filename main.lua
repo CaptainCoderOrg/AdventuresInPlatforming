@@ -20,15 +20,15 @@ local Sign = require("Sign")
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
+local was_dead = false  -- Track death state for game over trigger
 
--- Set canvas size
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
--- Handle input
+
 local function user_input()
     hud.input()
 
-    if hud.is_settings_open() then
+    if hud.is_settings_open() or hud.is_game_over_active() then
         return
     end
 
@@ -43,22 +43,26 @@ local function user_input()
     player:input()
 end
 
--- Update game state
-local function update()
-    if hud.is_settings_open() then
+---@param dt number Delta time in seconds (already capped)
+local function update(dt)
+    if hud.is_settings_open() or hud.is_game_over_active() then
         return
     end
-    local dt = canvas.get_delta()
-    if dt > 0.5 then dt = 0.5 end
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
     player:update(dt)
     Projectile.update(dt, level_info)
     Effects.update(dt)
     Enemy.update(dt, player)
     Sign.update(dt, player)
+
+    -- Trigger game over once when player first enters death state
+    -- (was_dead prevents retriggering each frame while dead)
+    if player.is_dead and not was_dead then
+        was_dead = true
+        hud.show_game_over()
+    end
 end
 
--- Render the game
 local function draw()
     canvas.clear()
 
@@ -103,9 +107,31 @@ local function init_level()
     )
     camera:set_target(player)
     camera:set_look_ahead()
+
+    was_dead = false
 end
 
-local function init()
+local function restart_level()
+    local world = require("world")
+
+    -- Remove old player collider
+    world.remove_collider(player)
+
+    -- Clear all entities
+    platforms.clear()
+    Enemy.clear()
+    Sign.clear()
+
+    -- Clear projectiles
+    for projectile, _ in pairs(Projectile.all) do
+        world.remove_collider(projectile)
+    end
+    Projectile.all = {}
+
+    -- Clear effects
+    Effects.all = {}
+
+    -- Reinitialize level
     init_level()
 end
 
@@ -115,23 +141,21 @@ local function on_start()
     if started then return end
     audio.init()
     hud.init()
+    hud.set_restart_callback(restart_level)
     audio.play_music(audio.level1)
     started = true
 end
 
-
-
--- Main game loop
 local function game()
     on_start()
+    local dt = math.min(canvas.get_delta(), 0.5)
     audio.update()
-    hud.update()
+    hud.update(dt)
     user_input()
-    update()
+    update(dt)
     draw()
 end
 
-init()
--- Register and start
+init_level()
 canvas.tick(game)
 canvas.start()

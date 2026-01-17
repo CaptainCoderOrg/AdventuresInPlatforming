@@ -1,6 +1,7 @@
 --- In-game HUD elements: health, projectile selector, game over, settings overlay
 local canvas = require("canvas")
 local settings_menu = require("ui/settings_menu")
+local game_over = require("ui/game_over")
 local sprites = require("sprites")
 local config = require("config")
 
@@ -9,29 +10,34 @@ local hud = {}
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
---- Apply initial volume settings (call after audio.init)
+--- Initialize HUD subsystems (settings menu, game over screen)
+--- Must be called after audio.init() for volume settings to apply
 function hud.init()
     settings_menu.init()
+    game_over.init()
 end
 
 --- Process HUD input
 function hud.input()
     settings_menu.input()
+    game_over.input()
 end
 
 --- Advance settings menu animations
-function hud.update()
+---@param dt number Delta time in seconds
+function hud.update(dt)
     settings_menu.update()
+    game_over.update(dt)
 end
 
 --- Check if settings menu is blocking game input
----@return boolean
+---@return boolean is_open True if settings menu is currently visible
 function hud.is_settings_open()
     return settings_menu.is_open()
 end
 
 --- Draw player health hearts
----@param player table
+---@param player table Player instance with health() method and max_health property
 function hud.draw_player_health(player)
     local heart_size = 64
     local damage_size = 40
@@ -47,21 +53,6 @@ function hud.draw_player_health(player)
     end
 end
 
-local function draw_game_over(player)
-    if player.is_dead then
-        canvas.set_font_family("menu_font")
-        canvas.set_font_size(52)
-        canvas.set_text_baseline("middle")
-        canvas.set_text_align("center")
-        local x = canvas.get_width() / 2
-        local y = canvas.get_height() / 2
-        canvas.set_color("#472727ff")
-        canvas.draw_text(x + 2, y + 2, "GAME OVER", {})
-        canvas.set_color("#ebe389ff")
-        canvas.draw_text(x, y, "GAME OVER", {})
-        canvas.set_text_align("left")
-    end
-end
 
 local function draw_selected_projectile(player)
     local scale = config.ui.SCALE
@@ -76,12 +67,29 @@ local function draw_selected_projectile(player)
 end
 
 --- Draw all HUD elements
----@param player table
+---@param player table Player instance with health() method, max_health, and projectile properties
 function hud.draw(player)
     hud.draw_player_health(player)
     draw_selected_projectile(player)
-    draw_game_over(player)
     settings_menu.draw()
+    game_over.draw()
+end
+
+--- Show the game over screen
+function hud.show_game_over()
+    game_over.show()
+end
+
+--- Check if game over screen is blocking game input
+---@return boolean is_active True if game over is visible
+function hud.is_game_over_active()
+    return game_over.is_active()
+end
+
+--- Set the restart callback for game over
+---@param fn function Function to call when restarting
+function hud.set_restart_callback(fn)
+    game_over.set_restart_callback(fn)
 end
 
 return hud

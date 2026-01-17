@@ -1,54 +1,15 @@
 --- Slider UI component with 9-slice rendering, animated fill, and input handling
 local canvas = require("canvas")
+local nine_slice = require("ui/nine_slice")
+local utils = require("ui/utils")
 
 local slider = {}
 slider.__index = slider
 
-local SPRITE_W = 96
-local SPRITE_H = 16
-local BORDER_LEFT = 16
-local BORDER_RIGHT = 16
-local BORDER_TOP = 3
-local BORDER_BOTTOM = 4
 local HIT_LEFT = 10
 local HIT_RIGHT = 11
 
---- Draw a 9-slice from a sprite sheet row
-local function draw_nine_slice(sprite, src_y, x, y, width, height, scale)
-    local src_left = BORDER_LEFT
-    local src_top = BORDER_TOP
-    local src_right = BORDER_RIGHT
-    local src_bottom = BORDER_BOTTOM
-    local src_right_x = SPRITE_W - src_right
-    local src_bottom_y = SPRITE_H - src_bottom
-    local src_center_w = src_right_x - src_left
-    local src_center_h = src_bottom_y - src_top
-
-    local dst_left = src_left * scale
-    local dst_top = src_top * scale
-    local dst_right = src_right * scale
-    local dst_bottom = src_bottom * scale
-    local dst_center_w = width - dst_left - dst_right
-    local dst_center_h = height - dst_top - dst_bottom
-
-    local function draw_region(sx, sy, sw, sh, dx, dy, dw, dh)
-        if dw > 0 and dh > 0 and sw > 0 and sh > 0 then
-            canvas.draw_image(sprite, dx, dy, dw, dh, sx, src_y + sy, sw, sh)
-        end
-    end
-
-    draw_region(0,           0,            src_left,     src_top,      x,                           y,                          dst_left,     dst_top)
-    draw_region(src_left,    0,            src_center_w, src_top,      x + dst_left,                y,                          dst_center_w, dst_top)
-    draw_region(src_right_x, 0,            src_right,    src_top,      x + dst_left + dst_center_w, y,                          dst_right,    dst_top)
-
-    draw_region(0,           src_top,      src_left,     src_center_h, x,                           y + dst_top,                dst_left,     dst_center_h)
-    draw_region(src_left,    src_top,      src_center_w, src_center_h, x + dst_left,                y + dst_top,                dst_center_w, dst_center_h)
-    draw_region(src_right_x, src_top,      src_right,    src_center_h, x + dst_left + dst_center_w, y + dst_top,                dst_right,    dst_center_h)
-
-    draw_region(0,           src_bottom_y, src_left,     src_bottom,   x,                           y + dst_top + dst_center_h, dst_left,     dst_bottom)
-    draw_region(src_left,    src_bottom_y, src_center_w, src_bottom,   x + dst_left,                y + dst_top + dst_center_h, dst_center_w, dst_bottom)
-    draw_region(src_right_x, src_bottom_y, src_right,    src_bottom,   x + dst_left + dst_center_w, y + dst_top + dst_center_h, dst_right,    dst_bottom)
-end
+local slider_slice = nine_slice.create("slider", 96, 16, 16, 3, 16, 4)
 
 --- Create a new slider component
 ---@param opts {x: number, y: number, width: number, height: number, color: string, value: number, scale: number, animate_speed: number, on_input: function}
@@ -87,10 +48,6 @@ function slider:get_value()
     return self.value
 end
 
-local function point_in_rect(px, py, x, y, w, h)
-    return px >= x and px < x + w and py >= y and py < y + h
-end
-
 --- Update slider animation and handle mouse input
 function slider:update()
     local dt = canvas.get_delta()
@@ -105,7 +62,7 @@ function slider:update()
 
     local mx = canvas.get_mouse_x()
     local my = canvas.get_mouse_y()
-    local inside = point_in_rect(mx, my, self.x, self.y, self.width, self.height)
+    local inside = utils.point_in_rect(mx, my, self.x, self.y, self.width, self.height)
 
     local local_x = mx - self.x
     local local_y = my - self.y
@@ -155,12 +112,12 @@ end
 function slider:draw()
     local scale = self.scale
 
-    draw_nine_slice("slider", 0, self.x, self.y, self.width, self.height, scale)
+    nine_slice.draw(slider_slice, self.x, self.y, self.width, self.height, scale, 0)
 
     local fill_left = HIT_LEFT * scale
-    local fill_top = BORDER_TOP * scale
+    local fill_top = slider_slice.top * scale
     local fill_right = HIT_RIGHT * scale
-    local fill_bottom = BORDER_BOTTOM * scale
+    local fill_bottom = slider_slice.bottom * scale
     local fill_max_w = self.width - fill_left - fill_right
     local fill_h = self.height - fill_top - fill_bottom
     local fill_w = fill_max_w * self.display_value
@@ -170,7 +127,7 @@ function slider:draw()
         canvas.fill_rect(self.x + fill_left, self.y + fill_top, fill_w, fill_h)
     end
 
-    draw_nine_slice("slider", 16, self.x, self.y, self.width, self.height, scale)
+    nine_slice.draw(slider_slice, self.x, self.y, self.width, self.height, scale, 16)
 end
 
 return slider

@@ -108,7 +108,8 @@ function slider:update(mx, my)
 end
 
 --- Draw the slider (background, fill, border)
-function slider:draw()
+---@param focused? boolean Whether this slider is focused (draws overlay)
+function slider:draw(focused)
     nine_slice.draw(slider_slice, self.x, self.y, self.width, self.height, 0)
 
     local fill_left = HIT_LEFT
@@ -122,6 +123,12 @@ function slider:draw()
     if fill_w > 0 and fill_h > 0 then
         canvas.set_color(self.color)
         canvas.fill_rect(self.x + fill_left, self.y + fill_top, fill_w, fill_h)
+    end
+
+    -- Draw focus overlay on inner area
+    if focused then
+        canvas.set_color("#FFFFFF40")
+        canvas.fill_rect(self.x + fill_left, self.y + fill_top, fill_max_w, fill_h)
     end
 
     nine_slice.draw(slider_slice, self.x, self.y, self.width, self.height, 16)

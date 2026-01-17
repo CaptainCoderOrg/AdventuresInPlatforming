@@ -50,11 +50,15 @@ function button:update(mx, my)
 end
 
 --- Draw the button with state-based y-offset
-function button:draw()
+---@param focused? boolean Whether this button is focused (draws overlay)
+function button:draw(focused)
+    -- Use hover state when focused (for visual lift effect)
+    local effective_state = focused and "hovered" or self.state
+
     local y_offset = OFFSET_NORMAL
-    if self.state == "hovered" then
+    if effective_state == "hovered" then
         y_offset = OFFSET_HOVER
-    elseif self.state == "pressed" then
+    elseif effective_state == "pressed" then
         y_offset = OFFSET_PRESSED
     end
 
@@ -70,7 +74,11 @@ function button:draw()
     local text_x = self.x + (self.width - metrics.width) / 2
     local text_y = draw_y + self.height / 2
 
-    utils.draw_outlined_text(self.label, text_x, text_y)
+    if focused then
+        utils.draw_outlined_text(self.label, text_x, text_y, "#FFFF00")
+    else
+        utils.draw_outlined_text(self.label, text_x, text_y)
+    end
 end
 
 return button

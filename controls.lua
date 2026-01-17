@@ -1,168 +1,382 @@
---- Unified input handling for keyboard and gamepad
+--- Unified input handling for keyboard and gamepad with configurable bindings
 local canvas = require("canvas")
+local controls_config = require("config/controls")
+
 local controls = {}
 
 local TRIGGER_THRESHOLD = 0.1   -- Minimum trigger press to register as held
 local CAMERA_DEADZONE = 0.15    -- Prevents stick drift on camera look
 
+-- Runtime bindings (initialized from defaults)
+local keyboard_bindings = {}
+local gamepad_bindings = {}
+
+-- Lookup tables for scheme-based operations
+local bindings = { keyboard = keyboard_bindings, gamepad = gamepad_bindings }
+local defaults = { keyboard = controls_config.keyboard_defaults, gamepad = controls_config.gamepad_defaults }
+
+-- Track last used input device ("keyboard" or "gamepad")
+local last_input_device = "keyboard"
+
+--- Initialize controls with default bindings
+---@return nil
+function controls.init()
+    for scheme, default_bindings in pairs(defaults) do
+        for action_id, code in pairs(default_bindings) do
+            bindings[scheme][action_id] = code
+        end
+    end
+end
+
+--- Get current binding for an action
+---@param scheme string "keyboard" or "gamepad"
+---@param action_id string Action identifier
+---@return number|nil Key or button code
+function controls.get_binding(scheme, action_id)
+    local scheme_bindings = bindings[scheme]
+    return scheme_bindings and scheme_bindings[action_id]
+end
+
+--- Set binding for an action
+---@param scheme string "keyboard" or "gamepad"
+---@param action_id string Action identifier
+---@param code number Key or button code
+---@return nil
+function controls.set_binding(scheme, action_id, code)
+    local scheme_bindings = bindings[scheme]
+    if scheme_bindings then
+        scheme_bindings[action_id] = code
+    end
+end
+
+--- Reset a single binding to default
+---@param scheme string "keyboard" or "gamepad"
+---@param action_id string Action identifier
+---@return nil
+function controls.reset_binding(scheme, action_id)
+    local scheme_bindings = bindings[scheme]
+    local scheme_defaults = defaults[scheme]
+    if scheme_bindings and scheme_defaults then
+        scheme_bindings[action_id] = scheme_defaults[action_id]
+    end
+end
+
+--- Reset all bindings for a scheme to defaults
+---@param scheme string "keyboard" or "gamepad"
+---@return nil
+function controls.reset_all(scheme)
+    local scheme_bindings = bindings[scheme]
+    local scheme_defaults = defaults[scheme]
+    if scheme_bindings and scheme_defaults then
+        for action_id, code in pairs(scheme_defaults) do
+            scheme_bindings[action_id] = code
+        end
+    end
+end
+
+--- Detect any pressed key for rebinding
+---@return number|nil Key code if a key was pressed this frame
+function controls.detect_key_press()
+    for _, key_code in ipairs(controls_config.get_all_keys()) do
+        -- Skip ESC as it's reserved for menu toggle
+        if key_code ~= canvas.keys.ESCAPE and canvas.is_key_pressed(key_code) then
+            return key_code
+        end
+    end
+    return nil
+end
+
+--- Detect any pressed mouse button for rebinding
+---@return number|nil Mouse button code if a button was pressed this frame
+function controls.detect_mouse_press()
+    if canvas.is_mouse_pressed(0) then
+        return controls_config.MOUSE_LEFT
+    end
+    if canvas.is_mouse_pressed(2) then
+        return controls_config.MOUSE_RIGHT
+    end
+    if canvas.is_mouse_pressed(1) then
+        return controls_config.MOUSE_MIDDLE
+    end
+    return nil
+end
+
+--- Detect any pressed key or mouse button for rebinding (keyboard scheme)
+---@return number|nil Key or mouse code if input was detected this frame
+function controls.detect_keyboard_input()
+    -- Check mouse first (more specific)
+    local mouse = controls.detect_mouse_press()
+    if mouse then return mouse end
+    -- Then check keyboard
+    return controls.detect_key_press()
+end
+
+--- Detect any pressed gamepad button for rebinding
+---@return number|nil Button code if a button was pressed this frame
+function controls.detect_button_press()
+    for _, button_code in ipairs(controls_config.get_all_buttons()) do
+        if canvas.is_gamepad_button_pressed(1, button_code) then
+            return button_code
+        end
+    end
+    return nil
+end
+
+--- Get display name for current binding
+---@param scheme string "keyboard" or "gamepad"
+---@param action_id string Action identifier
+---@return string Display name
+function controls.get_binding_name(scheme, action_id)
+    local code = controls.get_binding(scheme, action_id)
+    if not code then return "None" end
+    if scheme == "keyboard" then
+        return controls_config.get_key_name(code)
+    else
+        return controls_config.get_button_name(code)
+    end
+end
+
+--- Get the last used input device
+---@return string "keyboard" or "gamepad"
+function controls.get_last_input_device()
+    return last_input_device
+end
+
+-- Map mouse button codes to canvas button numbers
+local mouse_button_map = {
+    [controls_config.MOUSE_LEFT] = 0,
+    [controls_config.MOUSE_RIGHT] = 2,
+    [controls_config.MOUSE_MIDDLE] = 1,
+}
+
+-- Helper to check keyboard/mouse binding with configurable check functions
+local function check_key_binding(action_id, mouse_fn, key_fn)
+    local code = keyboard_bindings[action_id]
+    if not code then return false end
+
+    if controls_config.is_mouse_button(code) then
+        local mouse_btn = mouse_button_map[code]
+        if mouse_btn and mouse_fn(mouse_btn) then
+            last_input_device = "keyboard"
+            return true
+        end
+    elseif key_fn(code) then
+        last_input_device = "keyboard"
+        return true
+    end
+    return false
+end
+
+-- Helper to check gamepad binding with configurable threshold
+local function check_gamepad_binding(action_id, threshold)
+    local button = gamepad_bindings[action_id]
+    if button and canvas.get_gamepad_button(1, button) > threshold then
+        last_input_device = "gamepad"
+        return true
+    end
+    return false
+end
+
+local function is_key_binding_pressed(action_id)
+    return check_key_binding(action_id, canvas.is_mouse_pressed, canvas.is_key_pressed)
+end
+
+local function is_key_binding_down(action_id)
+    return check_key_binding(action_id, canvas.is_mouse_down, canvas.is_key_down)
+end
+
+local function is_button_binding_pressed(action_id)
+    local button = gamepad_bindings[action_id]
+    if button and canvas.is_gamepad_button_pressed(1, button) then
+        last_input_device = "gamepad"
+        return true
+    end
+    return false
+end
+
+local function is_button_binding_down(action_id)
+    return check_gamepad_binding(action_id, 0)
+end
+
+local function is_trigger_binding_down(action_id)
+    return check_gamepad_binding(action_id, TRIGGER_THRESHOLD)
+end
+
 --- Check if projectile switch input was pressed this frame
----@return boolean pressed True if 0 key or gamepad SELECT was pressed
+---@return boolean pressed True if switch_proj binding was pressed
 function controls.next_projectile_pressed()
-	return canvas.is_key_pressed(canvas.keys.DIGIT_0)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.SELECT)
+    return is_key_binding_pressed("switch_proj")
+        or is_button_binding_pressed("switch_proj")
 end
 
 --- Check if throw input was pressed this frame
----@return boolean pressed True if L key or gamepad NORTH was pressed
+---@return boolean pressed True if throw binding was pressed
 function controls.throw_pressed()
-	return canvas.is_key_pressed(canvas.keys.L)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.NORTH)
+    return is_key_binding_pressed("throw")
+        or is_button_binding_pressed("throw")
 end
 
 --- Check if hammer attack input was pressed this frame
----@return boolean pressed True if I key or gamepad EAST was pressed
+---@return boolean pressed True if hammer binding was pressed
 function controls.hammer_pressed()
-	return canvas.is_key_pressed(canvas.keys.I)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.EAST)
+    return is_key_binding_pressed("hammer")
+        or is_button_binding_pressed("hammer")
 end
 
 --- Check if block input is currently held down
----@return boolean down True if U key or gamepad RT is held
+---@return boolean down True if block binding is held
 function controls.block_down()
-	return canvas.is_key_down(canvas.keys.U)
-		or canvas.get_gamepad_button(1, canvas.buttons.RT) > TRIGGER_THRESHOLD
+    return is_key_binding_down("block")
+        or is_trigger_binding_down("block")
 end
 
 --- Check if up directional input is currently held
----@return boolean down True if W key or gamepad DPAD_UP is held
+---@return boolean down True if move_up binding is held
 function controls.up_down()
-	return canvas.is_key_down(canvas.keys.W)
-		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_UP) > 0
+    return is_key_binding_down("move_up")
+        or is_button_binding_down("move_up")
 end
 
 --- Check if down directional input is currently held
----@return boolean down True if S key or gamepad DPAD_DOWN is held
+---@return boolean down True if move_down binding is held
 function controls.down_down()
-	return canvas.is_key_down(canvas.keys.S)
-		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_DOWN) > 0
+    return is_key_binding_down("move_down")
+        or is_button_binding_down("move_down")
 end
 
 --- Get horizontal camera look input from right analog stick
 ---@return number x Axis value from -1 (left) to +1 (right), or 0 within deadzone
 function controls.get_camera_look_x()
-	local right_stick_x = canvas.get_gamepad_axis(1, canvas.axes.RIGHT_STICK_X)
-	if math.abs(right_stick_x) < CAMERA_DEADZONE then return 0 end
-	return right_stick_x
+    local right_stick_x = canvas.get_gamepad_axis(1, canvas.axes.RIGHT_STICK_X)
+    if math.abs(right_stick_x) < CAMERA_DEADZONE then return 0 end
+    return right_stick_x
 end
 
 --- Get vertical camera look input from right analog stick
 ---@return number y Axis value from -1 (up) to +1 (down), or 0 within deadzone
 function controls.get_camera_look_y()
-	local right_stick_y = canvas.get_gamepad_axis(1, canvas.axes.RIGHT_STICK_Y)
-	if math.abs(right_stick_y) < CAMERA_DEADZONE then return 0 end
-	return right_stick_y
+    local right_stick_y = canvas.get_gamepad_axis(1, canvas.axes.RIGHT_STICK_Y)
+    if math.abs(right_stick_y) < CAMERA_DEADZONE then return 0 end
+    return right_stick_y
 end
 
 --- Check if jump input was pressed this frame
----@return boolean pressed True if SPACE, gamepad SOUTH, or left mouse was pressed
+---@return boolean pressed True if jump binding was pressed
 function controls.jump_pressed()
-	return canvas.is_key_pressed(canvas.keys.SPACE)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.SOUTH)
-		or canvas.is_mouse_pressed(0)
+    return is_key_binding_pressed("jump")
+        or is_button_binding_pressed("jump")
 end
 
 --- Check if left movement input is currently held
----@return boolean down True if A key or gamepad DPAD_LEFT is held
+---@return boolean down True if move_left binding is held
 function controls.left_down()
-	return canvas.is_key_down(canvas.keys.A)
-		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_LEFT) > 0
+    return is_key_binding_down("move_left")
+        or is_button_binding_down("move_left")
 end
 
 --- Check if right movement input is currently held
----@return boolean down True if D key or gamepad DPAD_RIGHT is held
+---@return boolean down True if move_right binding is held
 function controls.right_down()
-	return canvas.is_key_down(canvas.keys.D)
-		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_RIGHT) > 0
+    return is_key_binding_down("move_right")
+        or is_button_binding_down("move_right")
 end
 
 --- Check if dash input was pressed this frame
----@return boolean pressed True if SHIFT, K, gamepad RB/LB, or right mouse was pressed
+---@return boolean pressed True if dash binding was pressed
 function controls.dash_pressed()
-	return canvas.is_key_pressed(canvas.keys.SHIFT)
-		or canvas.is_key_pressed(canvas.keys.K)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.RB)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.LB)
-		or canvas.is_mouse_pressed(2)
+    return is_key_binding_pressed("dash")
+        or is_button_binding_pressed("dash")
+        or canvas.is_gamepad_button_pressed(1, canvas.buttons.LB) -- Secondary dash button
 end
 
 --- Check if attack input was pressed this frame
----@return boolean pressed True if J key or gamepad WEST was pressed
+---@return boolean pressed True if attack binding was pressed
 function controls.attack_pressed()
-	return canvas.is_key_pressed(canvas.keys.J)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.WEST)
+    return is_key_binding_pressed("attack")
+        or is_button_binding_pressed("attack")
 end
 
---- Check if settings/pause menu input was pressed this frame
+-- Helper for menu navigation input (checks keyboard keys and gamepad button)
+local function check_menu_input_pressed(key1, key2, gamepad_button)
+    if canvas.is_key_pressed(key1) or (key2 and canvas.is_key_pressed(key2)) then
+        last_input_device = "keyboard"
+        return true
+    end
+    if canvas.is_gamepad_button_pressed(1, gamepad_button) then
+        last_input_device = "gamepad"
+        return true
+    end
+    return false
+end
+
+-- Helper for menu navigation held state (checks keyboard keys and gamepad button)
+local function check_menu_input_down(key1, key2, gamepad_button)
+    if canvas.is_key_down(key1) or (key2 and canvas.is_key_down(key2)) then
+        last_input_device = "keyboard"
+        return true
+    end
+    if canvas.get_gamepad_button(1, gamepad_button) > 0 then
+        last_input_device = "gamepad"
+        return true
+    end
+    return false
+end
+
+--- Check if settings/pause menu input was pressed this frame (not rebindable)
 ---@return boolean pressed True if ESCAPE or gamepad START was pressed
 function controls.settings_pressed()
-	return canvas.is_key_pressed(canvas.keys.ESCAPE)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.START)
+    return check_menu_input_pressed(canvas.keys.ESCAPE, nil, canvas.buttons.START)
 end
 
---- Check if menu up navigation was pressed this frame
+--- Check if menu up navigation was pressed this frame (not rebindable)
 ---@return boolean pressed True if W, UP arrow, or gamepad DPAD_UP was pressed
 function controls.menu_up_pressed()
-	return canvas.is_key_pressed(canvas.keys.W)
-		or canvas.is_key_pressed(canvas.keys.UP)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.DPAD_UP)
+    return check_menu_input_pressed(canvas.keys.W, canvas.keys.UP, canvas.buttons.DPAD_UP)
 end
 
---- Check if menu down navigation was pressed this frame
+--- Check if menu down navigation was pressed this frame (not rebindable)
 ---@return boolean pressed True if S, DOWN arrow, or gamepad DPAD_DOWN was pressed
 function controls.menu_down_pressed()
-	return canvas.is_key_pressed(canvas.keys.S)
-		or canvas.is_key_pressed(canvas.keys.DOWN)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.DPAD_DOWN)
+    return check_menu_input_pressed(canvas.keys.S, canvas.keys.DOWN, canvas.buttons.DPAD_DOWN)
 end
 
---- Check if menu left navigation was pressed this frame
+--- Check if menu left navigation was pressed this frame (not rebindable)
 ---@return boolean pressed True if A, LEFT arrow, or gamepad DPAD_LEFT was pressed
 function controls.menu_left_pressed()
-	return canvas.is_key_pressed(canvas.keys.A)
-		or canvas.is_key_pressed(canvas.keys.LEFT)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.DPAD_LEFT)
+    return check_menu_input_pressed(canvas.keys.A, canvas.keys.LEFT, canvas.buttons.DPAD_LEFT)
 end
 
---- Check if menu left navigation is currently held
+--- Check if menu left navigation is currently held (not rebindable)
 ---@return boolean down True if A, LEFT arrow, or gamepad DPAD_LEFT is held
 function controls.menu_left_down()
-	return canvas.is_key_down(canvas.keys.A)
-		or canvas.is_key_down(canvas.keys.LEFT)
-		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_LEFT) > 0
+    return check_menu_input_down(canvas.keys.A, canvas.keys.LEFT, canvas.buttons.DPAD_LEFT)
 end
 
---- Check if menu right navigation was pressed this frame
+--- Check if menu right navigation was pressed this frame (not rebindable)
 ---@return boolean pressed True if D, RIGHT arrow, or gamepad DPAD_RIGHT was pressed
 function controls.menu_right_pressed()
-	return canvas.is_key_pressed(canvas.keys.D)
-		or canvas.is_key_pressed(canvas.keys.RIGHT)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.DPAD_RIGHT)
+    return check_menu_input_pressed(canvas.keys.D, canvas.keys.RIGHT, canvas.buttons.DPAD_RIGHT)
 end
 
---- Check if menu right navigation is currently held
+--- Check if menu right navigation is currently held (not rebindable)
 ---@return boolean down True if D, RIGHT arrow, or gamepad DPAD_RIGHT is held
 function controls.menu_right_down()
-	return canvas.is_key_down(canvas.keys.D)
-		or canvas.is_key_down(canvas.keys.RIGHT)
-		or canvas.get_gamepad_button(1, canvas.buttons.DPAD_RIGHT) > 0
+    return check_menu_input_down(canvas.keys.D, canvas.keys.RIGHT, canvas.buttons.DPAD_RIGHT)
 end
 
---- Check if menu confirm input was pressed this frame
+--- Check if menu confirm input was pressed this frame (not rebindable)
 ---@return boolean pressed True if SPACE, ENTER, or gamepad SOUTH was pressed
 function controls.menu_confirm_pressed()
-	return canvas.is_key_pressed(canvas.keys.SPACE)
-		or canvas.is_key_pressed(canvas.keys.ENTER)
-		or canvas.is_gamepad_button_pressed(1, canvas.buttons.SOUTH)
+    return check_menu_input_pressed(canvas.keys.SPACE, canvas.keys.ENTER, canvas.buttons.SOUTH)
 end
+
+--- Check if menu back/cancel input was pressed this frame (not rebindable)
+---@return boolean pressed True if ESCAPE or gamepad EAST was pressed
+function controls.menu_back_pressed()
+    return check_menu_input_pressed(canvas.keys.ESCAPE, nil, canvas.buttons.EAST)
+end
+
+-- Initialize with defaults on load
+controls.init()
 
 return controls

@@ -14,7 +14,7 @@ local OFFSET_PRESSED = 1
 local button_slice = nine_slice.create("button", 100, 35, 14, 9, 14, 9)
 
 --- Create a new button component
----@param opts {x: number, y: number, width: number, height: number, label: string, on_click: function}
+---@param opts {x: number, y: number, width: number, height: number, label: string, on_click: function, text_only: boolean}
 ---@return table button
 function button.create(opts)
     local self = setmetatable({}, button)
@@ -24,6 +24,7 @@ function button.create(opts)
     self.height = opts.height or 35
     self.label = opts.label or ""
     self.on_click = opts.on_click
+    self.text_only = opts.text_only or false
     self.state = "normal"
     return self
 end
@@ -56,29 +57,40 @@ function button:draw(focused)
     local effective_state = focused and "hovered" or self.state
 
     local y_offset = OFFSET_NORMAL
-    if effective_state == "hovered" then
-        y_offset = OFFSET_HOVER
-    elseif effective_state == "pressed" then
-        y_offset = OFFSET_PRESSED
+    if not self.text_only then
+        if effective_state == "hovered" then
+            y_offset = OFFSET_HOVER
+        elseif effective_state == "pressed" then
+            y_offset = OFFSET_PRESSED
+        end
     end
 
     local draw_y = self.y + y_offset
 
-    nine_slice.draw(button_slice, self.x, draw_y, self.width, self.height)
+    -- Only draw nine-slice background if not text-only
+    if not self.text_only then
+        nine_slice.draw(button_slice, self.x, draw_y, self.width, self.height)
+    end
 
     canvas.set_font_family("menu_font")
-    canvas.set_font_size(9)
+    canvas.set_font_size(self.text_only and 7 or 9)
     canvas.set_text_baseline("middle")
 
     local metrics = canvas.get_text_metrics(self.label)
     local text_x = self.x + (self.width - metrics.width) / 2
     local text_y = draw_y + self.height / 2
 
+    -- Determine text color based on state
+    local text_color = nil
     if focused then
-        utils.draw_outlined_text(self.label, text_x, text_y, "#FFFF00")
-    else
-        utils.draw_outlined_text(self.label, text_x, text_y)
+        text_color = "#FFFF00"
+    elseif self.text_only and effective_state == "hovered" then
+        text_color = "#FFFFFF"
+    elseif self.text_only then
+        text_color = "#AAAAAA"
     end
+
+    utils.draw_outlined_text(self.label, text_x, text_y, text_color)
 end
 
 return button

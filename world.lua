@@ -363,6 +363,16 @@ function world.remove_collider(obj)
 	end
 end
 
+--- Removes a trigger collider for an object.
+--- @param obj table The object to remove
+function world.remove_trigger_collider(obj)
+	local shape = world.trigger_map[obj]
+	if shape then
+		world.hc:remove(shape)
+		world.trigger_map[obj] = nil
+	end
+end
+
 --- Adds a polygon collider for an object.
 --- Vertices are in tile coordinates, converted to pixels internally.
 --- @param obj table Object to associate with this collider

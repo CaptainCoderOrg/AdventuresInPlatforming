@@ -355,16 +355,35 @@ Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
 
 ### Level Format
 
-Levels in `levels/` use ASCII tile maps:
+Levels in `levels/` use ASCII tile maps with configurable symbol definitions.
+
+**Reserved Geometry Symbols (hardcoded):**
 - `#` = solid wall
 - `X` = isolated tile
 - `/` = right-leaning slope
 - `\` = left-leaning slope
 - `H` = ladder segment
-- `S` = spawn point (player)
-- `R` = ratto enemy spawn
-- `W` = worm enemy spawn
-- `G` = spike_slug enemy spawn
+
+**Entity Symbols (configurable per level):**
+Levels define a `symbols` table mapping characters to entity definitions:
+
+```lua
+return {
+    map = { ... },
+    symbols = {
+        S = { type = "spawn" },
+        R = { type = "enemy", key = "ratto" },
+        W = { type = "enemy", key = "worm" },
+        G = { type = "enemy", key = "spike_slug" },
+    }
+}
+```
+
+**Symbol Types:**
+- `type = "spawn"` - Player spawn point (only one per level)
+- `type = "enemy"` - Enemy spawn, requires `key` matching registered enemy type
+
+This allows levels to define custom symbols for entities without modifying the parser.
 
 ### Physics Constants
 

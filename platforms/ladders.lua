@@ -119,4 +119,16 @@ function ladders.draw(camera)
 	end
 end
 
+--- Clears all ladder data (for level reloading).
+function ladders.clear()
+	for _, ladder in pairs(ladders.tiles) do
+		world.remove_trigger_collider(ladder)
+	end
+	ladders.tiles = {}
+	for _, col in ipairs(ladders.top_colliders) do
+		world.remove_collider(col)
+	end
+	ladders.top_colliders = {}
+end
+
 return ladders

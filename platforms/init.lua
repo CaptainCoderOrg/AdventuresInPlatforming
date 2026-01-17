@@ -5,40 +5,38 @@ platforms.slopes = require('platforms/slopes')
 platforms.ladders = require('platforms/ladders')
 
 --- Parses a level and adds tiles to walls and slopes.
---- @param level_data table Level data with map array
---- @return table spawn Player spawn position {x, y}, level width and height, enemy spawns
+--- @param level_data table Level data with map array and optional symbols table
+--- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], width: number, height: number}
 function platforms.load_level(level_data)
 	local spawn = nil
 	local enemies = {}
-	local width = 0
+	local width = level_data.map[1] and #level_data.map[1] or 0
 	local height = #level_data.map
+	local symbols = level_data.symbols or {}
 
 	for y, row in ipairs(level_data.map) do
-		-- Infer width from first row
-		if y == 1 then
-			width = #row
-		end
-
 		for x = 1, #row do
+			local tx, ty = x - 1, y - 1
 			local ch = row:sub(x, x)
+			-- Reserved geometry symbols (hardcoded)
 			if ch == "#" then
-				platforms.walls.add_tile(x - 1, y - 1)
+				platforms.walls.add_tile(tx, ty)
 			elseif ch == "X" then
-				platforms.walls.add_solo_tile(x - 1, y - 1)
+				platforms.walls.add_solo_tile(tx, ty)
 			elseif ch == "/" then
-				platforms.slopes.add_tile(x - 1, y - 1, "/")
+				platforms.slopes.add_tile(tx, ty, "/")
 			elseif ch == "\\" then
-				platforms.slopes.add_tile(x - 1, y - 1, "\\")
+				platforms.slopes.add_tile(tx, ty, "\\")
 			elseif ch == "H" then
-				platforms.ladders.add_ladder(x - 1, y - 1)
-			elseif ch == "S" then
-				spawn = { x = x - 1, y = y - 1 }
-			elseif ch == "R" then
-				table.insert(enemies, { x = x - 1, y = y - 1, type = "ratto" })
-			elseif ch == "W" then
-				table.insert(enemies, { x = x - 1, y = y - 1, type = "worm" })
-			elseif ch == "G" then
-				table.insert(enemies, { x = x - 1, y = y - 1, type = "spike_slug" })
+				platforms.ladders.add_ladder(tx, ty)
+			elseif symbols[ch] then
+				-- Dynamic symbol handling from level data
+				local def = symbols[ch]
+				if def.type == "spawn" then
+					spawn = { x = tx, y = ty }
+				elseif def.type == "enemy" then
+					table.insert(enemies, { x = tx, y = ty, type = def.key })
+				end
 			end
 		end
 	end
@@ -70,6 +68,7 @@ end
 function platforms.clear()
 	platforms.walls.clear()
 	platforms.slopes.clear()
+	platforms.ladders.clear()
 end
 
 return platforms

@@ -1,16 +1,17 @@
 local Animation = require('Animation')
+local sprites = require('sprites')
 local common = require('Enemies/common')
 
 local worm = {}
 
 worm.animations = {
-	RUN = Animation.create_definition("worm_run", 5, {
+	RUN = Animation.create_definition(sprites.enemies.worm.run, 5, {
 		ms_per_frame = 200,
 		width = 16,
 		height = 8,
 		loop = true
 	}),
-	DEATH = Animation.create_definition("worm_death", 6, {
+	DEATH = Animation.create_definition(sprites.enemies.worm.death, 6, {
 		width = 16,
 		height = 8,
 		loop = false

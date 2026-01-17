@@ -1,26 +1,27 @@
 local Animation = require('Animation')
+local sprites = require('sprites')
 local common = require('Enemies/common')
 
 local ratto = {}
 
 ratto.animations = {
-	IDLE = Animation.create_definition("ratto_idle", 6, {
+	IDLE = Animation.create_definition(sprites.enemies.ratto.idle, 6, {
 		ms_per_frame = 200,
 		width = 16,
 		height = 8,
 		loop = true
 	}),
-	RUN = Animation.create_definition("ratto_run", 4, {
+	RUN = Animation.create_definition(sprites.enemies.ratto.run, 4, {
 		width = 16,
 		height = 8,
 		loop = true
 	}),
-	HIT = Animation.create_definition("ratto_hit", 5, {
+	HIT = Animation.create_definition(sprites.enemies.ratto.hit, 5, {
 		width = 16,
 		height = 8,
 		loop = false
 	}),
-	DEATH = Animation.create_definition("ratto_death", 13, {
+	DEATH = Animation.create_definition(sprites.enemies.ratto.death, 13, {
 		width = 16,
 		height = 8,
 		loop = false

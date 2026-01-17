@@ -1,14 +1,15 @@
 local Animation = require('Animation')
+local sprites = require('sprites')
 local common = require('Enemies/common')
 
 local spike_slug = {}
 
 spike_slug.animations = {
-	RUN = Animation.create_definition("spikeslug_run", 4, { ms_per_frame = 200, width = 16, height = 16, loop = true }),
-	HIT = Animation.create_definition("spikeslug_hit", 5, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
-	DEFENSE = Animation.create_definition("spikeslug_defense", 6, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
-	STOP_DEFEND = Animation.create_definition("spikeslug_stop_defend", 6, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
-	DEATH = Animation.create_definition("spikeslug_death", 6, { width = 16, height = 16, loop = false }),
+	RUN = Animation.create_definition(sprites.enemies.spikeslug.run, 4, { ms_per_frame = 200, width = 16, height = 16, loop = true }),
+	HIT = Animation.create_definition(sprites.enemies.spikeslug.hit, 5, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
+	DEFENSE = Animation.create_definition(sprites.enemies.spikeslug.defense, 6, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
+	STOP_DEFEND = Animation.create_definition(sprites.enemies.spikeslug.stop_defend, 6, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
+	DEATH = Animation.create_definition(sprites.enemies.spikeslug.death, 6, { width = 16, height = 16, loop = false }),
 }
 
 spike_slug.states = {}

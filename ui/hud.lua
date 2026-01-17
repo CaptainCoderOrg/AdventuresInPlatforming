@@ -40,10 +40,10 @@ function hud.draw_player_health(player)
     local off_x = canvas.get_width() - (player.max_health * spacing_x)
     local off_y = canvas.get_height() - 84
     for ix = 1, player:health() do
-        canvas.draw_image(sprites.HEART, off_x + (ix - 1) * spacing_x, off_y, heart_size, heart_size)
+        canvas.draw_image(sprites.ui.heart, off_x + (ix - 1) * spacing_x, off_y, heart_size, heart_size)
     end
     for ix = player:health() + 1, player.max_health do
-        canvas.draw_image(sprites.HEART, damage_off + off_x + (ix - 1) * spacing_x, damage_off + off_y, damage_size, damage_size)
+        canvas.draw_image(sprites.ui.heart, damage_off + off_x + (ix - 1) * spacing_x, damage_off + off_y, damage_size, damage_size)
     end
 end
 

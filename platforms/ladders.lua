@@ -83,11 +83,11 @@ function ladders.draw(camera)
 			goto continue
 		end
 
-		local sprite = nil  -- nil = LADDER_MID (default)
+		local sprite = nil  -- nil = ladder_mid (default)
 		if ladder.is_top then
-			sprite = "ladder_top"
+			sprite = sprites.environment.ladder_top
 		elseif ladder.is_bottom then
-			sprite = "ladder_bottom"
+			sprite = sprites.environment.ladder_bottom
 		end
 		sprites.draw_ladder(ladder.x * ts, ladder.y * ts, sprite)
 

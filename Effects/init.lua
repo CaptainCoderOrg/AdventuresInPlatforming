@@ -9,12 +9,12 @@ Effects.next_id = 1
 
 -- Animation definitions
 Effects.animations = {
-	HIT = Animation.create_definition("effect_hit", 4, {
+	HIT = Animation.create_definition(sprites.effects.hit, 4, {
 		width = 16,
 		height = 16,
 		loop = false
 	}),
-	SHURIKEN_HIT = Animation.create_definition("shuriken_hit", 6, {
+	SHURIKEN_HIT = Animation.create_definition(sprites.effects.shuriken_hit, 6, {
 		width = 8,
 		height = 8,
 		loop = false

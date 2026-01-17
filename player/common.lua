@@ -14,27 +14,27 @@ common.MAX_FALL_SPEED = 20
 
 -- Animations (converted to delta-time based, milliseconds per frame)
 common.animations = {
-	IDLE = Animation.create_definition("player_idle", 6, { ms_per_frame = 240 }),
-	BLOCK = Animation.create_definition("player_block", 1, { ms_per_frame = 17, loop = false }),
-	RUN = Animation.create_definition("player_run", 8 ),
-	TURN = Animation.create_definition("player_turn", 4, { loop = false }),
-	DASH = Animation.create_definition("player_dash", 4, { loop = false }),
-	FALL = Animation.create_definition("player_fall", 3 ),
-	JUMP = Animation.create_definition("player_jump_up", 3, { loop = false }),
-	AIR_JUMP = Animation.create_definition("player_double_jump", 4 ),
-	WALL_SLIDE = Animation.create_definition("player_wall_slide", 3, { loop = false }),
+	IDLE = Animation.create_definition(sprites.player.idle, 6, { ms_per_frame = 240 }),
+	BLOCK = Animation.create_definition(sprites.player.block, 1, { ms_per_frame = 17, loop = false }),
+	RUN = Animation.create_definition(sprites.player.run, 8 ),
+	TURN = Animation.create_definition(sprites.player.turn, 4, { loop = false }),
+	DASH = Animation.create_definition(sprites.player.dash, 4, { loop = false }),
+	FALL = Animation.create_definition(sprites.player.fall, 3 ),
+	JUMP = Animation.create_definition(sprites.player.jump_up, 3, { loop = false }),
+	AIR_JUMP = Animation.create_definition(sprites.player.double_jump, 4 ),
+	WALL_SLIDE = Animation.create_definition(sprites.player.wall_slide, 3, { loop = false }),
 
-	CLIMB_UP = Animation.create_definition("player_climb_up", 6),
-	CLIMB_DOWN = Animation.create_definition("player_climb_down", 6),
+	CLIMB_UP = Animation.create_definition(sprites.player.climb_up, 6),
+	CLIMB_DOWN = Animation.create_definition(sprites.player.climb_down, 6),
 
-	ATTACK_0 = Animation.create_definition("player_attack_0", 5, { ms_per_frame = 50, width = 32, loop = false }),
-	ATTACK_1 = Animation.create_definition("player_attack_1", 5, { ms_per_frame = 67, width = 32, loop = false }),
-	ATTACK_2 = Animation.create_definition("player_attack_2", 5, { ms_per_frame = 83, width = 32, loop = false }),
-	HAMMER = Animation.create_definition("player_attack_hammer", 7, { ms_per_frame = 150, width = 32, loop = false }),
-	THROW = Animation.create_definition("player_throw", 7, { ms_per_frame = 33, loop = false }),
+	ATTACK_0 = Animation.create_definition(sprites.player.attack_0, 5, { ms_per_frame = 50, width = 32, loop = false }),
+	ATTACK_1 = Animation.create_definition(sprites.player.attack_1, 5, { ms_per_frame = 67, width = 32, loop = false }),
+	ATTACK_2 = Animation.create_definition(sprites.player.attack_2, 5, { ms_per_frame = 83, width = 32, loop = false }),
+	HAMMER = Animation.create_definition(sprites.player.attack_hammer, 7, { ms_per_frame = 150, width = 32, loop = false }),
+	THROW = Animation.create_definition(sprites.player.throw, 7, { ms_per_frame = 33, loop = false }),
 
-	HIT = Animation.create_definition("player_hit", 3, { ms_per_frame = 80, loop = false }),
-	DEATH = Animation.create_definition("player_death", 12, { ms_per_frame = 80, loop = false }),
+	HIT = Animation.create_definition(sprites.player.hit, 3, { ms_per_frame = 80, loop = false }),
+	DEATH = Animation.create_definition(sprites.player.death, 12, { ms_per_frame = 80, loop = false }),
 }
 
 -- Helper functions

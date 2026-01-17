@@ -12,12 +12,12 @@ Projectile.all = {}
 Projectile.next_id = 1
 
 Projectile.animations = {
-	AXE = Animation.create_definition("throwable_axe", 4, {
+	AXE = Animation.create_definition(sprites.projectiles.axe, 4, {
 		width = 8,
 		height = 8,
 	}),
 
-    SHURIKEN = Animation.create_definition("shuriken", 5, {
+    SHURIKEN = Animation.create_definition(sprites.projectiles.shuriken, 5, {
         width = 8,
         height = 8,
     })
@@ -26,7 +26,7 @@ Projectile.animations = {
 function Projectile.get_axe()
     return {
         name = "Axe",
-        sprite = sprites.AXE_SPRITE,
+        sprite = sprites.projectiles.axe,
         damage = 1,
         create = Projectile.create_axe,
     }
@@ -35,7 +35,7 @@ end
 function Projectile.get_shuriken()
     return {
         name = "Shuriken",
-        sprite = sprites.SHURIKEN_SPRITE,
+        sprite = sprites.projectiles.shuriken,
         damage = 1,
         create = Projectile.create_shuriken,
     }

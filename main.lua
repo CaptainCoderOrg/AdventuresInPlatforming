@@ -104,8 +104,8 @@ local function init_level()
     end
     platforms.build()
 
-    for _, spawn in ipairs(level_info.enemies) do
-        Enemy.spawn(spawn.type, spawn.x, spawn.y)
+    for _, enemy_data in ipairs(level_info.enemies) do
+        Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y)
     end
 
     Sign.clear()

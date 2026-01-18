@@ -5,6 +5,18 @@ platforms.slopes = require('platforms/slopes')
 platforms.ladders = require('platforms/ladders')
 platforms.bridges = require('platforms/bridges')
 
+--- Applies optional offset to tile coordinates.
+---@param tx number Base tile X coordinate
+---@param ty number Base tile Y coordinate
+---@param offset {x: number, y: number}|nil Optional offset table
+---@return number, number Adjusted coordinates
+local function apply_offset(tx, ty, offset)
+	if not offset then
+		return tx, ty
+	end
+	return tx + (offset.x or 0), ty + (offset.y or 0)
+end
+
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array and optional symbols table
 --- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], signs: {x: number, y: number, text: string}[], width: number, height: number}
@@ -36,12 +48,13 @@ function platforms.load_level(level_data)
 			elseif symbols[ch] then
 				-- Dynamic symbol handling from level data
 				local def = symbols[ch]
+				local ox, oy = apply_offset(tx, ty, def.offset)
 				if def.type == "spawn" then
-					spawn = { x = tx, y = ty }
+					spawn = { x = ox, y = oy }
 				elseif def.type == "enemy" then
-					table.insert(enemies, { x = tx, y = ty, type = def.key })
+					table.insert(enemies, { x = ox, y = oy, type = def.key })
 				elseif def.type == "sign" then
-					table.insert(signs, { x = tx, y = ty, text = def.text })
+					table.insert(signs, { x = ox, y = oy, text = def.text })
 				end
 			end
 		end

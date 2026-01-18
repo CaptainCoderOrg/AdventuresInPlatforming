@@ -336,7 +336,10 @@ end
 --- Applies camera transform to canvas (call before drawing world)
 --- @param tile_size number Pixels per tile
 function Camera:apply_transform(tile_size)
-	canvas.translate(-self._x * tile_size, -self._y * tile_size)
+	local px = self._x * tile_size
+	local py = self._y * tile_size
+	-- Round to nearest pixel for pixel-perfect rendering (prevents tile tearing)
+	canvas.translate(-math.floor(px + 0.5), -math.floor(py + 0.5))
 end
 
 --- Converts screen coordinates to world coordinates

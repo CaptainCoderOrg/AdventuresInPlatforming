@@ -3,6 +3,7 @@ local canvas = require('canvas')
 local world = require('world')
 local config = require('config')
 local common = require('Enemies/common')
+local Effects = require('Effects')
 
 local Enemy = {}
 Enemy.__index = Enemy
@@ -60,7 +61,13 @@ function Enemy.spawn(type_key, x, y)
 	self.max_health = definition.max_health or 1
 	self.health = self.max_health
 	self.damage = definition.damage or 1
+	self.armor = definition.armor or 0
 	self.marked_for_destruction = false
+
+	-- Copy custom get_armor function if defined
+	if definition.get_armor then
+		self.get_armor = definition.get_armor
+	end
 
 	-- Mark as enemy (for collision filtering)
 	self.is_enemy = true
@@ -230,30 +237,39 @@ function Enemy:check_player_overlap(player)
 	end
 end
 
+--- Returns the enemy's current armor value.
+--- Can be overridden per-enemy for dynamic armor (e.g., spike_slug defending).
+--- @return number armor value
+function Enemy:get_armor()
+	return self.armor
+end
+
 --- Called when enemy is hit by something.
 --- @param source_type string "player", "weapon", or "projectile"
 --- @param source table The object that hit this enemy
 function Enemy:on_hit(source_type, source)
-	if self.is_defending then return end
-
 	local damage = 1
 	if source and source.damage then
 		damage = source.damage
 	end
 
+	-- Apply armor reduction (minimum 0 damage)
+	damage = math.max(0, damage - self:get_armor())
+
+	-- Create floating damage text (centered on enemy hitbox)
+	Effects.create_damage_text(self.x + self.box.x + self.box.w / 2, self.y, damage)
+
+	if damage <= 0 then return end
+
 	self.health = self.health - damage
 
-	-- Determine knockback direction (opposite of hit source)
-	if source then
-		if source.vx then
-			-- Projectile: knockback in direction projectile was traveling
-			self.hit_direction = source.vx > 0 and 1 or -1
-		elseif source.x then
-			-- Player/other: knockback away from source
-			self.hit_direction = source.x < self.x and 1 or -1
-		else
-			self.hit_direction = -1
-		end
+	-- Determine knockback direction from hit source
+	if source and source.vx then
+		-- Projectile: knockback in direction projectile was traveling
+		self.hit_direction = source.vx > 0 and 1 or -1
+	elseif source and source.x then
+		-- Player/other: knockback away from source
+		self.hit_direction = source.x < self.x and 1 or -1
 	else
 		self.hit_direction = -1
 	end

@@ -34,6 +34,10 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._fall_lerp_max = cfg.fall_lerp_max
 	self._fall_lerp_ramp_duration = cfg.fall_lerp_ramp_duration
 
+	-- Wall slide transition state (from falling)
+	self._was_falling_fast = false
+	self._wall_slide_transition_time = 0
+
 	-- Manual look state
 	self._manual_x_target = nil
 	self._manual_y_target = nil
@@ -193,6 +197,17 @@ function Camera:update(tile_size, dt, lerp_factor)
 		self._fall_time = 0
 	end
 
+	-- Wall slide transition: slow camera lerp when entering wall slide from fast fall
+	if is_wall_sliding then
+		if self._was_falling_fast and not is_falling_fast then
+			self._wall_slide_transition_time = cfg.wall_slide_transition_duration
+		elseif self._wall_slide_transition_time > 0 then
+			self._wall_slide_transition_time = math.max(0, self._wall_slide_transition_time - dt)
+		end
+	else
+		self._wall_slide_transition_time = 0
+	end
+
 	-- Determine reference Y based on player state
 	local reference_y
 	if is_climbing or is_falling_fast then
@@ -286,12 +301,18 @@ function Camera:update(tile_size, dt, lerp_factor)
 		self._x = self._x + delta_x * lerp_factor
 	end
 
-	-- Calculate Y lerp speed based on falling duration
+	-- Calculate Y lerp speed based on falling duration or wall slide transition
 	local y_lerp = lerp_factor
 	if is_falling_fast then
 		local ramp_progress = math.min(self._fall_time / self._fall_lerp_ramp_duration, 1.0)
 		y_lerp = self._fall_lerp_min + (self._fall_lerp_max - self._fall_lerp_min) * ramp_progress
+	elseif is_wall_sliding and self._wall_slide_transition_time > 0 then
+		-- Use slower lerp during wall slide transition from falling
+		y_lerp = cfg.wall_slide_transition_lerp
 	end
+
+	-- Track previous falling state for transition detection
+	self._was_falling_fast = is_falling_fast
 
 	if math.abs(delta_y) < cfg.epsilon then
 		self._y = target_cam_y

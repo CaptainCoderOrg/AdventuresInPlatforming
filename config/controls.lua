@@ -31,11 +31,11 @@ controls_config.keyboard_defaults = {
     move_down   = canvas.keys.S,
     jump        = canvas.keys.SPACE,
     dash        = canvas.keys.SHIFT,
-    attack      = canvas.keys.J,
-    throw       = canvas.keys.L,
-    hammer      = canvas.keys.I,
-    block       = canvas.keys.U,
-    switch_proj = canvas.keys.DIGIT_0,
+    attack      = controls_config.MOUSE_LEFT,
+    throw       = controls_config.MOUSE_RIGHT,
+    hammer      = canvas.keys.E,
+    block       = canvas.keys.Q,
+    switch_proj = canvas.keys.Z,
 }
 
 -- Default gamepad bindings (action_id -> canvas.buttons.* constant)

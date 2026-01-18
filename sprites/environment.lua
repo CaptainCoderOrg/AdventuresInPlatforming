@@ -8,6 +8,9 @@ local environment = {
 	ladder_mid = "ladder_mid",
 	ladder_bottom = "ladder_bottom",
 	sign = "sign",
+	bridge_left = "bridge_left",
+	bridge_middle = "bridge_middle",
+	bridge_right = "bridge_right",
 }
 
 canvas.assets.load_image(environment.tilemap, "images/tilemap_packed.png")
@@ -15,5 +18,8 @@ canvas.assets.load_image(environment.ladder_top, "sprites/environment/ladder_top
 canvas.assets.load_image(environment.ladder_mid, "sprites/environment/ladder_mid.png")
 canvas.assets.load_image(environment.ladder_bottom, "sprites/environment/ladder_bottom.png")
 canvas.assets.load_image(environment.sign, "sprites/environment/sign.png")
+canvas.assets.load_image(environment.bridge_left, "sprites/environment/bridge-left.png")
+canvas.assets.load_image(environment.bridge_middle, "sprites/environment/bridge-middle.png")
+canvas.assets.load_image(environment.bridge_right, "sprites/environment/bridge-right.png")
 
 return environment

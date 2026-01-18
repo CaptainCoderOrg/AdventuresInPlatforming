@@ -3,6 +3,7 @@ local platforms = {}
 platforms.walls = require('platforms/walls')
 platforms.slopes = require('platforms/slopes')
 platforms.ladders = require('platforms/ladders')
+platforms.bridges = require('platforms/bridges')
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array and optional symbols table
@@ -30,6 +31,8 @@ function platforms.load_level(level_data)
 				platforms.slopes.add_tile(tx, ty, "\\")
 			elseif ch == "H" then
 				platforms.ladders.add_ladder(tx, ty)
+			elseif ch == "-" then
+				platforms.bridges.add_bridge(tx, ty)
 			elseif symbols[ch] then
 				-- Dynamic symbol handling from level data
 				local def = symbols[ch]
@@ -53,19 +56,21 @@ function platforms.load_level(level_data)
 	}
 end
 
---- Builds all colliders for walls, slopes, and ladder tops.
+--- Builds all colliders for walls, slopes, ladder tops, and bridges.
 function platforms.build()
 	platforms.walls.build_colliders(true)
 	platforms.slopes.build_colliders()
 	platforms.ladders.build_colliders()
+	platforms.bridges.build_colliders()
 end
 
---- Draws all platforms (walls and slopes).
+--- Draws all platforms (walls, slopes, ladders, and bridges).
 --- @param camera table Camera instance for viewport culling
 function platforms.draw(camera)
 	platforms.walls.draw(camera)
 	platforms.slopes.draw(camera)
 	platforms.ladders.draw(camera)
+	platforms.bridges.draw(camera)
 end
 
 --- Clears all platform data (for level reloading).
@@ -73,6 +78,7 @@ function platforms.clear()
 	platforms.walls.clear()
 	platforms.slopes.clear()
 	platforms.ladders.clear()
+	platforms.bridges.clear()
 end
 
 return platforms

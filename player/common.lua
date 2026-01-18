@@ -157,6 +157,8 @@ function common.check_ground(player, cols, dt)
 			player.climb_touching_ground = false  -- Clear when not climbing
 			-- Track if standing on ladder top
 			player.standing_on_ladder_top = cols.is_ladder_top or false
+			-- Track if standing on bridge
+			player.standing_on_bridge = cols.is_bridge or false
 			-- Set ladder info when standing on ladder top (for entering climb from top)
 			if cols.is_ladder_top and cols.ladder_from_top then
 				player.current_ladder = cols.ladder_from_top
@@ -176,6 +178,8 @@ function common.check_ground(player, cols, dt)
 		else
 			player.standing_on_ladder_top = false
 		end
+		-- Clear bridge flag when not grounded
+		player.standing_on_bridge = false
 		player.coyote_time = player.coyote_time + dt
 		if player.is_grounded and player.coyote_time > common.MAX_COYOTE_TIME then
 			player.is_grounded = false
@@ -200,10 +204,18 @@ function common.check_ground(player, cols, dt)
 end
 
 --- Attempts a ground jump if the player is grounded and jump is pressed.
+--- Suppresses jump when on bridge + holding down (to allow drop-through).
 --- @param player table The player object
 --- @return boolean True if jump was performed
 function common.handle_jump(player)
 	if controls.jump_pressed() and (player.is_grounded or player.is_climbing) then
+		-- Suppress jump when on bridge + down to allow drop-through
+		if player.standing_on_bridge and controls.down_down() then
+			player.wants_drop_through = true
+			-- Store the Y position of the bridge we're dropping through
+			player.drop_through_y = player.y + player.box.y + player.box.h
+			return false
+		end
 		player.vy = -common.JUMP_VELOCITY
 		player.jumps = player.jumps - 1
 		audio.play_jump_sound()

@@ -470,4 +470,13 @@ function walls.clear()
 	walls.tile_to_collider = {}
 end
 
+--- Checks if a wall tile exists at the given position.
+--- @param x number Tile x coordinate
+--- @param y number Tile y coordinate
+--- @return boolean True if a wall (normal or solo) exists at position
+function walls.has_tile(x, y)
+	local key = x .. "," .. y
+	return walls.tiles[key] ~= nil or walls.solo_tiles[key] ~= nil
+end
+
 return walls

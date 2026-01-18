@@ -72,6 +72,9 @@ function Player.new()
 	self.current_ladder = nil
 	self.on_ladder_top = false
 	self.standing_on_ladder_top = false
+	self.standing_on_bridge = false
+	self.wants_drop_through = false
+	self.drop_through_y = nil
 	self.climb_touching_ground = false
 	self.climb_speed = self.speed / 2
 
@@ -252,6 +255,16 @@ function Player:update(dt)
 
 	-- Check for collisions
 	common.check_ground(self, cols, dt)
+
+	-- Clear drop-through flag once player's top is below the bridge they dropped through
+	if self.wants_drop_through and self.drop_through_y then
+		local player_top = self.y + self.box.y
+		if player_top > self.drop_through_y + 0.5 then
+			self.wants_drop_through = false
+			self.drop_through_y = nil
+		end
+	end
+
 	common.check_ladder(self, cols)
 	common.check_hit(self, cols)
 end

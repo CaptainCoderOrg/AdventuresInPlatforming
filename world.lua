@@ -1,6 +1,6 @@
-local HC = require('hc')
 local sprites = require('sprites')
 local controls = require('controls')
+local state = require('world_state')
 
 local world = {}
 
@@ -19,6 +19,34 @@ local function set_ground_from_sep(cols, sep)
 	end
 end
 
+--- Checks if a bridge collision should be skipped (pass-through conditions).
+--- Bridges act as one-way platforms that can be passed through from below.
+--- @param obj table Entity with y, vy, box, wants_drop_through, drop_through_y properties
+--- @param bridge table Bridge collider with y, box properties and is_bridge flag
+--- @return boolean True if collision should be skipped (allow pass-through)
+local function should_skip_bridge(obj, bridge)
+	local bridge_top = bridge.y + bridge.box.y
+	local player_bottom = obj.y + obj.box.y + obj.box.h
+	local overlap = player_bottom - bridge_top
+
+	-- Allow pass-through when player is more than 0.3 tiles into the bridge.
+	-- This threshold (slightly larger than bridge collider height of 0.2) prevents
+	-- snapping onto bridges when jumping up through them.
+	if overlap > 0.3 then return true end
+
+	-- Must be falling to land on bridge
+	if obj.vy <= 0 then return true end
+
+	-- Drop-through: skip bridges at or slightly below where drop started.
+	-- The 0.5 tile buffer ensures the player clears the bridge they're standing
+	-- on before collision re-enables, preventing immediate re-landing.
+	if obj.wants_drop_through and obj.drop_through_y then
+		if bridge_top < obj.drop_through_y + 0.5 then return true end
+	end
+
+	return false
+end
+
 --- Checks if collision should be skipped (player/enemy pass through each other).
 --- @param obj table First collision object
 --- @param other_owner table Owner of the other collision shape
@@ -30,17 +58,11 @@ local function should_skip_collision(obj, other_owner)
 	return false
 end
 
--- Initialize HC with spatial hash cell size (50 tiles * tile_size in pixels)
-world.hc = HC:new(50 * sprites.tile_size)
-
--- Maps game objects to their HC shapes (physics collisions)
-world.shape_map = {}
-
--- Maps game objects to their HC trigger shapes
-world.trigger_map = {}
-
--- Maps game objects to their combat hitboxes (for hit detection, can rotate)
-world.hitbox_map = {}
+-- Reference state from persistent module
+world.hc = state.hc
+world.shape_map = state.shape_map
+world.trigger_map = state.trigger_map
+world.hitbox_map = state.hitbox_map
 
 --- Adds a rectangular collider for an object.
 --- @param obj table Object with x, y, and box properties
@@ -225,6 +247,13 @@ function world.move(obj)
 					goto skip_y_collision
 				end
 			end
+			-- Detect bridge collision (one-way platform)
+			if other.owner and other.owner.is_bridge then
+				if should_skip_bridge(obj, other.owner) then
+					goto skip_y_collision
+				end
+				cols.is_bridge = true
+			end
 			if other ~= shape and sep.y ~= 0 then
 				any_collision = true
 				if sep.y > 0 then
@@ -262,6 +291,12 @@ function world.move(obj)
 			end
 			if should_skip_collision(obj, other.owner) then
 				goto skip_ground_collision
+			end
+			-- Apply bridge pass-through logic (overlap, falling direction, drop-through)
+			if other.owner and other.owner.is_bridge then
+				if should_skip_bridge(obj, other.owner) then
+					goto skip_ground_collision
+				end
 			end
 			if other ~= shape and sep.y < 0 then
 				found_ground = true
@@ -329,7 +364,11 @@ function world.move_trigger(obj)
 				enemy_hit = { shape = other, sep = sep }
 			elseif is_physics_shape and not is_enemy and not solid_hit then
 				-- Non-enemy physics shape (walls, platforms)
-				solid_hit = { shape = other, sep = sep }
+				-- Skip bridges so projectiles pass through
+				local is_bridge = owner and owner.is_bridge
+				if not is_bridge then
+					solid_hit = { shape = other, sep = sep }
+				end
 			end
 		end
 	end

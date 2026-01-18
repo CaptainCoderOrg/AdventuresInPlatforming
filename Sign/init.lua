@@ -30,7 +30,7 @@ end
 ---@return string Text with placeholders replaced by control names
 local function substitute_variables(text)
     local scheme = controls.get_last_input_device()
-    return text:gsub("{(%w+)}", function(action_id)
+    return text:gsub("{([%w_]+)}", function(action_id)
         return controls.get_binding_name(scheme, action_id)
     end)
 end

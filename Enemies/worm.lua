@@ -46,5 +46,5 @@ return {
 	states = worm.states,
 	animations = worm.animations,
 	initial_state = "run",
-	rotate_to_slope = true,
+	-- rotate_to_slope = true,
 }

@@ -135,10 +135,10 @@ controls_config.button_display_names = {
     [canvas.buttons.START] = "Start",
     [canvas.buttons.L3] = "L3",
     [canvas.buttons.R3] = "R3",
-    [canvas.buttons.DPAD_UP] = "D-Up",
-    [canvas.buttons.DPAD_DOWN] = "D-Down",
-    [canvas.buttons.DPAD_LEFT] = "D-Left",
-    [canvas.buttons.DPAD_RIGHT] = "D-Right",
+    [canvas.buttons.DPAD_UP] = "DPad-Up",
+    [canvas.buttons.DPAD_DOWN] = "DPad-Down",
+    [canvas.buttons.DPAD_LEFT] = "DPad-Left",
+    [canvas.buttons.DPAD_RIGHT] = "DPad-Right",
 }
 
 -- Display names for mouse buttons

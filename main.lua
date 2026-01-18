@@ -43,6 +43,8 @@ local function user_input()
     player:input()
 end
 
+local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before death
+
 ---@param dt number Delta time in seconds (already capped)
 local function update(dt)
     if hud.is_settings_open() or hud.is_game_over_active() then
@@ -50,6 +52,18 @@ local function update(dt)
     end
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
     player:update(dt)
+
+    -- Kill player if too far outside world bounds
+    if player.state ~= Player.states.death then
+        local out_of_bounds = player.x < -OUT_OF_BOUNDS_MARGIN
+            or player.x > level_info.width + OUT_OF_BOUNDS_MARGIN
+            or player.y < -OUT_OF_BOUNDS_MARGIN
+            or player.y > level_info.height + OUT_OF_BOUNDS_MARGIN
+        if out_of_bounds then
+            player.damage = player.max_health
+            player:set_state(Player.states.death)
+        end
+    end
     Projectile.update(dt, level_info)
     Effects.update(dt)
     Enemy.update(dt, player)

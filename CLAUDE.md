@@ -13,7 +13,8 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Red boxes: Player hitbox
   - Yellow boxes: Projectile hitboxes
   - Green boxes: World collision geometry
-  - Cyan boxes: Enemy hitboxes
+  - Cyan boxes: Enemy hitboxes / Bridge colliders
+  - Orange boxes: Sign hitboxes
 - `Y` - Test hit state
 - `1`/`2` - Switch between level1/title music
 
@@ -297,8 +298,26 @@ Player combat abilities managed through state machine.
    - Entered when player takes damage
    - Knockback away from damage source (2 px/frame)
    - Animation duration: 240ms (3 frames @ 80ms)
-   - **Input Queueing**: Can buffer jump or attack during hit stun
-   - **Priority**: Attack > Jump > Idle (on hit animation end)
+   - Uses centralized input queue for buffering
+
+**Input Queuing System:**
+Centralized input buffering for locked states (hit, throw, hammer, attack).
+
+- **Queue Storage**: `player.input_queue` tracks pending inputs (jump, attack, throw)
+- **During Locked States**: `common.queue_inputs(player)` captures button presses
+- **On State Exit**: `common.process_input_queue(player)` executes queued actions
+- **Priority Order**: Attack > Throw > Jump
+- **Cooldown Handling**: Attack/throw persist in queue until cooldown expires
+- **Cooldown Check**: `common.check_cooldown_queues(player)` in idle/run/air states
+
+**Key Functions (`player/common.lua`):**
+```lua
+common.queue_input(player, "attack")     -- Add input to queue
+common.clear_input_queue(player)         -- Clear all queued inputs
+common.queue_inputs(player)              -- Capture current button presses
+common.process_input_queue(player)       -- Execute queued actions (returns true if transitioned)
+common.check_cooldown_queues(player)     -- Check for cooldown-blocked inputs
+```
 
 **Invincibility System:**
 - **Duration**: 1.2 seconds after hit animation completes
@@ -313,12 +332,16 @@ self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
 self.weapon_damage = 2.5        -- Damage per sword hit
 self.attacks = 3                -- Max combo hits
-self.attack_cooldown = 0        -- Countdown timer
+self.attack_cooldown = 0        -- Countdown timer (attack)
+self.throw_cooldown = 0         -- Countdown timer (throw)
 self.attack_state = {           -- Combo tracking
     count, next_anim_ix, remaining_time, queued, hit_enemies
 }
 self.hit_state = {              -- Hit stun tracking
-    knockback_speed, remaining_time, queued_jump, queued_attack
+    knockback_speed, remaining_time
+}
+self.input_queue = {            -- Centralized input buffering
+    jump, attack, throw         -- Boolean flags for pending inputs
 }
 ```
 
@@ -353,6 +376,52 @@ Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
 - Filters out player collider and triggers
 - Returns landing Y position (in tiles) or nil
 
+### Bridge System
+
+One-way platforms that can be jumped through from below or dropped through from above.
+
+**Architecture:**
+- Stored in `platforms/bridges.lua` with separate state in `platforms/bridges_state.lua`
+- Thin colliders (0.2 tile height) at top of tile for landing
+- Auto-merges adjacent horizontal bridges into single colliders
+- Sprite selection: left/middle/right based on neighbors and walls
+
+**Player Interaction:**
+- Jump up through bridges from below (no collision from bottom)
+- Drop through by pressing down while standing on bridge
+- `player.standing_on_bridge` tracks when on bridge surface
+- `player.wants_drop_through` triggers pass-through mode
+
+**Level Symbol:** `-` (hyphen)
+
+### Sign System
+
+Interactive text displays triggered by player proximity.
+
+**Architecture:**
+- Object pool in `Sign/init.lua` with state in `Sign/state.lua`
+- Proximity detection via bounding box overlap
+- Alpha fade in/out (0.25s duration)
+- Variable substitution for control bindings
+
+**Variable Substitution:**
+Signs support `{action_id}` placeholders replaced with bound keys/buttons:
+```lua
+["1"] = { type = "sign", text = "Press {jump} to jump!" }
+-- Displays "Press SPACE to jump!" on keyboard
+-- Displays "Press A to jump!" on gamepad
+```
+
+**Usage:**
+```lua
+Sign.new(x, y, "Press {attack} to attack!")
+Sign.update(dt, player)  -- Check proximity, update fade
+Sign.draw()              -- Render signs and text popups
+Sign.clear()             -- Reset for level reload
+```
+
+**Level Symbol:** Configurable via `symbols` table with `type = "sign"` and `text` property.
+
 ### Level Format
 
 Levels in `levels/` use ASCII tile maps with configurable symbol definitions.
@@ -363,6 +432,7 @@ Levels in `levels/` use ASCII tile maps with configurable symbol definitions.
 - `/` = right-leaning slope
 - `\` = left-leaning slope
 - `H` = ladder segment
+- `-` = bridge (one-way platform)
 
 **Entity Symbols (configurable per level):**
 Levels define a `symbols` table mapping characters to entity definitions:
@@ -382,6 +452,7 @@ return {
 **Symbol Types:**
 - `type = "spawn"` - Player spawn point (only one per level)
 - `type = "enemy"` - Enemy spawn, requires `key` matching registered enemy type
+- `type = "sign"` - Interactive sign, requires `text` property (supports `{action_id}` variables)
 
 This allows levels to define custom symbols for entities without modifying the parser.
 
@@ -437,7 +508,9 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/hit.lua` - Hit stun with invincibility and input queueing
 - `world.lua` - HC collision engine wrapper (includes raycast, enemy filtering)
 - `platforms/init.lua` - Level geometry loader
-- `sprites.lua` - Asset loading
+- `platforms/bridges.lua` - One-way platform system
+- `Sign/init.lua` - Interactive sign system
+- `sprites/init.lua` - Asset loading (submodules: player, enemies, effects, projectiles, ui, environment)
 - `controls.lua` - Unified keyboard/gamepad input
 - `config.lua` - Debug flags, game settings, UI scaling
   - `config.ui.TILE` - Base tile size (16px)

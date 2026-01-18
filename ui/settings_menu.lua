@@ -69,6 +69,14 @@ local controls_panel = nil
 -- Shared close button
 local close_button = nil
 
+--- Convert linear slider value (0-1) to perceptual volume (0-1)
+--- Human hearing is logarithmic, so we apply a power curve for even-sounding volume steps
+---@param linear number Slider value (0-1)
+---@return number Perceptual volume (0-1)
+local function linear_to_perceptual(linear)
+    return linear * linear
+end
+
 local volume_sliders = {}
 
 ---@param slider_key string Key in volume_sliders table
@@ -79,7 +87,8 @@ local function create_volume_callback(slider_key, set_volume_fn, on_change)
     return function(event)
         if event.type == "press" or event.type == "drag" then
             volume_sliders[slider_key]:set_value(event.normalized_x)
-            set_volume_fn(volume_sliders[slider_key]:get_value())
+            local perceptual = linear_to_perceptual(volume_sliders[slider_key]:get_value())
+            set_volume_fn(perceptual)
             if on_change then on_change() end
         end
     end
@@ -93,7 +102,7 @@ volume_sliders.master = slider.create({
 
 volume_sliders.music = slider.create({
     x = 0, y = 0, width = slider_width, height = slider_height,
-    color = "#44FF88", value = 0.00, animate_speed = 0.1,
+    color = "#44FF88", value = 0.20, animate_speed = 0.1,
     on_input = create_volume_callback("music", audio.set_music_volume)
 })
 
@@ -105,9 +114,9 @@ volume_sliders.sfx = slider.create({
 
 --- Initialize volume settings and create UI components (call after audio.init)
 function settings_menu.init()
-    canvas.set_master_volume(volume_sliders.master:get_value())
-    audio.set_music_volume(volume_sliders.music:get_value())
-    audio.set_sfx_volume(volume_sliders.sfx:get_value())
+    canvas.set_master_volume(linear_to_perceptual(volume_sliders.master:get_value()))
+    audio.set_music_volume(linear_to_perceptual(volume_sliders.music:get_value()))
+    audio.set_sfx_volume(linear_to_perceptual(volume_sliders.sfx:get_value()))
 
     -- Create controls panel
     controls_panel = keybind_panel.create({
@@ -269,7 +278,7 @@ local function handle_audio_input()
             local new_value = focused_slider:get_value() + (VOLUME_STEP * hold_direction)
             focused_slider:set_value(new_value)
             local setter = get_volume_setter(audio_focus_index)
-            if setter then setter(focused_slider:get_value()) end
+            if setter then setter(linear_to_perceptual(focused_slider:get_value())) end
             if audio_focus_index == 3 then audio.play_sound_check() end
         end
     else

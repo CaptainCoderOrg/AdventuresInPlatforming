@@ -60,7 +60,7 @@ function wall_slide.update(player, dt)
 	local in_slide_delay = player.wall_slide_state.slide_delay_timer < WALL_SLIDE_DELAY
 
 	if in_grace then
-		player.vy = math.min(common.MAX_FALL_SPEED, player.vy + common.GRAVITY)
+		common.apply_gravity(player, dt)
 		if player.animation.definition ~= common.animations.FALL then
 			player.animation = Animation.new(common.animations.FALL)
 		end
@@ -69,7 +69,7 @@ function wall_slide.update(player, dt)
 		player.vy = 0
 	else
 		-- Slide down at reduced speed after delay
-		player.vy = math.min(WALL_SLIDE_SPEED, player.vy + common.GRAVITY)
+		common.apply_gravity(player, dt, WALL_SLIDE_SPEED)
 	end
 
 	player.vx = -player.wall_direction * player.speed

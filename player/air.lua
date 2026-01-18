@@ -17,7 +17,7 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function air.update(player, dt)
-	common.handle_gravity(player)
+	common.handle_gravity(player, dt)
 	if player.is_grounded then
 		player:set_state(player.states.idle)
 		audio.play_landing_sound()

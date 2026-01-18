@@ -2,6 +2,9 @@ local Animation = require('Animation')
 local sprites = require('sprites')
 local common = require('Enemies/common')
 
+--- Ratto enemy: A rat that patrols and chases the player.
+--- States: idle (wait), run (patrol), chase (pursue player), hit, death
+--- Detection range: 5 tiles. Health: 5 HP. Contact damage: 1.
 local ratto = {}
 
 ratto.animations = {
@@ -129,7 +132,7 @@ ratto.states.hit = {
 		enemy.vy = -5
 	end,
 	update = function(enemy, dt)
-		enemy.vx = enemy.vx * 0.9
+		enemy.vx = common.apply_friction(enemy.vx, 0.9, dt)
 		if enemy.animation:is_finished() then
 			enemy:set_state(ratto.states.idle)
 		end
@@ -147,4 +150,5 @@ return {
 	damage = 1,
 	states = ratto.states,
 	animations = ratto.animations,
+	initial_state = "idle",
 }

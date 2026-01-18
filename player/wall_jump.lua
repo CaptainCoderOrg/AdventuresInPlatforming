@@ -33,7 +33,7 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function wall_jump.update(player, dt)
-	player.vy = math.min(common.MAX_FALL_SPEED, player.vy + common.GRAVITY)
+	common.apply_gravity(player, dt)
 
 	player.vx = -player.wall_jump_state.locked_direction * player.speed
 

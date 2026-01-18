@@ -78,10 +78,10 @@ function run.update(player, dt)
 			local tangent = common.get_ground_tangent(player)
 			player.vy = player.direction * player.speed * (tangent.y / tangent.x)
 		else
-			common.handle_gravity(player)
+			common.handle_gravity(player, dt)
 		end
 	else
-		common.handle_gravity(player)
+		common.handle_gravity(player, dt)
 	end
 
 	if player.run_state.footstep_cooldown <= 0 then

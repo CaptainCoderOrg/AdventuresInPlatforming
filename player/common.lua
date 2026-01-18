@@ -5,7 +5,6 @@ local Animation = require('Animation')
 
 local common = {}
 
--- Constants
 common.GRAVITY = 1.5
 common.JUMP_VELOCITY = common.GRAVITY * 14
 common.AIR_JUMP_VELOCITY = common.GRAVITY * 11
@@ -37,7 +36,6 @@ common.animations = {
 	DEATH = Animation.create_definition(sprites.player.death, 12, { ms_per_frame = 80, loop = false }),
 }
 
--- Helper functions
 function common.handle_hammer(player)
     if controls.hammer_pressed() then
         player:set_state(player.states.hammer)
@@ -71,15 +69,24 @@ function common.handle_block(player)
 	end
 end
 
---- Applies gravity to the player and transitions to air state if not grounded.
+--- Applies gravity acceleration to the player without state transitions.
 --- @param player table The player object
+--- @param dt number Delta time in seconds
 --- @param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
-function common.handle_gravity(player, max_speed)
+function common.apply_gravity(player, dt, max_speed)
 	max_speed = max_speed or common.MAX_FALL_SPEED
-	player.vy = math.min(max_speed, player.vy + common.GRAVITY)
-	if not player.is_grounded and 
+	player.vy = math.min(max_speed, player.vy + common.GRAVITY * dt * 60)
+end
+
+--- Applies gravity and transitions to air state if not grounded.
+--- @param player table The player object
+--- @param dt number Delta time in seconds
+--- @param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
+function common.handle_gravity(player, dt, max_speed)
+	common.apply_gravity(player, dt, max_speed)
+	if not player.is_grounded and
            player.state ~= player.states.block and
-           player.state ~= player.states.hit and 
+           player.state ~= player.states.hit and
 		   player.state ~= player.states.throw
 		   then
 		player:set_state(player.states.air)

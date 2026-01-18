@@ -39,7 +39,7 @@ end
 --- @param dt number Delta time
 function idle.update(player, dt)
 	player.vx = 0
-	common.handle_gravity(player)
+	common.handle_gravity(player, dt)
 end
 
 --- Renders the player in idle pose.

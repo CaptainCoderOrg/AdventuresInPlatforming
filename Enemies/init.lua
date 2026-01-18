@@ -87,8 +87,7 @@ function Enemy.update(dt, player)
 	local to_remove = {}
 
 	for enemy, _ in pairs(Enemy.all) do
-		-- Apply gravity
-		enemy.vy = math.min(enemy.max_fall_speed, enemy.vy + enemy.gravity)
+		common.apply_gravity(enemy, dt)
 
 		-- Apply velocity
 		enemy.x = enemy.x + enemy.vx * dt

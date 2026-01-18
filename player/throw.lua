@@ -26,7 +26,7 @@ end
 --- @param player table The player object
 --- @param dt number Delta time
 function throw.update(player, dt)
-	common.handle_gravity(player)
+	common.handle_gravity(player, dt)
 	player.throw_state.remaining_time = player.throw_state.remaining_time - dt
 	if player.throw_state.remaining_time <= 0 then
 		-- Set cooldown before processing queue so it's always respected

@@ -26,7 +26,7 @@ end
 --- @param dt number Delta time
 function hit.update(player, dt)
 	player.vx = -player.direction * player.hit_state.knockback_speed
-	common.handle_gravity(player)
+	common.handle_gravity(player, dt)
 	player.hit_state.remaining_time = player.hit_state.remaining_time - dt
 	if player.hit_state.remaining_time < 0 then
 		player.invincible_time = INVINCIBLE_TIME

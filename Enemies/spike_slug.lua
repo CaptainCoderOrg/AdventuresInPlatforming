@@ -2,6 +2,10 @@ local Animation = require('Animation')
 local sprites = require('sprites')
 local common = require('Enemies/common')
 
+--- Spike Slug enemy: A defensive enemy that curls up when player approaches.
+--- States: run (patrol), defend (invincible stance), stop_defend (exit stance), hit, death
+--- Detection range: 6 tiles. Health: 3 HP. Contact damage: 1.
+--- Special: is_defending flag blocks all damage while in defend state.
 local spike_slug = {}
 
 spike_slug.animations = {
@@ -73,7 +77,7 @@ spike_slug.states.hit = {
 		enemy.is_defending = false
 	end,
 	update = function(enemy, dt)
-		enemy.vx = enemy.vx * 0.9
+		enemy.vx = common.apply_friction(enemy.vx, 0.9, dt)
 		if enemy.animation:is_finished() then
 			enemy:set_state(spike_slug.states.run)
 		end

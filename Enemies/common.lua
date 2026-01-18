@@ -4,7 +4,24 @@ local config = require('config')
 
 local common = {}
 
-local ROTATION_LERP_SPEED = 10  -- Higher = faster rotation
+local ROTATION_LERP_SPEED = 10  -- Rotation interpolation speed (higher = faster, ~0.1s to settle)
+local TARGET_FPS = 60  -- Base frame rate for physics calculations
+
+--- Applies gravity acceleration to an enemy in a frame-rate independent way.
+--- @param enemy table The enemy object with vy, gravity, max_fall_speed
+--- @param dt number Delta time in seconds
+function common.apply_gravity(enemy, dt)
+	enemy.vy = math.min(enemy.max_fall_speed, enemy.vy + enemy.gravity * dt * TARGET_FPS)
+end
+
+--- Applies velocity friction/damping in a frame-rate independent way.
+--- @param velocity number Current velocity
+--- @param friction number Per-frame friction at 60fps (e.g., 0.9 = 10% reduction per frame)
+--- @param dt number Delta time in seconds
+--- @return number Damped velocity
+function common.apply_friction(velocity, friction, dt)
+	return velocity * (friction ^ (dt * TARGET_FPS))
+end
 
 --- Check if player is within range of enemy
 --- @param enemy table The enemy
@@ -68,7 +85,7 @@ function common.create_death_state(death_animation)
 			enemy.gravity = 0
 		end,
 		update = function(enemy, dt)
-			enemy.vx = enemy.vx * 0.9
+			enemy.vx = common.apply_friction(enemy.vx, 0.9, dt)
 			if enemy.animation:is_finished() then
 				enemy.marked_for_destruction = true
 			end

@@ -2,6 +2,7 @@
 local canvas = require("canvas")
 local utils = require("ui/utils")
 local controls = require("controls")
+local sprites = require("sprites")
 
 local keybind_row = {}
 keybind_row.__index = keybind_row
@@ -11,6 +12,34 @@ local ROW_HEIGHT = 12
 local LABEL_X = 10
 local BINDING_X = 95  -- Right side for binding display
 local BINDING_WIDTH = 45
+
+-- Sprite scale constants (sized to fit in 12px row height)
+-- Keyboard sprites are 64x64 base
+local KEYBOARD_SCALE = 0.15625        -- 64 * 0.15625 = 10px
+local KEYBOARD_WORD_SCALE = 0.234375  -- 64 * 0.234375 = 15px (word keys need more width)
+-- Gamepad sprites are 16x16 base
+local GAMEPAD_SCALE = 0.625           -- 16 * 0.625 = 10px
+local GAMEPAD_SHOULDER_SCALE = 0.9375 -- 16 * 0.9375 = 15px (shoulder buttons are wider)
+
+--- Get keyboard sprite scale for a specific key code
+---@param code number Key code
+---@return number Scale multiplier
+local function get_key_scale(code)
+    if sprites.controls.is_word_key(code) then
+        return KEYBOARD_WORD_SCALE
+    end
+    return KEYBOARD_SCALE
+end
+
+--- Get gamepad button scale for a specific button code
+---@param code number Button code
+---@return number Scale multiplier
+local function get_button_scale(code)
+    if sprites.controls.is_shoulder_button(code) then
+        return GAMEPAD_SHOULDER_SCALE
+    end
+    return GAMEPAD_SCALE
+end
 
 --- Create a new keybind row component
 ---@param opts {action_id: string, label: string, scheme: string}
@@ -72,10 +101,8 @@ function keybind_row:update(dt)
         return false
     end
 
-    -- Update timeout
     self.listen_time = self.listen_time + dt
 
-    -- Check for timeout
     if self.listen_time >= self.listen_timeout then
         self:cancel_listening()
         return false
@@ -127,19 +154,18 @@ function keybind_row:draw(focused, has_conflict)
     local binding_color = "#AAAAAA"
 
     if has_conflict then
-        binding_color = "#FF4444"  -- Red when conflicting
+        binding_color = "#FF4444"  -- Signals duplicate binding needs resolution
     end
 
     if focused then
         label_color = "#FFFF00"
-        binding_color = has_conflict and "#FF8888" or "#FFFF00"  -- Lighter red if focused + conflict
+        binding_color = has_conflict and "#FF8888" or "#FFFF00"
     end
 
     if self.listening then
-        binding_color = "#88FF88"  -- Green when listening
+        binding_color = "#88FF88"  -- Signals ready to accept input
     end
 
-    -- Draw focus background
     if focused then
         canvas.set_color("#FFFFFF20")
         canvas.fill_rect(self.x, self.y, self.width, self.height)
@@ -149,15 +175,31 @@ function keybind_row:draw(focused, has_conflict)
     canvas.set_font_size(7)
     canvas.set_text_baseline("middle")
 
-    -- Draw action label
     local text_y = self.y + self.height / 2
     utils.draw_outlined_text(self.label, self.x + LABEL_X, text_y, label_color)
 
-    -- Draw binding (right-aligned)
-    local binding_text = self:get_binding_text()
-    local metrics = canvas.get_text_metrics(binding_text)
-    local binding_x = self.x + BINDING_X + (BINDING_WIDTH - metrics.width) / 2
-    utils.draw_outlined_text(binding_text, binding_x, text_y, binding_color)
+    if self.listening then
+        local binding_text = "Press..."
+        local metrics = canvas.get_text_metrics(binding_text)
+        local binding_x = self.x + BINDING_X + (BINDING_WIDTH - metrics.width) / 2
+        utils.draw_outlined_text(binding_text, binding_x, text_y, binding_color)
+    else
+        local code = controls.get_binding(self.scheme, self.action_id)
+        if code then
+            local is_gamepad = self.scheme == "gamepad"
+            local sprite_scale = is_gamepad and get_button_scale(code) or get_key_scale(code)
+            local base_size = is_gamepad and 16 or 64
+            local sprite_size = base_size * sprite_scale
+            local sprite_x = self.x + BINDING_X + (BINDING_WIDTH - sprite_size) / 2
+            local sprite_y = self.y + (self.height - sprite_size) / 2
+
+            if is_gamepad then
+                sprites.controls.draw_button(code, sprite_x, sprite_y, sprite_scale)
+            else
+                sprites.controls.draw_key(code, sprite_x, sprite_y, sprite_scale)
+            end
+        end
+    end
 end
 
 --- Get the row height for layout calculations

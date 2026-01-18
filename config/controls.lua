@@ -15,10 +15,10 @@ controls_config.actions = {
     { id = "move_up",     label = "Up / Climb" },
     { id = "move_down",   label = "Down" },
     { id = "jump",        label = "Jump" },
-    { id = "dash",        label = "Dash" },
     { id = "attack",      label = "Attack" },
     { id = "throw",       label = "Throw" },
     { id = "hammer",      label = "Hammer" },
+    { id = "dash",        label = "Dash" },
     { id = "block",       label = "Block" },
     { id = "switch_proj", label = "Switch Projectile" },
 }

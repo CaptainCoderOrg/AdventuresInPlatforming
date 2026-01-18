@@ -8,7 +8,7 @@ local Animation = require('Animation')
 --- Ignores gravity during dash. Can be cancelled by jumping or changing direction.
 local dash = { name = "dash" }
 
-local DASH_DURATION = 8 / 60  -- 0.1333 seconds (8 frames at 60 FPS)
+local DASH_DURATION = 12 / 60
 local DASH_COOLDOWN_FRAMES = DASH_DURATION * 2
 
 --- Called when entering dash state. Locks direction and cancels vertical velocity.

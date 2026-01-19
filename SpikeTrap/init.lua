@@ -38,7 +38,6 @@ local HITBOX_H = 0.8
 local function player_touching(trap, player)
     local px, py = player.x + player.box.x, player.y + player.box.y
     local pw, ph = player.box.w, player.box.h
-    -- 1x0.8 hitbox anchored at bottom of tile
     local sx = trap.x
     local sy = trap.y + (1 - HITBOX_H)
 
@@ -85,6 +84,7 @@ function SpikeTrap.new(x, y, options)
         state = initial_state,
         timer = 0,
         animation = Animation.new(SPIKE_ANIM, { start_frame = initial_frame }),
+        group = options.group,  -- Optional group name for retract_group()
     }
     -- Pause animation for static states (EXTENDED or RETRACTED)
     self.animation:pause()
@@ -132,7 +132,8 @@ function SpikeTrap.update(dt, player)
     end
 end
 
---- Draw all spike traps
+--- Renders all spike traps to the screen.
+--- Converts tile coordinates to screen pixels and draws debug hitboxes when enabled.
 function SpikeTrap.draw()
     local tile_size = sprites.tile_size
 
@@ -153,6 +154,18 @@ end
 --- Remove all spike traps (for level reload)
 function SpikeTrap.clear()
     SpikeTrap.all = {}
+end
+
+--- Retract all spike traps in a specific group.
+--- Affects traps in EXTENDED or EXTENDING states.
+---@param group_name string Group to target
+function SpikeTrap.retract_group(group_name)
+    for _, trap in ipairs(SpikeTrap.all) do
+        if trap.group == group_name and
+           (trap.state == STATE.EXTENDED or trap.state == STATE.EXTENDING) then
+            start_transition(trap, STATE.RETRACTING, { start_frame = 0 })
+        end
+    end
 end
 
 return SpikeTrap

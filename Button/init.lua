@@ -27,13 +27,16 @@ local BOX = {
 --- Create a new button at the specified position
 ---@param x number X position in tile coordinates
 ---@param y number Y position in tile coordinates
+---@param options table|nil Optional configuration: on_press callback
 ---@return table Button instance
-function Button.new(x, y)
+function Button.new(x, y, options)
+    options = options or {}
     local self = {
         x = x,
         y = y,
         box = BOX,
         is_pressed = false,
+        on_press = options.on_press,  -- Callback function
         animation = Animation.new(UNPRESSED, { start_frame = 0 }),
     }
     -- Pause animation since we're static on frame 0 (unpressed)
@@ -49,6 +52,9 @@ local function press(button)
     if button.is_pressed then return end
     button.is_pressed = true
     button.animation:resume()
+    if button.on_press then
+        button.on_press()
+    end
 end
 
 --- Check if a hitbox overlaps with any unpressed button and press it
@@ -85,7 +91,8 @@ function Button.update(dt)
     end
 end
 
---- Draw all buttons
+--- Renders all buttons to the screen.
+--- Converts tile coordinates to screen pixels and draws debug hitboxes when enabled.
 function Button.draw()
     local tile_size = sprites.tile_size
 

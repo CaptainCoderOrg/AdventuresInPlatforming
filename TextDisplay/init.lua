@@ -11,54 +11,116 @@ local FONT_SIZE = 9 * config.ui.SCALE
 local TEXT_PADDING = 2 * config.ui.SCALE
 local LINE_SPACING = 2 * config.ui.SCALE
 local FADE_DURATION = 0.25
+local DEFAULT_TEXT_COLOR = "#ffffffee"
 local GAMEPAD_SPRITE_SCALE = 0.5
 local GAMEPAD_SHOULDER_SCALE = 0.75
 local KEYBOARD_SPRITE_SCALE = 0.125
 local KEYBOARD_WORD_SCALE = 0.1875
 
---- Parse text into segments of plain text, action placeholders, and explicit key/button placeholders
----@param text string Text with placeholders like {jump}, {key:SPACE}, {button:SOUTH}, {keyboard:jump}, or {gamepad:attack}
----@return table Array of {type="text"|"action"|"key"|"button"|"keyboard_action"|"gamepad_action", value=string|number}
+--- Find the earliest position among candidates
+---@param candidates table Array of {pos=number|nil, type=string}
+---@return number|nil position Earliest position found
+---@return string|nil tag_type Type of the earliest tag
+local function find_earliest_tag(candidates)
+    local earliest_pos = nil
+    local earliest_type = nil
+
+    for _, candidate in ipairs(candidates) do
+        if candidate.pos and (not earliest_pos or candidate.pos < earliest_pos) then
+            earliest_pos = candidate.pos
+            earliest_type = candidate.type
+        end
+    end
+
+    return earliest_pos, earliest_type
+end
+
+--- Expand 3-character hex color to 6-character format
+---@param hex string 3 or 6 character hex string (without #)
+---@return string Full hex color with # prefix
+local function normalize_hex_color(hex)
+    if #hex == 3 then
+        return "#" .. hex:sub(1, 1):rep(2) .. hex:sub(2, 2):rep(2) .. hex:sub(3, 3):rep(2)
+    end
+    return "#" .. hex
+end
+
+--- Parse text into segments of plain text, action placeholders, color tags, and explicit key/button placeholders
+---@param text string Text with placeholders like {jump}, {key:SPACE}, {button:SOUTH}, {keyboard:jump}, {gamepad:attack}, or [color=#RRGGBB]...[/color]
+---@return table Array of {type="text"|"action"|"key"|"button"|"keyboard_action"|"gamepad_action"|"color_start"|"color_end", value=string|number}
 local function parse_segments(text)
     local segments = {}
     local pos = 1
 
     while pos <= #text do
-        local start_brace, end_brace, prefix, suffix = text:find("{([%w_]+):?([%w_]*)}", pos)
-        if start_brace then
-            if start_brace > pos then
-                table.insert(segments, { type = "text", value = text:sub(pos, start_brace - 1) })
-            end
+        local next_pos, next_type = find_earliest_tag({
+            { pos = text:find("%[color=#", pos), type = "color_start" },
+            { pos = text:find("%[/color%]", pos), type = "color_end" },
+            { pos = text:find("{", pos), type = "brace" },
+        })
 
-            if suffix and suffix ~= "" then
-                if prefix == "key" then
-                    local key_code = canvas.keys[suffix]
-                    if key_code then
-                        table.insert(segments, { type = "key", value = key_code })
-                    else
-                        table.insert(segments, { type = "text", value = suffix })
-                    end
-                elseif prefix == "button" then
-                    local button_code = canvas.buttons[suffix]
-                    if button_code then
-                        table.insert(segments, { type = "button", value = button_code })
-                    else
-                        table.insert(segments, { type = "text", value = suffix })
-                    end
-                elseif prefix == "keyboard" then
-                    table.insert(segments, { type = "keyboard_action", value = suffix })
-                elseif prefix == "gamepad" then
-                    table.insert(segments, { type = "gamepad_action", value = suffix })
-                else
-                    table.insert(segments, { type = "text", value = prefix .. ":" .. suffix })
-                end
-            else
-                table.insert(segments, { type = "action", value = prefix })
+        if not next_pos then
+            -- No more tags, add remaining text
+            if pos <= #text then
+                table.insert(segments, { type = "text", value = text:sub(pos) })
             end
-            pos = end_brace + 1
-        else
-            table.insert(segments, { type = "text", value = text:sub(pos) })
             break
+        end
+
+        -- Add text before the tag
+        if next_pos > pos then
+            table.insert(segments, { type = "text", value = text:sub(pos, next_pos - 1) })
+        end
+
+        if next_type == "color_start" then
+            -- Match [color=#RGB] or [color=#RRGGBB], capture hex digits and position after ]
+            local hex, tag_end = text:match("^%[color=#([%dA-Fa-f]+)%]()", next_pos)
+            -- Support shorthand (#F00) and full (#FF0000) hex color notation
+            if hex and (#hex == 6 or #hex == 3) then
+                table.insert(segments, { type = "color_start", value = normalize_hex_color(hex) })
+                pos = tag_end
+            else
+                table.insert(segments, { type = "text", value = "[" })
+                pos = next_pos + 1
+            end
+        elseif next_type == "color_end" then
+            table.insert(segments, { type = "color_end" })
+            pos = next_pos + 8 -- length of "[/color]"
+        else
+            -- Handle brace placeholder
+            local start_brace, end_brace, prefix, suffix = text:find("{([%w_]+):?([%w_]*)}", next_pos)
+            if start_brace == next_pos then
+                if suffix and suffix ~= "" then
+                    if prefix == "key" then
+                        local key_code = canvas.keys[suffix]
+                        if key_code then
+                            table.insert(segments, { type = "key", value = key_code })
+                        else
+                            table.insert(segments, { type = "text", value = suffix })
+                        end
+                    elseif prefix == "button" then
+                        local button_code = canvas.buttons[suffix]
+                        if button_code then
+                            table.insert(segments, { type = "button", value = button_code })
+                        else
+                            table.insert(segments, { type = "text", value = suffix })
+                        end
+                    elseif prefix == "keyboard" then
+                        table.insert(segments, { type = "keyboard_action", value = suffix })
+                    elseif prefix == "gamepad" then
+                        table.insert(segments, { type = "gamepad_action", value = suffix })
+                    else
+                        table.insert(segments, { type = "text", value = prefix .. ":" .. suffix })
+                    end
+                else
+                    table.insert(segments, { type = "action", value = prefix })
+                end
+                pos = end_brace + 1
+            else
+                -- Lone brace, treat as text
+                table.insert(segments, { type = "text", value = "{" })
+                pos = next_pos + 1
+            end
         end
     end
 
@@ -141,6 +203,8 @@ local function get_segments_width(segments, scheme)
     for _, segment in ipairs(segments) do
         if segment.type == "text" then
             total_width = total_width + canvas.get_text_width(segment.value)
+        elseif segment.type == "color_start" or segment.type == "color_end" then
+            -- Color tags have no width, skip
         else
             local seg_scheme, code = resolve_segment(segment, scheme)
             if seg_scheme then
@@ -178,11 +242,17 @@ end
 ---@param text_y number Y position for text baseline
 local function draw_segments(segments, scheme, start_x, text_y)
     local x = start_x
+    local current_color = DEFAULT_TEXT_COLOR
 
     canvas.set_text_align("left")
 
     for _, segment in ipairs(segments) do
-        if segment.type == "text" then
+        if segment.type == "color_start" then
+            current_color = segment.value
+        elseif segment.type == "color_end" then
+            current_color = DEFAULT_TEXT_COLOR
+        elseif segment.type == "text" then
+            canvas.set_color(current_color)
             canvas.draw_text(x, text_y, segment.value, {})
             x = x + canvas.get_text_width(segment.value)
         else

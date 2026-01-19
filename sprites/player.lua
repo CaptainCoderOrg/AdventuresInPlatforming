@@ -21,6 +21,7 @@ local player = {
 	climb_up = "player_climb_up",
 	climb_down = "player_climb_down",
 	hit = "player_hit",
+	rest = "player_rest",
 }
 
 canvas.assets.load_image(player.block, "sprites/character/block.png")
@@ -41,5 +42,6 @@ canvas.assets.load_image(player.throw, "sprites/character/throw.png")
 canvas.assets.load_image(player.climb_up, "sprites/character/climb_up.png")
 canvas.assets.load_image(player.climb_down, "sprites/character/climb_down.png")
 canvas.assets.load_image(player.hit, "sprites/character/hit.png")
+canvas.assets.load_image(player.rest, "sprites/character/rest.png")
 
 return player

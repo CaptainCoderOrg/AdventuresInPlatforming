@@ -1,7 +1,9 @@
-local audio = require('audio')
-local sprites = require('sprites')
-local controls = require('controls')
 local Animation = require('Animation')
+local Prop = require('Prop')
+local audio = require('audio')
+local controls = require('controls')
+local prop_common = require('Prop/common')
+local sprites = require('sprites')
 
 local common = {}
 
@@ -34,6 +36,7 @@ common.animations = {
 
 	HIT = Animation.create_definition(sprites.player.hit, 3, { ms_per_frame = 80, loop = false }),
 	DEATH = Animation.create_definition(sprites.player.death, 12, { ms_per_frame = 80, loop = false }),
+	REST = Animation.create_definition(sprites.player.rest, 1, { ms_per_frame = 1000, loop = false }),
 }
 
 --- Checks for hammer input and transitions to hammer state if pressed.
@@ -75,6 +78,31 @@ function common.handle_block(player)
     if controls.block_down() then
 		player:set_state(player.states.block)
 	end
+end
+
+--- Checks if the player is touching a campfire prop.
+---@param player table The player object
+---@return boolean True if player is touching a campfire prop
+function common.is_near_campfire(player)
+	for prop in pairs(Prop.all) do
+		if prop.type_key == "campfire" and prop_common.player_touching(prop, player) then
+			return true
+		end
+	end
+	return false
+end
+
+--- Checks for rest input (down + attack) and transitions to rest state if near campfire.
+---@param player table The player object
+---@return boolean True if transitioned to rest state
+function common.handle_rest(player)
+	if controls.down_down() and controls.attack_pressed() then
+		if common.is_near_campfire(player) then
+			player:set_state(player.states.rest)
+			return true
+		end
+	end
+	return false
 end
 
 --- Applies gravity acceleration to the player without state transitions.

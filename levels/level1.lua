@@ -3,6 +3,7 @@ local Prop = require("Prop")
 return {
     map = {
         [[#X#################################################]],
+        [[#  S                                              #]],
         [[#                                                 #]],
         [[#                                                 #]],
         [[#                                                 #]],
@@ -10,8 +11,7 @@ return {
         [[#                                                 #]],
         [[#                                                 #]],
         [[#                                                 #]],
-        [[#                                                 #]],
-        [[# C S                               Bb     s      #]],
+        [[# C B                               Bb     s      #]],
         [[#####^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^####^^^^##  ####]],
         [[#############################################  ####]],
         [[#############################################  ####]],
@@ -39,7 +39,9 @@ return {
             type = "button",
             on_press = function()
                 Prop.group_action("entrance_spikes", "retracting")
-            end
+                -- Prop.group_action("spike_buttons", "pressed")
+            end,
+            group = "spike_buttons"
         },
         b = { type = "sign", text = "Hammer\n{hammer}" },
         R = { type = "enemy", key = "ratto" },

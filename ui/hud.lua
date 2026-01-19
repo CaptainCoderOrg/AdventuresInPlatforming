@@ -86,7 +86,13 @@ function hud.is_game_over_active()
     return game_over.is_active()
 end
 
---- Set the restart callback for game over
+--- Set the continue callback for game over (uses restore point)
+---@param fn function Function to call when continuing from checkpoint
+function hud.set_continue_callback(fn)
+    game_over.set_continue_callback(fn)
+end
+
+--- Set the restart callback for game over (full restart)
 ---@param fn function Function to call when restarting
 function hud.set_restart_callback(fn)
     game_over.set_restart_callback(fn)

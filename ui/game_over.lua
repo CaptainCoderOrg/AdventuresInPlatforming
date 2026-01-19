@@ -31,7 +31,8 @@ local BUTTON_COUNT = 2
 -- Buttons (stored in array for iteration)
 local buttons = {}
 
--- Callback for restarting the level
+-- Callbacks for game over actions
+local continue_callback = nil
 local restart_callback = nil
 
 -- Mouse input tracking
@@ -46,6 +47,17 @@ local BUTTON_SPACING = 18
 local BUTTON_WIDTH = 60
 local BUTTON_HEIGHT = 12
 
+--- Update button positions based on current screen dimensions
+---@param scale number UI scale factor
+---@param screen_w number Screen width in pixels
+local function update_button_positions(scale, screen_w)
+    local center_x = screen_w / (2 * scale)
+    for i, btn in ipairs(buttons) do
+        btn.x = center_x - BUTTON_WIDTH / 2
+        btn.y = BUTTON_START_Y + (i - 1) * BUTTON_SPACING
+    end
+end
+
 --- Create a menu button with standard settings
 ---@param label string Button label text
 ---@return table button
@@ -58,7 +70,7 @@ local function create_menu_button(label)
         text_only = true,
         on_click = function()
             if state == STATE.OPEN then
-                game_over.trigger_restart()
+                game_over.trigger_action()
             end
         end
     })
@@ -73,8 +85,9 @@ function game_over.init()
     }
 end
 
---- Trigger the fade to black and restart sequence
-function game_over.trigger_restart()
+--- Trigger the fade to black and action sequence
+--- Uses current focus_index to determine which callback to use
+function game_over.trigger_action()
     state = STATE.FADING_TO_BLACK
     fade_progress = 0
 end
@@ -89,7 +102,13 @@ function game_over.show()
     end
 end
 
---- Set the restart callback function
+--- Set the continue callback function (uses restore point)
+---@param fn function Function to call when continuing from checkpoint
+function game_over.set_continue_callback(fn)
+    continue_callback = fn
+end
+
+--- Set the restart callback function (full restart)
 ---@param fn function Function to call when restarting the level
 function game_over.set_restart_callback(fn)
     restart_callback = fn
@@ -120,7 +139,7 @@ function game_over.input()
     end
 
     if controls.menu_confirm_pressed() then
-        game_over.trigger_restart()
+        game_over.trigger_action()
     end
 end
 
@@ -144,7 +163,10 @@ function game_over.update(dt)
     elseif state == STATE.RELOADING then
         fade_progress = fade_progress + dt / RELOAD_PAUSE
         if fade_progress >= 1 then
-            if restart_callback then
+            -- Call appropriate callback based on selected button
+            if focus_index == 1 and continue_callback then
+                continue_callback()
+            elseif focus_index == 2 and restart_callback then
                 restart_callback()
             end
             state = STATE.FADING_BACK_IN
@@ -162,7 +184,6 @@ function game_over.update(dt)
     if state == STATE.OPEN then
         local scale = config.ui.SCALE
         local screen_w = canvas.get_width()
-        local center_x = screen_w / (2 * scale)
 
         -- Re-enable mouse input if mouse has moved
         local mx = canvas.get_mouse_x()
@@ -173,14 +194,13 @@ function game_over.update(dt)
             last_mouse_y = my
         end
 
-        -- Update button positions and handle mouse hover
-        local local_mx = mx / scale
-        local local_my = my / scale
-        for i, btn in ipairs(buttons) do
-            btn.x = center_x - BUTTON_WIDTH / 2
-            btn.y = BUTTON_START_Y + (i - 1) * BUTTON_SPACING
+        update_button_positions(scale, screen_w)
 
-            if mouse_active then
+        -- Handle mouse hover
+        if mouse_active then
+            local local_mx = mx / scale
+            local local_my = my / scale
+            for i, btn in ipairs(buttons) do
                 if utils.point_in_rect(local_mx, local_my, btn.x, btn.y, btn.width, btn.height) then
                     focus_index = i
                 end
@@ -249,9 +269,8 @@ function game_over.draw()
 
         canvas.set_text_align("left")
 
+        update_button_positions(scale, screen_w)
         for i, btn in ipairs(buttons) do
-            btn.x = center_x - BUTTON_WIDTH / 2
-            btn.y = BUTTON_START_Y + (i - 1) * BUTTON_SPACING
             btn:draw(focus_index == i)
         end
 

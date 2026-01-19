@@ -12,6 +12,8 @@ local Effects = require("Effects")
 local Camera = require("Camera")
 local camera_cfg = require("config/camera")
 local Enemy = require("Enemies")
+local RestorePoint = require("RestorePoint")
+local rest_state = require("player.rest")
 Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
@@ -26,6 +28,7 @@ local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
 local was_dead = false  -- Track death state for game over trigger
+local current_level = level1  -- Track current level module
 
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
@@ -105,11 +108,20 @@ local function draw()
     debug.draw(player)
 end
 
-local function init_level()
+local function init_level(level, spawn_override)
+    level = level or current_level
+    current_level = level
+
     player = Player.new()
-    level_info = platforms.load_level(level1)
-    if level_info.spawn then
-        player:set_position(level_info.spawn.x, level_info.spawn.y)
+    level_info = platforms.load_level(level)
+
+    -- Update rest state's level references
+    rest_state.current_level = current_level
+    rest_state.level_info = level_info
+
+    local spawn_pos = spawn_override or level_info.spawn
+    if spawn_pos then
+        player:set_position(spawn_pos.x, spawn_pos.y)
     end
     platforms.build()
 
@@ -134,7 +146,8 @@ local function init_level()
     was_dead = false
 end
 
-local function restart_level()
+--- Clean up all game entities before level reload
+local function cleanup_level()
     -- Remove old player collider
     world.remove_collider(player)
 
@@ -151,8 +164,25 @@ local function restart_level()
 
     -- Clear effects
     Effects.all = {}
+end
 
-    -- Reinitialize level
+--- Continue from restore point (campfire checkpoint)
+local function continue_from_checkpoint()
+    local restore = RestorePoint.get()
+
+    cleanup_level()
+
+    if restore then
+        init_level(restore.level, { x = restore.x, y = restore.y })
+    else
+        init_level()
+    end
+end
+
+--- Full restart (clears restore point, uses level spawn)
+local function restart_level()
+    RestorePoint.clear()
+    cleanup_level()
     init_level()
 end
 
@@ -162,6 +192,7 @@ local function on_start()
     if started then return end
     audio.init()
     hud.init()
+    hud.set_continue_callback(continue_from_checkpoint)
     hud.set_restart_callback(restart_level)
     audio.play_music(audio.level1)
     started = true

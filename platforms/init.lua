@@ -65,9 +65,10 @@ function platforms.load_level(level_data)
 						extend_time = def.extend_time,
 						retract_time = def.retract_time,
 						start_retracted = def.start_retracted,
+						group = def.group,
 					})
 				elseif def.type == "button" then
-					table.insert(buttons, { x = ox, y = oy })
+					table.insert(buttons, { x = ox, y = oy, on_press = def.on_press })
 				end
 			end
 		end

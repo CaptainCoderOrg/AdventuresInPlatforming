@@ -1,3 +1,5 @@
+local SpikeTrap = require("SpikeTrap")
+
 return {
     map = {
         [[#X#################################################]],
@@ -33,11 +35,16 @@ return {
     },
     symbols = {
         S = { type = "spawn" },
-        B = { type = "button" },
+        B = {
+            type = "button",
+            on_press = function()
+                SpikeTrap.retract_group("entrance_spikes")
+            end
+        },
         R = { type = "enemy", key = "ratto" },
         W = { type = "enemy", key = "worm" },
         G = { type = "enemy", key = "spike_slug" },
-        ["^"] = { type = "spike_trap", mode = "extended" },
+        ["^"] = { type = "spike_trap", mode = "extended", group = "entrance_spikes" },
         ["1"] = { type = "sign", text = "Move\n{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}" },
         ["2"] = { type = "sign", text = "Jump\n{jump}" },
         ["3"] = { type = "sign", text = "Drop\n{move_down} + {jump}" },

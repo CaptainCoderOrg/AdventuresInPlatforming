@@ -1,7 +1,7 @@
 local common = require('player.common')
 local sprites = require('sprites')
 local Animation = require('Animation')
-local Button = require('Button')
+local Prop = require('Prop')
 local config = require('config')
 local canvas = require('canvas')
 
@@ -37,7 +37,11 @@ local function check_button_hits(player)
 
 	-- Only check if we haven't already hit a button this swing
 	if not player.hammer_state.hit_button then
-		if Button.check_hit(hitbox) then
+		local button = Prop.check_hit("button", hitbox, function(prop)
+			return not prop.is_pressed
+		end)
+		if button then
+			button.definition.press(button)
 			player.hammer_state.hit_button = true
 		end
 	end

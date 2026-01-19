@@ -16,9 +16,10 @@ Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
 local Sign = require("Sign")
-local SpikeTrap = require("SpikeTrap")
-local Button = require("Button")
-local Campfire = require("Campfire")
+local Prop = require("Prop")
+Prop.register("campfire", require("Prop/campfire"))
+Prop.register("button", require("Prop/button"))
+Prop.register("spike_trap", require("Prop/spike_trap"))
 local world = require("world")
 
 local player  -- Instance created in init_level
@@ -76,9 +77,7 @@ local function update(dt)
     Effects.update(dt)
     Enemy.update(dt, player)
     Sign.update(dt, player)
-    SpikeTrap.update(dt, player)
-    Button.update(dt)
-    Campfire.update(dt)
+    Prop.update(dt, player)
 
     -- Trigger game over once when player first enters death state
     -- (was_dead prevents retriggering each frame while dead)
@@ -96,11 +95,9 @@ local function draw()
     camera:apply_transform(sprites.tile_size)
     platforms.draw(camera)
     Sign.draw()
-    SpikeTrap.draw()
-    Button.draw()
+    Prop.draw()
     Enemy.draw()
     player:draw()
-    Campfire.draw()
     Projectile.draw()
     Effects.draw()
     canvas.restore()
@@ -127,19 +124,9 @@ local function init_level()
         Sign.new(sign_data.x, sign_data.y, sign_data.text)
     end
 
-    SpikeTrap.clear()
-    for _, trap_data in ipairs(level_info.spike_traps) do
-        SpikeTrap.new(trap_data.x, trap_data.y, trap_data)
-    end
-
-    Button.clear()
-    for _, button_data in ipairs(level_info.buttons) do
-        Button.new(button_data.x, button_data.y, button_data)
-    end
-
-    Campfire.clear()
-    for _, campfire_data in ipairs(level_info.campfires) do
-        Campfire.new(campfire_data.x, campfire_data.y)
+    Prop.clear()
+    for _, prop_data in ipairs(level_info.props) do
+        Prop.spawn(prop_data.type, prop_data.x, prop_data.y, prop_data)
     end
 
     camera = Camera.new(
@@ -162,9 +149,7 @@ local function restart_level()
     platforms.clear()
     Enemy.clear()
     Sign.clear()
-    SpikeTrap.clear()
-    Button.clear()
-    Campfire.clear()
+    Prop.clear()
 
     -- Clear projectiles
     for projectile, _ in pairs(Projectile.all) do
@@ -192,7 +177,7 @@ end
 
 local function game()
     on_start()
-    local dt = math.min(canvas.get_delta(), 0.5)
+    local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/3 limits to 30 FPS which prevents the player from falling through platforms
     audio.update()
     hud.update(dt)
     user_input()

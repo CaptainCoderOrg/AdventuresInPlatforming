@@ -36,12 +36,16 @@ common.animations = {
 	DEATH = Animation.create_definition(sprites.player.death, 12, { ms_per_frame = 80, loop = false }),
 }
 
+--- Checks for hammer input and transitions to hammer state if pressed.
+---@param player table The player object
 function common.handle_hammer(player)
     if controls.hammer_pressed() then
         player:set_state(player.states.hammer)
     end
 end
 
+--- Checks for throw input and transitions to throw state or queues if on cooldown.
+---@param player table The player object
 function common.handle_throw(player)
     if controls.throw_pressed() then
         if player.throw_cooldown <= 0 then
@@ -52,6 +56,8 @@ function common.handle_throw(player)
     end
 end
 
+--- Checks for attack input and transitions to attack state or queues if on cooldown.
+---@param player table The player object
 function common.handle_attack(player)
 	if controls.attack_pressed() then
 		if player.attack_cooldown <= 0 then
@@ -63,6 +69,8 @@ function common.handle_attack(player)
 	end
 end
 
+--- Checks for block input and transitions to block state if held.
+---@param player table The player object
 function common.handle_block(player)
     if controls.block_down() then
 		player:set_state(player.states.block)
@@ -70,18 +78,18 @@ function common.handle_block(player)
 end
 
 --- Applies gravity acceleration to the player without state transitions.
---- @param player table The player object
---- @param dt number Delta time in seconds
---- @param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
+---@param player table The player object
+---@param dt number Delta time in seconds
+---@param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
 function common.apply_gravity(player, dt, max_speed)
 	max_speed = max_speed or common.MAX_FALL_SPEED
 	player.vy = math.min(max_speed, player.vy + common.GRAVITY * dt * 60)
 end
 
 --- Applies gravity and transitions to air state if not grounded.
---- @param player table The player object
---- @param dt number Delta time in seconds
---- @param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
+---@param player table The player object
+---@param dt number Delta time in seconds
+---@param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
 function common.handle_gravity(player, dt, max_speed)
 	common.apply_gravity(player, dt, max_speed)
 	if not player.is_grounded and
@@ -95,7 +103,7 @@ end
 
 --- Checks for ladder climb entry conditions and transitions to climb state.
 --- Entry points: standing on ladder top + down, grounded + up, in air + down/up.
---- @param player table The player object
+---@param player table The player object
 function common.handle_climb(player)
 	-- Entry from top of ladder (down while standing on ladder top)
 	if player.standing_on_ladder_top and player.is_grounded then
@@ -125,8 +133,8 @@ end
 
 --- Updates ladder-related player flags based on trigger collisions.
 --- Sets can_climb, current_ladder, on_ladder_top from overlapping ladder triggers.
---- @param player table The player object
---- @param cols table Collision results from world.move()
+---@param player table The player object
+---@param cols table Collision results from world.move()
 function common.check_ladder(player, cols)
 	player.can_climb = false
 	player.current_ladder = nil
@@ -147,9 +155,9 @@ end
 
 --- Processes collision flags to update grounded state, wall contact, and coyote time.
 --- Uses separated X/Y collision pass results from world.move().
---- @param player table The player object
---- @param cols table Collision flags {ground, ceiling, wall_left, wall_right}
---- @param dt number Delta time
+---@param player table The player object
+---@param cols table Collision flags {ground, ceiling, wall_left, wall_right}
+---@param dt number Delta time
 function common.check_ground(player, cols, dt)
 	-- Ground detection from Y collision pass
 	if cols.ground then
@@ -215,8 +223,8 @@ end
 
 --- Attempts a ground jump if the player is grounded and jump is pressed.
 --- Suppresses jump when on bridge + holding down (to allow drop-through).
---- @param player table The player object
---- @return boolean True if jump was performed
+---@param player table The player object
+---@return boolean True if jump was performed
 function common.handle_jump(player)
 	if controls.jump_pressed() and (player.is_grounded or player.is_climbing) then
 		-- Suppress jump when on bridge + down to allow drop-through
@@ -235,8 +243,8 @@ function common.handle_jump(player)
 end
 
 --- Attempts an air jump if the player has remaining jumps and jump is pressed.
---- @param player table The player object
---- @return boolean True if air jump was performed
+---@param player table The player object
+---@return boolean True if air jump was performed
 function common.handle_air_jump(player)
 	if controls.jump_pressed() and player.jumps > 0 then
 		player.vy = -common.AIR_JUMP_VELOCITY
@@ -249,8 +257,8 @@ function common.handle_air_jump(player)
 end
 
 --- Attempts to initiate a dash if off cooldown and dash is pressed.
---- @param player table The player object
---- @return boolean True if dash was initiated
+---@param player table The player object
+---@return boolean True if dash was initiated
 function common.handle_dash(player)
 	if player.dash_cooldown > 0 or not player.has_dash then return false end
 	if controls.dash_pressed() then
@@ -261,8 +269,8 @@ function common.handle_dash(player)
 end
 
 --- Checks if the player is pressing movement input toward a wall they're touching.
---- @param player table The player object
---- @return boolean True if pressing into wall
+---@param player table The player object
+---@return boolean True if pressing into wall
 function common.is_pressing_into_wall(player)
 	return (controls.left_down() and player.wall_direction == 1) or
 	       (controls.right_down() and player.wall_direction == -1)
@@ -270,8 +278,8 @@ end
 
 --- Returns the tangent vector of the ground the player is standing on.
 --- Tangent points right along the surface.
---- @param player table The player object
---- @return table Tangent vector {x, y}
+---@param player table The player object
+---@return table Tangent vector {x, y}
 function common.get_ground_tangent(player)
 	local nx = player.ground_normal.x
 	local ny = player.ground_normal.y
@@ -282,14 +290,14 @@ end
 -- Input Queue System
 
 --- Queues an input for later execution.
---- @param player table The player object
---- @param input_name string The input to queue ("jump", "attack", or "throw")
+---@param player table The player object
+---@param input_name string The input to queue ("jump", "attack", or "throw")
 function common.queue_input(player, input_name)
 	player.input_queue[input_name] = true
 end
 
 --- Clears all queued inputs.
---- @param player table The player object
+---@param player table The player object
 function common.clear_input_queue(player)
 	player.input_queue.jump = false
 	player.input_queue.attack = false
@@ -299,8 +307,8 @@ end
 --- Transitions to a state, restarting if already in that state.
 --- Note: The restart branch is defensive code for future-proofing; current usage
 --- always transitions to a different state, but this handles same-state queueing.
---- @param player table The player object
---- @param state table The target state
+---@param player table The player object
+---@param state table The target state
 local function transition_or_restart(player, state)
 	if player.state == state then
 		state.start(player)
@@ -312,8 +320,8 @@ end
 --- Processes queued inputs with priority (attack > throw > jump).
 --- Called when exiting locked states (throw, hammer, hit) to chain actions.
 --- Respects cooldowns - blocked entries persist for check_cooldown_queues.
---- @param player table The player object
---- @return boolean True if a state transition occurred
+---@param player table The player object
+---@return boolean True if a state transition occurred
 function common.process_input_queue(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
 		common.clear_input_queue(player)
@@ -340,7 +348,7 @@ end
 
 --- Standard queue input handler for locked states.
 --- Call this in the input() function of locked states.
---- @param player table The player object
+---@param player table The player object
 function common.queue_inputs(player)
 	if controls.jump_pressed() then
 		common.queue_input(player, "jump")
@@ -355,8 +363,8 @@ end
 
 --- Checks for queued attack or throw that were waiting on cooldown.
 --- Call this in input() of states that allow attacking/throwing (idle, run, air).
---- @param player table The player object
---- @return boolean True if a state transition occurred
+---@param player table The player object
+---@return boolean True if a state transition occurred
 function common.check_cooldown_queues(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
 		player.input_queue.attack = false
@@ -369,6 +377,29 @@ function common.check_cooldown_queues(player)
 		return true
 	end
 	return false
+end
+
+--- Creates a melee weapon hitbox positioned relative to the player.
+--- The hitbox extends from the player's front edge in their facing direction.
+---@param player table The player object
+---@param width number Hitbox width in tiles
+---@param height number Hitbox height in tiles
+---@param y_offset number Vertical offset from player box top (negative = up)
+---@return table Hitbox with x, y, w, h in tile coordinates
+function common.create_melee_hitbox(player, width, height, y_offset)
+	local hitbox_x
+	if player.direction == 1 then
+		hitbox_x = player.x + player.box.x + player.box.w
+	else
+		hitbox_x = player.x + player.box.x - width
+	end
+
+	return {
+		x = hitbox_x,
+		y = player.y + player.box.y + y_offset,
+		w = width,
+		h = height
+	}
 end
 
 return common

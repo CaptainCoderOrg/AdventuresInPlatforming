@@ -17,7 +17,10 @@ local HOLD_TIME = 0.16
 
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
 
-local SWORD_WIDTH = 1.0
+-- Sword hitbox dimensions (centered relative to player box)
+local SWORD_WIDTH = 1.15
+local SWORD_HEIGHT = 1.1
+local SWORD_Y_OFFSET = -0.1  -- Center vertically relative to player box
 
 local function get_sword_hitbox(player)
 	-- ATTACK_2 shows sword on frame 2 (index 1), others on frame 3 (index 2)
@@ -27,15 +30,7 @@ local function get_sword_hitbox(player)
 	if player.animation.frame < min_frame or player.animation.frame > max_frame then
 		return nil
 	end
-
-	return {
-		x = player.direction == 1
-			and player.x + player.box.x + player.box.w
-			or player.x + player.box.x - SWORD_WIDTH,
-		y = player.y + player.box.y,
-		w = SWORD_WIDTH,
-		h = player.box.h
-	}
+	return common.create_melee_hitbox(player, SWORD_WIDTH, SWORD_HEIGHT, SWORD_Y_OFFSET)
 end
 
 local function check_attack_hits(player)
@@ -72,7 +67,7 @@ local function next_animation(player)
 end
 
 --- Called when entering attack state. Initializes combo and clears input queue.
---- @param player table The player object
+---@param player table The player object
 function attack.start(player)
     player.attack_state.count = 1
     player.attack_state.next_anim_ix = 1
@@ -88,7 +83,7 @@ end
 
 --- Handles input during attack. Queues combo continuation, jump, or throw.
 --- Allows direction change and early state cancels during hold window.
---- @param player table The player object
+---@param player table The player object
 function attack.input(player)
 	if controls.left_down() then
 		player.direction = -1
@@ -131,8 +126,8 @@ end
 
 --- Updates attack state. Checks for hits, advances combo, and handles timing.
 --- Transitions to idle after hold window expires if no combo queued.
---- @param player table The player object
---- @param dt number Delta time
+---@param player table The player object
+---@param dt number Delta time in seconds
 function attack.update(player, dt)
 	check_attack_hits(player)
 	player.vx = 0
@@ -152,7 +147,7 @@ function attack.update(player, dt)
 end
 
 --- Renders the player in attack animation with optional debug hitbox.
---- @param player table The player object
+---@param player table The player object
 function attack.draw(player)
 	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 

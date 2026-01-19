@@ -16,6 +16,8 @@ Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
 local Sign = require("Sign")
+local SpikeTrap = require("SpikeTrap")
+local Button = require("Button")
 local world = require("world")
 
 local player  -- Instance created in init_level
@@ -73,6 +75,8 @@ local function update(dt)
     Effects.update(dt)
     Enemy.update(dt, player)
     Sign.update(dt, player)
+    SpikeTrap.update(dt, player)
+    Button.update(dt)
 
     -- Trigger game over once when player first enters death state
     -- (was_dead prevents retriggering each frame while dead)
@@ -90,6 +94,8 @@ local function draw()
     camera:apply_transform(sprites.tile_size)
     platforms.draw(camera)
     Sign.draw()
+    SpikeTrap.draw()
+    Button.draw()
     Enemy.draw()
     player:draw()
     Projectile.draw()
@@ -118,6 +124,16 @@ local function init_level()
         Sign.new(sign_data.x, sign_data.y, sign_data.text)
     end
 
+    SpikeTrap.clear()
+    for _, trap_data in ipairs(level_info.spike_traps) do
+        SpikeTrap.new(trap_data.x, trap_data.y)
+    end
+
+    Button.clear()
+    for _, button_data in ipairs(level_info.buttons) do
+        Button.new(button_data.x, button_data.y)
+    end
+
     camera = Camera.new(
         config.ui.canvas_width,
         config.ui.canvas_height,
@@ -138,6 +154,8 @@ local function restart_level()
     platforms.clear()
     Enemy.clear()
     Sign.clear()
+    SpikeTrap.clear()
+    Button.clear()
 
     -- Clear projectiles
     for projectile, _ in pairs(Projectile.all) do

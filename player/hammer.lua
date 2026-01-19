@@ -1,21 +1,63 @@
 local common = require('player.common')
-local controls = require('controls')
 local sprites = require('sprites')
-local audio = require('audio')
 local Animation = require('Animation')
+local Button = require('Button')
+local config = require('config')
+local canvas = require('canvas')
 
 
 local hammer = { name = "hammer" }
 
+-- Hammer hitbox dimensions (centered relative to player box)
+local HAMMER_WIDTH = 1.15
+local HAMMER_HEIGHT = 1.1
+local HAMMER_Y_OFFSET = -0.1  -- Center vertically relative to player box
 
-function hammer.start(player)
-	player.animation = Animation.new(common.animations.HAMMER)
-	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
-	common.clear_input_queue(player)
+-- Active frames for hammer hitbox (impact frames)
+-- Hammer has 7 frames (0-6) at 150ms each
+-- Frames 2-5 = swing through impact (600ms active window)
+local MIN_ACTIVE_FRAME = 2
+local MAX_ACTIVE_FRAME = 5
+
+--- Get the hammer hitbox if on active frames, nil otherwise
+---@param player table The player object
+---@return table|nil Hitbox with x, y, w, h in tile coordinates
+local function get_hammer_hitbox(player)
+	if player.animation.frame < MIN_ACTIVE_FRAME or player.animation.frame > MAX_ACTIVE_FRAME then
+		return nil
+	end
+	return common.create_melee_hitbox(player, HAMMER_WIDTH, HAMMER_HEIGHT, HAMMER_Y_OFFSET)
+end
+
+--- Check for button hits with the hammer
+---@param player table The player object
+local function check_button_hits(player)
+	local hitbox = get_hammer_hitbox(player)
+	if not hitbox then return end
+
+	-- Only check if we haven't already hit a button this swing
+	if not player.hammer_state.hit_button then
+		if Button.check_hit(hitbox) then
+			player.hammer_state.hit_button = true
+		end
+	end
 end
 
 
+--- Initializes hammer attack state. Sets animation, timing, and clears input queue.
+---@param player table The player object
+function hammer.start(player)
+	player.animation = Animation.new(common.animations.HAMMER)
+	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
+	player.hammer_state.hit_button = false
+	common.clear_input_queue(player)
+end
+
+--- Updates hammer state. Checks for button hits, locks movement, and handles timing.
+---@param player table The player object
+---@param dt number Delta time in seconds
 function hammer.update(player, dt)
+	check_button_hits(player)
 	player.vx = 0
 	player.vy = 0
 	player.hammer_state.remaining_time = player.hammer_state.remaining_time - dt
@@ -26,14 +68,26 @@ function hammer.update(player, dt)
 	end
 end
 
-
+--- Handles input during hammer state. Queues inputs for later execution.
+---@param player table The player object
 function hammer.input(player)
 	common.queue_inputs(player)
 end
 
-
+--- Renders the player in hammer animation with optional debug hitbox.
+---@param player table The player object
 function hammer.draw(player)
 	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+
+	local hitbox = get_hammer_hitbox(player)
+	if config.bounding_boxes and hitbox then
+		canvas.set_color("#FF00FF")
+		canvas.draw_rect(
+			hitbox.x * sprites.tile_size,
+			hitbox.y * sprites.tile_size,
+			hitbox.w * sprites.tile_size,
+			hitbox.h * sprites.tile_size)
+	end
 end
 
 return hammer

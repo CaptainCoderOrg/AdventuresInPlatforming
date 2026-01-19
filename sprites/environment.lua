@@ -11,6 +11,8 @@ local environment = {
 	bridge_left = "bridge_left",
 	bridge_middle = "bridge_middle",
 	bridge_right = "bridge_right",
+	spikes = "spikes",
+	button = "button",
 }
 
 canvas.assets.load_image(environment.tilemap, "images/tilemap_packed.png")
@@ -21,5 +23,7 @@ canvas.assets.load_image(environment.sign, "sprites/environment/sign.png")
 canvas.assets.load_image(environment.bridge_left, "sprites/environment/bridge-left.png")
 canvas.assets.load_image(environment.bridge_middle, "sprites/environment/bridge-middle.png")
 canvas.assets.load_image(environment.bridge_right, "sprites/environment/bridge-right.png")
+canvas.assets.load_image(environment.spikes, "sprites/environment/spikes-retract.png")
+canvas.assets.load_image(environment.button, "sprites/environment/button.png")
 
 return environment

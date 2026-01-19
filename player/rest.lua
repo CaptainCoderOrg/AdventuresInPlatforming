@@ -6,6 +6,7 @@ local RestorePoint = require('RestorePoint')
 local Prop = require('Prop')
 local prop_common = require('Prop/common')
 local hud = require('ui/hud')
+local audio = require('audio')
 
 --- Y-offset to show sitting pose (sprite is drawn lower)
 local REST_Y_OFFSET = 0.25
@@ -63,6 +64,9 @@ function rest.start(player)
 		-- Center on campfire (add 0.5 to center on tile)
 		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera)
 	end
+
+	-- Fade to rest music
+	audio.play_music(audio.rest)
 end
 
 --- Handles input while resting.

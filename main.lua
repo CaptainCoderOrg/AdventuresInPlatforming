@@ -191,6 +191,9 @@ local function continue_from_checkpoint()
     else
         init_level()
     end
+
+    -- Restore ambient music after leaving rest screen
+    audio.play_music(audio.level1)
 end
 
 --- Full restart (clears restore point, uses level spawn)

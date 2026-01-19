@@ -4,6 +4,7 @@ local audio = {}
 canvas.assets.add_path("assets/")
 audio.title_screen = canvas.assets.load_music("title_screen", "music/title-screen.ogg")
 audio.level1 = canvas.assets.load_music("level1", "music/level-1.ogg")
+audio.rest = canvas.assets.load_music("rest", "music/rest.ogg")
 
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
 audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")

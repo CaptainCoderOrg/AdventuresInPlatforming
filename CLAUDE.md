@@ -34,7 +34,7 @@ state = {
 }
 ```
 
-**States:** idle, run, dash, air, wall_slide, wall_jump, climb, attack, throw, hammer, block, hit, death
+**States:** idle, run, dash, air, wall_slide, wall_jump, climb, attack, throw, hammer, block, hit, death, rest
 
 States are registered in `player/init.lua`. Common utilities (gravity, jump, collision checks, ability handlers) are in `player/common.lua`.
 
@@ -485,6 +485,164 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 - **Campfire** - Sets player restore point, transitions to lit state
 - **Spike Trap** - Togglable hazard, damages player when active
 
+### Save Slot System
+
+Multi-slot save system using localStorage with 3 save slots.
+
+**Architecture:**
+- Persistence layer in `SaveSlots/init.lua`
+- In-memory cache of all slots loaded on init
+- JSON encoding for localStorage
+- Automatic migration from legacy `restore_point` data to slot 1
+
+**Save Data Structure:**
+```lua
+{
+    x = player_x,                    -- Tile coordinate
+    y = player_y,                    -- Tile coordinate
+    level_id = "level1",             -- Level identifier
+    direction = 1,                   -- Facing direction (-1 or 1)
+    campfire_name = "Campfire",      -- Display name for UI
+    playtime = 3600.5,               -- Total seconds played
+    max_health = 3,                  -- Current max HP
+    level = 1,                       -- Current level (progression)
+}
+```
+
+**Key Methods:**
+```lua
+SaveSlots.init()                    -- Load all 3 slots from localStorage
+SaveSlots.get(slot_index)           -- Retrieve slot data (nil if empty)
+SaveSlots.set(slot_index, data)     -- Save data to slot
+SaveSlots.has_data(slot_index)      -- Check if slot has save
+SaveSlots.clear(slot_index)         -- Delete slot data
+SaveSlots.format_playtime(seconds)  -- Format HH:MM:SS display string
+```
+
+**LocalStorage Keys:**
+- `"save_slot_1"`, `"save_slot_2"`, `"save_slot_3"`
+- Legacy: `"restore_point"` (auto-migrated to slot 1 if found)
+
+### Playtime System
+
+Session-based playtime tracking that persists with save data.
+
+**Architecture:**
+- Singleton module in `Playtime/init.lua`
+- Tracks elapsed seconds with pause/resume support
+- Integrated with rest state and save system
+
+**Key Methods:**
+```lua
+Playtime.reset()           -- Zero out playtime
+Playtime.set(seconds)      -- Restore from save data
+Playtime.get()             -- Current elapsed time
+Playtime.update(dt)        -- Increment timer each frame
+Playtime.pause()           -- Stop counting (during menus)
+Playtime.resume()          -- Resume counting (during gameplay)
+Playtime.is_paused()       -- Query pause state
+```
+
+### UI Screens
+
+Overlay screens for game flow with consistent state machine pattern.
+
+**State Machine Pattern:**
+All screens use identical states: `HIDDEN`, `FADING_IN`, `OPEN`, `FADING_OUT`
+- Fade animations using delta-time
+- Configurable fade durations (typically 0.25s)
+- Mouse/keyboard input with priority blocking
+
+**Input Priority (highest to lowest):**
+1. Settings menu
+2. Slot screen
+3. Title screen
+4. Game over screen
+5. Rest screen
+
+**Title Screen** (`ui/title_screen.lua`):
+- Main menu with "Play Game" and "Settings" options
+- Animated cursor using player idle sprite
+- Callbacks for menu selections
+
+```lua
+title_screen.show()                     -- Display with fade-in
+title_screen.input()                    -- Handle navigation
+title_screen.update(dt, block_mouse)    -- Update animations
+title_screen.draw()                     -- Render menu
+title_screen.set_play_game_callback(fn) -- "Play Game" callback
+title_screen.set_settings_callback(fn)  -- "Settings" callback
+```
+
+**Slot Screen** (`ui/slot_screen.lua`):
+- Save slot selection with 3 slot cards
+- Delete functionality with confirmation dialog
+- Shows playtime and campfire name per slot
+
+```lua
+slot_screen.show()                  -- Display with fade-in
+slot_screen.input()                 -- Handle keyboard/gamepad/mouse
+slot_screen.update(dt, block_mouse) -- Update animations and hover
+slot_screen.draw()                  -- Render slot cards
+slot_screen.set_slot_callback(fn)   -- Callback when slot selected
+slot_screen.set_back_callback(fn)   -- Callback when Back pressed
+```
+
+**Modes:** `SELECTING` (browse slots), `CONFIRMING_DELETE` (delete confirmation)
+
+**Rest Screen** (`ui/rest_screen.lua`):
+- Circular viewport effect centered on campfire
+- Pulsing glow ring and vignette
+- "Continue" button to resume gameplay
+
+```lua
+rest_screen.show(world_x, world_y, camera)  -- Show centered on campfire
+rest_screen.update(dt)                      -- Update animations
+rest_screen.draw()                          -- Render circular viewport
+rest_screen.trigger_continue()              -- Initiate fade-out
+rest_screen.set_continue_callback(fn)       -- Callback after fade completes
+```
+
+**Extended States:** `HIDDEN` → `FADING_IN` → `OPEN` → `FADING_OUT` → `RELOADING` → `FADING_BACK_IN` → `HIDDEN`
+
+**Visual Effects:**
+- Circular clipping with `evenodd` fill rule
+- Radial gradient vignette
+- Sine wave pulse (2 Hz, ±8% radius variation)
+- Glow ring with orange/yellow gradient
+
+### Game Flow
+
+Main game loop integration for save/load and screen transitions.
+
+**Startup Sequence:**
+1. `on_start()` initializes all subsystems
+2. Title screen shown automatically
+3. "Play Game" → Slot screen
+4. Slot selection → `load_slot(slot_index)`
+
+**Load Slot Flow:**
+```lua
+load_slot(slot_index)              -- Store active_slot, check for data
+start_new_game()                   -- Clear slot, spawn at level start
+continue_from_checkpoint()         -- Restore position/stats/playtime
+init_level(level, spawn, player_data)  -- Initialize level with optional save
+cleanup_level()                    -- Remove colliders before reload
+```
+
+**Rest (Campfire) Flow:**
+1. Player touches campfire → enters `rest` state
+2. `rest.start()` saves full state to active slot
+3. `Playtime.pause()` stops timer
+4. Rest screen shows with circular viewport
+5. All enemies respawn via `Enemy.respawn()`
+6. "Continue" → `continue_from_checkpoint()` reloads level
+
+**Active Slot Tracking:**
+- `active_slot` variable (1-3) tracks current save slot
+- All saves go to active slot
+- Death "Continue" restores from active slot
+
 ### Level Format
 
 Levels in `levels/` use ASCII tile maps with configurable symbol definitions.
@@ -577,6 +735,16 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
 - `Prop/campfire.lua` - Campfire prop (restore point)
 - `Prop/spiketrap.lua` - Spike trap prop (togglable hazard)
+- `SaveSlots/init.lua` - Save persistence layer (3 slots, localStorage)
+- `Playtime/init.lua` - Session playtime tracking
+- `RestorePoint/init.lua` - Legacy checkpoint (kept for backward compatibility)
+- `player/rest.lua` - Rest state (campfire interaction, save trigger)
+- `ui/title_screen.lua` - Title menu with animated cursor
+- `ui/slot_screen.lua` - Save slot selection with delete confirmation
+- `ui/rest_screen.lua` - Circular viewport rest interface
+- `ui/hud.lua` - UI screen aggregator and input/draw coordinator
+- `ui/game_over.lua` - Game over screen
+- `ui/settings_menu.lua` - Settings menu overlay
 - `sprites/init.lua` - Asset loading (submodules: player, enemies, effects, projectiles, ui, environment)
 - `controls.lua` - Unified keyboard/gamepad input
 - `config.lua` - Debug flags, game settings, UI scaling

@@ -154,6 +154,9 @@ function common.check_ground(player, cols, dt)
 	-- Ground detection from Y collision pass
 	if cols.ground then
 		if not player.is_climbing then
+			-- Update recovery point when grounded (not climbing, to avoid ladder positions)
+			player.last_safe_position.x = player.x
+			player.last_safe_position.y = player.y
 			player.is_grounded = true
 			player.ground_normal = cols.ground_normal
 			player.coyote_time = 0

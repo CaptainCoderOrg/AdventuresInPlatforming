@@ -47,6 +47,8 @@ function Player.new()
 	self.vy = 0
 	self.box = { w = 0.7, h = 0.85, x = 0.15, y = 0.15 }
 	self.is_player = true
+	-- Tracks last grounded position for out-of-bounds recovery
+	self.last_safe_position = { x = self.x, y = self.y }
 
 	-- Movement
 	self.speed = 6
@@ -188,11 +190,14 @@ function Player:take_damage(amount)
 end
 
 --- Teleports the player to the specified position and updates collision grid.
---- @param x number World x coordinate
---- @param y number World y coordinate
+--- Also resets last_safe_position to prevent immediate re-triggering of recovery.
+--- @param x number World x coordinate (tile units)
+--- @param y number World y coordinate (tile units)
 function Player:set_position(x, y)
 	self.x = x
 	self.y = y
+	self.last_safe_position.x = x
+	self.last_safe_position.y = y
 	world.sync_position(self)
 end
 

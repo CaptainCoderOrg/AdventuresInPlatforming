@@ -16,6 +16,7 @@ Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
 local Sign = require("Sign")
+local world = require("world")
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
@@ -43,7 +44,7 @@ local function user_input()
     player:input()
 end
 
-local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before death
+local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering recovery
 
 ---@param dt number Delta time in seconds (already capped)
 local function update(dt)
@@ -53,15 +54,19 @@ local function update(dt)
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
     player:update(dt)
 
-    -- Kill player if too far outside world bounds
+    -- Damage and teleport player if too far outside world bounds
     if player.state ~= Player.states.death then
         local out_of_bounds = player.x < -OUT_OF_BOUNDS_MARGIN
             or player.x > level_info.width + OUT_OF_BOUNDS_MARGIN
             or player.y < -OUT_OF_BOUNDS_MARGIN
             or player.y > level_info.height + OUT_OF_BOUNDS_MARGIN
         if out_of_bounds then
-            player.damage = player.max_health
-            player:set_state(Player.states.death)
+            player:take_damage(1)
+            if player:health() > 0 then
+                player:set_position(player.last_safe_position.x, player.last_safe_position.y)
+                player.vx = 0
+                player.vy = 0
+            end
         end
     end
     Projectile.update(dt, level_info)
@@ -126,8 +131,6 @@ local function init_level()
 end
 
 local function restart_level()
-    local world = require("world")
-
     -- Remove old player collider
     world.remove_collider(player)
 

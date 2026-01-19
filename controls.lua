@@ -1,6 +1,7 @@
 --- Unified input handling for keyboard and gamepad with configurable bindings
 local canvas = require("canvas")
 local controls_config = require("config/controls")
+local settings_storage = require("settings_storage")
 
 local controls = {}
 
@@ -18,14 +19,20 @@ local defaults = { keyboard = controls_config.keyboard_defaults, gamepad = contr
 -- Track last used input device ("keyboard" or "gamepad")
 local last_input_device = "keyboard"
 
---- Initialize controls with default bindings
+--- Initialize controls with default bindings, then load saved bindings from storage
 ---@return nil
 function controls.init()
+    -- Set defaults
     for scheme, default_bindings in pairs(defaults) do
         for action_id, code in pairs(default_bindings) do
             bindings[scheme][action_id] = code
         end
     end
+
+    -- Load and apply saved bindings (uses set_all_bindings for validation)
+    settings_storage.init()
+    controls.set_all_bindings("keyboard", settings_storage.load_bindings("keyboard"))
+    controls.set_all_bindings("gamepad", settings_storage.load_bindings("gamepad"))
 end
 
 --- Get current binding for an action
@@ -69,6 +76,34 @@ function controls.reset_all(scheme)
     local scheme_defaults = defaults[scheme]
     if scheme_bindings and scheme_defaults then
         for action_id, code in pairs(scheme_defaults) do
+            scheme_bindings[action_id] = code
+        end
+    end
+end
+
+--- Get all bindings for a scheme (for persistence)
+---@param scheme string "keyboard" or "gamepad"
+---@return table bindings Copy of action_id -> code mapping
+function controls.get_all_bindings(scheme)
+    local scheme_bindings = bindings[scheme]
+    if not scheme_bindings then return {} end
+    local copy = {}
+    for action_id, code in pairs(scheme_bindings) do
+        copy[action_id] = code
+    end
+    return copy
+end
+
+--- Set all bindings for a scheme (for persistence)
+---@param scheme string "keyboard" or "gamepad"
+---@param new_bindings table action_id -> code mapping
+---@return nil
+function controls.set_all_bindings(scheme, new_bindings)
+    local scheme_bindings = bindings[scheme]
+    if not scheme_bindings or not new_bindings then return end
+    for action_id, code in pairs(new_bindings) do
+        -- Only set known actions (silently ignores obsolete/invalid bindings from storage)
+        if defaults[scheme][action_id] ~= nil then
             scheme_bindings[action_id] = code
         end
     end

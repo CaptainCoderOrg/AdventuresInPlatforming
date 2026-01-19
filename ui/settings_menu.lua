@@ -8,6 +8,7 @@ local utils = require("ui/utils")
 local audio = require("audio")
 local config = require("config")
 local keybind_panel = require("ui/keybind_panel")
+local settings_storage = require("settings_storage")
 
 local settings_menu = {}
 
@@ -113,7 +114,15 @@ volume_sliders.sfx = slider.create({
 })
 
 --- Initialize volume settings and create UI components (call after audio.init)
+---@return nil
 function settings_menu.init()
+    -- Load saved volumes from storage
+    local saved_volumes = settings_storage.load_volumes()
+    volume_sliders.master:set_value(saved_volumes.master)
+    volume_sliders.music:set_value(saved_volumes.music)
+    volume_sliders.sfx:set_value(saved_volumes.sfx)
+
+    -- Apply loaded volumes to audio systems
     canvas.set_master_volume(linear_to_perceptual(volume_sliders.master:get_value()))
     audio.set_music_volume(linear_to_perceptual(volume_sliders.music:get_value()))
     audio.set_sfx_volume(linear_to_perceptual(volume_sliders.sfx:get_value()))
@@ -388,6 +397,18 @@ function settings_menu.update()
             -- Reset hover states when menu closes
             hovering_audio_tab = false
             hovering_controls_tab = false
+
+            -- Save all settings to storage (failures logged internally by settings_storage)
+            local volumes = {
+                master = volume_sliders.master:get_value(),
+                music = volume_sliders.music:get_value(),
+                sfx = volume_sliders.sfx:get_value(),
+            }
+            settings_storage.save_all(
+                volumes,
+                controls.get_all_bindings("keyboard"),
+                controls.get_all_bindings("gamepad")
+            )
         end
     end
 

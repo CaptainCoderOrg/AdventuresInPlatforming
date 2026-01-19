@@ -41,6 +41,9 @@ function Player.new()
 	self.damage = 0
 	self.invincible_time = 0
 
+	-- Progression (reserved for future use)
+	self.level = 1
+
 	-- Position and velocity
 	self.x = 2
 	self.y = 2

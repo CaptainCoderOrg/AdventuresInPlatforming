@@ -2,7 +2,8 @@ local Animation = require('Animation')
 local common = require('player.common')
 local sprites = require('sprites')
 local Enemy = require('Enemies')
-local RestorePoint = require('RestorePoint')
+local SaveSlots = require('SaveSlots')
+local Playtime = require('Playtime')
 local Prop = require('Prop')
 local prop_common = require('Prop/common')
 local hud = require('ui/hud')
@@ -22,6 +23,8 @@ rest.current_level = nil
 rest.level_info = nil
 ---@type table|nil
 rest.camera = nil
+---@type number|nil
+rest.active_slot = nil
 
 --- Find the campfire the player is currently touching
 ---@param player table The player object
@@ -36,7 +39,7 @@ local function find_current_campfire(player)
 end
 
 --- Called when entering rest state. Sets rest animation and stops movement.
---- Also heals player, saves restore point, respawns enemies, and shows rest screen.
+--- Also heals player, saves to active slot, respawns enemies, and shows rest screen.
 ---@param player table The player object
 function rest.start(player)
 	player.animation = Animation.new(common.animations.REST)
@@ -47,8 +50,22 @@ function rest.start(player)
 	-- Animate props back to default states
 	Prop.reset_all()
 
-	if rest.current_level and rest.current_level.id then
-		RestorePoint.set(player.x, player.y, rest.current_level.id, player.direction)
+	-- Find the campfire for name and screen centering
+	local campfire = find_current_campfire(player)
+	local campfire_name = campfire and campfire.name or "Campfire"
+
+	-- Save to active slot with full data
+	if rest.active_slot and rest.current_level and rest.current_level.id then
+		SaveSlots.set(rest.active_slot, {
+			x = player.x,
+			y = player.y,
+			level_id = rest.current_level.id,
+			direction = player.direction,
+			campfire_name = campfire_name,
+			playtime = Playtime.get(),
+			max_health = player.max_health,
+			level = player.level,
+		})
 	end
 
 	if rest.level_info then
@@ -58,8 +75,7 @@ function rest.start(player)
 		end
 	end
 
-	-- Find the campfire and show rest screen
-	local campfire = find_current_campfire(player)
+	-- Show rest screen centered on campfire
 	if campfire and rest.camera then
 		-- Center on campfire (add 0.5 to center on tile)
 		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera)

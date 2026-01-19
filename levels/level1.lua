@@ -48,7 +48,7 @@ return {
         R = { type = "enemy", key = "ratto" },
         W = { type = "enemy", key = "worm" },
         G = { type = "enemy", key = "spike_slug" },
-        C = { type = "campfire" },
+        C = { type = "campfire", name = "Tutorial Campfire" },
         c = { type = "sign", text = "Campfires restore health\nand save progress", offset = { x = -0.5 }},
         ["^"] = { type = "spike_trap", mode = "extended", group = "entrance_spikes" },
         s = { type = "sign", text = "WARNING!\nSpikes", offset = { x = 0.5 } },

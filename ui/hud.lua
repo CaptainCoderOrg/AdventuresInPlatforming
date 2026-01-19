@@ -1,9 +1,10 @@
---- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen, title screen
+--- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen, title screen, slot screen
 local canvas = require("canvas")
 local settings_menu = require("ui/settings_menu")
 local game_over = require("ui/game_over")
 local rest_screen = require("ui/rest_screen")
 local title_screen = require("ui/title_screen")
+local slot_screen = require("ui/slot_screen")
 local sprites = require("sprites")
 local config = require("config")
 
@@ -12,19 +13,26 @@ local hud = {}
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
---- Initialize HUD subsystems (settings menu, game over screen, rest screen, title screen)
+--- Initialize HUD subsystems (settings menu, game over screen, rest screen, title screen, slot screen)
 --- Must be called after audio.init() for volume settings to apply
 function hud.init()
     settings_menu.init()
     game_over.init()
     rest_screen.init()
     title_screen.init()
+    slot_screen.init()
 end
 
 --- Process HUD input for all overlay screens
---- Priority: settings menu > title screen > game over > rest screen
+--- Priority: settings menu > slot screen > title screen > game over > rest screen
 function hud.input()
     settings_menu.input()
+
+    -- Slot screen blocks other HUD input when active (except settings)
+    if slot_screen.is_active() and not settings_menu.is_open() then
+        slot_screen.input()
+        return
+    end
 
     -- Title screen blocks other HUD input when active (except settings)
     if title_screen.is_active() and not settings_menu.is_open() then
@@ -40,7 +48,10 @@ end
 ---@param dt number Delta time in seconds
 function hud.update(dt)
     settings_menu.update()
-    title_screen.update(dt)
+    -- Block mouse input on screens beneath the settings menu
+    local block_mouse = settings_menu.is_open()
+    slot_screen.update(dt, block_mouse)
+    title_screen.update(dt, block_mouse)
     game_over.update(dt)
     rest_screen.update(dt)
 end
@@ -84,14 +95,15 @@ end
 --- Draw all HUD elements
 ---@param player table Player instance with health() method, max_health, and projectile properties
 function hud.draw(player)
-    -- Skip normal HUD when title screen is active
-    if not title_screen.is_active() then
+    -- Skip normal HUD when title screen or slot screen is active
+    if not title_screen.is_active() and not slot_screen.is_active() then
         hud.draw_player_health(player)
         draw_selected_projectile(player)
     end
     game_over.draw()
     rest_screen.draw()
     title_screen.draw()
+    slot_screen.draw()
     -- Settings menu drawn last so it appears on top of everything
     settings_menu.draw()
 end
@@ -150,22 +162,44 @@ function hud.is_title_screen_active()
     return title_screen.is_active()
 end
 
---- Set the continue callback for title screen (uses restore point)
----@param fn function Function to call when Continue is selected
-function hud.set_title_continue_callback(fn)
-    title_screen.set_continue_callback(fn)
+--- Hide the title screen
+function hud.hide_title_screen()
+    title_screen.hide()
 end
 
---- Set the new game callback for title screen (full restart)
----@param fn function Function to call when New Game is selected
-function hud.set_title_new_game_callback(fn)
-    title_screen.set_new_game_callback(fn)
+--- Set the play game callback for title screen (opens slot screen)
+---@param fn function Function to call when Play Game is selected
+function hud.set_title_play_game_callback(fn)
+    title_screen.set_play_game_callback(fn)
 end
 
 --- Set the settings callback for title screen
 ---@param fn function Function to call when Settings is selected
 function hud.set_title_settings_callback(fn)
     title_screen.set_settings_callback(fn)
+end
+
+--- Show the slot selection screen
+function hud.show_slot_screen()
+    slot_screen.show()
+end
+
+--- Check if slot screen is blocking game input
+---@return boolean is_active True if slot screen is visible
+function hud.is_slot_screen_active()
+    return slot_screen.is_active()
+end
+
+--- Set the slot selection callback
+---@param fn function Function to call with slot_index when a slot is selected
+function hud.set_slot_callback(fn)
+    slot_screen.set_slot_callback(fn)
+end
+
+--- Set the slot back callback (return to title)
+---@param fn function Function to call when Back is selected
+function hud.set_slot_back_callback(fn)
+    slot_screen.set_back_callback(fn)
 end
 
 return hud

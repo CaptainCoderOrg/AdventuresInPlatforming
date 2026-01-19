@@ -17,10 +17,12 @@ return {
 
     ---@param prop table The prop instance being spawned
     ---@param def table The campfire definition (unused)
-    ---@param options table Spawn options (unused)
+    ---@param options table Spawn options (may contain name)
     on_spawn = function(prop, def, options)
         prop.animation = Animation.new(CAMPFIRE)
         prop.text_display = TextDisplay.new("Rest\n{move_down} + {attack}", { anchor = "top" })
+        -- Copy name from level symbol definition for save slot display
+        prop.name = options and options.name or nil
     end,
 
     --- Update text display visibility based on player proximity

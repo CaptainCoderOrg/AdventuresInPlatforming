@@ -13,7 +13,8 @@ local Camera = require("Camera")
 local camera_cfg = require("config/camera")
 local Projectile = require("Projectile")
 local Effects = require("Effects")
-local RestorePoint = require("RestorePoint")
+local SaveSlots = require("SaveSlots")
+local Playtime = require("Playtime")
 local rest_state = require("player.rest")
 
 -- UI
@@ -54,6 +55,7 @@ local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
 local was_dead = false  -- Track death state for game over trigger
 local current_level = level1  -- Track current level module
+local active_slot = nil  -- Currently active save slot (1-3)
 
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
@@ -84,15 +86,22 @@ local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering rec
 ---@param dt number Delta time in seconds (already capped)
 ---@return nil
 local function update(dt)
-    if hud.is_title_screen_active() or hud.is_settings_open() or hud.is_game_over_active() then
+    if hud.is_title_screen_active() or hud.is_slot_screen_active() or hud.is_settings_open() or hud.is_game_over_active() then
+        Playtime.pause()
         return
     end
 
     -- During rest screen, only update prop animations (keep campfire flickering)
     if hud.is_rest_screen_active() then
+        Playtime.pause()
         Prop.update_animations(dt)
         return
     end
+
+    -- Resume playtime tracking during gameplay
+    Playtime.resume()
+    Playtime.update(dt)
+
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
     player:update(dt)
 
@@ -151,17 +160,26 @@ end
 --- Initialize or reload a level with player and entities
 ---@param level table|nil Level module to load (defaults to current_level)
 ---@param spawn_override table|nil Optional spawn position {x, y} to override level spawn
+---@param player_data table|nil Optional player stats to restore (max_health, level)
 ---@return nil
-local function init_level(level, spawn_override)
+local function init_level(level, spawn_override, player_data)
     level = level or current_level
     current_level = level
 
     player = Player.new()
+
+    -- Restore player stats if provided
+    if player_data then
+        if player_data.max_health then player.max_health = player_data.max_health end
+        if player_data.level then player.level = player_data.level end
+    end
+
     level_info = platforms.load_level(level)
 
     -- Update rest state's level references
     rest_state.current_level = current_level
     rest_state.level_info = level_info
+    rest_state.active_slot = active_slot
 
     local spawn_pos = spawn_override or level_info.spawn
     if spawn_pos then
@@ -211,42 +229,72 @@ local function cleanup_level()
     Effects.all = {}
 end
 
---- Continue from restore point (campfire checkpoint)
+--- Continue from active save slot (campfire checkpoint)
 --- Reloads level at saved position, or defaults to level spawn if no checkpoint exists
 local function continue_from_checkpoint()
-    local restore = RestorePoint.get()
+    local data = active_slot and SaveSlots.get(active_slot)
 
     cleanup_level()
 
-    if restore then
-        local level = get_level_by_id(restore.level_id)
+    if data then
+        local level = get_level_by_id(data.level_id)
         if level then
-            init_level(level, { x = restore.x, y = restore.y })
+            init_level(level, { x = data.x, y = data.y }, {
+                max_health = data.max_health,
+                level = data.level,
+            })
             -- Apply direction after init_level since Player.new() defaults to facing right
-            if restore.direction then
-                player.direction = restore.direction
-                player.animation.flipped = restore.direction
+            if data.direction then
+                player.direction = data.direction
+                player.animation.flipped = data.direction
             end
+            -- Restore playtime
+            Playtime.set(data.playtime or 0)
         else
             -- Fallback if level not found
             init_level()
+            Playtime.reset()
         end
     else
         init_level()
+        Playtime.reset()
     end
 
     -- Restore ambient music after leaving rest screen
     audio.play_music(audio.level1)
 end
 
---- Full restart (clears restore point, uses level spawn)
-local function restart_level()
-    RestorePoint.clear()
+--- Start new game in active slot (clears slot, uses level spawn)
+local function start_new_game()
+    if active_slot then
+        SaveSlots.clear(active_slot)
+    end
+    Playtime.reset()
     cleanup_level()
     init_level()
 end
 
 local started = false
+
+--- Load a save slot and start the game
+---@param slot_index number Slot index (1-3)
+local function load_slot(slot_index)
+    active_slot = slot_index
+    local data = SaveSlots.get(slot_index)
+
+    -- Hide title screen when starting game
+    hud.hide_title_screen()
+
+    if data then
+        -- Existing save - continue from checkpoint
+        continue_from_checkpoint()
+    else
+        -- Empty slot - start new game
+        start_new_game()
+    end
+
+    audio.play_music(audio.level1)
+end
 
 local function on_start()
     if started then return end
@@ -256,23 +304,30 @@ local function on_start()
     -- Game over screen callbacks
     hud.set_continue_callback(continue_from_checkpoint)
     hud.set_restart_callback(function()
+        active_slot = nil
         hud.show_title_screen()
         audio.play_music(audio.title_screen)
     end)
     hud.set_rest_continue_callback(continue_from_checkpoint)
 
     -- Title screen callbacks
-    hud.set_title_continue_callback(continue_from_checkpoint)
-    hud.set_title_new_game_callback(function()
-        restart_level()
-        audio.play_music(audio.level1)
+    hud.set_title_play_game_callback(function()
+        hud.show_slot_screen()
     end)
 
     hud.set_title_settings_callback(function()
         -- Open settings menu from title screen (hides "Return to Title Screen" button)
         settings_menu.show(true)
     end)
+
+    -- Slot screen callbacks
+    hud.set_slot_callback(load_slot)
+    hud.set_slot_back_callback(function()
+        -- Back button does nothing (stays on title screen)
+    end)
+
     settings_menu.set_return_to_title_callback(function()
+        active_slot = nil
         hud.show_title_screen()
         audio.play_music(audio.title_screen)
     end)

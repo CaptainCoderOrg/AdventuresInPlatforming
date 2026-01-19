@@ -4,7 +4,6 @@ local controls = require("controls")
 local config = require("config")
 local Animation = require("Animation")
 local sprites = require("sprites")
-local RestorePoint = require("RestorePoint")
 
 local title_screen = {}
 
@@ -21,21 +20,19 @@ local FADE_DURATION = 0.25
 
 -- Menu items
 local MENU_ITEMS = {
-    { id = "continue", label = "Continue", enabled_fn = function() return RestorePoint.get() ~= nil end },
-    { id = "new_game", label = "New Game" },
+    { id = "play_game", label = "Play Game" },
     { id = "settings", label = "Settings" },
 }
 
 local state = STATE.HIDDEN
 local fade_progress = 0
-local focused_index = 2  -- Default to "New Game" (index 2)
+local focused_index = 1  -- Default to "Play Game" (index 1)
 
 -- Cursor animation (player idle sprite)
 local cursor_animation = nil
 
 -- Menu action callbacks (set by main.lua to handle game state transitions)
-local continue_callback = nil
-local new_game_callback = nil
+local play_game_callback = nil
 local settings_callback = nil
 
 -- Mouse input tracking
@@ -52,33 +49,6 @@ local CURSOR_OFFSET_X = 20  -- Distance from menu item to cursor
 -- Cached menu item positions (calculated once per draw)
 local menu_item_positions = {}
 
---- Check if a menu item is enabled
----@param item table Menu item definition
----@return boolean enabled
-local function is_item_enabled(item)
-    if item.enabled_fn then
-        return item.enabled_fn()
-    end
-    return true
-end
-
---- Find next enabled menu item in direction
----@param start_index number Starting index
----@param direction number 1 for down, -1 for up
----@return number index Next enabled index (or start_index if none found)
-local function find_next_enabled(start_index, direction)
-    local index = start_index
-    for _ = 1, #MENU_ITEMS do
-        index = index + direction
-        if index < 1 then index = #MENU_ITEMS end
-        if index > #MENU_ITEMS then index = 1 end
-        if is_item_enabled(MENU_ITEMS[index]) then
-            return index
-        end
-    end
-    return start_index
-end
-
 --- Initialize title screen components (cursor animation)
 --- Must be called once before showing the title screen
 function title_screen.init()
@@ -92,16 +62,10 @@ function title_screen.init()
     cursor_animation = Animation.new(idle_def, { flipped = 1 })
 end
 
---- Set the continue callback function
----@param fn function Function to call when Continue is selected
-function title_screen.set_continue_callback(fn)
-    continue_callback = fn
-end
-
---- Set the new game callback function
----@param fn function Function to call when New Game is selected
-function title_screen.set_new_game_callback(fn)
-    new_game_callback = fn
+--- Set the play game callback function
+---@param fn function Function to call when Play Game is selected
+function title_screen.set_play_game_callback(fn)
+    play_game_callback = fn
 end
 
 --- Set the settings callback function
@@ -111,27 +75,27 @@ function title_screen.set_settings_callback(fn)
 end
 
 --- Show the title screen with fade-in animation
---- Resets focus to Continue (if available) or New Game
+--- Resets focus to Play Game
 function title_screen.show()
     if state == STATE.HIDDEN then
         state = STATE.FADING_IN
         fade_progress = 0
         mouse_active = false
-        -- Reset focus to first enabled item (prioritize Continue if available)
-        if is_item_enabled(MENU_ITEMS[1]) then
-            focused_index = 1
-        else
-            focused_index = 2
-        end
+        focused_index = 1  -- Default to Play Game
     end
 end
 
 --- Hide the title screen with fade out
 local function hide()
-    if state == STATE.OPEN then
+    if state == STATE.OPEN or state == STATE.FADING_IN then
         state = STATE.FADING_OUT
         fade_progress = 0
     end
+end
+
+--- Public hide function (called when starting game from slot screen)
+function title_screen.hide()
+    hide()
 end
 
 --- Check if title screen is blocking game input
@@ -143,14 +107,10 @@ end
 --- Trigger the selected menu action
 local function trigger_selection()
     local item = MENU_ITEMS[focused_index]
-    if not is_item_enabled(item) then return end
 
-    if item.id == "continue" then
-        hide()
-        if continue_callback then continue_callback() end
-    elseif item.id == "new_game" then
-        hide()
-        if new_game_callback then new_game_callback() end
+    if item.id == "play_game" then
+        -- Play Game opens slot screen on top of title screen, don't hide
+        if play_game_callback then play_game_callback() end
     elseif item.id == "settings" then
         -- Settings opens on top of title screen, don't hide
         if settings_callback then settings_callback() end
@@ -165,10 +125,12 @@ function title_screen.input()
     -- Navigation
     if controls.menu_up_pressed() then
         mouse_active = false
-        focused_index = find_next_enabled(focused_index, -1)
+        focused_index = focused_index - 1
+        if focused_index < 1 then focused_index = #MENU_ITEMS end
     elseif controls.menu_down_pressed() then
         mouse_active = false
-        focused_index = find_next_enabled(focused_index, 1)
+        focused_index = focused_index + 1
+        if focused_index > #MENU_ITEMS then focused_index = 1 end
     end
 
     -- Confirm selection
@@ -179,7 +141,8 @@ end
 
 --- Advance fade animations and handle state transitions
 ---@param dt number Delta time in seconds
-function title_screen.update(dt)
+---@param block_mouse boolean|nil If true, skip mouse input processing (e.g., settings menu is open)
+function title_screen.update(dt, block_mouse)
     if state == STATE.HIDDEN then return end
 
     -- Update cursor animation
@@ -202,8 +165,8 @@ function title_screen.update(dt)
         end
     end
 
-    -- Handle mouse hover (only when menu is open)
-    if state == STATE.OPEN then
+    -- Handle mouse hover (only when menu is open and not blocked by overlay)
+    if state == STATE.OPEN and not block_mouse then
         local scale = config.ui.SCALE
         local mx = canvas.get_mouse_x()
         local my = canvas.get_mouse_y()
@@ -219,17 +182,15 @@ function title_screen.update(dt)
         if mouse_active and #menu_item_positions > 0 then
             local local_my = my / scale
             for i, pos in ipairs(menu_item_positions) do
-                if is_item_enabled(MENU_ITEMS[i]) then
-                    -- Simple vertical hit test (items span full width conceptually)
-                    if local_my >= pos.y - 6 and local_my <= pos.y + 6 then
-                        focused_index = i
+                -- Simple vertical hit test (items span full width conceptually)
+                if local_my >= pos.y - 6 and local_my <= pos.y + 6 then
+                    focused_index = i
 
-                        -- Check for click
-                        if canvas.is_mouse_pressed(0) then
-                            trigger_selection()
-                        end
-                        break
+                    -- Check for click
+                    if canvas.is_mouse_pressed(0) then
+                        trigger_selection()
                     end
+                    break
                 end
             end
         end
@@ -293,25 +254,14 @@ function title_screen.draw()
         -- Store position for mouse hit testing
         menu_item_positions[i] = { x = item_x, y = item_y }
 
-        -- Determine text color
-        local enabled = is_item_enabled(item)
         local focused = (i == focused_index)
 
-        -- Text shadow (only for enabled items)
-        if enabled then
-            canvas.set_color("#000000")
-            canvas.draw_text(item_x + 1, item_y + 1, item.label)
-        end
+        -- Text shadow
+        canvas.set_color("#000000")
+        canvas.draw_text(item_x + 1, item_y + 1, item.label)
 
-        -- Draw main text with appropriate color
-        if not enabled then
-            canvas.set_color("#666666")  -- Gray for disabled
-        elseif focused then
-            canvas.set_color("#FFFF00")  -- Yellow for focused
-        else
-            canvas.set_color("#FFFFFF")  -- White for normal
-        end
-
+        -- Draw main text
+        canvas.set_color(focused and "#FFFF00" or "#FFFFFF")
         canvas.draw_text(item_x, item_y, item.label)
     end
 
@@ -320,7 +270,7 @@ function title_screen.draw()
     -- Draw cursor (animated player sprite) next to focused item
     if cursor_animation and focused_index >= 1 and focused_index <= #menu_item_positions then
         local pos = menu_item_positions[focused_index]
-        if pos and is_item_enabled(MENU_ITEMS[focused_index]) then
+        if pos then
             -- Position cursor to the left of the menu item
             local cursor_x = pos.x - CURSOR_OFFSET_X
             local cursor_y = pos.y - 8  -- Center vertically (sprite is 16px tall)

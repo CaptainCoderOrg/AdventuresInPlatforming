@@ -126,7 +126,12 @@ local function init_level()
 
     SpikeTrap.clear()
     for _, trap_data in ipairs(level_info.spike_traps) do
-        SpikeTrap.new(trap_data.x, trap_data.y)
+        SpikeTrap.new(trap_data.x, trap_data.y, {
+            mode = trap_data.mode,
+            extend_time = trap_data.extend_time,
+            retract_time = trap_data.retract_time,
+            start_retracted = trap_data.start_retracted,
+        })
     end
 
     Button.clear()

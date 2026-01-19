@@ -58,7 +58,14 @@ function platforms.load_level(level_data)
 				elseif def.type == "sign" then
 					table.insert(signs, { x = ox, y = oy, text = def.text })
 				elseif def.type == "spike_trap" then
-					table.insert(spike_traps, { x = ox, y = oy })
+					table.insert(spike_traps, {
+						x = ox,
+						y = oy,
+						mode = def.mode,
+						extend_time = def.extend_time,
+						retract_time = def.retract_time,
+						start_retracted = def.start_retracted,
+					})
 				elseif def.type == "button" then
 					table.insert(buttons, { x = ox, y = oy })
 				end

@@ -7,13 +7,29 @@ local Animation = require("Animation")
 local SpikeTrap = {}
 SpikeTrap.all = {}  -- Object pool
 
--- Animation definition: 6 frames, 16x16, static (no playback for now)
-local EXTENDED = Animation.create_definition(sprites.environment.spikes, 6, {
+-- Default timing for alternating mode
+local DEFAULT_EXTEND_TIME = 1.5
+local DEFAULT_RETRACT_TIME = 1.5
+
+-- State constants
+local STATE = {
+    EXTENDED = "extended",
+    RETRACTING = "retracting",
+    RETRACTED = "retracted",
+    EXTENDING = "extending",
+}
+
+-- Animation definition: 6 frames, 16x16
+local SPIKE_ANIM = Animation.create_definition(sprites.environment.spikes, 6, {
     ms_per_frame = 100,
     width = 16,
     height = 16,
     loop = false
 })
+
+-- Hitbox dimensions (1 wide, 0.8 tall, anchored at bottom of tile)
+local HITBOX_W = 1
+local HITBOX_H = 0.8
 
 --- Check if player is touching a spike trap (overlapping bounding boxes)
 ---@param trap table SpikeTrap instance
@@ -22,24 +38,55 @@ local EXTENDED = Animation.create_definition(sprites.environment.spikes, 6, {
 local function player_touching(trap, player)
     local px, py = player.x + player.box.x, player.y + player.box.y
     local pw, ph = player.box.w, player.box.h
-    local sx, sy = trap.x, trap.y
-    local sw, sh = 1, 1  -- trap is 1x1 tile
+    -- 1x0.8 hitbox anchored at bottom of tile
+    local sx = trap.x
+    local sy = trap.y + (1 - HITBOX_H)
 
-    return px < sx + sw and px + pw > sx and
-           py < sy + sh and py + ph > sy
+    return px < sx + HITBOX_W and px + pw > sx and
+           py < sy + HITBOX_H and py + ph > sy
+end
+
+--- Start animation transition (EXTENDED -> RETRACTING, RETRACTED -> EXTENDING)
+---@param trap table SpikeTrap instance
+---@param next_state string State to transition to
+---@param anim_options table Animation options (start_frame, reverse)
+local function start_transition(trap, next_state, anim_options)
+    trap.state = next_state
+    trap.animation = Animation.new(SPIKE_ANIM, anim_options)
+end
+
+--- Finish animation transition (RETRACTING -> RETRACTED, EXTENDING -> EXTENDED)
+---@param trap table SpikeTrap instance
+---@param next_state string State to transition to
+local function finish_transition(trap, next_state)
+    trap.state = next_state
+    trap.timer = 0
+    trap.animation:pause()
 end
 
 --- Create a new spike trap at the specified position
 ---@param x number X position in tile coordinates
 ---@param y number Y position in tile coordinates
+---@param options table|nil Optional configuration: mode, extend_time, retract_time, start_retracted
 ---@return table SpikeTrap instance
-function SpikeTrap.new(x, y)
+function SpikeTrap.new(x, y, options)
+    options = options or {}
+
+    local start_retracted = options.start_retracted or false
+    local initial_state = start_retracted and STATE.RETRACTED or STATE.EXTENDED
+    local initial_frame = start_retracted and 5 or 0
+
     local self = {
         x = x,
         y = y,
-        animation = Animation.new(EXTENDED, { start_frame = 0 }),
+        mode = options.mode or "static",
+        extend_time = options.extend_time or DEFAULT_EXTEND_TIME,
+        retract_time = options.retract_time or DEFAULT_RETRACT_TIME,
+        state = initial_state,
+        timer = 0,
+        animation = Animation.new(SPIKE_ANIM, { start_frame = initial_frame }),
     }
-    -- Pause animation since we're static on frame 0 (extended)
+    -- Pause animation for static states (EXTENDED or RETRACTED)
     self.animation:pause()
 
     table.insert(SpikeTrap.all, self)
@@ -51,17 +98,36 @@ end
 ---@param player table Player instance
 function SpikeTrap.update(dt, player)
     for _, trap in ipairs(SpikeTrap.all) do
-        -- Only check collision if player is alive and not invincible
-        if player_touching(trap, player) and not player:is_invincible() and player:health() > 0 then
-            -- Deal damage (triggers hit state, respects invincibility)
-            player:take_damage(1)
+        -- Update animation
+        trap.animation:play(dt)
 
-            -- Teleport to last safe position if still alive
-            if player:health() > 0 then
-                player:set_position(player.last_safe_position.x, player.last_safe_position.y)
-                player.vx = 0
-                player.vy = 0
+        -- State machine logic for alternating mode
+        if trap.mode == "alternating" then
+            if trap.state == STATE.EXTENDED then
+                trap.timer = trap.timer + dt
+                if trap.timer >= trap.extend_time then
+                    start_transition(trap, STATE.RETRACTING, { start_frame = 0 })
+                end
+            elseif trap.state == STATE.RETRACTING then
+                if trap.animation:is_finished() then
+                    finish_transition(trap, STATE.RETRACTED)
+                end
+            elseif trap.state == STATE.RETRACTED then
+                trap.timer = trap.timer + dt
+                if trap.timer >= trap.retract_time then
+                    start_transition(trap, STATE.EXTENDING, { start_frame = 5, reverse = true })
+                end
+            elseif trap.state == STATE.EXTENDING then
+                if trap.animation:is_finished() then
+                    finish_transition(trap, STATE.EXTENDED)
+                end
             end
+        end
+
+        -- Damage check (only when extended or extending)
+        local is_dangerous = trap.state == STATE.EXTENDED or trap.state == STATE.EXTENDING
+        if is_dangerous and player_touching(trap, player) and not player:is_invincible() and player:health() > 0 then
+            player:take_damage(1)
         end
     end
 end
@@ -77,7 +143,9 @@ function SpikeTrap.draw()
 
         if config.bounding_boxes then
             canvas.set_color("#FF00FF")  -- Magenta for spike traps
-            canvas.draw_rect(screen_x, screen_y, tile_size, tile_size)
+            local hitbox_x = screen_x
+            local hitbox_y = screen_y + (1 - HITBOX_H) * tile_size
+            canvas.draw_rect(hitbox_x, hitbox_y, HITBOX_W * tile_size, HITBOX_H * tile_size)
         end
     end
 end

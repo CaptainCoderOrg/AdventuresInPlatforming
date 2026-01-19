@@ -19,13 +19,14 @@ end
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array and optional symbols table
---- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], signs: {x: number, y: number, text: string}[], spike_traps: {x: number, y: number}[], buttons: {x: number, y: number}[], width: number, height: number}
+--- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], signs: {x: number, y: number, text: string}[], spike_traps: {x: number, y: number}[], buttons: {x: number, y: number}[], campfires: {x: number, y: number}[], width: number, height: number}
 function platforms.load_level(level_data)
 	local spawn = nil
 	local enemies = {}
 	local signs = {}
 	local spike_traps = {}
 	local buttons = {}
+	local campfires = {}
 	local width = level_data.map[1] and #level_data.map[1] or 0
 	local height = #level_data.map
 	local symbols = level_data.symbols or {}
@@ -69,6 +70,8 @@ function platforms.load_level(level_data)
 					})
 				elseif def.type == "button" then
 					table.insert(buttons, { x = ox, y = oy, on_press = def.on_press })
+				elseif def.type == "campfire" then
+					table.insert(campfires, { x = ox, y = oy })
 				end
 			end
 		end
@@ -80,6 +83,7 @@ function platforms.load_level(level_data)
 		signs = signs,
 		spike_traps = spike_traps,
 		buttons = buttons,
+		campfires = campfires,
 		width = width,
 		height = height
 	}

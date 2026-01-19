@@ -18,6 +18,7 @@ Enemy.register("spike_slug", require("Enemies/spike_slug"))
 local Sign = require("Sign")
 local SpikeTrap = require("SpikeTrap")
 local Button = require("Button")
+local Campfire = require("Campfire")
 local world = require("world")
 
 local player  -- Instance created in init_level
@@ -77,6 +78,7 @@ local function update(dt)
     Sign.update(dt, player)
     SpikeTrap.update(dt, player)
     Button.update(dt)
+    Campfire.update(dt)
 
     -- Trigger game over once when player first enters death state
     -- (was_dead prevents retriggering each frame while dead)
@@ -98,6 +100,7 @@ local function draw()
     Button.draw()
     Enemy.draw()
     player:draw()
+    Campfire.draw()
     Projectile.draw()
     Effects.draw()
     canvas.restore()
@@ -134,6 +137,11 @@ local function init_level()
         Button.new(button_data.x, button_data.y, button_data)
     end
 
+    Campfire.clear()
+    for _, campfire_data in ipairs(level_info.campfires) do
+        Campfire.new(campfire_data.x, campfire_data.y)
+    end
+
     camera = Camera.new(
         config.ui.canvas_width,
         config.ui.canvas_height,
@@ -156,6 +164,7 @@ local function restart_level()
     Sign.clear()
     SpikeTrap.clear()
     Button.clear()
+    Campfire.clear()
 
     -- Clear projectiles
     for projectile, _ in pairs(Projectile.all) do

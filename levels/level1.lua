@@ -11,8 +11,8 @@ return {
         [[#                                                 #]],
         [[#                                                 #]],
         [[#                                                 #]],
-        [[#                                   Bb     s      #]],
-        [[#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^####^^^^##  ####]],
+        [[# C S                               Bb     s      #]],
+        [[#####^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^####^^^^##  ####]],
         [[#############################################  ####]],
         [[#############################################  ####]],
         [[#                ##               #### 9      0####]],
@@ -29,7 +29,7 @@ return {
         [[#             3  ##   ######  #// #################]],
         [[#             #--##   ######  #// #################]],
         [[#            ##  ##---######--#// #################]],
-        [[# S         ###       ######  #// #################]],
+        [[#           ###       ######  #// #################]],
         [[# 1      2 ####     4 ######      #################]],
         [[###################################################]],
     },
@@ -37,15 +37,16 @@ return {
         S = { type = "spawn" },
         B = {
             type = "button",
-            offset = { x = -0.5 },
+            
             on_press = function()
                 SpikeTrap.retract_group("entrance_spikes")
             end
         },
-        b = { type = "sign", text = "Hammer\n{hammer}", offset = { x = 0.5 } },
+        b = { type = "sign", text = "Hammer\n{hammer}" },
         R = { type = "enemy", key = "ratto" },
         W = { type = "enemy", key = "worm" },
         G = { type = "enemy", key = "spike_slug" },
+        C = { type = "campfire" },
         ["^"] = { type = "spike_trap", mode = "extended", group = "entrance_spikes" },
         s = { type = "sign", text = "WARNING!\nSpikes", offset = { x = 0.5 } },
         ["1"] = { type = "sign", text = "Move\n{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}" },

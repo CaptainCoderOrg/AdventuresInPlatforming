@@ -21,7 +21,8 @@ function hud.init()
     title_screen.init()
 end
 
---- Process HUD input
+--- Process HUD input for all overlay screens
+--- Priority: settings menu > title screen > game over > rest screen
 function hud.input()
     settings_menu.input()
 

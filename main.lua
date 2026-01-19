@@ -1,29 +1,53 @@
+-- Core dependencies
 local canvas = require("canvas")
-local Player = require("player")
-local platforms = require("platforms")
 local config = require("config")
 local sprites = require("sprites")
 local audio = require("audio")
-local level1 = require("levels/level1")
 local debug = require("debugger")
-local hud = require("ui/hud")
-local Projectile = require("Projectile")
-local Effects = require("Effects")
+local world = require("world")
+
+-- Game systems
+local Player = require("player")
+local platforms = require("platforms")
 local Camera = require("Camera")
 local camera_cfg = require("config/camera")
-local Enemy = require("Enemies")
+local Projectile = require("Projectile")
+local Effects = require("Effects")
 local RestorePoint = require("RestorePoint")
 local rest_state = require("player.rest")
+
+-- UI
+local hud = require("ui/hud")
+local settings_menu = require("ui/settings_menu")
+
+-- Enemies
+local Enemy = require("Enemies")
 Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
+
+-- Props
 local Prop = require("Prop")
 Prop.register("campfire", require("Prop/campfire"))
 Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
 Prop.register("sign", require("Prop/sign"))
-local world = require("world")
-local settings_menu = require("ui/settings_menu")
+
+-- Levels
+local level1 = require("levels/level1")
+local level2 = require("levels/level2")
+
+local levels = {
+    level1 = level1,
+    level2 = level2,
+}
+
+--- Get level module by ID
+---@param id string Level identifier
+---@return table|nil Level module or nil if not found
+local function get_level_by_id(id)
+    return levels[id]
+end
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
@@ -170,38 +194,42 @@ local function init_level(level, spawn_override)
     was_dead = false
 end
 
---- Clean up all game entities before level reload
+--- Clean up all game entities and colliders before level reload
+--- Must be called before init_level to prevent orphaned colliders
 local function cleanup_level()
-    -- Remove old player collider
     world.remove_collider(player)
-
-    -- Clear all entities
     platforms.clear()
     Enemy.clear()
     Prop.clear()
 
-    -- Clear projectiles
+    -- Projectiles need manual collider removal before clearing pool
     for projectile, _ in pairs(Projectile.all) do
         world.remove_collider(projectile)
     end
     Projectile.all = {}
 
-    -- Clear effects
     Effects.all = {}
 end
 
 --- Continue from restore point (campfire checkpoint)
+--- Reloads level at saved position, or defaults to level spawn if no checkpoint exists
 local function continue_from_checkpoint()
     local restore = RestorePoint.get()
 
     cleanup_level()
 
     if restore then
-        init_level(restore.level, { x = restore.x, y = restore.y })
-        -- Apply direction after init_level since Player.new() defaults to facing right
-        if restore.direction then
-            player.direction = restore.direction
-            player.animation.flipped = restore.direction
+        local level = get_level_by_id(restore.level_id)
+        if level then
+            init_level(level, { x = restore.x, y = restore.y })
+            -- Apply direction after init_level since Player.new() defaults to facing right
+            if restore.direction then
+                player.direction = restore.direction
+                player.animation.flipped = restore.direction
+            end
+        else
+            -- Fallback if level not found
+            init_level()
         end
     else
         init_level()
@@ -249,7 +277,6 @@ local function on_start()
         audio.play_music(audio.title_screen)
     end)
 
-    -- Show title screen and play title music on start
     hud.show_title_screen()
     audio.play_music(audio.title_screen)
 

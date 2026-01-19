@@ -47,8 +47,8 @@ function rest.start(player)
 	-- Animate props back to default states
 	Prop.reset_all()
 
-	if rest.current_level then
-		RestorePoint.set(player.x, player.y, rest.current_level, player.direction)
+	if rest.current_level and rest.current_level.id then
+		RestorePoint.set(player.x, player.y, rest.current_level.id, player.direction)
 	end
 
 	if rest.level_info then
@@ -69,22 +69,17 @@ function rest.start(player)
 	audio.play_music(audio.rest)
 end
 
---- Handles input while resting.
---- Input is blocked by rest screen, nothing to do here.
+--- Handles input while resting. Input is blocked by rest screen overlay.
 ---@param player table The player object
 function rest.input(player)
-	-- Input is blocked by rest screen overlay
-	-- Player will be reloaded when "Continue" is pressed
 end
 
---- Updates rest state. Keeps player stationary.
---- Player stays in rest state until level reload from rest screen.
+--- Updates rest state. Keeps player stationary until level reload from rest screen.
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function rest.update(player, dt)
 	player.vx = 0
 	player.vy = 0
-	-- Player remains stationary while rest screen is active
 end
 
 --- Renders the player in rest pose.

@@ -26,7 +26,6 @@ local MENU_ITEMS = {
     { id = "settings", label = "Settings" },
 }
 
--- State
 local state = STATE.HIDDEN
 local fade_progress = 0
 local focused_index = 2  -- Default to "New Game" (index 2)
@@ -34,7 +33,7 @@ local focused_index = 2  -- Default to "New Game" (index 2)
 -- Cursor animation (player idle sprite)
 local cursor_animation = nil
 
--- Callbacks
+-- Menu action callbacks (set by main.lua to handle game state transitions)
 local continue_callback = nil
 local new_game_callback = nil
 local settings_callback = nil
@@ -80,7 +79,8 @@ local function find_next_enabled(start_index, direction)
     return start_index
 end
 
---- Initialize title screen components
+--- Initialize title screen components (cursor animation)
+--- Must be called once before showing the title screen
 function title_screen.init()
     -- Create cursor animation using player idle sprite
     local idle_def = Animation.create_definition(sprites.player.idle, 6, {
@@ -110,7 +110,8 @@ function title_screen.set_settings_callback(fn)
     settings_callback = fn
 end
 
---- Show the title screen
+--- Show the title screen with fade-in animation
+--- Resets focus to Continue (if available) or New Game
 function title_screen.show()
     if state == STATE.HIDDEN then
         state = STATE.FADING_IN
@@ -156,7 +157,8 @@ local function trigger_selection()
     end
 end
 
---- Process title screen input
+--- Process title screen input (menu navigation and selection)
+--- Only processes input when screen is in OPEN state
 function title_screen.input()
     if state ~= STATE.OPEN then return end
 
@@ -234,7 +236,7 @@ function title_screen.update(dt)
     end
 end
 
---- Draw the title screen overlay
+--- Draw the title screen overlay (background, title, menu items, cursor)
 function title_screen.draw()
     if state == STATE.HIDDEN then return end
 

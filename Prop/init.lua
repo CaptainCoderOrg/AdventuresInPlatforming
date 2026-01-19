@@ -78,7 +78,8 @@ end
 --- Set prop state (state machine transition)
 ---@param prop table The prop instance
 ---@param state_name string Name of the state to transition to
-function Prop.set_state(prop, state_name)
+---@param skip_callback boolean|nil If true, callbacks won't fire (used by group_action to prevent recursion)
+function Prop.set_state(prop, state_name, skip_callback)
     if not prop.states then return end
 
     local new_state = prop.states[state_name]
@@ -90,7 +91,7 @@ function Prop.set_state(prop, state_name)
     prop.state = new_state
     prop.state_name = state_name
     if new_state.start then
-        new_state.start(prop, prop.definition)
+        new_state.start(prop, prop.definition, skip_callback)
     end
 end
 
@@ -204,7 +205,7 @@ function Prop.group_action(group_name, action, ...)
     for _, prop in ipairs(group) do
         -- Try state transition first
         if prop.states and prop.states[action] then
-            Prop.set_state(prop, action)
+            Prop.set_state(prop, action, true)  -- skip callbacks to prevent recursion
         -- Try definition method
         elseif prop.definition[action] then
             prop.definition[action](prop, ...)

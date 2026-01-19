@@ -41,10 +41,10 @@ local definition = {
         },
         pressed = {
             name = "pressed",
-            start = function(prop, def)
+            start = function(prop, def, skip_callback)
                 prop.is_pressed = true
                 prop.animation:resume()
-                if prop.on_press then
+                if prop.on_press and not skip_callback then
                     prop.on_press()
                 end
             end,

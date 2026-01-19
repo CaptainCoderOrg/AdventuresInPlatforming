@@ -39,7 +39,7 @@ return {
             type = "button",
             on_press = function()
                 Prop.group_action("entrance_spikes", "retracting")
-                -- Prop.group_action("spike_buttons", "pressed")
+                Prop.group_action("spike_buttons", "pressed")
             end,
             group = "spike_buttons"
         },

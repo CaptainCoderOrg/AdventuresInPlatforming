@@ -15,11 +15,11 @@ local Enemy = require("Enemies")
 Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
-local Sign = require("Sign")
 local Prop = require("Prop")
 Prop.register("campfire", require("Prop/campfire"))
 Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
+Prop.register("sign", require("Prop/sign"))
 local world = require("world")
 
 local player  -- Instance created in init_level
@@ -76,7 +76,6 @@ local function update(dt)
     Projectile.update(dt, level_info)
     Effects.update(dt)
     Enemy.update(dt, player)
-    Sign.update(dt, player)
     Prop.update(dt, player)
 
     -- Trigger game over once when player first enters death state
@@ -94,7 +93,6 @@ local function draw()
     canvas.save()
     camera:apply_transform(sprites.tile_size)
     platforms.draw(camera)
-    Sign.draw()
     Prop.draw()
     Enemy.draw()
     player:draw()
@@ -117,11 +115,6 @@ local function init_level()
 
     for _, enemy_data in ipairs(level_info.enemies) do
         Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y)
-    end
-
-    Sign.clear()
-    for _, sign_data in ipairs(level_info.signs) do
-        Sign.new(sign_data.x, sign_data.y, sign_data.text)
     end
 
     Prop.clear()
@@ -148,7 +141,6 @@ local function restart_level()
     -- Clear all entities
     platforms.clear()
     Enemy.clear()
-    Sign.clear()
     Prop.clear()
 
     -- Clear projectiles

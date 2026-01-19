@@ -19,11 +19,10 @@ end
 
 --- Parses a level and adds tiles to walls and slopes.
 --- @param level_data table Level data with map array and optional symbols table
---- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], signs: {x: number, y: number, text: string}[], props: {type: string, x: number, y: number}[], width: number, height: number}
+--- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], props: {type: string, x: number, y: number}[], width: number, height: number}
 function platforms.load_level(level_data)
 	local spawn = nil
 	local enemies = {}
-	local signs = {}
 	local props = {}
 	local width = level_data.map[1] and #level_data.map[1] or 0
 	local height = #level_data.map
@@ -54,10 +53,8 @@ function platforms.load_level(level_data)
 					spawn = { x = ox, y = oy }
 				elseif def.type == "enemy" then
 					table.insert(enemies, { x = ox, y = oy, type = def.key })
-				elseif def.type == "sign" then
-					table.insert(signs, { x = ox, y = oy, text = def.text })
 				else
-					-- Generic prop handling - copy all properties from def
+					-- Generic prop handling (includes signs) - copy all properties from def
 					local prop_data = { type = def.type, x = ox, y = oy }
 					for k, v in pairs(def) do
 						if k ~= "type" and k ~= "offset" then
@@ -73,7 +70,6 @@ function platforms.load_level(level_data)
 	return {
 		spawn = spawn,
 		enemies = enemies,
-		signs = signs,
 		props = props,
 		width = width,
 		height = height

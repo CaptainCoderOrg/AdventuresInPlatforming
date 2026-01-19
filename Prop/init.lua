@@ -7,7 +7,7 @@ local state = require("Prop/state")
 
 local Prop = {}
 
--- All state preserved across hot reload
+-- Reference state module tables directly so hot reload preserves runtime data
 Prop.types = state.types
 Prop.all = state.all
 Prop.groups = state.groups

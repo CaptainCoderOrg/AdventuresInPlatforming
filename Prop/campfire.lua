@@ -1,6 +1,7 @@
---- Campfire prop definition - Stateless animated decoration
+--- Campfire prop definition - Rest point with text prompt
 local sprites = require("sprites")
 local Animation = require("Animation")
+local TextDisplay = require("TextDisplay")
 local common = require("Prop/common")
 
 local CAMPFIRE = Animation.create_definition(sprites.environment.campfire, 5, {
@@ -15,9 +16,26 @@ return {
     debug_color = "#FFA500",
 
     ---@param prop table The prop instance being spawned
-    on_spawn = function(prop)
+    ---@param def table The campfire definition (unused)
+    ---@param options table Spawn options (unused)
+    on_spawn = function(prop, def, options)
         prop.animation = Animation.new(CAMPFIRE)
+        prop.text_display = TextDisplay.new("Rest\n{move_down} + {attack}", { anchor = "top" })
     end,
 
-    draw = common.draw
+    --- Update text display visibility based on player proximity
+    ---@param prop table Campfire prop instance
+    ---@param dt number Delta time in seconds
+    ---@param player table Player instance for proximity check
+    update = function(prop, dt, player)
+        local is_active = common.player_touching(prop, player)
+        prop.text_display:update(dt, is_active)
+    end,
+
+    --- Draw campfire animation and text display
+    ---@param prop table Campfire prop instance
+    draw = function(prop)
+        common.draw(prop)
+        prop.text_display:draw(prop.x, prop.y)
+    end,
 }

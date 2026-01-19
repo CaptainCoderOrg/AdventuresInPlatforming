@@ -35,6 +35,8 @@ local definition = {
     states = {
         unpressed = {
             name = "unpressed",
+            start = function(prop, def) end,
+            update = function(prop, dt, player) end,
             draw = draw_button
         },
         pressed = {

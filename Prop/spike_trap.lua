@@ -47,12 +47,14 @@ return {
     end,
 
     states = {
+        --- Spikes fully extended, damages player on contact
         extended = {
             name = "extended",
             start = function(prop, def)
                 prop.timer = 0
                 prop.animation:pause()
             end,
+            --- Check damage and handle alternating mode timer
             update = function(prop, dt, player)
                 check_damage(prop, player)
 
@@ -66,9 +68,11 @@ return {
             draw = common.draw
         },
 
+        --- Spikes retracting into ground
         retracting = {
             name = "retracting",
             start = function(prop, def)
+                -- New instance required to reset playback state from frame 0
                 prop.animation = Animation.new(SPIKE_ANIM, { start_frame = 0 })
             end,
             update = function(prop, dt, player)
@@ -80,12 +84,14 @@ return {
             draw = common.draw
         },
 
+        --- Spikes fully retracted, safe to walk over
         retracted = {
             name = "retracted",
             start = function(prop, def)
                 prop.timer = 0
                 prop.animation:pause()
             end,
+            --- Handle alternating mode timer
             update = function(prop, dt, player)
                 if prop.mode == "alternating" then
                     prop.timer = prop.timer + dt
@@ -97,9 +103,11 @@ return {
             draw = common.draw
         },
 
+        --- Spikes extending from ground, damages player on contact
         extending = {
             name = "extending",
             start = function(prop, def)
+                -- New instance required to play animation in reverse from frame 5
                 prop.animation = Animation.new(SPIKE_ANIM, { start_frame = 5, reverse = true })
             end,
             update = function(prop, dt, player)

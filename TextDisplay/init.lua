@@ -1,11 +1,11 @@
---- Interactive sign system for displaying text prompts when player is nearby
+--- Text display system for rendering text popups with control sprite support
+--- Extracted from Sign module to allow any prop to display text
 local canvas = require("canvas")
 local sprites = require("sprites")
 local controls = require("controls")
 local config = require("config")
-local state = require("Sign/state")
 
-local Sign = {}
+local TextDisplay = {}
 
 local FONT_SIZE = 9 * config.ui.SCALE
 local TEXT_PADDING = 2 * config.ui.SCALE
@@ -16,20 +16,6 @@ local GAMEPAD_SHOULDER_SCALE = 0.75
 local KEYBOARD_SPRITE_SCALE = 0.125
 local KEYBOARD_WORD_SCALE = 0.1875
 
---- Check if player is touching a sign (overlapping bounding boxes)
----@param sign table Sign instance
----@param player table Player instance
----@return boolean True if player overlaps sign tile
-local function player_touching(sign, player)
-    local px, py = player.x + player.box.x, player.y + player.box.y
-    local pw, ph = player.box.w, player.box.h
-    local sx, sy = sign.x, sign.y
-    local sw, sh = 1, 1  -- sign is 1x1 tile
-
-    return px < sx + sw and px + pw > sx and
-           py < sy + sh and py + ph > sy
-end
-
 --- Parse text into segments of plain text, action placeholders, and explicit key/button placeholders
 ---@param text string Text with placeholders like {jump}, {key:SPACE}, {button:SOUTH}, {keyboard:jump}, or {gamepad:attack}
 ---@return table Array of {type="text"|"action"|"key"|"button"|"keyboard_action"|"gamepad_action", value=string|number}
@@ -38,51 +24,39 @@ local function parse_segments(text)
     local pos = 1
 
     while pos <= #text do
-        -- Match {type:value} or {action_id}
         local start_brace, end_brace, prefix, suffix = text:find("{([%w_]+):?([%w_]*)}", pos)
         if start_brace then
-            -- Add text before the placeholder
             if start_brace > pos then
                 table.insert(segments, { type = "text", value = text:sub(pos, start_brace - 1) })
             end
 
             if suffix and suffix ~= "" then
-                -- Prefixed placeholder: {prefix:value}
                 if prefix == "key" then
-                    -- Explicit keyboard key: {key:SPACE}
                     local key_code = canvas.keys[suffix]
                     if key_code then
                         table.insert(segments, { type = "key", value = key_code })
                     else
-                        -- Fallback: show as text if key not found
                         table.insert(segments, { type = "text", value = suffix })
                     end
                 elseif prefix == "button" then
-                    -- Explicit gamepad button: {button:SOUTH}
                     local button_code = canvas.buttons[suffix]
                     if button_code then
                         table.insert(segments, { type = "button", value = button_code })
                     else
-                        -- Fallback: show as text if button not found
                         table.insert(segments, { type = "text", value = suffix })
                     end
                 elseif prefix == "keyboard" then
-                    -- Keyboard binding for action: {keyboard:jump}
                     table.insert(segments, { type = "keyboard_action", value = suffix })
                 elseif prefix == "gamepad" then
-                    -- Gamepad binding for action: {gamepad:attack}
                     table.insert(segments, { type = "gamepad_action", value = suffix })
                 else
-                    -- Unknown prefix, show as text
                     table.insert(segments, { type = "text", value = prefix .. ":" .. suffix })
                 end
             else
-                -- Action placeholder: {action_id}
                 table.insert(segments, { type = "action", value = prefix })
             end
             pos = end_brace + 1
         else
-            -- Add remaining text
             table.insert(segments, { type = "text", value = text:sub(pos) })
             break
         end
@@ -94,7 +68,7 @@ end
 --- Split text into lines and parse each line into segments
 ---@param text string Text with newlines and placeholders
 ---@return table Array of lines, each containing parsed segments
-local function parse_lines(text)
+function TextDisplay.parse_lines(text)
     local lines = {}
     for line in (text .. "\n"):gmatch("([^\n]*)\n") do
         table.insert(lines, parse_segments(line))
@@ -220,125 +194,140 @@ local function draw_segments(segments, scheme, start_x, text_y)
     end
 end
 
---- Create a new sign at the specified position
----@param x number X position in tile coordinates
----@param y number Y position in tile coordinates
+--- Get rendered dimensions for text
+---@param text string Text with placeholders
+---@return number width Maximum line width
+---@return number height Total height including line spacing
+function TextDisplay.get_dimensions(text)
+    local lines = TextDisplay.parse_lines(text)
+    local scheme = controls.get_last_input_device()
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(FONT_SIZE)
+
+    local max_width = 0
+    for _, segments in ipairs(lines) do
+        local line_width = get_segments_width(segments, scheme)
+        if line_width > max_width then
+            max_width = line_width
+        end
+    end
+
+    local num_lines = #lines
+    local height = num_lines * FONT_SIZE + (num_lines - 1) * LINE_SPACING
+
+    return max_width, height
+end
+
+--- Create a new TextDisplay instance
 ---@param text string Display text (can include {action_id} variables)
----@return table Sign instance
-function Sign.new(x, y, text)
+---@param options table|nil Optional settings {anchor = "top"|"bottom", offset_y = number}
+---@return table TextDisplay instance
+function TextDisplay.new(text, options)
+    options = options or {}
     local self = {
-        id = "sign_" .. state.next_id,
-        x = x,
-        y = y,
         text = text,
-        is_active = false,
+        parsed_lines = TextDisplay.parse_lines(text),
         alpha = 0,
+        anchor = options.anchor or "top",
+        offset_y = options.offset_y or 0,
     }
-    state.next_id = state.next_id + 1
-    state.all[self] = true
+    setmetatable(self, { __index = TextDisplay })
     return self
 end
 
---- Update all signs (checks player proximity and fades text)
+--- Update text display fade based on active state
 ---@param dt number Delta time in seconds
----@param player table Player instance
-function Sign.update(dt, player)
-    for sign in pairs(state.all) do
-        sign.is_active = player_touching(sign, player)
-
-        local target = sign.is_active and 1 or 0
-        local fade_rate = dt / FADE_DURATION
-        if sign.alpha < target then
-            sign.alpha = math.min(sign.alpha + fade_rate, 1)
-        elseif sign.alpha > target then
-            sign.alpha = math.max(sign.alpha - fade_rate, 0)
-        end
+---@param is_active boolean Whether the display should be visible
+function TextDisplay:update(dt, is_active)
+    local target = is_active and 1 or 0
+    local fade_rate = dt / FADE_DURATION
+    if self.alpha < target then
+        self.alpha = math.min(self.alpha + fade_rate, 1)
+    elseif self.alpha > target then
+        self.alpha = math.max(self.alpha - fade_rate, 0)
     end
 end
 
---- Draw all signs and their text popups.
---- Active signs also render their text bubble above the sprite.
-function Sign.draw()
+--- Check if the display is currently visible
+---@return boolean True if alpha > 0
+function TextDisplay:is_visible()
+    return self.alpha > 0
+end
+
+--- Set new text content
+---@param text string New display text
+function TextDisplay:set_text(text)
+    self.text = text
+    self.parsed_lines = TextDisplay.parse_lines(text)
+end
+
+--- Draw the text popup at the specified tile position
+---@param tile_x number X position in tile coordinates
+---@param tile_y number Y position in tile coordinates
+---@param tile_w number|nil Width of the anchor tile (default 1)
+---@param tile_h number|nil Height of the anchor tile (default 1)
+function TextDisplay:draw(tile_x, tile_y, tile_w, tile_h)
+    if self.alpha <= 0 then return end
+
+    tile_w = tile_w or 1
+    tile_h = tile_h or 1
+
     local tile_size = sprites.tile_size
+    local screen_x = tile_x * tile_size
+    local screen_y = tile_y * tile_size
+    local scheme = controls.get_last_input_device()
+    local lines = self.parsed_lines
+    local num_lines = #lines
 
-    for sign in pairs(state.all) do
-        local screen_x = sign.x * tile_size
-        local screen_y = sign.y * tile_size
-        canvas.draw_image(
-            sprites.environment.sign,
-            screen_x, screen_y,
-            tile_size, tile_size
-        )
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(FONT_SIZE)
+    canvas.set_text_baseline("bottom")
 
-        if config.bounding_boxes then
-            canvas.set_color("#FFA500")
-            canvas.draw_rect(screen_x, screen_y, tile_size, tile_size)
-        end
-
-        if sign.alpha > 0 then
-            local scheme = controls.get_last_input_device()
-            local lines = parse_lines(sign.text)
-            local num_lines = #lines
-
-            canvas.set_font_family("menu_font")
-            canvas.set_font_size(FONT_SIZE)
-            canvas.set_text_baseline("bottom")
-
-            -- Calculate max width across all lines
-            local max_line_width = 0
-            for _, segments in ipairs(lines) do
-                local line_width = get_segments_width(segments, scheme)
-                if line_width > max_line_width then
-                    max_line_width = line_width
-                end
-            end
-
-            -- Calculate content dimensions
-            local content_width = max_line_width
-            local content_height = num_lines * FONT_SIZE + (num_lines - 1) * LINE_SPACING
-            local box_width = content_width + TEXT_PADDING * 2
-            local box_height = content_height + TEXT_PADDING * 2
-
-            local center_x = screen_x + tile_size / 2
-            local box_top = screen_y - box_height
-
-            canvas.set_global_alpha(sign.alpha)
-
-            canvas.set_color("#00000099")
-            canvas.fill_rect(
-                center_x - box_width / 2,
-                box_top,
-                box_width,
-                box_height
-            )
-
-            canvas.set_color("#ffffffee")
-            for i, segments in ipairs(lines) do
-                local line_width = get_segments_width(segments, scheme)
-                local start_x = center_x - line_width / 2
-                -- Position each line: box_top + padding + (line index * line height)
-                local line_y = box_top + TEXT_PADDING + i * FONT_SIZE + (i - 1) * LINE_SPACING
-                draw_segments(segments, scheme, start_x, line_y)
-            end
-
-            canvas.set_global_alpha(1)
-            canvas.set_text_align("left")
-            canvas.set_text_baseline("alphabetic")
+    -- Calculate max width across all lines
+    local max_line_width = 0
+    for _, segments in ipairs(lines) do
+        local line_width = get_segments_width(segments, scheme)
+        if line_width > max_line_width then
+            max_line_width = line_width
         end
     end
+
+    -- Calculate content dimensions
+    local content_height = num_lines * FONT_SIZE + (num_lines - 1) * LINE_SPACING
+    local box_width = max_line_width + TEXT_PADDING * 2
+    local box_height = content_height + TEXT_PADDING * 2
+
+    local center_x = screen_x + (tile_w * tile_size) / 2
+    local box_top
+
+    if self.anchor == "bottom" then
+        box_top = screen_y + tile_h * tile_size + self.offset_y
+    else
+        box_top = screen_y - box_height + self.offset_y
+    end
+
+    canvas.set_global_alpha(self.alpha)
+
+    canvas.set_color("#00000099")
+    canvas.fill_rect(
+        center_x - box_width / 2,
+        box_top,
+        box_width,
+        box_height
+    )
+
+    canvas.set_color("#ffffffee")
+    for i, segments in ipairs(lines) do
+        local line_width = get_segments_width(segments, scheme)
+        local start_x = center_x - line_width / 2
+        local line_y = box_top + TEXT_PADDING + i * FONT_SIZE + (i - 1) * LINE_SPACING
+        draw_segments(segments, scheme, start_x, line_y)
+    end
+
+    canvas.set_global_alpha(1)
+    canvas.set_text_align("left")
+    canvas.set_text_baseline("alphabetic")
 end
 
---- Remove a specific sign from the active set.
----@param sign table Sign instance to remove
-function Sign.remove(sign)
-    state.all[sign] = nil
-end
-
---- Remove all signs and reset ID counter.
---- Call before loading a new level to prevent stale signs.
-function Sign.clear()
-    state.all = {}
-    state.next_id = 1
-end
-
-return Sign
+return TextDisplay

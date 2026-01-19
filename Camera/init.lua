@@ -11,6 +11,7 @@ Camera.__index = Camera
 --- @param viewport_height number Viewport height in pixels
 --- @param world_width number World width in tiles
 --- @param world_height number World height in tiles
+--- @return Camera New camera instance
 function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	local self = setmetatable({}, Camera)
 
@@ -62,6 +63,32 @@ function Camera:set_viewport_height(h) self._viewport_height = h end
 --- @param target table Entity with .x and .y properties (in tiles)
 function Camera:set_target(target)
 	self._target = target
+end
+
+--- Instantly positions camera at target without lerping
+--- Call after setting target to avoid initial lerp from (0,0)
+--- @param tile_size number Pixels per tile
+--- @return nil
+function Camera:snap_to_target(tile_size)
+	if not self._target then return end
+
+	-- Initialize ground_y to target position
+	self._ground_y = self._target.y
+
+	-- Calculate target camera position (same logic as update)
+	local target_cam_x = self._target.x + (self._target.direction or 1) * self._look_ahead_distance_x -
+		(self._viewport_width / 2 / tile_size)
+	local target_cam_y = self:_calculate_default_target_y(self._target.y, tile_size)
+
+	-- Clamp to world bounds
+	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
+	local max_cam_y = self._world_height - (self._viewport_height / tile_size)
+
+	self._x = math.max(0, math.min(target_cam_x, max_cam_x))
+	self._y = math.max(0, math.min(target_cam_y, max_cam_y))
+
+	-- Reset look-ahead offset to match target direction
+	self._look_ahead_offset_x = (self._target.direction or 1) * self._look_ahead_distance_x
 end
 
 --- Calculates target Y for falling state

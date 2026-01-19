@@ -23,6 +23,7 @@ Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
 Prop.register("sign", require("Prop/sign"))
 local world = require("world")
+local settings_menu = require("ui/settings_menu")
 
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
@@ -33,10 +34,12 @@ local current_level = level1  -- Track current level module
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
 
+--- Process player and debug input each frame
+---@return nil
 local function user_input()
     hud.input()
 
-    if hud.is_settings_open() or hud.is_game_over_active() or hud.is_rest_screen_active() then
+    if hud.is_title_screen_active() or hud.is_settings_open() or hud.is_game_over_active() or hud.is_rest_screen_active() then
         return
     end
 
@@ -53,9 +56,11 @@ end
 
 local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering recovery
 
+--- Process game logic for one frame
 ---@param dt number Delta time in seconds (already capped)
+---@return nil
 local function update(dt)
-    if hud.is_settings_open() or hud.is_game_over_active() then
+    if hud.is_title_screen_active() or hud.is_settings_open() or hud.is_game_over_active() then
         return
     end
 
@@ -95,25 +100,34 @@ local function update(dt)
     end
 end
 
+--- Render the game world and UI
+---@return nil
 local function draw()
     canvas.clear()
 
-    -- Draw world-space entities (affected by camera)
-    canvas.save()
-    camera:apply_transform(sprites.tile_size)
-    platforms.draw(camera)
-    Prop.draw()
-    Enemy.draw()
-    player:draw()
-    Projectile.draw()
-    Effects.draw()
-    canvas.restore()
+    -- Skip world rendering when title screen is active
+    if not hud.is_title_screen_active() then
+        -- Draw world-space entities (affected by camera)
+        canvas.save()
+        camera:apply_transform(sprites.tile_size)
+        platforms.draw(camera)
+        Prop.draw()
+        Enemy.draw()
+        player:draw()
+        Projectile.draw()
+        Effects.draw()
+        canvas.restore()
+    end
 
     -- Draw screen-space UI (not affected by camera)
     hud.draw(player)
     debug.draw(player)
 end
 
+--- Initialize or reload a level with player and entities
+---@param level table|nil Level module to load (defaults to current_level)
+---@param spawn_override table|nil Optional spawn position {x, y} to override level spawn
+---@return nil
 local function init_level(level, spawn_override)
     level = level or current_level
     current_level = level
@@ -148,6 +162,7 @@ local function init_level(level, spawn_override)
     )
     camera:set_target(player)
     camera:set_look_ahead()
+    camera:snap_to_target(sprites.tile_size)
 
     -- Update rest state's camera reference
     rest_state.camera = camera
@@ -209,16 +224,41 @@ local function on_start()
     if started then return end
     audio.init()
     hud.init()
+
+    -- Game over screen callbacks
     hud.set_continue_callback(continue_from_checkpoint)
-    hud.set_restart_callback(restart_level)
+    hud.set_restart_callback(function()
+        hud.show_title_screen()
+        audio.play_music(audio.title_screen)
+    end)
     hud.set_rest_continue_callback(continue_from_checkpoint)
-    audio.play_music(audio.level1)
+
+    -- Title screen callbacks
+    hud.set_title_continue_callback(continue_from_checkpoint)
+    hud.set_title_new_game_callback(function()
+        restart_level()
+        audio.play_music(audio.level1)
+    end)
+
+    hud.set_title_settings_callback(function()
+        -- Open settings menu from title screen (hides "Return to Title Screen" button)
+        settings_menu.show(true)
+    end)
+    settings_menu.set_return_to_title_callback(function()
+        hud.show_title_screen()
+        audio.play_music(audio.title_screen)
+    end)
+
+    -- Show title screen and play title music on start
+    hud.show_title_screen()
+    audio.play_music(audio.title_screen)
+
     started = true
 end
 
 local function game()
     on_start()
-    local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/3 limits to 30 FPS which prevents the player from falling through platforms
+    local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/30 limits to 30 FPS minimum to prevent physics tunneling
     audio.update()
     hud.update(dt)
     user_input()

@@ -81,7 +81,7 @@ end
 function game_over.init()
     buttons = {
         create_menu_button("Continue"),
-        create_menu_button("Restart"),
+        create_menu_button("Return to Title Screen"),
     }
 end
 

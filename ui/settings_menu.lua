@@ -44,10 +44,19 @@ local TABS = { "audio", "controls" }
 local TAB_LABELS = { audio = "Audio", controls = "Controls" }
 local current_tab = 1
 
--- Audio tab focus tracking (1-3 = sliders, 4 = close button)
+-- Audio tab focus tracking (1-3 = sliders, 4 = continue button, 5 = title button)
 local audio_focus_index = 1
-local AUDIO_ITEMS_COUNT = 4
 local VOLUME_STEP = 0.05
+
+-- Context tracking - whether opened from title screen
+local opened_from_title = false
+local return_to_title_callback = nil
+
+--- Get the number of audio items based on context
+---@return number count 4 when from title (no title button), 5 otherwise
+local function get_audio_items_count()
+    return opened_from_title and 4 or 5
+end
 
 -- Hold-to-repeat timing for slider adjustment
 local REPEAT_INITIAL_DELAY = 0.4
@@ -67,8 +76,9 @@ local last_mouse_y = 0
 -- Controls tab panel
 local controls_panel = nil
 
--- Shared close button
-local close_button = nil
+-- Buttons
+local continue_button = nil
+local title_button = nil
 
 --- Convert linear slider value (0-1) to perceptual volume (0-1)
 --- Human hearing is logarithmic, so we apply a power curve for even-sounding volume steps
@@ -135,13 +145,22 @@ function settings_menu.init()
         height = base_height - 40,
     })
 
-    -- Create close button
-    close_button = button.create({
+    continue_button = button.create({
         x = 0, y = 0, width = button_width, height = button_height,
-        label = "Close",
+        label = "Continue",
         text_only = true,
         on_click = function()
             fade_state = "fading_out"
+        end
+    })
+
+    title_button = button.create({
+        x = 0, y = 0, width = 80, height = button_height,
+        label = "Return to Title Screen",
+        text_only = true,
+        on_click = function()
+            fade_state = "fading_out"
+            if return_to_title_callback then return_to_title_callback() end
         end
     })
 end
@@ -230,16 +249,17 @@ local function handle_audio_input()
     if handle_tab_header_navigation() then return end
 
     -- Up/Down navigation (disables mouse hover)
+    local items_count = get_audio_items_count()
     if controls.menu_up_pressed() then
         mouse_active = false
         audio_focus_index = audio_focus_index - 1
         if audio_focus_index < 0 then
-            audio_focus_index = AUDIO_ITEMS_COUNT
+            audio_focus_index = items_count
         end
     elseif controls.menu_down_pressed() then
         mouse_active = false
         audio_focus_index = audio_focus_index + 1
-        if audio_focus_index > AUDIO_ITEMS_COUNT then
+        if audio_focus_index > items_count then
             audio_focus_index = 0
         end
     end
@@ -295,9 +315,16 @@ local function handle_audio_input()
         hold_time = 0
     end
 
-    -- Confirm button to activate close button
-    if audio_focus_index == AUDIO_ITEMS_COUNT and controls.menu_confirm_pressed() then
-        fade_state = "fading_out"
+    -- Confirm button to activate buttons
+    if controls.menu_confirm_pressed() then
+        if audio_focus_index == 4 then
+            -- Continue button
+            fade_state = "fading_out"
+        elseif audio_focus_index == 5 and not opened_from_title then
+            -- Return to title button
+            fade_state = "fading_out"
+            if return_to_title_callback then return_to_title_callback() end
+        end
     end
 end
 
@@ -354,10 +381,13 @@ local function handle_controls_input()
 end
 
 --- Process settings menu input (handles ESC for toggle and tab navigation)
+---@return nil
 function settings_menu.input()
     if controls.settings_pressed() then
         if fade_state == "closed" or fade_state == "fading_out" then
             fade_state = "fading_in"
+            -- ESC key opens from gameplay, so show the title button
+            opened_from_title = false
             -- Reset focus when opening
             audio_focus_index = 1
             if controls_panel then
@@ -381,6 +411,7 @@ function settings_menu.input()
 end
 
 --- Advance fade animation and update active tab components
+---@return nil
 function settings_menu.update()
     local dt = canvas.get_delta()
     local speed = dt / fade_duration
@@ -482,14 +513,28 @@ function settings_menu.update()
                     end
                 end
 
-                -- Close button hover
-                local close_y = SLIDER_START_Y + SLIDER_SPACING * 3 + 3
-                local close_x = (base_width - button_width) / 2
-                if local_mx >= close_x and local_mx <= close_x + button_width
-                    and local_my >= close_y and local_my <= close_y + button_height then
-                    audio_focus_index = AUDIO_ITEMS_COUNT
+                -- Continue button hover
+                local continue_y = SLIDER_START_Y + SLIDER_SPACING * 3 + 3
+                local continue_x = (base_width - continue_button.width) / 2
+                if local_mx >= continue_x and local_mx <= continue_x + continue_button.width
+                    and local_my >= continue_y and local_my <= continue_y + button_height then
+                    audio_focus_index = 4
                     if canvas.is_mouse_pressed(0) then
                         fade_state = "fading_out"
+                    end
+                end
+
+                -- Title button hover (only when not from title screen)
+                if not opened_from_title then
+                    local title_y = SLIDER_START_Y + SLIDER_SPACING * 4 + 3
+                    local title_x = (base_width - title_button.width) / 2
+                    if local_mx >= title_x and local_mx <= title_x + title_button.width
+                        and local_my >= title_y and local_my <= title_y + button_height then
+                        audio_focus_index = 5
+                        if canvas.is_mouse_pressed(0) then
+                            fade_state = "fading_out"
+                            if return_to_title_callback then return_to_title_callback() end
+                        end
                     end
                 end
             end
@@ -498,7 +543,10 @@ function settings_menu.update()
                 s:update(local_mx, local_my)
             end
 
-            close_button:update(local_mx, local_my)
+            continue_button:update(local_mx, local_my)
+            if not opened_from_title then
+                title_button:update(local_mx, local_my)
+            end
         else
             -- Offset mouse coordinates by panel position
             local panel_x = (base_width - controls_panel.width) / 2
@@ -512,6 +560,38 @@ end
 ---@return boolean is_open True if menu is open or animating
 function settings_menu.is_open()
     return fade_state ~= "closed"
+end
+
+--- Programmatically open the settings menu
+---@param from_title boolean|nil Whether opened from title screen (hides title button)
+function settings_menu.show(from_title)
+    if fade_state == "closed" or fade_state == "fading_out" then
+        opened_from_title = from_title or false
+        fade_state = "fading_in"
+        -- Reset focus when opening
+        audio_focus_index = 1
+        if controls_panel then
+            controls_panel:reset_focus()
+        end
+        hold_direction = 0
+        hold_time = 0
+    end
+end
+
+--- Set callback for returning to title screen
+---@param fn function Callback to invoke when "Return to Title Screen" is selected
+function settings_menu.set_return_to_title_callback(fn)
+    return_to_title_callback = fn
+end
+
+--- Toggle the settings menu open/closed
+---@return nil
+function settings_menu.toggle()
+    if fade_state == "closed" or fade_state == "fading_out" then
+        settings_menu.show()
+    elseif fade_state == "open" or fade_state == "fading_in" then
+        fade_state = "fading_out"
+    end
 end
 
 --- Draw centered text with outline at the given position
@@ -572,9 +652,17 @@ local function draw_audio_tab()
         item.slider:draw(is_focused)
     end
 
-    close_button.x = (base_width - close_button.width) / 2
-    close_button.y = SLIDER_START_Y + SLIDER_SPACING * 3 + 3
-    close_button:draw(audio_focus_index == AUDIO_ITEMS_COUNT)
+    -- Continue button
+    continue_button.x = (base_width - continue_button.width) / 2
+    continue_button.y = SLIDER_START_Y + SLIDER_SPACING * 3 + 3
+    continue_button:draw(audio_focus_index == 4)
+
+    -- Return to Title Screen button (only when not from title screen)
+    if not opened_from_title then
+        title_button.x = (base_width - title_button.width) / 2
+        title_button.y = SLIDER_START_Y + SLIDER_SPACING * 4 + 3
+        title_button:draw(audio_focus_index == 5)
+    end
 end
 
 --- Draw the controls tab content
@@ -589,6 +677,7 @@ local function draw_controls_tab()
 end
 
 --- Render the settings menu overlay with background dim and current tab
+---@return nil
 function settings_menu.draw()
     if fade_state == "closed" then
         return

@@ -1,8 +1,9 @@
---- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen
+--- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen, title screen
 local canvas = require("canvas")
 local settings_menu = require("ui/settings_menu")
 local game_over = require("ui/game_over")
 local rest_screen = require("ui/rest_screen")
+local title_screen = require("ui/title_screen")
 local sprites = require("sprites")
 local config = require("config")
 
@@ -11,17 +12,25 @@ local hud = {}
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
---- Initialize HUD subsystems (settings menu, game over screen, rest screen)
+--- Initialize HUD subsystems (settings menu, game over screen, rest screen, title screen)
 --- Must be called after audio.init() for volume settings to apply
 function hud.init()
     settings_menu.init()
     game_over.init()
     rest_screen.init()
+    title_screen.init()
 end
 
 --- Process HUD input
 function hud.input()
     settings_menu.input()
+
+    -- Title screen blocks other HUD input when active (except settings)
+    if title_screen.is_active() and not settings_menu.is_open() then
+        title_screen.input()
+        return
+    end
+
     game_over.input()
     rest_screen.input()
 end
@@ -30,6 +39,7 @@ end
 ---@param dt number Delta time in seconds
 function hud.update(dt)
     settings_menu.update()
+    title_screen.update(dt)
     game_over.update(dt)
     rest_screen.update(dt)
 end
@@ -73,11 +83,16 @@ end
 --- Draw all HUD elements
 ---@param player table Player instance with health() method, max_health, and projectile properties
 function hud.draw(player)
-    hud.draw_player_health(player)
-    draw_selected_projectile(player)
-    settings_menu.draw()
+    -- Skip normal HUD when title screen is active
+    if not title_screen.is_active() then
+        hud.draw_player_health(player)
+        draw_selected_projectile(player)
+    end
     game_over.draw()
     rest_screen.draw()
+    title_screen.draw()
+    -- Settings menu drawn last so it appears on top of everything
+    settings_menu.draw()
 end
 
 --- Show the game over screen
@@ -121,6 +136,35 @@ end
 ---@param fn function Function to call when continuing from rest
 function hud.set_rest_continue_callback(fn)
     rest_screen.set_continue_callback(fn)
+end
+
+--- Show the title screen
+function hud.show_title_screen()
+    title_screen.show()
+end
+
+--- Check if title screen is blocking game input
+---@return boolean is_active True if title screen is visible
+function hud.is_title_screen_active()
+    return title_screen.is_active()
+end
+
+--- Set the continue callback for title screen (uses restore point)
+---@param fn function Function to call when Continue is selected
+function hud.set_title_continue_callback(fn)
+    title_screen.set_continue_callback(fn)
+end
+
+--- Set the new game callback for title screen (full restart)
+---@param fn function Function to call when New Game is selected
+function hud.set_title_new_game_callback(fn)
+    title_screen.set_new_game_callback(fn)
+end
+
+--- Set the settings callback for title screen
+---@param fn function Function to call when Settings is selected
+function hud.set_title_settings_callback(fn)
+    title_screen.set_settings_callback(fn)
 end
 
 return hud

@@ -126,6 +126,16 @@ function Prop.update(dt, player)
     end
 end
 
+--- Update only prop animations (lightweight update for paused states)
+---@param dt number Delta time in seconds
+function Prop.update_animations(dt)
+    for prop in pairs(Prop.all) do
+        if not prop.marked_for_destruction and prop.animation then
+            prop.animation:play(dt)
+        end
+    end
+end
+
 --- Draw all props
 function Prop.draw()
     for prop in pairs(Prop.all) do
@@ -163,6 +173,18 @@ function Prop.clear()
         Prop.groups[k] = nil
     end
     state.next_id = 1
+end
+
+--- Reset all props to their initial states with animation
+function Prop.reset_all()
+    for prop in pairs(Prop.all) do
+        if not prop.marked_for_destruction then
+            local def = prop.definition
+            if def.reset then
+                def.reset(prop)
+            end
+        end
+    end
 end
 
 --- Check if a hitbox overlaps with any prop of a given type

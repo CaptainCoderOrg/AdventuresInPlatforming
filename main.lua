@@ -36,7 +36,7 @@ canvas.set_image_smoothing(false)
 local function user_input()
     hud.input()
 
-    if hud.is_settings_open() or hud.is_game_over_active() then
+    if hud.is_settings_open() or hud.is_game_over_active() or hud.is_rest_screen_active() then
         return
     end
 
@@ -56,6 +56,12 @@ local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering rec
 ---@param dt number Delta time in seconds (already capped)
 local function update(dt)
     if hud.is_settings_open() or hud.is_game_over_active() then
+        return
+    end
+
+    -- During rest screen, only update prop animations (keep campfire flickering)
+    if hud.is_rest_screen_active() then
+        Prop.update_animations(dt)
         return
     end
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
@@ -143,6 +149,9 @@ local function init_level(level, spawn_override)
     camera:set_target(player)
     camera:set_look_ahead()
 
+    -- Update rest state's camera reference
+    rest_state.camera = camera
+
     was_dead = false
 end
 
@@ -174,6 +183,11 @@ local function continue_from_checkpoint()
 
     if restore then
         init_level(restore.level, { x = restore.x, y = restore.y })
+        -- Apply direction after init_level since Player.new() defaults to facing right
+        if restore.direction then
+            player.direction = restore.direction
+            player.animation.flipped = restore.direction
+        end
     else
         init_level()
     end
@@ -194,6 +208,7 @@ local function on_start()
     hud.init()
     hud.set_continue_callback(continue_from_checkpoint)
     hud.set_restart_callback(restart_level)
+    hud.set_rest_continue_callback(continue_from_checkpoint)
     audio.play_music(audio.level1)
     started = true
 end

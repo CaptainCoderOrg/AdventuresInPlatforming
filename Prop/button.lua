@@ -35,8 +35,6 @@ local definition = {
     states = {
         unpressed = {
             name = "unpressed",
-            start = function(prop, def) end,
-            update = function(prop, dt, player) end,
             draw = draw_button
         },
         pressed = {
@@ -52,6 +50,24 @@ local definition = {
                 prop.animation:play(dt)
             end,
             draw = draw_button
+        },
+        resetting = {
+            name = "resetting",
+            start = function(prop, def)
+                prop.animation = Animation.new(BUTTON_ANIM, {
+                    start_frame = BUTTON_ANIM.frame_count - 1,
+                    reverse = true
+                })
+            end,
+            update = function(prop, dt, player)
+                prop.animation:play(dt)
+                if prop.animation:is_finished() then
+                    prop.is_pressed = false
+                    local Prop = require("Prop")
+                    Prop.set_state(prop, "unpressed")
+                end
+            end,
+            draw = draw_button
         }
     }
 }
@@ -62,6 +78,15 @@ function definition.press(prop)
     if not prop.is_pressed then
         local Prop = require("Prop")
         Prop.set_state(prop, "pressed")
+    end
+end
+
+--- Reset button to unpressed state with animation
+---@param prop table Button prop instance
+function definition.reset(prop)
+    if prop.is_pressed then
+        local Prop = require("Prop")
+        Prop.set_state(prop, "resetting")
     end
 end
 

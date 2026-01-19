@@ -23,7 +23,7 @@ local function check_damage(prop, player)
     end
 end
 
-return {
+local definition = {
     box = { x = 0, y = 0.2, w = 1, h = 0.8 },
     debug_color = "#FF00FF",
     initial_state = "extended",
@@ -38,6 +38,7 @@ return {
         prop.timer = 0
 
         local start_retracted = options.start_retracted or false
+        prop.initial_retracted = start_retracted
         prop.animation = Animation.new(SPIKE_ANIM, { start_frame = start_retracted and 5 or 0 })
         prop.animation:pause()
 
@@ -122,3 +123,18 @@ return {
         }
     }
 }
+
+--- Reset spike trap to initial state with animation
+---@param prop table SpikeTrap instance
+function definition.reset(prop)
+    local current = prop.state.name
+    local target_retracted = prop.initial_retracted
+
+    if target_retracted and (current == "extended" or current == "extending") then
+        Prop.set_state(prop, "retracting")
+    elseif not target_retracted and (current == "retracted" or current == "retracting") then
+        Prop.set_state(prop, "extending")
+    end
+end
+
+return definition

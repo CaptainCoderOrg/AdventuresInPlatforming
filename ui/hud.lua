@@ -1,7 +1,8 @@
---- In-game HUD elements: health, projectile selector, game over, settings overlay
+--- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen
 local canvas = require("canvas")
 local settings_menu = require("ui/settings_menu")
 local game_over = require("ui/game_over")
+local rest_screen = require("ui/rest_screen")
 local sprites = require("sprites")
 local config = require("config")
 
@@ -10,17 +11,19 @@ local hud = {}
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
---- Initialize HUD subsystems (settings menu, game over screen)
+--- Initialize HUD subsystems (settings menu, game over screen, rest screen)
 --- Must be called after audio.init() for volume settings to apply
 function hud.init()
     settings_menu.init()
     game_over.init()
+    rest_screen.init()
 end
 
 --- Process HUD input
 function hud.input()
     settings_menu.input()
     game_over.input()
+    rest_screen.input()
 end
 
 --- Advance settings menu animations
@@ -28,6 +31,7 @@ end
 function hud.update(dt)
     settings_menu.update()
     game_over.update(dt)
+    rest_screen.update(dt)
 end
 
 --- Check if settings menu is blocking game input
@@ -73,6 +77,7 @@ function hud.draw(player)
     draw_selected_projectile(player)
     settings_menu.draw()
     game_over.draw()
+    rest_screen.draw()
 end
 
 --- Show the game over screen
@@ -96,6 +101,26 @@ end
 ---@param fn function Function to call when restarting
 function hud.set_restart_callback(fn)
     game_over.set_restart_callback(fn)
+end
+
+--- Show the rest screen centered on a campfire
+---@param world_x number Campfire center X in tile coordinates
+---@param world_y number Campfire center Y in tile coordinates
+---@param camera table Camera instance for position calculation
+function hud.show_rest_screen(world_x, world_y, camera)
+    rest_screen.show(world_x, world_y, camera)
+end
+
+--- Check if rest screen is blocking game input
+---@return boolean is_active True if rest screen is visible
+function hud.is_rest_screen_active()
+    return rest_screen.is_active()
+end
+
+--- Set the continue callback for rest screen (reloads level from checkpoint)
+---@param fn function Function to call when continuing from rest
+function hud.set_rest_continue_callback(fn)
+    rest_screen.set_continue_callback(fn)
 end
 
 return hud

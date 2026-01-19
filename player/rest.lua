@@ -1,15 +1,17 @@
 local Animation = require('Animation')
 local common = require('player.common')
-local controls = require('controls')
 local sprites = require('sprites')
 local Enemy = require('Enemies')
 local RestorePoint = require('RestorePoint')
+local Prop = require('Prop')
+local prop_common = require('Prop/common')
+local hud = require('ui/hud')
 
 --- Y-offset to show sitting pose (sprite is drawn lower)
 local REST_Y_OFFSET = 0.25
 
 --- Rest state: Player is resting near a campfire.
---- Can perform all actions available from idle state.
+--- Shows rest screen overlay with continue option.
 local rest = { name = "rest" }
 
 --- Storage for level references (set from main.lua)
@@ -17,17 +19,35 @@ local rest = { name = "rest" }
 rest.current_level = nil
 ---@type table|nil
 rest.level_info = nil
+---@type table|nil
+rest.camera = nil
+
+--- Find the campfire the player is currently touching
+---@param player table The player object
+---@return table|nil campfire The campfire prop or nil if not found
+local function find_current_campfire(player)
+	for prop in pairs(Prop.all) do
+		if prop.type_key == "campfire" and prop_common.player_touching(prop, player) then
+			return prop
+		end
+	end
+	return nil
+end
 
 --- Called when entering rest state. Sets rest animation and stops movement.
---- Also heals player, saves restore point, and respawns enemies.
+--- Also heals player, saves restore point, respawns enemies, and shows rest screen.
 ---@param player table The player object
 function rest.start(player)
 	player.animation = Animation.new(common.animations.REST)
+	player.animation.flipped = player.direction
 	player.vx = 0
 	player.damage = 0
 
+	-- Animate props back to default states
+	Prop.reset_all()
+
 	if rest.current_level then
-		RestorePoint.set(player.x, player.y, rest.current_level)
+		RestorePoint.set(player.x, player.y, rest.current_level, player.direction)
 	end
 
 	if rest.level_info then
@@ -36,45 +56,31 @@ function rest.start(player)
 			Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y)
 		end
 	end
+
+	-- Find the campfire and show rest screen
+	local campfire = find_current_campfire(player)
+	if campfire and rest.camera then
+		-- Center on campfire (add 0.5 to center on tile)
+		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera)
+	end
 end
 
---- Handles input while resting. Movement exits rest state.
+--- Handles input while resting.
+--- Input is blocked by rest screen, nothing to do here.
 ---@param player table The player object
 function rest.input(player)
-	if common.check_cooldown_queues(player) then return end
-
-	if controls.left_down() then
-		player.direction = -1
-		player:set_state(player.states.run)
-		return
-	elseif controls.right_down() then
-		player.direction = 1
-		player:set_state(player.states.run)
-		return
-	end
-
-	common.handle_throw(player)
-	common.handle_hammer(player)
-	common.handle_block(player)
-	if not controls.down_down() then
-		common.handle_attack(player)
-	end
-	common.handle_dash(player)
-	common.handle_jump(player)
-	common.handle_climb(player)
+	-- Input is blocked by rest screen overlay
+	-- Player will be reloaded when "Continue" is pressed
 end
 
---- Updates rest state. Stops horizontal movement and applies gravity.
---- Exits to idle if no longer near campfire.
+--- Updates rest state. Keeps player stationary.
+--- Player stays in rest state until level reload from rest screen.
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function rest.update(player, dt)
 	player.vx = 0
-	common.handle_gravity(player, dt)
-
-	if not common.is_near_campfire(player) then
-		player:set_state(player.states.idle)
-	end
+	player.vy = 0
+	-- Player remains stationary while rest screen is active
 end
 
 --- Renders the player in rest pose.

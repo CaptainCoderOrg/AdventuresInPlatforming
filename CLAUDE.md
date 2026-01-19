@@ -422,6 +422,69 @@ Sign.clear()             -- Reset for level reload
 
 **Level Symbol:** Configurable via `symbols` table with `type = "sign"` and `text` property.
 
+### Prop System
+
+Unified management for interactive objects (buttons, campfires, spike traps). Mirrors the Enemy system pattern.
+
+**Architecture:**
+- Object pool pattern with `Prop.all` table
+- Registration system: `Prop.register(key, definition)` in main.lua
+- Spawning: `Prop.spawn(type_key, x, y, options)`
+- State machine support with `skip_callback` for group actions
+- Group system for coordinated behavior
+
+**Prop Definition:**
+```lua
+definition = {
+    box = { x = 0, y = 0, w = 1, h = 1 },  -- Bounding box (tile coords)
+    debug_color = "#FFFFFF",
+    initial_state = "unpressed",
+    on_spawn = function(prop, def, options) end,
+    states = { ... }
+}
+```
+
+**State Machine:**
+Props support states identical to enemies/player:
+```lua
+state = {
+    name = "state_name",
+    start = function(prop, def, skip_callback) end,
+    update = function(prop, dt, player) end,
+    draw = function(prop) end,
+}
+```
+
+**Skip Callback Pattern:**
+The `skip_callback` parameter prevents callback recursion during group actions:
+```lua
+-- Button's on_press calls group_action to press all buttons in group
+-- group_action passes skip_callback=true to prevent infinite recursion
+Prop.set_state(prop, "pressed", true)  -- Callbacks won't fire
+```
+
+**Group System:**
+Props can be assigned to named groups for coordinated actions:
+```lua
+-- Spawn with group assignment
+Prop.spawn("button", x, y, { group = "spike_buttons", on_press = callback })
+
+-- Trigger action on all group members
+Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" state
+```
+
+**Key Methods:**
+- `Prop.register(key, definition)` - Register prop type
+- `Prop.spawn(type_key, x, y, options)` - Create instance
+- `Prop.set_state(prop, state_name, skip_callback)` - State transition
+- `Prop.group_action(group_name, action)` - Trigger group-wide state change
+- `Prop.check_hit(type_key, hitbox, filter)` - Hitbox overlap detection
+
+**Current Props:**
+- **Button** - Binary state (unpressed/pressed), triggers `on_press` callback
+- **Campfire** - Sets player restore point, transitions to lit state
+- **Spike Trap** - Togglable hazard, damages player when active
+
 ### Level Format
 
 Levels in `levels/` use ASCII tile maps with configurable symbol definitions.
@@ -510,6 +573,10 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `platforms/init.lua` - Level geometry loader
 - `platforms/bridges.lua` - One-way platform system
 - `Sign/init.lua` - Interactive sign system
+- `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
+- `Prop/button.lua` - Button prop (unpressed/pressed states)
+- `Prop/campfire.lua` - Campfire prop (restore point)
+- `Prop/spiketrap.lua` - Spike trap prop (togglable hazard)
 - `sprites/init.lua` - Asset loading (submodules: player, enemies, effects, projectiles, ui, environment)
 - `controls.lua` - Unified keyboard/gamepad input
 - `config.lua` - Debug flags, game settings, UI scaling

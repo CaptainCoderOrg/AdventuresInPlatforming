@@ -241,8 +241,7 @@ local function init_level(level, spawn_override, player_data, options)
     -- Update rest state's camera reference
     rest_state.camera = camera
 
-    -- Update HUD with player and camera references for pause screen
-    hud.set_player(player, camera)
+    hud.set_gameplay_refs(player, camera)
 
     was_dead = false
 end
@@ -396,7 +395,7 @@ local function game()
     on_start()
     local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/30 limits to 30 FPS minimum to prevent physics tunneling
     audio.update()
-    hud.update(dt)
+    hud.update(dt, player)
     user_input()
     update(dt)
     draw()

@@ -11,6 +11,9 @@ local ui = {
 	small_circle_ui = "small_circle_ui",
 	simple_dialogue = "simple_dialogue",
 	ability_selector_left = "ability_selector_left",
+	meter_background = "meter_background",
+	meter_shine = "meter_shine",
+	meter_cap_red = "meter_cap_red",
 }
 
 canvas.assets.load_image(ui.heart, "sprites/ui/heart.png")
@@ -21,5 +24,8 @@ canvas.assets.load_image(ui.circle_ui, "sprites/ui/circle_ui.png")
 canvas.assets.load_image(ui.small_circle_ui, "sprites/ui/small_circle_ui.png")
 canvas.assets.load_image(ui.simple_dialogue, "sprites/ui/simple-dialogue.png")
 canvas.assets.load_image(ui.ability_selector_left, "sprites/ui/ability_selector_left.png")
+canvas.assets.load_image(ui.meter_background, "sprites/ui/meter-background-slice.png")
+canvas.assets.load_image(ui.meter_shine, "sprites/ui/meter-shine-slice.png")
+canvas.assets.load_image(ui.meter_cap_red, "sprites/ui/meter-cap-red.png")
 
 return ui

@@ -1,4 +1,4 @@
---- In-game HUD elements: health, projectile selector, game over, rest screen, title screen, slot screen
+--- In-game HUD elements: projectile selector, game over, rest screen, title screen, slot screen
 local canvas = require("canvas")
 local controls = require("controls")
 local audio_dialog = require("ui/audio_dialog")
@@ -8,7 +8,6 @@ local projectile_selector = require("ui/projectile_selector")
 local rest_screen = require("ui/rest_screen")
 local title_screen = require("ui/title_screen")
 local slot_screen = require("ui/slot_screen")
-local sprites = require("sprites")
 
 local hud = {}
 
@@ -24,7 +23,6 @@ canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
 --- Initialize HUD subsystems (game over screen, rest screen, title screen, slot screen, dialogs)
 --- Must be called after audio.init() for volume settings to apply
----@return nil
 function hud.init()
     audio_dialog.init()
     controls_dialog.init()
@@ -37,7 +35,6 @@ end
 
 --- Process HUD input for all overlay screens
 --- Priority: audio dialog > controls dialog > pause/rest screen toggle > slot screen > title screen > game over > rest screen
----@return nil
 function hud.input()
     -- Audio dialog blocks other input when open
     if audio_dialog.is_active() then
@@ -75,16 +72,14 @@ function hud.input()
     end
 
     game_over.input()
-
-    -- Rest screen input
     rest_screen.input()
 end
 
 --- Update all HUD overlay screens and handle mouse input blocking
 --- Dialogs block mouse input for screens beneath them
 ---@param dt number Delta time in seconds
----@return nil
-function hud.update(dt)
+---@param player table Player instance with max_health and damage properties
+function hud.update(dt, player)
     audio_dialog.update(dt)
     controls_dialog.update(dt)
     -- Block mouse input on screens beneath active overlays
@@ -95,32 +90,13 @@ function hud.update(dt)
     title_screen.update(dt, title_block)
     game_over.update(dt)
     rest_screen.update(dt, dialogs_block)
-end
-
---- Draw player health hearts
----@param player table Player instance with health() method and max_health property
-function hud.draw_player_health(player)
-    local heart_size = 64
-    local damage_size = 40
-    local damage_off = (heart_size - damage_size) / 2
-    local spacing_x = 64 + 4
-    local off_x = canvas.get_width() - (player.max_health * spacing_x)
-    local off_y = canvas.get_height() - heart_size - 20  -- 20px bottom margin
-    for ix = 1, player:health() do
-        canvas.draw_image(sprites.ui.heart, off_x + (ix - 1) * spacing_x, off_y, heart_size, heart_size)
-    end
-    for ix = player:health() + 1, player.max_health do
-        canvas.draw_image(sprites.ui.heart, damage_off + off_x + (ix - 1) * spacing_x, damage_off + off_y, damage_size, damage_size)
-    end
+    selector_widget:update(dt, player)
 end
 
 --- Draw all HUD elements
----@param player table Player instance with health() method, max_health, and projectile properties
----@return nil
+---@param player table Player instance with max_health, damage, and projectile properties
 function hud.draw(player)
-    -- Skip normal HUD when title screen or slot screen is active
     if not title_screen.is_active() and not slot_screen.is_active() then
-        hud.draw_player_health(player)
         selector_widget:draw(player)
     end
     game_over.draw()
@@ -133,7 +109,6 @@ function hud.draw(player)
 end
 
 --- Show the game over screen
----@return nil
 function hud.show_game_over()
     game_over.show()
 end
@@ -184,7 +159,6 @@ function hud.set_rest_continue_callback(fn)
 end
 
 --- Show the title screen
----@return nil
 function hud.show_title_screen()
     title_screen.show()
 end
@@ -196,7 +170,6 @@ function hud.is_title_screen_active()
 end
 
 --- Hide the title screen
----@return nil
 function hud.hide_title_screen()
     title_screen.hide()
 end
@@ -220,7 +193,6 @@ function hud.set_title_controls_callback(fn)
 end
 
 --- Show the slot selection screen
----@return nil
 function hud.show_slot_screen()
     slot_screen.show()
 end
@@ -237,11 +209,10 @@ function hud.set_slot_callback(fn)
     slot_screen.set_slot_callback(fn)
 end
 
---- Set the player and camera references for pause screen
+--- Set references needed for pause screen functionality
 ---@param player table Player instance
 ---@param camera table Camera instance
----@return nil
-function hud.set_player(player, camera)
+function hud.set_gameplay_refs(player, camera)
     player_ref = player
     camera_ref = camera
 end

@@ -38,7 +38,7 @@ function Player.new()
 	local self = setmetatable({}, Player)
 
 	-- Player Health
-	self.max_health = 3
+	self.max_health = 6
 	self.damage = 0
 	self.invincible_time = 0
 

@@ -377,10 +377,6 @@ local function on_start()
     settings_menu.set_return_to_title_callback(return_to_title)
     rest_screen.set_return_to_title_callback(return_to_title)
 
-    rest_screen.set_settings_callback(function()
-        settings_menu.show()
-    end)
-
     hud.show_title_screen()
     audio.play_music(audio.title_screen)
 

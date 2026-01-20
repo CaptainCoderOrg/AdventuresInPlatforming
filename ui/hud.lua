@@ -1,5 +1,6 @@
 --- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen, title screen, slot screen
 local canvas = require("canvas")
+local controls = require("controls")
 local settings_menu = require("ui/settings_menu")
 local game_over = require("ui/game_over")
 local rest_screen = require("ui/rest_screen")
@@ -9,6 +10,10 @@ local sprites = require("sprites")
 local config = require("config")
 
 local hud = {}
+
+-- Player and camera references for pause screen
+local player_ref = nil
+local camera_ref = nil
 
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
@@ -24,28 +29,47 @@ function hud.init()
 end
 
 --- Process HUD input for all overlay screens
---- Priority: settings menu > slot screen > title screen > game over > rest screen
+--- Priority: settings menu > pause/rest screen toggle > slot screen > title screen > game over > rest screen
 function hud.input()
-    settings_menu.input()
+    -- Settings menu blocks all other input when open
+    if settings_menu.is_open() then
+        -- ESC/START closes settings menu
+        if controls.settings_pressed() then
+            settings_menu.toggle()
+        else
+            settings_menu.input()
+        end
+        return
+    end
 
-    -- Slot screen blocks other HUD input when active (except settings)
-    if slot_screen.is_active() and not settings_menu.is_open() then
+    -- Handle ESC/START for pause screen toggle
+    if controls.settings_pressed() then
+        if rest_screen.is_pause_mode() then
+            -- Close pause screen
+            rest_screen.trigger_continue()
+        elseif not title_screen.is_active() and not slot_screen.is_active()
+               and not game_over.is_active() and not rest_screen.is_active() then
+            -- Open pause screen during gameplay
+            rest_screen.show_pause(player_ref, camera_ref)
+        end
+    end
+
+    -- Slot screen blocks other HUD input when active
+    if slot_screen.is_active() then
         slot_screen.input()
         return
     end
 
-    -- Title screen blocks other HUD input when active (except settings)
-    if title_screen.is_active() and not settings_menu.is_open() then
+    -- Title screen blocks other HUD input when active
+    if title_screen.is_active() then
         title_screen.input()
         return
     end
 
     game_over.input()
 
-    -- Rest screen input blocked when settings menu is open
-    if not settings_menu.is_open() then
-        rest_screen.input()
-    end
+    -- Rest screen input
+    rest_screen.input()
 end
 
 --- Update all HUD overlay screens and handle mouse input blocking
@@ -155,6 +179,12 @@ function hud.is_rest_screen_active()
     return rest_screen.is_active()
 end
 
+--- Check if pause mode is active (vs rest mode)
+---@return boolean is_pause True if in pause mode
+function hud.is_pause_mode()
+    return rest_screen.is_pause_mode()
+end
+
 --- Set the continue callback for rest screen (reloads level from checkpoint)
 ---@param fn function Function to call when continuing from rest
 function hud.set_rest_continue_callback(fn)
@@ -210,6 +240,14 @@ end
 ---@param fn function Function to call when Back is selected
 function hud.set_slot_back_callback(fn)
     slot_screen.set_back_callback(fn)
+end
+
+--- Set the player and camera references for pause screen
+---@param player table Player instance
+---@param camera table Camera instance
+function hud.set_player(player, camera)
+    player_ref = player
+    camera_ref = camera
 end
 
 return hud

@@ -13,8 +13,13 @@ local keybind_panel = require("ui/keybind_panel")
 local audio = require("audio")
 local settings_storage = require("settings_storage")
 local utils = require("ui/utils")
+local sprites = require("sprites")
 
 local rest_screen = {}
+
+-- Mode constants (rest = campfire, pause = ESC/START during gameplay)
+local MODE = { REST = "rest", PAUSE = "pause" }
+local current_mode = nil
 
 -- State machine constants
 local NAV_MODE = { MENU = "menu", SETTINGS = "settings", CONFIRM = "confirm" }
@@ -106,6 +111,7 @@ local circle_lerp_t = 0
 -- Callbacks
 local continue_callback = nil
 local return_to_title_callback = nil
+local pause_continue_callback = nil
 
 -- UI components (populated in init)
 local status_button = nil
@@ -123,9 +129,19 @@ local controls_panel = nil
 ---@type table|nil Player reference for stats display
 local player_ref = nil
 
---- Save current settings to local storage
+-- Track whether settings have been modified since last save
+local settings_dirty = false
+
+--- Mark settings as modified (called when sliders or keybinds change)
+---@return nil
+local function mark_settings_dirty()
+    settings_dirty = true
+end
+
+--- Save current settings to local storage if modified
 ---@return nil
 local function save_settings()
+    if not settings_dirty then return end
     settings_storage.save_all(
         {
             master = volume_sliders.master:get_value(),
@@ -135,6 +151,7 @@ local function save_settings()
         controls.get_all_bindings("keyboard"),
         controls.get_all_bindings("gamepad")
     )
+    settings_dirty = false
 end
 
 --- Return to menu mode showing the status panel
@@ -179,6 +196,8 @@ end
 local function calculate_layout(scale)
     local screen_w = canvas.get_width() / scale
     local screen_h = canvas.get_height() / scale
+
+    -- Layout around circle viewport (bottom-left)
     local circle_right = CIRCLE_EDGE_PADDING + CIRCLE_RADIUS * 2
     local circle_top = screen_h - CIRCLE_EDGE_PADDING - CIRCLE_RADIUS * 2
 
@@ -226,6 +245,35 @@ local function position_buttons(menu_x, menu_y, menu_width, menu_height)
     return_to_title_button.y = menu_y + menu_height - BUTTON_TOP_OFFSET - BUTTON_HEIGHT
 end
 
+--- Convert linear slider value (0-1) to perceptual volume (0-1)
+--- Human hearing is logarithmic, so we apply a power curve for even-sounding volume steps
+---@param linear number Slider value (0-1)
+---@return number Perceptual volume (0-1)
+local function linear_to_perceptual(linear)
+    return linear * linear
+end
+
+--- Create a volume slider input callback
+---@param slider_key string Key in volume_sliders table
+---@param set_volume_fn function Volume setter (receives 0-1 value)
+---@param on_change_fn function|nil Optional callback after volume change (e.g., play sound check)
+---@return function Input handler for slider
+local function create_volume_callback(slider_key, set_volume_fn, on_change_fn)
+    return function(event)
+        if event.type == "press" or event.type == "drag" then
+            volume_sliders[slider_key]:set_value(event.normalized_x)
+            local perceptual = linear_to_perceptual(volume_sliders[slider_key]:get_value())
+            set_volume_fn(perceptual)
+            if on_change_fn then on_change_fn() end
+            mark_settings_dirty()
+        end
+    end
+end
+
+-- Volume slider configuration
+local SLIDER_WIDTH = 80
+local SLIDER_HEIGHT = 14
+
 --- Initialize rest screen components (creates menu buttons)
 ---@return nil
 function rest_screen.init()
@@ -235,45 +283,23 @@ function rest_screen.init()
     continue_button = create_menu_button("Continue")
     return_to_title_button = create_menu_button("Return to Title")
 
-    -- Create volume sliders (copy pattern from settings_menu.lua)
-    local slider_width = 80
-    local slider_height = 14
-
+    -- Create volume sliders
     volume_sliders.master = slider.create({
-        x = 0, y = 0, width = slider_width, height = slider_height,
+        x = 0, y = 0, width = SLIDER_WIDTH, height = SLIDER_HEIGHT,
         color = "#4488FF", value = 0.75, animate_speed = 0.1,
-        on_input = function(event)
-            if event.type == "press" or event.type == "drag" then
-                volume_sliders.master:set_value(event.normalized_x)
-                local perceptual = volume_sliders.master:get_value() * volume_sliders.master:get_value()
-                canvas.set_master_volume(perceptual)
-            end
-        end
+        on_input = create_volume_callback("master", canvas.set_master_volume)
     })
 
     volume_sliders.music = slider.create({
-        x = 0, y = 0, width = slider_width, height = slider_height,
+        x = 0, y = 0, width = SLIDER_WIDTH, height = SLIDER_HEIGHT,
         color = "#44FF88", value = 0.20, animate_speed = 0.1,
-        on_input = function(event)
-            if event.type == "press" or event.type == "drag" then
-                volume_sliders.music:set_value(event.normalized_x)
-                local perceptual = volume_sliders.music:get_value() * volume_sliders.music:get_value()
-                audio.set_music_volume(perceptual)
-            end
-        end
+        on_input = create_volume_callback("music", audio.set_music_volume)
     })
 
     volume_sliders.sfx = slider.create({
-        x = 0, y = 0, width = slider_width, height = slider_height,
+        x = 0, y = 0, width = SLIDER_WIDTH, height = SLIDER_HEIGHT,
         color = "#FF8844", value = 0.6, animate_speed = 0.1,
-        on_input = function(event)
-            if event.type == "press" or event.type == "drag" then
-                volume_sliders.sfx:set_value(event.normalized_x)
-                local perceptual = volume_sliders.sfx:get_value() * volume_sliders.sfx:get_value()
-                audio.set_sfx_volume(perceptual)
-                audio.play_sound_check()
-            end
-        end
+        on_input = create_volume_callback("sfx", audio.set_sfx_volume, audio.play_sound_check)
     })
 
     -- Load saved volumes from storage
@@ -288,6 +314,7 @@ function rest_screen.init()
         y = 0,
         width = 120,
         height = 140,
+        on_change = mark_settings_dirty,
     })
 
     rest_dialogue = simple_dialogue.create({
@@ -362,42 +389,9 @@ local function build_stats_text(player)
     return table.concat(lines, "\n")
 end
 
---- Show the rest screen centered on a campfire
----@param world_x number Campfire center X in tile coordinates
----@param world_y number Campfire center Y in tile coordinates
----@param camera table Camera instance for position calculation
----@param player table|nil Player instance for stats display
-function rest_screen.show(world_x, world_y, camera, player)
-    if state == STATE.HIDDEN then
-        campfire_x = world_x
-        campfire_y = world_y
-        camera_ref = camera
-        player_ref = player
-        state = STATE.FADING_IN
-        fade_progress = 0
-        elapsed_time = 0
-
-        -- Use the last known good camera position (saved in main.lua before player:update)
-        -- This ensures we capture the position before anything can modify it
-        original_camera_x = last_camera_x
-        original_camera_y = last_camera_y
-
-        -- Initialize circle lerp: start at campfire, target bottom-left
-        local sprites = require("sprites")
-        local scaled_radius = CIRCLE_RADIUS * config.ui.SCALE
-
-        -- Starting position (campfire screen coords)
-        circle_start_x = (world_x - camera:get_x()) * sprites.tile_size
-        circle_start_y = (world_y - camera:get_y()) * sprites.tile_size
-
-        -- Target position: bottom-left with padding (circle center offset by radius)
-        circle_target_x = CIRCLE_EDGE_PADDING + scaled_radius
-        circle_target_y = canvas.get_height() - CIRCLE_EDGE_PADDING - scaled_radius
-
-        circle_lerp_t = 0  -- Start at campfire position
-    end
-
-    -- Always reset navigation state when showing (in case returning from title)
+--- Reset navigation state to defaults (called when showing rest/pause screen)
+---@return nil
+local function reset_navigation_state()
     mouse_active = true
     focused_index = 1  -- Default to Status
     nav_mode = NAV_MODE.MENU  -- Start in menu mode
@@ -412,6 +406,78 @@ function rest_screen.show(world_x, world_y, camera, player)
     end
 end
 
+--- Initialize circle lerp animation from a world position to bottom-left corner
+---@param center_x number Circle center X in tile coordinates
+---@param center_y number Circle center Y in tile coordinates
+---@param camera table Camera instance for screen coordinate conversion
+---@return nil
+local function init_circle_lerp(center_x, center_y, camera)
+    local scaled_radius = CIRCLE_RADIUS * config.ui.SCALE
+
+    -- Starting position (screen coords)
+    circle_start_x = (center_x - camera:get_x()) * sprites.tile_size
+    circle_start_y = (center_y - camera:get_y()) * sprites.tile_size
+
+    -- Target position: bottom-left with padding (circle center offset by radius)
+    circle_target_x = CIRCLE_EDGE_PADDING + scaled_radius
+    circle_target_y = canvas.get_height() - CIRCLE_EDGE_PADDING - scaled_radius
+
+    circle_lerp_t = 0
+end
+
+--- Show the rest screen centered on a campfire
+---@param world_x number Campfire center X in tile coordinates
+---@param world_y number Campfire center Y in tile coordinates
+---@param camera table Camera instance for position calculation
+---@param player table|nil Player instance for stats display
+function rest_screen.show(world_x, world_y, camera, player)
+    if state == STATE.HIDDEN then
+        current_mode = MODE.REST
+        campfire_x = world_x
+        campfire_y = world_y
+        camera_ref = camera
+        player_ref = player
+        state = STATE.FADING_IN
+        fade_progress = 0
+        elapsed_time = 0
+
+        -- Use the last known good camera position (saved in main.lua before player:update)
+        original_camera_x = last_camera_x
+        original_camera_y = last_camera_y
+
+        init_circle_lerp(world_x, world_y, camera)
+    end
+
+    reset_navigation_state()
+end
+
+--- Show the pause screen (circular viewport around player, no save, no level reload)
+---@param player table Player instance for stats display and position
+---@param camera table Camera instance for position calculation
+function rest_screen.show_pause(player, camera)
+    if state == STATE.HIDDEN then
+        current_mode = MODE.PAUSE
+        player_ref = player
+        camera_ref = camera
+        state = STATE.FADING_IN
+        fade_progress = 0
+        elapsed_time = 0
+
+        -- Use player position for circle center
+        campfire_x = player.x + 0.5
+        campfire_y = player.y + 0.5
+
+        original_camera_x = last_camera_x
+        original_camera_y = last_camera_y
+
+        init_circle_lerp(campfire_x, campfire_y, camera)
+
+        rest_dialogue.text = "Game paused."
+    end
+
+    reset_navigation_state()
+end
+
 --- Set the continue callback function (reloads level from checkpoint)
 ---@param fn function Function to call when continuing
 function rest_screen.set_continue_callback(fn)
@@ -422,6 +488,18 @@ end
 ---@param fn function Function to call when returning to title
 function rest_screen.set_return_to_title_callback(fn)
     return_to_title_callback = fn
+end
+
+--- Set the pause continue callback function (just resumes gameplay, no reload)
+---@param fn function Function to call when continuing from pause
+function rest_screen.set_pause_continue_callback(fn)
+    pause_continue_callback = fn
+end
+
+--- Check if currently in pause mode (vs rest mode)
+---@return boolean is_pause_mode True if screen is active and in pause mode
+function rest_screen.is_pause_mode()
+    return state ~= STATE.HIDDEN and current_mode == MODE.PAUSE
 end
 
 --- Check if rest screen is blocking game input
@@ -443,7 +521,7 @@ local function is_circle_visible()
     return state == STATE.FADING_IN or state == STATE.OPEN or state == STATE.FADING_OUT
 end
 
---- Get the current camera offset to keep campfire centered in circle
+--- Get the current camera offset to keep target centered in circle
 ---@return number offset_x Camera X offset in pixels
 ---@return number offset_y Camera Y offset in pixels
 function rest_screen.get_camera_offset()
@@ -563,10 +641,10 @@ local function handle_audio_settings_input()
             focused_slider:set_value(new_value)
             local setter = get_volume_setter(audio_focus_index)
             if setter then
-                local perceptual = focused_slider:get_value() * focused_slider:get_value()
-                setter(perceptual)
+                setter(linear_to_perceptual(focused_slider:get_value()))
             end
             if audio_focus_index == 3 then audio.play_sound_check() end
+            mark_settings_dirty()
         end
     else
         hold_direction = 0
@@ -700,13 +778,21 @@ function rest_screen.update(dt, block_mouse)
             fade_progress = 1
             state = STATE.OPEN
         end
+        -- Animate circle lerp for both modes
         circle_lerp_t = math.min(circle_lerp_t + dt / CIRCLE_LERP_DURATION, 1)
     elseif state == STATE.FADING_OUT then
         fade_progress = fade_progress + dt / FADE_OUT_DURATION
         if fade_progress >= 1 then
-            fade_progress = 0
-            state = STATE.RELOADING
             save_settings()
+            fade_progress = 0
+            if current_mode == MODE.PAUSE then
+                -- Pause mode: skip reload, just hide
+                state = STATE.HIDDEN
+                if pause_continue_callback then pause_continue_callback() end
+            else
+                -- Rest mode: proceed to reload sequence
+                state = STATE.RELOADING
+            end
         end
         circle_lerp_t = math.max(circle_lerp_t - dt / CIRCLE_LERP_DURATION, 0)
     elseif state == STATE.RELOADING then
@@ -915,6 +1001,62 @@ local function draw_confirm_panel(x, y, width, height)
     utils.draw_outlined_text("No", start_x + yes_metrics.width + sep_metrics.width, center_y + 10, no_color)
 end
 
+--- Draw circular viewport mask (fills area outside the circle with black)
+---@param x number Circle center X in screen pixels
+---@param y number Circle center Y in screen pixels
+---@param radius number Circle radius in pixels
+---@param screen_w number Screen width
+---@param screen_h number Screen height
+---@return nil
+local function draw_circular_viewport(x, y, radius, screen_w, screen_h)
+    if radius > 1 then
+        canvas.save()
+        canvas.begin_path()
+        canvas.rect(0, 0, screen_w, screen_h)
+        canvas.arc(x, y, radius, 0, math.pi * 2)
+        canvas.clip("evenodd")
+        canvas.set_fill_style("#000000")
+        canvas.fill_rect(0, 0, screen_w, screen_h)
+        canvas.restore()
+    else
+        canvas.set_fill_style("#000000")
+        canvas.fill_rect(0, 0, screen_w, screen_h)
+    end
+end
+
+--- Draw campfire glow effects (vignette and glow ring)
+---@param x number Circle center X in screen pixels
+---@param y number Circle center Y in screen pixels
+---@param radius number Circle radius in pixels
+---@param pulse number Pulse amount for animation
+---@return nil
+local function draw_campfire_glow(x, y, radius, pulse)
+    -- Vignette gradient
+    local gradient = canvas.create_radial_gradient(x, y, radius * 0.5, x, y, radius)
+    gradient:add_color_stop(0, "rgba(0,0,0,0)")
+    gradient:add_color_stop(0.7, "rgba(0,0,0,0.3)")
+    gradient:add_color_stop(1, "rgba(0,0,0,0.7)")
+    canvas.set_fill_style(gradient)
+    canvas.begin_path()
+    canvas.arc(x, y, radius, 0, math.pi * 2)
+    canvas.fill()
+
+    -- Glow ring
+    local glow_alpha = 0.4 + pulse * 0.2
+    local glow_inner = radius * 0.85
+    local glow_outer = radius * 1.2
+
+    local glow_gradient = canvas.create_radial_gradient(x, y, glow_inner, x, y, glow_outer)
+    glow_gradient:add_color_stop(0, "rgba(255,180,50,0)")
+    glow_gradient:add_color_stop(0.4, string.format("rgba(255,150,40,%.2f)", glow_alpha * 0.5))
+    glow_gradient:add_color_stop(1, "rgba(255,80,20,0)")
+
+    canvas.set_fill_style(glow_gradient)
+    canvas.begin_path()
+    canvas.arc(x, y, glow_outer, 0, math.pi * 2)
+    canvas.fill()
+end
+
 --- Draw the rest screen overlay including circular viewport, vignette, and menu UI
 ---@return nil
 function rest_screen.draw()
@@ -924,16 +1066,8 @@ function rest_screen.draw()
     local screen_w = canvas.get_width()
     local screen_h = canvas.get_height()
 
-    local t = ease_out(circle_lerp_t)
-    local screen_x = circle_start_x + (circle_target_x - circle_start_x) * t
-    local screen_y = circle_start_y + (circle_target_y - circle_start_y) * t
-
-    local pulse = math.sin(elapsed_time * PULSE_SPEED * math.pi * 2) * PULSE_AMOUNT
-    local radius = CIRCLE_RADIUS * scale * (1 + pulse)
-
     local overlay_alpha = 0
     local content_alpha = 0
-    local hole_radius = radius
 
     if state == STATE.FADING_IN then
         overlay_alpha = fade_progress
@@ -948,50 +1082,22 @@ function rest_screen.draw()
 
     canvas.set_global_alpha(overlay_alpha)
 
-    -- Create circular viewport using evenodd clip (fills area outside circle)
-    if hole_radius > 1 then
-        canvas.save()
-        canvas.begin_path()
-        canvas.rect(0, 0, screen_w, screen_h)
-        canvas.arc(screen_x, screen_y, hole_radius, 0, math.pi * 2)
-        canvas.clip("evenodd")
-        canvas.set_fill_style("#000000")
-        canvas.fill_rect(0, 0, screen_w, screen_h)
-        canvas.restore()
+    -- Calculate circle position
+    local t = ease_out(circle_lerp_t)
+    local screen_x = circle_start_x + (circle_target_x - circle_start_x) * t
+    local screen_y = circle_start_y + (circle_target_y - circle_start_y) * t
+    local hole_radius = CIRCLE_RADIUS * scale
 
-        -- Vignette gradient
-        local gradient = canvas.create_radial_gradient(
-            screen_x, screen_y, hole_radius * 0.5,
-            screen_x, screen_y, hole_radius
-        )
-        gradient:add_color_stop(0, "rgba(0,0,0,0)")
-        gradient:add_color_stop(0.7, "rgba(0,0,0,0.3)")
-        gradient:add_color_stop(1, "rgba(0,0,0,0.7)")
-        canvas.set_fill_style(gradient)
-        canvas.begin_path()
-        canvas.arc(screen_x, screen_y, hole_radius, 0, math.pi * 2)
-        canvas.fill()
-
-        -- Glow ring
-        local glow_alpha = 0.4 + pulse * 0.2
-        local glow_inner = hole_radius * 0.85
-        local glow_outer = hole_radius * 1.2
-
-        local glow_gradient = canvas.create_radial_gradient(
-            screen_x, screen_y, glow_inner,
-            screen_x, screen_y, glow_outer
-        )
-        glow_gradient:add_color_stop(0, "rgba(255,180,50,0)")
-        glow_gradient:add_color_stop(0.4, string.format("rgba(255,150,40,%.2f)", glow_alpha * 0.5))
-        glow_gradient:add_color_stop(1, "rgba(255,80,20,0)")
-
-        canvas.set_fill_style(glow_gradient)
-        canvas.begin_path()
-        canvas.arc(screen_x, screen_y, glow_outer, 0, math.pi * 2)
-        canvas.fill()
+    -- Draw circular viewport (rest mode adds pulse and glow effects)
+    if current_mode == MODE.REST then
+        local pulse = math.sin(elapsed_time * PULSE_SPEED * math.pi * 2) * PULSE_AMOUNT
+        hole_radius = hole_radius * (1 + pulse)
+        draw_circular_viewport(screen_x, screen_y, hole_radius, screen_w, screen_h)
+        if hole_radius > 1 then
+            draw_campfire_glow(screen_x, screen_y, hole_radius, pulse)
+        end
     else
-        canvas.set_fill_style("#000000")
-        canvas.fill_rect(0, 0, screen_w, screen_h)
+        draw_circular_viewport(screen_x, screen_y, hole_radius, screen_w, screen_h)
     end
 
     if content_alpha > 0 then

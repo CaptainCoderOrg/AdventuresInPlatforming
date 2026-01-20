@@ -23,7 +23,7 @@ local SCHEME_LABELS = {
 }
 
 --- Create a new keybind panel
----@param opts {x: number, y: number, width: number, height: number}
+---@param opts {x: number, y: number, width: number, height: number, on_change: function|nil}
 ---@return table keybind_panel
 function keybind_panel.create(opts)
     local self = setmetatable({}, keybind_panel)
@@ -31,6 +31,7 @@ function keybind_panel.create(opts)
     self.y = opts.y or 0
     self.width = opts.width or 130
     self.height = opts.height or 160
+    self.on_change = opts.on_change
 
     self.scheme_index = 1
 
@@ -52,6 +53,7 @@ function keybind_panel.create(opts)
         text_only = true,
         on_click = function()
             self:reset_to_defaults()
+            if self.on_change then self.on_change() end
         end
     })
 
@@ -181,6 +183,11 @@ function keybind_panel:update(dt, local_mx, local_my, mouse_active)
 
     for _, row in ipairs(self.rows) do
         row:update(dt)
+    end
+
+    -- Notify when a keybind was just captured
+    if self:just_captured() and self.on_change then
+        self.on_change()
     end
 
     local reset_y = self:get_reset_button_y()

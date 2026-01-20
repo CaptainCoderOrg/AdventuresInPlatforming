@@ -94,8 +94,10 @@ local function update(dt)
         return
     end
 
-    -- During rest screen, only update prop animations (keep campfire flickering)
+    -- During rest/pause screen, only update prop animations (keep campfire flickering)
+    -- Timer keeps counting
     if hud.is_rest_screen_active() then
+        Playtime.resume()
         Playtime.update(dt)
         Prop.update_animations(dt)
         return
@@ -237,6 +239,9 @@ local function init_level(level, spawn_override, player_data, options)
 
     -- Update rest state's camera reference
     rest_state.camera = camera
+
+    -- Update HUD with player and camera references for pause screen
+    hud.set_player(player, camera)
 
     was_dead = false
 end

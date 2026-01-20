@@ -380,26 +380,9 @@ local function handle_controls_input()
     controls_panel:input()
 end
 
---- Process settings menu input (handles ESC for toggle and tab navigation)
+--- Process settings menu input (tab navigation only, ESC/START handled by hud.lua)
 ---@return nil
 function settings_menu.input()
-    if controls.settings_pressed() then
-        if fade_state == "closed" or fade_state == "fading_out" then
-            fade_state = "fading_in"
-            -- ESC key opens from gameplay, so show the title button
-            opened_from_title = false
-            -- Reset focus when opening
-            audio_focus_index = 1
-            if controls_panel then
-                controls_panel:reset_focus()
-            end
-            hold_direction = 0
-            hold_time = 0
-        elseif fade_state == "open" or fade_state == "fading_in" then
-            fade_state = "fading_out"
-        end
-    end
-
     -- Handle input when menu is open
     if fade_state == "open" then
         if TABS[current_tab] == "audio" then

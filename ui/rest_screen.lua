@@ -489,15 +489,13 @@ end
 --- Handle input when in Audio settings mode
 ---@return nil
 local function handle_audio_settings_input()
-    -- Exit settings with left direction or back button (Escape/gamepad EAST)
-    if controls.menu_left_pressed() or controls.menu_back_pressed() then
+    if controls.menu_back_pressed() then
         return_to_status()
         hold_direction = 0
         hold_time = 0
         return
     end
 
-    -- Up/Down navigation for sliders
     if controls.menu_up_pressed() then
         mouse_active = false
         audio_focus_index = wrap_index(audio_focus_index, -1, 3)
@@ -561,24 +559,15 @@ end
 --- Handle input when in Controls settings mode
 ---@return nil
 local function handle_controls_settings_input()
-    -- If panel is listening for input, let it handle everything
     if controls_panel:is_listening() then
         return
     end
 
-    -- Exit settings with back button (Escape/gamepad EAST)
     if controls.menu_back_pressed() then
         return_to_status()
         return
     end
 
-    -- Exit settings with left direction (when not on scheme tab)
-    if controls.menu_left_pressed() and controls_panel.focus_index ~= -1 then
-        return_to_status()
-        return
-    end
-
-    -- Handle scheme tab navigation
     if controls_panel.focus_index == -1 then
         if controls.menu_left_pressed() then
             controls_panel:cycle_scheme(-1)

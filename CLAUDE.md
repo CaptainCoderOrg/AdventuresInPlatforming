@@ -334,6 +334,12 @@ self.weapon_damage = 2.5        -- Damage per sword hit
 self.attacks = 3                -- Max combo hits
 self.attack_cooldown = 0        -- Countdown timer (attack)
 self.throw_cooldown = 0         -- Countdown timer (throw)
+self.level = 1                  -- Player level (progression)
+self.experience = 0             -- XP toward next level
+self.gold = 0                   -- Currency for purchases
+self.defense = 0                -- Reduces incoming damage
+self.strength = 5               -- Base damage multiplier
+self.critical_chance = 0        -- Percent chance for critical hit
 self.attack_state = {           -- Combo tracking
     count, next_anim_ix, remaining_time, queued, hit_enemies
 }
@@ -498,14 +504,24 @@ Multi-slot save system using localStorage with 3 save slots.
 **Save Data Structure:**
 ```lua
 {
+    -- Required (position/level)
     x = player_x,                    -- Tile coordinate
     y = player_y,                    -- Tile coordinate
     level_id = "level1",             -- Level identifier
     direction = 1,                   -- Facing direction (-1 or 1)
+
+    -- Metadata
     campfire_name = "Campfire",      -- Display name for UI
     playtime = 3600.5,               -- Total seconds played
+
+    -- Player stats (restored via stat_keys in main.lua)
     max_health = 3,                  -- Current max HP
-    level = 1,                       -- Current level (progression)
+    level = 1,                       -- Player level (progression)
+    experience = 0,                  -- XP toward next level
+    gold = 0,                        -- Currency for purchases
+    defense = 0,                     -- Reduces incoming damage
+    strength = 5,                    -- Base damage multiplier
+    critical_chance = 0,             -- Percent chance for critical hit
 }
 ```
 
@@ -593,14 +609,15 @@ slot_screen.set_back_callback(fn)   -- Callback when Back pressed
 **Rest Screen** (`ui/rest_screen.lua`):
 - Circular viewport effect centered on campfire
 - Pulsing glow ring and vignette
+- Player stats display (level, exp, gold, HP, DEF, STR, CRIT, playtime)
 - "Continue" button to resume gameplay
 
 ```lua
-rest_screen.show(world_x, world_y, camera)  -- Show centered on campfire
-rest_screen.update(dt)                      -- Update animations
-rest_screen.draw()                          -- Render circular viewport
-rest_screen.trigger_continue()              -- Initiate fade-out
-rest_screen.set_continue_callback(fn)       -- Callback after fade completes
+rest_screen.show(world_x, world_y, camera, player)  -- Show centered on campfire
+rest_screen.update(dt)                              -- Update animations
+rest_screen.draw()                                  -- Render circular viewport
+rest_screen.trigger_continue()                      -- Initiate fade-out
+rest_screen.set_continue_callback(fn)               -- Callback after fade completes
 ```
 
 **Extended States:** `HIDDEN` → `FADING_IN` → `OPEN` → `FADING_OUT` → `RELOADING` → `FADING_BACK_IN` → `HIDDEN`

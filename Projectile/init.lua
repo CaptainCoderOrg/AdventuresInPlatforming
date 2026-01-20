@@ -23,26 +23,37 @@ Projectile.animations = {
     })
 }
 
+--- Returns the Axe projectile specification.
+--- Axe has an arcing trajectory with gravity and costs 1 stamina to throw.
+---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, create
 function Projectile.get_axe()
     return {
         name = "Axe",
         sprite = sprites.projectiles.axe,
         icon = sprites.projectiles.axe_icon,
         damage = 1,
+        stamina_cost = 1,
         create = Projectile.create_axe,
     }
 end
 
+--- Returns the Shuriken projectile specification.
+--- Shuriken travels in a straight line with no gravity and costs no stamina.
+---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, create
 function Projectile.get_shuriken()
     return {
         name = "Shuriken",
         sprite = sprites.projectiles.shuriken,
         icon = sprites.projectiles.shuriken_icon,
         damage = 1,
+        stamina_cost = 0,
         create = Projectile.create_shuriken,
     }
 end
 
+--- Updates all active projectiles. Applies physics, checks collisions, and removes destroyed projectiles.
+---@param dt number Delta time in seconds
+---@param level_info table Level metadata with width and height for bounds checking
 function Projectile.update(dt, level_info)
     local to_remove = {}
 
@@ -73,6 +84,7 @@ function Projectile.update(dt, level_info)
     end
 end
 
+--- Renders all active projectiles and their debug hitboxes if enabled.
 function Projectile.draw()
     canvas.save()
     for projectile, _ in pairs(Projectile.all) do
@@ -93,11 +105,11 @@ function Projectile.draw()
     canvas.restore()
 end
 
----@param collision table {other, x, y}
+--- Handles projectile collision. Damages enemies, spawns hit effect, and marks for destruction.
+---@param collision table Collision data {other: shape, x: number, y: number}
 function Projectile:on_collision(collision)
     local direction = self.vx >= 0 and 1 or -1
 
-    -- Check if we hit an enemy
     if collision.other and collision.other.owner and collision.other.owner.is_enemy then
         local enemy = collision.other.owner
         enemy:on_hit("projectile", self)
@@ -107,6 +119,18 @@ function Projectile:on_collision(collision)
     self.marked_for_destruction = true
 end
 
+--- Creates a new projectile instance with physics and collision.
+---@param name string Identifier prefix for the projectile
+---@param animation_def table Animation definition from Projectile.animations
+---@param x number Initial X position in tile coordinates
+---@param y number Initial Y position in tile coordinates
+---@param vx number Horizontal velocity in tiles per second
+---@param vy number Vertical velocity in tiles per second
+---@param gravity_scale number Gravity multiplier (0 for no gravity)
+---@param direction number Facing direction (-1 left, 1 right)
+---@param effect_callback function|nil Effect spawner on collision (defaults to Effects.create_hit)
+---@param damage number|nil Damage dealt to enemies (defaults to 1)
+---@return table Projectile instance
 function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage)
     if effect_callback == nil then effect_callback = Effects.create_hit end
 	local self = setmetatable({}, Projectile)
@@ -131,6 +155,11 @@ function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direct
 	return self
 end
 
+--- Creates and spawns an axe projectile with arcing trajectory.
+---@param x number Spawn X position in tile coordinates
+---@param y number Spawn Y position in tile coordinates
+---@param direction number Throw direction (-1 left, 1 right)
+---@return table The created projectile instance
 function Projectile.create_axe(x, y, direction)
     local axe_vx = direction*16
     local axe_vy = -3
@@ -139,6 +168,11 @@ function Projectile.create_axe(x, y, direction)
     return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction, nil, damage)
 end
 
+--- Creates and spawns a shuriken projectile with straight trajectory.
+---@param x number Spawn X position in tile coordinates
+---@param y number Spawn Y position in tile coordinates
+---@param direction number Throw direction (-1 left, 1 right)
+---@return table The created projectile instance
 function Projectile.create_shuriken(x, y, direction)
     local velocity_x = direction*24
     local velocity_y = 0

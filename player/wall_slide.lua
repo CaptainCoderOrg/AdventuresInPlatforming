@@ -13,7 +13,7 @@ local WALL_SLIDE_GRACE_TIME = 5 / 60  -- 0.0833 seconds (5 frames at 60 FPS)
 local WALL_SLIDE_DELAY = 0.2  -- 0.2 seconds before starting to slide down
 
 --- Called when entering wall slide. Faces away from wall and resets grace time.
---- @param player table The player object
+---@param player table The player object
 function wall_slide.start(player)
 	player.animation = Animation.new(common.animations.WALL_SLIDE)
 	player.direction = -player.wall_direction
@@ -22,27 +22,25 @@ function wall_slide.start(player)
 	audio.play_footstep()
 end
 
---- Handles input during wall slide. Jump triggers wall jump, releasing wall starts grace period.
---- @param player table The player object
+--- Handles input during wall slide. Jump triggers wall jump (if stamina available), releasing wall starts grace period.
+---@param player table The player object
 function wall_slide.input(player)
 	if controls.jump_pressed() then
-		player.wall_jump_dir = player.wall_direction
-		player:set_state(player.states.wall_jump)
+		if player:use_stamina(common.WALL_JUMP_STAMINA_COST) then
+			player.wall_jump_dir = player.wall_direction
+			player:set_state(player.states.wall_jump)
+		end
 		return
 	end
 
-	if common.is_pressing_into_wall(player) then
-		player.wall_slide_state.holding_wall = true
-	else
-		player.wall_slide_state.holding_wall = false
-	end
+	player.wall_slide_state.holding_wall = common.is_pressing_into_wall(player)
 
 	common.handle_dash(player)
 end
 
 --- Updates wall slide. Limits fall speed while sliding, normal gravity during grace period.
---- @param player table The player object
---- @param dt number Delta time
+---@param player table The player object
+---@param dt number Delta time
 function wall_slide.update(player, dt)
 	if player.wall_slide_state.holding_wall then
 		player.wall_slide_state.grace_time = 0
@@ -82,7 +80,7 @@ function wall_slide.update(player, dt)
 end
 
 --- Renders the player with wall slide or fall animation.
---- @param player table The player object
+---@param player table The player object
 function wall_slide.draw(player)
 	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end

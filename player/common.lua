@@ -18,6 +18,12 @@ common.MAX_FALL_SPEED = 20
 common.ATTACK_STAMINA_COST = 2
 -- Hammer costs 5: single use depletes bar, high-risk/high-reward
 common.HAMMER_STAMINA_COST = 5
+-- Air jump costs 1: double jump only, ground jump stays free
+common.AIR_JUMP_STAMINA_COST = 1
+-- Dash costs 2.5: high cost for powerful escape/engage
+common.DASH_STAMINA_COST = 2.5
+-- Wall jump costs 1: matches air jump cost
+common.WALL_JUMP_STAMINA_COST = 1
 
 -- Animations (converted to delta-time based, milliseconds per frame)
 common.animations = {
@@ -45,6 +51,15 @@ common.animations = {
 	REST = Animation.create_definition(sprites.player.rest, 1, { ms_per_frame = 1000, loop = false }),
 }
 
+--- Attempts to consume throw stamina cost from the player's current projectile.
+--- Returns true if no cost required or if stamina was successfully consumed.
+---@param player table The player object
+---@return boolean True if throw is allowed (no cost or stamina consumed)
+local function try_use_throw_stamina(player)
+    local stamina_cost = player.projectile.stamina_cost or 0
+    return stamina_cost == 0 or player:use_stamina(stamina_cost)
+end
+
 --- Checks for hammer input and transitions to hammer state if pressed.
 ---@param player table The player object
 function common.handle_hammer(player)
@@ -56,14 +71,16 @@ function common.handle_hammer(player)
 end
 
 --- Checks for throw input and transitions to throw state or queues if on cooldown.
---- Requires available energy (energy_used < max_energy) to throw.
+--- Requires available energy (energy_used < max_energy) and stamina (if projectile has stamina_cost) to throw.
 ---@param player table The player object
 function common.handle_throw(player)
     if controls.throw_pressed() then
         -- Block throw entirely when out of energy (no cooldown queue needed)
         if player.energy_used >= player.max_energy then return end
         if player.throw_cooldown <= 0 then
-            player:set_state(player.states.throw)
+            if try_use_throw_stamina(player) then
+                player:set_state(player.states.throw)
+            end
         else
             common.queue_input(player, "throw")
         end
@@ -166,7 +183,11 @@ function common.handle_climb(player)
 	end
 end
 
-function common.check_hit(player, cols)
+--- Debug function to test hit state via Y key press.
+--- Applies 1 damage to player if not invincible.
+---@param player table The player object
+---@param _cols table Collision results (unused, kept for interface consistency)
+function common.check_hit(player, _cols)
     local canvas = require('canvas')
     if canvas.is_key_pressed(canvas.keys.Y) and not player:is_invincible() then
         player:take_damage(1)
@@ -284,28 +305,32 @@ function common.handle_jump(player)
 	return false
 end
 
---- Attempts an air jump if the player has remaining jumps and jump is pressed.
+--- Attempts an air jump if the player has remaining jumps, stamina, and jump is pressed.
 ---@param player table The player object
 ---@return boolean True if air jump was performed
 function common.handle_air_jump(player)
 	if controls.jump_pressed() and player.jumps > 0 then
-		player.vy = -common.AIR_JUMP_VELOCITY
-		player.jumps = player.jumps - 1
-		player.is_air_jumping = true
-		audio.play_air_jump_sound()
-		return true
+		if player:use_stamina(common.AIR_JUMP_STAMINA_COST) then
+			player.vy = -common.AIR_JUMP_VELOCITY
+			player.jumps = player.jumps - 1
+			player.is_air_jumping = true
+			audio.play_air_jump_sound()
+			return true
+		end
 	end
 	return false
 end
 
---- Attempts to initiate a dash if off cooldown and dash is pressed.
+--- Attempts to initiate a dash if off cooldown, has stamina, and dash is pressed.
 ---@param player table The player object
 ---@return boolean True if dash was initiated
 function common.handle_dash(player)
 	if player.dash_cooldown > 0 or not player.has_dash then return false end
 	if controls.dash_pressed() then
-		player:set_state(player.states.dash)
-		return true
+		if player:use_stamina(common.DASH_STAMINA_COST) then
+			player:set_state(player.states.dash)
+			return true
+		end
 	end
 	return false
 end
@@ -372,10 +397,12 @@ function common.process_input_queue(player)
 			return true
 		end
 	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 then
-		common.clear_input_queue(player)
-		transition_or_restart(player, player.states.throw)
-		return true
+	if player.input_queue.throw and player.throw_cooldown <= 0 and player.energy_used < player.max_energy then
+		if try_use_throw_stamina(player) then
+			common.clear_input_queue(player)
+			transition_or_restart(player, player.states.throw)
+			return true
+		end
 	end
 	if player.input_queue.jump then
 		-- Jump can't be deferred, clear it regardless of success
@@ -406,7 +433,7 @@ function common.queue_inputs(player)
 end
 
 --- Checks for queued attack or throw that were waiting on cooldown.
---- Also checks stamina for attack and energy for throw.
+--- Also checks stamina for attack and energy/stamina for throw.
 --- Call this in input() of states that allow attacking/throwing (idle, run, air).
 ---@param player table The player object
 ---@return boolean True if a state transition occurred
@@ -419,9 +446,11 @@ function common.check_cooldown_queues(player)
 		end
 	end
 	if player.input_queue.throw and player.throw_cooldown <= 0 and player.energy_used < player.max_energy then
-		player.input_queue.throw = false
-		player:set_state(player.states.throw)
-		return true
+		if try_use_throw_stamina(player) then
+			player.input_queue.throw = false
+			player:set_state(player.states.throw)
+			return true
+		end
 	end
 	return false
 end

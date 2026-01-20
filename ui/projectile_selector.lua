@@ -1,7 +1,15 @@
---- Projectile selector micro-widget for displaying current throwable
+--- Player resource display widget showing health, stamina, energy meters and current throwable
 local canvas = require("canvas")
 local sprites = require("sprites")
 local config = require("config")
+
+---@class projectile_selector
+---@field x number X position offset from screen edge
+---@field y number Y position offset from screen bottom
+---@field alpha number Widget opacity (0-1)
+---@field displayed_hp number|nil Lerped health value for smooth animation
+---@field displayed_stamina number|nil Lerped stamina value for smooth animation
+---@field displayed_energy number|nil Lerped energy value for smooth animation
 
 local projectile_selector = {}
 projectile_selector.__index = projectile_selector

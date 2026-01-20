@@ -52,6 +52,7 @@ end
 ---@param player table The player object
 function common.handle_throw(player)
     if controls.throw_pressed() then
+        -- Block throw entirely when out of energy (no cooldown queue needed)
         if player.energy_used >= player.max_energy then return end
         if player.throw_cooldown <= 0 then
             player:set_state(player.states.throw)
@@ -62,13 +63,16 @@ function common.handle_throw(player)
 end
 
 --- Checks for attack input and transitions to attack state or queues if on cooldown.
+--- Requires available stamina to attack (consumed via use_stamina).
 ---@param player table The player object
 function common.handle_attack(player)
 	if controls.attack_pressed() then
 		if player.attack_cooldown <= 0 then
-			player:set_state(player.states.attack)
+			if player:use_stamina(1) then
+				player:set_state(player.states.attack)
+			end
 		else
-			-- Queue attack during cooldown
+			-- Queue attack during cooldown (stamina checked when queue is processed)
 			common.queue_input(player, "attack")
 		end
 	end
@@ -349,14 +353,16 @@ end
 
 --- Processes queued inputs with priority (attack > throw > jump).
 --- Called when exiting locked states (throw, hammer, hit) to chain actions.
---- Respects cooldowns - blocked entries persist for check_cooldown_queues.
+--- Respects cooldowns and resource costs - blocked entries persist for check_cooldown_queues.
 ---@param player table The player object
 ---@return boolean True if a state transition occurred
 function common.process_input_queue(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
-		common.clear_input_queue(player)
-		transition_or_restart(player, player.states.attack)
-		return true
+		if player:use_stamina(1) then
+			common.clear_input_queue(player)
+			transition_or_restart(player, player.states.attack)
+			return true
+		end
 	end
 	if player.input_queue.throw and player.throw_cooldown <= 0 then
 		common.clear_input_queue(player)
@@ -392,14 +398,17 @@ function common.queue_inputs(player)
 end
 
 --- Checks for queued attack or throw that were waiting on cooldown.
+--- Also checks stamina for attack and energy for throw.
 --- Call this in input() of states that allow attacking/throwing (idle, run, air).
 ---@param player table The player object
 ---@return boolean True if a state transition occurred
 function common.check_cooldown_queues(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
-		player.input_queue.attack = false
-		player:set_state(player.states.attack)
-		return true
+		if player:use_stamina(1) then
+			player.input_queue.attack = false
+			player:set_state(player.states.attack)
+			return true
+		end
 	end
 	if player.input_queue.throw and player.throw_cooldown <= 0 and player.energy_used < player.max_energy then
 		player.input_queue.throw = false

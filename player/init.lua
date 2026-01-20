@@ -43,9 +43,12 @@ function Player.new()
 	self.invincible_time = 0
 
 	-- Player Stamina
-	-- Consumed by attacks (1 per swing), fully restored when entering idle state
+	-- Consumed by attacks (1 per swing), regenerates gradually after delay
 	self.max_stamina = 5
 	self.stamina_used = 0
+	self.stamina_regen_rate = 5       -- Stamina regenerated per second
+	self.stamina_regen_cooldown = 0.5 -- Seconds before regen begins after use
+	self.stamina_regen_timer = 0      -- Time since last stamina use (seconds)
 
 	-- Player Energy
 	-- Consumed by thrown weapons (1 per throw), restored when resting at campfire
@@ -200,6 +203,21 @@ function Player:is_invincible()
 	return self.invincible_time > 0
 end
 
+--- Attempts to consume stamina for an ability.
+--- Only consumes if there's enough stamina available.
+--- Resets regen timer on successful use.
+---@param amount number Amount of stamina to consume
+---@return boolean True if stamina was consumed, false if insufficient
+function Player:use_stamina(amount)
+	local available = self.max_stamina - self.stamina_used
+	if available < amount then
+		return false
+	end
+	self.stamina_used = self.stamina_used + amount
+	self.stamina_regen_timer = 0
+	return true
+end
+
 --- Returns current health (max_health minus accumulated damage, clamped to 0).
 ---@return number Current health value
 function Player:health()
@@ -285,6 +303,12 @@ function Player:update(dt)
 	self.dash_cooldown = self.dash_cooldown - dt
 	self.attack_cooldown = self.attack_cooldown - dt
 	self.throw_cooldown = self.throw_cooldown - dt
+
+	-- Stamina regeneration (after cooldown period)
+	self.stamina_regen_timer = self.stamina_regen_timer + dt
+	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
+		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * dt)
+	end
 
 	self.x = self.x + (self.vx * dt)
 	self.y = self.y + (self.vy * dt)

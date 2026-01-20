@@ -54,8 +54,6 @@ local function check_attack_hits(player)
 end
 
 local function next_animation(player)
-	-- Each attack in the combo costs 1 stamina (visual feedback only, does not limit attacks)
-	player.stamina_used = math.min(player.stamina_used + 1, player.max_stamina)
 	local animation = attack_animations[player.attack_state.next_anim_ix]
 	player.animation = Animation.new(animation)
 	player.attack_state.remaining_time = (animation.frame_count * animation.ms_per_frame) / 1000
@@ -113,6 +111,7 @@ function attack.input(player)
 			player:set_state(player.states.air)
 			return
 		end
+		-- Check energy inline since we're bypassing handle_throw for queued input
 		if not combo_available and player.input_queue.throw and player.energy_used < player.max_energy then
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.throw)
@@ -136,7 +135,8 @@ function attack.update(player, dt)
 	player.vy = 0
 	player.attack_state.remaining_time = player.attack_state.remaining_time - dt
 	if player.attack_state.remaining_time <= 0 then
-		if player.attack_state.queued and player.attacks > player.attack_state.count then
+		local can_combo = player.attack_state.queued and player.attacks > player.attack_state.count
+		if can_combo and player:use_stamina(1) then
 			player.attack_state.count = player.attack_state.count + 1
 			next_animation(player)
 		elseif player.attack_state.remaining_time <= -HOLD_TIME then

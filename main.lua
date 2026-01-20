@@ -20,7 +20,6 @@ local rest_state = require("player.rest")
 
 -- UI
 local hud = require("ui/hud")
-local settings_menu = require("ui/settings_menu")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local rest_screen = require("ui/rest_screen")
@@ -70,7 +69,7 @@ canvas.set_image_smoothing(false)
 local function user_input()
     hud.input()
 
-    if hud.is_title_screen_active() or hud.is_settings_open() or hud.is_game_over_active() or hud.is_rest_screen_active() then
+    if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active() then
         return
     end
 
@@ -91,7 +90,7 @@ local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering rec
 ---@param dt number Delta time in seconds (already capped)
 ---@return nil
 local function update(dt)
-    if hud.is_title_screen_active() or hud.is_slot_screen_active() or hud.is_settings_open() or hud.is_game_over_active() then
+    if hud.is_title_screen_active() or hud.is_slot_screen_active() or hud.is_game_over_active() then
         Playtime.pause()
         return
     end
@@ -383,7 +382,6 @@ local function on_start()
     -- Slot screen callbacks (back navigates to title which is already shown beneath)
     hud.set_slot_callback(load_slot)
 
-    settings_menu.set_return_to_title_callback(return_to_title)
     rest_screen.set_return_to_title_callback(return_to_title)
 
     hud.show_title_screen()

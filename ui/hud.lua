@@ -1,7 +1,6 @@
---- In-game HUD elements: health, projectile selector, game over, settings overlay, rest screen, title screen, slot screen
+--- In-game HUD elements: health, projectile selector, game over, rest screen, title screen, slot screen
 local canvas = require("canvas")
 local controls = require("controls")
-local settings_menu = require("ui/settings_menu")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local game_over = require("ui/game_over")
@@ -20,11 +19,10 @@ local camera_ref = nil
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
---- Initialize HUD subsystems (settings menu, game over screen, rest screen, title screen, slot screen, dialogs)
+--- Initialize HUD subsystems (game over screen, rest screen, title screen, slot screen, dialogs)
 --- Must be called after audio.init() for volume settings to apply
 ---@return nil
 function hud.init()
-    settings_menu.init()
     audio_dialog.init()
     controls_dialog.init()
     game_over.init()
@@ -34,20 +32,9 @@ function hud.init()
 end
 
 --- Process HUD input for all overlay screens
---- Priority: settings menu > audio dialog > controls dialog > pause/rest screen toggle > slot screen > title screen > game over > rest screen
+--- Priority: audio dialog > controls dialog > pause/rest screen toggle > slot screen > title screen > game over > rest screen
 ---@return nil
 function hud.input()
-    -- Settings menu blocks all other input when open
-    if settings_menu.is_open() then
-        -- ESC/START closes settings menu
-        if controls.settings_pressed() then
-            settings_menu.toggle()
-        else
-            settings_menu.input()
-        end
-        return
-    end
-
     -- Audio dialog blocks other input when open
     if audio_dialog.is_active() then
         audio_dialog.input()
@@ -91,27 +78,20 @@ function hud.input()
 end
 
 --- Update all HUD overlay screens and handle mouse input blocking
---- Settings menu and dialogs block mouse input for screens beneath them
+--- Dialogs block mouse input for screens beneath them
 ---@param dt number Delta time in seconds
 ---@return nil
 function hud.update(dt)
-    settings_menu.update()
     audio_dialog.update(dt)
     controls_dialog.update(dt)
     -- Block mouse input on screens beneath active overlays
-    local dialogs_block = settings_menu.is_open() or audio_dialog.is_active() or controls_dialog.is_active()
+    local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active()
     slot_screen.update(dt, dialogs_block)
     -- Title screen also blocked by slot screen
     local title_block = dialogs_block or slot_screen.is_active()
     title_screen.update(dt, title_block)
     game_over.update(dt)
     rest_screen.update(dt, dialogs_block)
-end
-
---- Check if settings menu is blocking game input
----@return boolean is_open True if settings menu is currently visible
-function hud.is_settings_open()
-    return settings_menu.is_open()
 end
 
 --- Draw player health hearts
@@ -160,10 +140,9 @@ function hud.draw(player)
     rest_screen.draw()
     title_screen.draw()
     slot_screen.draw()
-    -- Dialogs and settings menu drawn last so they appear on top of everything
+    -- Dialogs drawn last so they appear on top of everything
     audio_dialog.draw()
     controls_dialog.draw()
-    settings_menu.draw()
 end
 
 --- Show the game over screen

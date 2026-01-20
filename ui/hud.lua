@@ -4,17 +4,20 @@ local controls = require("controls")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local game_over = require("ui/game_over")
+local projectile_selector = require("ui/projectile_selector")
 local rest_screen = require("ui/rest_screen")
 local title_screen = require("ui/title_screen")
 local slot_screen = require("ui/slot_screen")
 local sprites = require("sprites")
-local config = require("config")
 
 local hud = {}
 
 -- Player and camera references for pause screen
 local player_ref = nil
 local camera_ref = nil
+
+-- Lazily initialized in hud.init() to ensure sprites are loaded
+local selector_widget = nil
 
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
@@ -29,6 +32,7 @@ function hud.init()
     rest_screen.init()
     title_screen.init()
     slot_screen.init()
+    selector_widget = projectile_selector.create({ x = 8, y = 8 })
 end
 
 --- Process HUD input for all overlay screens
@@ -54,7 +58,6 @@ function hud.input()
             rest_screen.trigger_continue()
         elseif not title_screen.is_active() and not slot_screen.is_active()
                and not game_over.is_active() and not rest_screen.is_active() then
-            -- Open pause screen during gameplay
             rest_screen.show_pause(player_ref, camera_ref)
         end
     end
@@ -102,29 +105,13 @@ function hud.draw_player_health(player)
     local damage_off = (heart_size - damage_size) / 2
     local spacing_x = 64 + 4
     local off_x = canvas.get_width() - (player.max_health * spacing_x)
-    local off_y = canvas.get_height() - 84
+    local off_y = canvas.get_height() - heart_size - 20  -- 20px bottom margin
     for ix = 1, player:health() do
         canvas.draw_image(sprites.ui.heart, off_x + (ix - 1) * spacing_x, off_y, heart_size, heart_size)
     end
     for ix = player:health() + 1, player.max_health do
         canvas.draw_image(sprites.ui.heart, damage_off + off_x + (ix - 1) * spacing_x, damage_off + off_y, damage_size, damage_size)
     end
-end
-
-
---- Draw the currently selected projectile icon in the bottom-left HUD
----@param player table Player instance with projectile property
----@return nil
-local function draw_selected_projectile(player)
-    local scale = config.ui.SCALE
-    canvas.save()
-    canvas.set_global_alpha(0.9)
-    canvas.translate(8, canvas.get_height() - 24*scale - 8)
-    canvas.scale(scale, scale)
-    canvas.draw_image(sprites.ui.small_circle_ui, 0, 0)
-    canvas.translate(8, 8)
-    canvas.draw_image(player.projectile.sprite, 0, 0, 8, 8, 0, 0, 8, 8)
-    canvas.restore()
 end
 
 --- Draw all HUD elements
@@ -134,7 +121,7 @@ function hud.draw(player)
     -- Skip normal HUD when title screen or slot screen is active
     if not title_screen.is_active() and not slot_screen.is_active() then
         hud.draw_player_health(player)
-        draw_selected_projectile(player)
+        selector_widget:draw(player)
     end
     game_over.draw()
     rest_screen.draw()
@@ -253,6 +240,7 @@ end
 --- Set the player and camera references for pause screen
 ---@param player table Player instance
 ---@param camera table Camera instance
+---@return nil
 function hud.set_player(player, camera)
     player_ref = player
     camera_ref = camera

@@ -27,6 +27,7 @@ function Projectile.get_axe()
     return {
         name = "Axe",
         sprite = sprites.projectiles.axe,
+        icon = sprites.projectiles.axe_icon,
         damage = 1,
         create = Projectile.create_axe,
     }
@@ -36,6 +37,7 @@ function Projectile.get_shuriken()
     return {
         name = "Shuriken",
         sprite = sprites.projectiles.shuriken,
+        icon = sprites.projectiles.shuriken_icon,
         damage = 1,
         create = Projectile.create_shuriken,
     }

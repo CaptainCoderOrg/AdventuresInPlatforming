@@ -87,9 +87,10 @@ end
 
 --- Draws all bridge tiles and debug bounding boxes.
 --- @param camera table Camera instance for viewport culling
-function bridges.draw(camera)
+--- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+function bridges.draw(camera, margin)
 	local ts = sprites.tile_size
-	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
 	for _, bridge in pairs(bridges.tiles) do
 		if bridge.x < min_x or bridge.x > max_x or bridge.y < min_y or bridge.y > max_y then

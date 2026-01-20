@@ -213,14 +213,14 @@ end
 
 --- Draws all slope colliders.
 --- @param camera table Camera instance for viewport culling
-function slopes.draw(camera)
+--- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+function slopes.draw(camera, margin)
 	local ts = sprites.tile_size
-	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
 	for _, col in ipairs(slopes.colliders) do
 		local bounds = col.bounds
 
-		-- Cull entire slope if completely off-screen
 		if bounds.max_x < min_x or bounds.min_x > max_x or
 		   bounds.max_y < min_y or bounds.min_y > max_y then
 			goto continue

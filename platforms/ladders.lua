@@ -74,9 +74,10 @@ end
 
 --- Draws all ladder tiles and debug bounding boxes.
 --- @param camera table Camera instance for viewport culling
-function ladders.draw(camera)
+--- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+function ladders.draw(camera, margin)
 	local ts = sprites.tile_size
-	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
 	for _, ladder in pairs(ladders.tiles) do
 		if ladder.x < min_x or ladder.x > max_x or ladder.y < min_y or ladder.y > max_y then

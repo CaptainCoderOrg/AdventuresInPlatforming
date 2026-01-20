@@ -383,12 +383,14 @@ end
 
 --- Gets the visible tile bounds for culling
 --- @param tile_size number Pixels per tile
+--- @param margin number|nil Optional margin in tiles to expand bounds (default 0)
 --- @return number, number, number, number min_x, min_y, max_x, max_y in tiles
-function Camera:get_visible_bounds(tile_size)
-	local min_x = math.floor(self._x)
-	local min_y = math.floor(self._y)
-	local max_x = math.ceil(self._x + (self._viewport_width / tile_size))
-	local max_y = math.ceil(self._y + (self._viewport_height / tile_size))
+function Camera:get_visible_bounds(tile_size, margin)
+	margin = margin or 0
+	local min_x = math.floor(self._x) - margin
+	local min_y = math.floor(self._y) - margin
+	local max_x = math.ceil(self._x + (self._viewport_width / tile_size)) + margin
+	local max_y = math.ceil(self._y + (self._viewport_height / tile_size)) + margin
 
 	return min_x, min_y, max_x, max_y
 end

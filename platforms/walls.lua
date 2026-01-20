@@ -416,9 +416,10 @@ end
 
 --- Draws all wall tiles and debug bounding boxes.
 --- @param camera table Camera instance for viewport culling
-function walls.draw(camera)
+--- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+function walls.draw(camera, margin)
 	local ts = sprites.tile_size
-	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts)
+	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
 	for _, tile in pairs(walls.tiles) do
 		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then

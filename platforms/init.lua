@@ -126,14 +126,16 @@ end
 
 --- Draws all platforms (walls, slopes, ladders, and bridges).
 --- @param camera table Camera instance for viewport culling
-function platforms.draw(camera)
+--- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+function platforms.draw(camera, margin)
+	margin = margin or 0
 	if background_sprite then
 		draw_background(camera, background_sprite)
 	end
-	platforms.walls.draw(camera)
-	platforms.slopes.draw(camera)
-	platforms.ladders.draw(camera)
-	platforms.bridges.draw(camera)
+	platforms.walls.draw(camera, margin)
+	platforms.slopes.draw(camera, margin)
+	platforms.ladders.draw(camera, margin)
+	platforms.bridges.draw(camera, margin)
 end
 
 --- Clears all platform data (for level reloading).

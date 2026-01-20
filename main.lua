@@ -153,12 +153,17 @@ local function draw()
         camera:apply_transform(sprites.tile_size)
 
         -- Apply rest screen camera offset (keeps campfire centered in circle)
+        local culling_margin = 0
         if rest_screen.is_active() then
             local offset_x, offset_y = rest_screen.get_camera_offset()
             canvas.translate(offset_x, offset_y)
+            -- Convert pixel offset to tile margin (round up to ensure coverage)
+            local margin_x = math.ceil(math.abs(offset_x) / sprites.tile_size)
+            local margin_y = math.ceil(math.abs(offset_y) / sprites.tile_size)
+            culling_margin = math.max(margin_x, margin_y)
         end
 
-        platforms.draw(camera)
+        platforms.draw(camera, culling_margin)
         Prop.draw()
         Enemy.draw()
         player:draw()

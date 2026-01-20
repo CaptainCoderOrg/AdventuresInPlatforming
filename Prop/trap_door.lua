@@ -64,21 +64,6 @@ local function draw_trap_door(prop)
     prop.animation:draw(px, py)
 end
 
---- Check if two trap doors are adjacent or overlapping (could both support player)
----@param a table First trap door
----@param b table Second trap door
----@return boolean True if they overlap or touch
-local function overlaps_trap_door(a, b)
-    -- Same Y position (same row)
-    if a.y ~= b.y then return false end
-    -- Check if adjacent or overlapping (use <= to include touching edges)
-    local a_left = a.x + a.box.x
-    local a_right = a.x + a.box.x + a.box.w
-    local b_left = b.x + b.box.x
-    local b_right = b.x + b.box.x + b.box.w
-    return a_left <= b_right and a_right >= b_left
-end
-
 local definition = {
     box = { x = 0, y = 0, w = 2, h = 0.1875 },  -- 2 tiles wide, 3px thin top collider
     debug_color = "#FFA500",  -- Orange
@@ -129,23 +114,12 @@ local definition = {
             name = "opening",
             ---@param prop table Trap door prop instance
             ---@param def table Definition table
-            ---@param skip_cascade boolean If true, don't trigger other trap doors (prevents infinite recursion)
-            start = function(prop, def, skip_cascade)
+            start = function(prop, def)
                 prop.animation = Animation.new(TRAP_DOOR_OPEN)
                 -- Remove collider immediately so player falls
                 if prop.collider_shape then
                     world.remove_collider(prop)
                     prop.collider_shape = nil
-                end
-                -- Trigger all adjacent/overlapping trap doors to open together (same frame)
-                if not skip_cascade then
-                    for other_prop in pairs(Prop.all) do
-                        if other_prop.type_key == "trap_door" and other_prop ~= prop then
-                            if other_prop.state_name == "closed" and overlaps_trap_door(prop, other_prop) then
-                                Prop.set_state(other_prop, "opening", true)  -- skip_cascade = true
-                            end
-                        end
-                    end
                 end
             end,
             ---@param prop table Trap door prop instance

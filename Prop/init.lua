@@ -166,8 +166,13 @@ end
 
 --- Clear all props (preserves table references for hot reload)
 function Prop.clear()
-    for k in pairs(Prop.all) do
-        Prop.all[k] = nil
+    local world = require("world")
+    -- Remove colliders and clear props in a single pass
+    for prop in pairs(Prop.all) do
+        if prop.collider_shape then
+            world.remove_collider(prop)
+        end
+        Prop.all[prop] = nil
     end
     for k in pairs(Prop.groups) do
         Prop.groups[k] = nil

@@ -8,6 +8,29 @@ local world = {}
 local MAX_ITERATIONS = 4
 local GROUND_PROBE_DISTANCE = 4 -- Pixels to probe downward for ground adhesion
 
+-- Debug flag - set to true to see collision info
+world.debug_collisions = false
+
+--- Helper to identify what a shape belongs to
+local function identify_shape(shape)
+	if not shape then return "nil" end
+	if not shape.owner then return "no_owner" end
+	local owner = shape.owner
+	if owner.is_player then return "player" end
+	if owner.is_enemy then return "enemy:" .. tostring(owner.type_key or "unknown") end
+	if owner.is_bridge then return "bridge" end
+	if owner.is_slope then return "slope" end
+	if owner.type_key then
+		local id = owner.id or "?"
+		local x = owner.x or "?"
+		return string.format("prop:%s(id=%s,x=%s)", owner.type_key, tostring(id), tostring(x))
+	end
+	if owner.is_ladder_top then return "ladder_top" end
+	-- Check if it's a wall collider
+	local x1, y1 = shape:bbox()
+	return string.format("solid@(%.1f,%.1f)", x1/48, y1/48)
+end
+
 --- Sets ground collision flag and calculates normalized ground normal from separation vector.
 --- @param cols table Collision flags to update
 --- @param sep table Separation vector {x, y}
@@ -98,6 +121,9 @@ function world.add_circle_collider(obj)
 	return shape
 end
 
+--- Adds a trigger collider for an object (non-blocking, for overlap detection).
+--- @param obj table Object with x, y, and box properties
+--- @return table The created HC shape
 function world.add_trigger_collider(obj)
 	local ts = sprites.tile_size
 	local px = (obj.x + obj.box.x) * ts
@@ -268,6 +294,9 @@ function world.move(obj)
 					-- Ground: only apply Y to allow slope walking
 					shape:move(0, sep.y)
 					set_ground_from_sep(cols, sep)
+					if world.debug_collisions and obj.is_player then
+						print("[COLLISION] Ground from Y-pass: " .. identify_shape(other))
+					end
 				end
 			end
 			::skip_y_collision::
@@ -302,13 +331,15 @@ function world.move(obj)
 				found_ground = true
 				shape:move(0, sep.y)
 				set_ground_from_sep(cols, sep)
+				if world.debug_collisions and obj.is_player then
+					print("[COLLISION] Ground from probe: " .. identify_shape(other))
+				end
 				break
 			end
 			::skip_ground_collision::
 		end
 
 		if not found_ground then
-			-- No ground found, undo probe
 			shape:move(0, -GROUND_PROBE_DISTANCE)
 		end
 	end

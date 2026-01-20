@@ -13,7 +13,10 @@ local environment = {
 	bridge_right = "bridge_right",
 	spikes = "spikes",
 	button = "button",
-	campfire = "campfire"
+	campfire = "campfire",
+	trap_door = "trap_door",
+	trap_door_open = "trap_door_open",
+	trap_door_reset = "trap_door_reset"
 }
 
 canvas.assets.load_image(environment.tilemap, "images/tilemap_packed.png")
@@ -27,6 +30,9 @@ canvas.assets.load_image(environment.bridge_right, "sprites/environment/bridge-r
 canvas.assets.load_image(environment.spikes, "sprites/environment/spikes-retract.png")
 canvas.assets.load_image(environment.button, "sprites/environment/button.png")
 canvas.assets.load_image(environment.campfire, "sprites/environment/campfire.png")
+canvas.assets.load_image(environment.trap_door, "sprites/environment/trap_door.png")
+canvas.assets.load_image(environment.trap_door_open, "sprites/environment/trap_door_open.png")
+canvas.assets.load_image(environment.trap_door_reset, "sprites/environment/trap_door_reset.png")
 
 
 return environment

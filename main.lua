@@ -33,6 +33,7 @@ Prop.register("campfire", require("Prop/campfire"))
 Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
 Prop.register("sign", require("Prop/sign"))
+Prop.register("trap_door", require("Prop/trap_door"))
 
 -- Levels
 local level1 = require("levels/level1")

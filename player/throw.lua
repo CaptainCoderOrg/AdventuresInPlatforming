@@ -15,6 +15,7 @@ local THROW_COOLDOWN = 0.2
 --- Called when entering throw state. Creates projectile and clears input queue.
 --- @param player table The player object
 function throw.start(player)
+	player.energy_used = math.min(player.energy_used + 1, player.max_energy)
 	player.animation = Animation.new(common.animations.THROW)
 	player.throw_state.remaining_time = (common.animations.THROW.frame_count * common.animations.THROW.ms_per_frame) / 1000
 	player.projectile.create(player.x, player.y, player.direction)

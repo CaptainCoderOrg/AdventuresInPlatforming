@@ -48,9 +48,11 @@ function common.handle_hammer(player)
 end
 
 --- Checks for throw input and transitions to throw state or queues if on cooldown.
+--- Requires available energy (energy_used < max_energy) to throw.
 ---@param player table The player object
 function common.handle_throw(player)
     if controls.throw_pressed() then
+        if player.energy_used >= player.max_energy then return end
         if player.throw_cooldown <= 0 then
             player:set_state(player.states.throw)
         else
@@ -399,7 +401,7 @@ function common.check_cooldown_queues(player)
 		player:set_state(player.states.attack)
 		return true
 	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 then
+	if player.input_queue.throw and player.throw_cooldown <= 0 and player.energy_used < player.max_energy then
 		player.input_queue.throw = false
 		player:set_state(player.states.throw)
 		return true

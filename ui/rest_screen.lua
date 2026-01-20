@@ -381,6 +381,7 @@ local function build_stats_text(player)
         "",
         "HP: " .. player:health() .. "/" .. player.max_health,
         "SP: " .. (player.max_stamina - player.stamina_used) .. "/" .. player.max_stamina,
+        "EP: " .. (player.max_energy - player.energy_used) .. "/" .. player.max_energy,
         "DEF: " .. player.defense,
         "STR: " .. player.strength,
         "CRIT: " .. player.critical_chance .. "%",

@@ -113,7 +113,7 @@ function attack.input(player)
 			player:set_state(player.states.air)
 			return
 		end
-		if not combo_available and player.input_queue.throw then
+		if not combo_available and player.input_queue.throw and player.energy_used < player.max_energy then
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.throw)
 			return

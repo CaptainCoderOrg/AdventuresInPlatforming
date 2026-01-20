@@ -46,6 +46,7 @@ function rest.start(player)
 	player.animation.flipped = player.direction
 	player.vx = 0
 	player.damage = 0
+	player.energy_used = 0
 
 	-- Animate props back to default states
 	Prop.reset_all()

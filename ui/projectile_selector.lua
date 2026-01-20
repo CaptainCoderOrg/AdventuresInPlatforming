@@ -65,20 +65,23 @@ function projectile_selector.create(opts)
     self.alpha = opts.alpha or 0.7
     self.displayed_hp = nil -- Initialized on first update
     self.displayed_stamina = nil -- Initialized on first update
+    self.displayed_energy = nil -- Initialized on first update
     return self
 end
 
 ---@param dt number Delta time in seconds
----@param player table Player instance with health and stamina properties
+---@param player table Player instance with health, stamina, and energy properties
 function projectile_selector:update(dt, player)
     local target_hp = player.max_health - player.damage
     local target_stamina = player.max_stamina - player.stamina_used
+    local target_energy = player.max_energy - player.energy_used
 
     self.displayed_hp = lerp_toward(self.displayed_hp, target_hp, LERP_SPEED, dt)
     self.displayed_stamina = lerp_toward(self.displayed_stamina, target_stamina, LERP_SPEED, dt)
+    self.displayed_energy = lerp_toward(self.displayed_energy, target_energy, LERP_SPEED, dt)
 end
 
----@param player table Player instance with projectile, health, and stamina properties
+---@param player table Player instance with projectile, health, stamina, and energy properties
 function projectile_selector:draw(player)
     local scale = config.ui.SCALE
     canvas.save()
@@ -91,6 +94,7 @@ function projectile_selector:draw(player)
 
     draw_meter(self.alpha, METER_Y, player.max_health, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
     draw_meter(self.alpha, METER_Y + METER_HEIGHT, player.max_stamina, self.displayed_stamina, "#00FF00", sprites.ui.meter_cap_green)
+    draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
 
     canvas.restore()
 end

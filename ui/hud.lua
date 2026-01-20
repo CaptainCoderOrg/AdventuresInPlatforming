@@ -2,6 +2,8 @@
 local canvas = require("canvas")
 local controls = require("controls")
 local settings_menu = require("ui/settings_menu")
+local audio_dialog = require("ui/audio_dialog")
+local controls_dialog = require("ui/controls_dialog")
 local game_over = require("ui/game_over")
 local rest_screen = require("ui/rest_screen")
 local title_screen = require("ui/title_screen")
@@ -18,10 +20,13 @@ local camera_ref = nil
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 
---- Initialize HUD subsystems (settings menu, game over screen, rest screen, title screen, slot screen)
+--- Initialize HUD subsystems (settings menu, game over screen, rest screen, title screen, slot screen, dialogs)
 --- Must be called after audio.init() for volume settings to apply
+---@return nil
 function hud.init()
     settings_menu.init()
+    audio_dialog.init()
+    controls_dialog.init()
     game_over.init()
     rest_screen.init()
     title_screen.init()
@@ -29,7 +34,8 @@ function hud.init()
 end
 
 --- Process HUD input for all overlay screens
---- Priority: settings menu > pause/rest screen toggle > slot screen > title screen > game over > rest screen
+--- Priority: settings menu > audio dialog > controls dialog > pause/rest screen toggle > slot screen > title screen > game over > rest screen
+---@return nil
 function hud.input()
     -- Settings menu blocks all other input when open
     if settings_menu.is_open() then
@@ -39,6 +45,18 @@ function hud.input()
         else
             settings_menu.input()
         end
+        return
+    end
+
+    -- Audio dialog blocks other input when open
+    if audio_dialog.is_active() then
+        audio_dialog.input()
+        return
+    end
+
+    -- Controls dialog blocks other input when open
+    if controls_dialog.is_active() then
+        controls_dialog.input()
         return
     end
 
@@ -73,17 +91,21 @@ function hud.input()
 end
 
 --- Update all HUD overlay screens and handle mouse input blocking
---- Settings menu blocks mouse input for screens beneath it
+--- Settings menu and dialogs block mouse input for screens beneath them
 ---@param dt number Delta time in seconds
 ---@return nil
 function hud.update(dt)
     settings_menu.update()
-    -- Block mouse input on screens beneath the settings menu
-    local block_mouse = settings_menu.is_open()
-    slot_screen.update(dt, block_mouse)
-    title_screen.update(dt, block_mouse)
+    audio_dialog.update(dt)
+    controls_dialog.update(dt)
+    -- Block mouse input on screens beneath active overlays
+    local dialogs_block = settings_menu.is_open() or audio_dialog.is_active() or controls_dialog.is_active()
+    slot_screen.update(dt, dialogs_block)
+    -- Title screen also blocked by slot screen
+    local title_block = dialogs_block or slot_screen.is_active()
+    title_screen.update(dt, title_block)
     game_over.update(dt)
-    rest_screen.update(dt, block_mouse)
+    rest_screen.update(dt, dialogs_block)
 end
 
 --- Check if settings menu is blocking game input
@@ -127,6 +149,7 @@ end
 
 --- Draw all HUD elements
 ---@param player table Player instance with health() method, max_health, and projectile properties
+---@return nil
 function hud.draw(player)
     -- Skip normal HUD when title screen or slot screen is active
     if not title_screen.is_active() and not slot_screen.is_active() then
@@ -137,11 +160,14 @@ function hud.draw(player)
     rest_screen.draw()
     title_screen.draw()
     slot_screen.draw()
-    -- Settings menu drawn last so it appears on top of everything
+    -- Dialogs and settings menu drawn last so they appear on top of everything
+    audio_dialog.draw()
+    controls_dialog.draw()
     settings_menu.draw()
 end
 
 --- Show the game over screen
+---@return nil
 function hud.show_game_over()
     game_over.show()
 end
@@ -192,6 +218,7 @@ function hud.set_rest_continue_callback(fn)
 end
 
 --- Show the title screen
+---@return nil
 function hud.show_title_screen()
     title_screen.show()
 end
@@ -203,6 +230,7 @@ function hud.is_title_screen_active()
 end
 
 --- Hide the title screen
+---@return nil
 function hud.hide_title_screen()
     title_screen.hide()
 end
@@ -213,13 +241,20 @@ function hud.set_title_play_game_callback(fn)
     title_screen.set_play_game_callback(fn)
 end
 
---- Set the settings callback for title screen
----@param fn function Function to call when Settings is selected
-function hud.set_title_settings_callback(fn)
-    title_screen.set_settings_callback(fn)
+--- Set the audio callback for title screen
+---@param fn function Function to call when Audio is selected
+function hud.set_title_audio_callback(fn)
+    title_screen.set_audio_callback(fn)
+end
+
+--- Set the controls callback for title screen
+---@param fn function Function to call when Controls is selected
+function hud.set_title_controls_callback(fn)
+    title_screen.set_controls_callback(fn)
 end
 
 --- Show the slot selection screen
+---@return nil
 function hud.show_slot_screen()
     slot_screen.show()
 end
@@ -234,12 +269,6 @@ end
 ---@param fn function Function to call with slot_index when a slot is selected
 function hud.set_slot_callback(fn)
     slot_screen.set_slot_callback(fn)
-end
-
---- Set the slot back callback (return to title)
----@param fn function Function to call when Back is selected
-function hud.set_slot_back_callback(fn)
-    slot_screen.set_back_callback(fn)
 end
 
 --- Set the player and camera references for pause screen

@@ -21,6 +21,8 @@ local rest_state = require("player.rest")
 -- UI
 local hud = require("ui/hud")
 local settings_menu = require("ui/settings_menu")
+local audio_dialog = require("ui/audio_dialog")
+local controls_dialog = require("ui/controls_dialog")
 local rest_screen = require("ui/rest_screen")
 
 -- Enemies
@@ -345,6 +347,8 @@ local function load_slot(slot_index)
     audio.play_music(audio.level1)
 end
 
+--- One-time initialization on first game tick (after init_level creates player/camera)
+---@return nil
 local function on_start()
     if started then return end
     audio.init()
@@ -368,16 +372,16 @@ local function on_start()
         hud.show_slot_screen()
     end)
 
-    hud.set_title_settings_callback(function()
-        -- Open settings menu from title screen (hides "Return to Title Screen" button)
-        settings_menu.show(true)
+    hud.set_title_audio_callback(function()
+        audio_dialog.show()
     end)
 
-    -- Slot screen callbacks
-    hud.set_slot_callback(load_slot)
-    hud.set_slot_back_callback(function()
-        -- Back button does nothing (stays on title screen)
+    hud.set_title_controls_callback(function()
+        controls_dialog.show()
     end)
+
+    -- Slot screen callbacks (back navigates to title which is already shown beneath)
+    hud.set_slot_callback(load_slot)
 
     settings_menu.set_return_to_title_callback(return_to_title)
     rest_screen.set_return_to_title_callback(return_to_title)
@@ -388,6 +392,8 @@ local function on_start()
     started = true
 end
 
+--- Main game loop - called every frame by canvas.tick
+---@return nil
 local function game()
     on_start()
     local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/30 limits to 30 FPS minimum to prevent physics tunneling
@@ -398,6 +404,7 @@ local function game()
     draw()
 end
 
+-- Initialization order: init_level creates player/camera, then on_start runs on first tick
 init_level()
 canvas.tick(game)
 canvas.start()

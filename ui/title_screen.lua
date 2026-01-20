@@ -21,7 +21,8 @@ local FADE_DURATION = 0.25
 -- Menu items
 local MENU_ITEMS = {
     { id = "play_game", label = "Play Game" },
-    { id = "settings", label = "Settings" },
+    { id = "audio", label = "Audio" },
+    { id = "controls", label = "Controls" },
 }
 
 local state = STATE.HIDDEN
@@ -33,7 +34,8 @@ local cursor_animation = nil
 
 -- Menu action callbacks (set by main.lua to handle game state transitions)
 local play_game_callback = nil
-local settings_callback = nil
+local audio_callback = nil
+local controls_callback = nil
 
 -- Mouse input tracking
 local mouse_active = false
@@ -51,6 +53,7 @@ local menu_item_positions = {}
 
 --- Initialize title screen components (cursor animation)
 --- Must be called once before showing the title screen
+---@return nil
 function title_screen.init()
     -- Create cursor animation using player idle sprite
     local idle_def = Animation.create_definition(sprites.player.idle, 6, {
@@ -68,14 +71,21 @@ function title_screen.set_play_game_callback(fn)
     play_game_callback = fn
 end
 
---- Set the settings callback function
----@param fn function Function to call when Settings is selected
-function title_screen.set_settings_callback(fn)
-    settings_callback = fn
+--- Set the audio callback function
+---@param fn function Function to call when Audio is selected
+function title_screen.set_audio_callback(fn)
+    audio_callback = fn
+end
+
+--- Set the controls callback function
+---@param fn function Function to call when Controls is selected
+function title_screen.set_controls_callback(fn)
+    controls_callback = fn
 end
 
 --- Show the title screen with fade-in animation
 --- Resets focus to Play Game
+---@return nil
 function title_screen.show()
     if state == STATE.HIDDEN then
         state = STATE.FADING_IN
@@ -86,16 +96,12 @@ function title_screen.show()
 end
 
 --- Hide the title screen with fade out
-local function hide()
+---@return nil
+function title_screen.hide()
     if state == STATE.OPEN or state == STATE.FADING_IN then
         state = STATE.FADING_OUT
         fade_progress = 0
     end
-end
-
---- Public hide function (called when starting game from slot screen)
-function title_screen.hide()
-    hide()
 end
 
 --- Check if title screen is blocking game input
@@ -105,20 +111,25 @@ function title_screen.is_active()
 end
 
 --- Trigger the selected menu action
+---@return nil
 local function trigger_selection()
     local item = MENU_ITEMS[focused_index]
 
     if item.id == "play_game" then
         -- Play Game opens slot screen on top of title screen, don't hide
         if play_game_callback then play_game_callback() end
-    elseif item.id == "settings" then
-        -- Settings opens on top of title screen, don't hide
-        if settings_callback then settings_callback() end
+    elseif item.id == "audio" then
+        -- Audio dialog opens on top of title screen, don't hide
+        if audio_callback then audio_callback() end
+    elseif item.id == "controls" then
+        -- Controls dialog opens on top of title screen, don't hide
+        if controls_callback then controls_callback() end
     end
 end
 
 --- Process title screen input (menu navigation and selection)
 --- Only processes input when screen is in OPEN state
+---@return nil
 function title_screen.input()
     if state ~= STATE.OPEN then return end
 
@@ -198,6 +209,7 @@ function title_screen.update(dt, block_mouse)
 end
 
 --- Draw the title screen overlay (background, title, menu items, cursor)
+---@return nil
 function title_screen.draw()
     if state == STATE.HIDDEN then return end
 

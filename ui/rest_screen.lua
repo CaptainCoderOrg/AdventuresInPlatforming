@@ -123,9 +123,27 @@ local controls_panel = nil
 ---@type table|nil Player reference for stats display
 local player_ref = nil
 
+--- Save current settings to local storage
+---@return nil
+local function save_settings()
+    settings_storage.save_all(
+        {
+            master = volume_sliders.master:get_value(),
+            music = volume_sliders.music:get_value(),
+            sfx = volume_sliders.sfx:get_value(),
+        },
+        controls.get_all_bindings("keyboard"),
+        controls.get_all_bindings("gamepad")
+    )
+end
+
 --- Return to menu mode showing the status panel
---- Common exit point for all settings/confirm states
+--- Saves settings when exiting Audio or Controls panels
+---@return nil
 local function return_to_status()
+    if active_panel_index == 2 or active_panel_index == 3 then
+        save_settings()
+    end
     nav_mode = NAV_MODE.MENU
     active_panel_index = 1
 end
@@ -688,15 +706,7 @@ function rest_screen.update(dt, block_mouse)
         if fade_progress >= 1 then
             fade_progress = 0
             state = STATE.RELOADING
-            settings_storage.save_all(
-                {
-                    master = volume_sliders.master:get_value(),
-                    music = volume_sliders.music:get_value(),
-                    sfx = volume_sliders.sfx:get_value(),
-                },
-                controls.get_all_bindings("keyboard"),
-                controls.get_all_bindings("gamepad")
-            )
+            save_settings()
         end
         circle_lerp_t = math.max(circle_lerp_t - dt / CIRCLE_LERP_DURATION, 0)
     elseif state == STATE.RELOADING then

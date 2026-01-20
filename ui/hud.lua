@@ -41,11 +41,17 @@ function hud.input()
     end
 
     game_over.input()
-    rest_screen.input()
+
+    -- Rest screen input blocked when settings menu is open
+    if not settings_menu.is_open() then
+        rest_screen.input()
+    end
 end
 
---- Advance settings menu animations
+--- Update all HUD overlay screens and handle mouse input blocking
+--- Settings menu blocks mouse input for screens beneath it
 ---@param dt number Delta time in seconds
+---@return nil
 function hud.update(dt)
     settings_menu.update()
     -- Block mouse input on screens beneath the settings menu
@@ -53,7 +59,7 @@ function hud.update(dt)
     slot_screen.update(dt, block_mouse)
     title_screen.update(dt, block_mouse)
     game_over.update(dt)
-    rest_screen.update(dt)
+    rest_screen.update(dt, block_mouse)
 end
 
 --- Check if settings menu is blocking game input
@@ -80,6 +86,9 @@ function hud.draw_player_health(player)
 end
 
 
+--- Draw the currently selected projectile icon in the bottom-left HUD
+---@param player table Player instance with projectile property
+---@return nil
 local function draw_selected_projectile(player)
     local scale = config.ui.SCALE
     canvas.save()

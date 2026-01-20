@@ -85,7 +85,7 @@ local DIALOGUE_GAP = 8
 
 -- Menu navigation
 local MENU_ITEM_COUNT = 3
-local focused_index = 1  -- 1 = Continue, 2 = Return to Title, 3 = Settings
+local focused_index = 1  -- 1 = Continue, 2 = Settings, 3 = Return to Title
 
 -- Mouse input tracking
 local mouse_active = true
@@ -95,23 +95,26 @@ local last_mouse_y = 0
 -- Buttons array for iteration (populated in init)
 local buttons = nil
 
---- Position all menu buttons vertically centered within the menu dialogue
+--- Position all menu buttons within the menu dialogue
+--- Continue and Settings at top, Return to Title bottom-aligned
 ---@param menu_x number Menu dialogue X position
 ---@param menu_y number Menu dialogue Y position
 ---@param menu_width number Menu dialogue width
+---@param menu_height number Menu dialogue height
 ---@return nil
-local function position_buttons(menu_x, menu_y, menu_width)
+local function position_buttons(menu_x, menu_y, menu_width, menu_height)
     local button_x = menu_x + (menu_width - BUTTON_WIDTH) / 2
     local button_start_y = menu_y + BUTTON_TOP_OFFSET
 
     continue_button.x = button_x
     continue_button.y = button_start_y
 
-    return_to_title_button.x = button_x
-    return_to_title_button.y = button_start_y + BUTTON_HEIGHT + BUTTON_SPACING
-
     settings_button.x = button_x
-    settings_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
+    settings_button.y = button_start_y + BUTTON_HEIGHT + BUTTON_SPACING
+
+    -- Bottom-aligned to prevent accidental clicks
+    return_to_title_button.x = button_x
+    return_to_title_button.y = menu_y + menu_height - BUTTON_TOP_OFFSET - BUTTON_HEIGHT
 end
 
 --- Initialize rest screen components (creates continue button)
@@ -180,7 +183,7 @@ function rest_screen.init()
         text = ""
     })
 
-    buttons = { continue_button, return_to_title_button, settings_button }
+    buttons = { continue_button, settings_button, return_to_title_button }
 end
 
 --- Trigger the fade out and continue sequence
@@ -293,9 +296,9 @@ local function trigger_focused_action()
     if focused_index == 1 then
         rest_screen.trigger_continue()
     elseif focused_index == 2 then
-        if return_to_title_callback then return_to_title_callback() end
-    elseif focused_index == 3 then
         if settings_callback then settings_callback() end
+    elseif focused_index == 3 then
+        if return_to_title_callback then return_to_title_callback() end
     end
 end
 
@@ -323,8 +326,9 @@ end
 
 --- Advance fade animations and handle state transitions
 ---@param dt number Delta time in seconds
+---@param block_mouse boolean If true, skip mouse input processing (e.g., settings menu is open)
 ---@return nil
-function rest_screen.update(dt)
+function rest_screen.update(dt, block_mouse)
     if state == STATE.HIDDEN then return end
 
     elapsed_time = elapsed_time + dt
@@ -365,34 +369,40 @@ function rest_screen.update(dt)
     -- Update button hover states when menu is open
     if state == STATE.OPEN then
         local scale = config.ui.SCALE
-
-        -- Re-enable mouse input if mouse has moved
-        local mx = canvas.get_mouse_x()
-        local my = canvas.get_mouse_y()
-        if mx ~= last_mouse_x or my ~= last_mouse_y then
-            mouse_active = true
-            last_mouse_x = mx
-            last_mouse_y = my
-        end
+        local local_screen_h = canvas.get_height() / scale
 
         local circle_right_edge = CIRCLE_EDGE_PADDING + CIRCLE_RADIUS * 2
+        local circle_top = local_screen_h - CIRCLE_EDGE_PADDING - CIRCLE_RADIUS * 2
         local menu_width = circle_right_edge - DIALOGUE_PADDING
-        position_buttons(DIALOGUE_PADDING, DIALOGUE_PADDING, menu_width)
+        local menu_height = circle_top - DIALOGUE_GAP - DIALOGUE_PADDING
+        position_buttons(DIALOGUE_PADDING, DIALOGUE_PADDING, menu_width, menu_height)
 
-        -- Handle mouse hover and click
-        if mouse_active then
-            local local_mx = mx / scale
-            local local_my = my / scale
+        -- Skip mouse input when blocked (e.g., settings menu is open)
+        if not block_mouse then
+            -- Re-enable mouse input if mouse has moved
+            local mx = canvas.get_mouse_x()
+            local my = canvas.get_mouse_y()
+            if mx ~= last_mouse_x or my ~= last_mouse_y then
+                mouse_active = true
+                last_mouse_x = mx
+                last_mouse_y = my
+            end
 
-            for i, btn in ipairs(buttons) do
-                if local_mx >= btn.x and local_mx <= btn.x + btn.width and
-                   local_my >= btn.y and local_my <= btn.y + btn.height then
-                    focused_index = i
+            -- Handle mouse hover and click
+            if mouse_active then
+                local local_mx = mx / scale
+                local local_my = my / scale
 
-                    if canvas.is_mouse_pressed(0) then
-                        trigger_focused_action()
+                for i, btn in ipairs(buttons) do
+                    if local_mx >= btn.x and local_mx <= btn.x + btn.width and
+                       local_my >= btn.y and local_my <= btn.y + btn.height then
+                        focused_index = i
+
+                        if canvas.is_mouse_pressed(0) then
+                            trigger_focused_action()
+                        end
+                        break
                     end
-                    break
                 end
             end
         end
@@ -432,13 +442,8 @@ function rest_screen.draw()
         -- Reverse of fade in: overlay fades out, hole stays full
         overlay_alpha = 1 - fade_progress
         content_alpha = 1 - fade_progress
-    elseif state == STATE.RELOADING then
-        overlay_alpha = 0
-        content_alpha = 0
-    elseif state == STATE.FADING_BACK_IN then
-        overlay_alpha = 0
-        content_alpha = 0
     end
+    -- RELOADING and FADING_BACK_IN use default values (0, 0)
 
     canvas.set_global_alpha(overlay_alpha)
 
@@ -531,7 +536,7 @@ function rest_screen.draw()
         menu_dialogue.width = circle_right_edge - DIALOGUE_PADDING
         menu_dialogue.height = circle_top - DIALOGUE_GAP - DIALOGUE_PADDING
 
-        position_buttons(menu_dialogue.x, menu_dialogue.y, menu_dialogue.width)
+        position_buttons(menu_dialogue.x, menu_dialogue.y, menu_dialogue.width, menu_dialogue.height)
 
         simple_dialogue.draw(menu_dialogue)
         simple_dialogue.draw(player_info_dialogue)

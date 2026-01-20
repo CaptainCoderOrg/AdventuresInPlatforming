@@ -302,11 +302,13 @@ local function continue_from_checkpoint(options)
 end
 
 --- Continue from rest screen (restores original camera position for smooth transition)
+---@return nil
 local function continue_from_rest()
     continue_from_checkpoint({ restore_camera_from_rest = true })
 end
 
 --- Start new game in active slot (clears slot, uses level spawn)
+---@return nil
 local function start_new_game()
     if active_slot then
         SaveSlots.clear(active_slot)
@@ -343,13 +345,17 @@ local function on_start()
     audio.init()
     hud.init()
 
-    -- Game over screen callbacks
-    hud.set_continue_callback(continue_from_checkpoint)
-    hud.set_restart_callback(function()
+    --- Return to title screen and reset active save slot
+    ---@return nil
+    local function return_to_title()
         active_slot = nil
         hud.show_title_screen()
         audio.play_music(audio.title_screen)
-    end)
+    end
+
+    -- Game over screen callbacks
+    hud.set_continue_callback(continue_from_checkpoint)
+    hud.set_restart_callback(return_to_title)
     hud.set_rest_continue_callback(continue_from_rest)
 
     -- Title screen callbacks
@@ -368,10 +374,11 @@ local function on_start()
         -- Back button does nothing (stays on title screen)
     end)
 
-    settings_menu.set_return_to_title_callback(function()
-        active_slot = nil
-        hud.show_title_screen()
-        audio.play_music(audio.title_screen)
+    settings_menu.set_return_to_title_callback(return_to_title)
+    rest_screen.set_return_to_title_callback(return_to_title)
+
+    rest_screen.set_settings_callback(function()
+        settings_menu.show()
     end)
 
     hud.show_title_screen()

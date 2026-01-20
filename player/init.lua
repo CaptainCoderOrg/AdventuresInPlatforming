@@ -42,8 +42,13 @@ function Player.new()
 	self.damage = 0
 	self.invincible_time = 0
 
-	-- Progression (reserved for future use)
-	self.level = 1
+	-- Progression / RPG Stats
+	self.level = 1              -- Player level, gates content and affects base stats
+	self.experience = 0         -- XP toward next level
+	self.gold = 0               -- Currency for purchases
+	self.defense = 0            -- Reduces incoming damage
+	self.strength = 5           -- Base damage multiplier for attacks
+	self.critical_chance = 0    -- Percent chance for critical hit damage
 
 	-- Position and velocity
 	self.x = 2

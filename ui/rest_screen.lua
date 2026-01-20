@@ -4,6 +4,8 @@ local controls = require("controls")
 local button = require("ui/button")
 local config = require("config")
 local simple_dialogue = require("ui/simple_dialogue")
+local Playtime = require("Playtime")
+local SaveSlots = require("SaveSlots")
 
 local rest_screen = {}
 
@@ -94,6 +96,11 @@ local last_mouse_y = 0
 
 -- Buttons array for iteration (populated in init)
 local buttons = nil
+
+--- Player reference for stats display in the rest screen.
+--- Set by rest_screen.show(), remains valid while screen is active.
+---@type table|nil
+local player_ref = nil
 
 --- Position all menu buttons within the menu dialogue
 --- Continue and Settings at top, Return to Title bottom-aligned
@@ -202,15 +209,38 @@ function rest_screen.save_camera_position(x, y)
     last_camera_y = y
 end
 
+--- Build the stats text for the player info dialogue
+---@param player table Player instance
+---@return string Stats text with newlines
+local function build_stats_text(player)
+    if not player then return "" end
+
+    local lines = {
+        "Level: " .. player.level,
+        "Exp: " .. player.experience,
+        "Gold: " .. player.gold,
+        "",
+        "HP: " .. player:health() .. "/" .. player.max_health,
+        "DEF: " .. player.defense,
+        "STR: " .. player.strength,
+        "CRIT: " .. player.critical_chance .. "%",
+        "",
+        "Time: " .. SaveSlots.format_playtime(Playtime.get())
+    }
+    return table.concat(lines, "\n")
+end
+
 --- Show the rest screen centered on a campfire
 ---@param world_x number Campfire center X in tile coordinates
 ---@param world_y number Campfire center Y in tile coordinates
 ---@param camera table Camera instance for position calculation
-function rest_screen.show(world_x, world_y, camera)
+---@param player table|nil Player instance for stats display
+function rest_screen.show(world_x, world_y, camera, player)
     if state == STATE.HIDDEN then
         campfire_x = world_x
         campfire_y = world_y
         camera_ref = camera
+        player_ref = player
         state = STATE.FADING_IN
         fade_progress = 0
         elapsed_time = 0
@@ -529,6 +559,7 @@ function rest_screen.draw()
         player_info_dialogue.y = DIALOGUE_PADDING
         player_info_dialogue.width = right_dialogue_width
         player_info_dialogue.height = rest_dialogue.y - DIALOGUE_GAP - DIALOGUE_PADDING
+        player_info_dialogue.text = build_stats_text(player_ref)
 
         -- Left dialogue (menu) - above the circle
         menu_dialogue.x = DIALOGUE_PADDING

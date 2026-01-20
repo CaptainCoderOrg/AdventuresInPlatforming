@@ -42,27 +42,37 @@ function simple_dialogue.draw(dialogue)
     canvas.set_text_baseline("top")
     canvas.set_color("#FFFFFF")
 
-    -- Simple word-wrap drawing
-    local words = {}
-    for word in dialogue.text:gmatch("%S+") do
-        table.insert(words, word)
-    end
-
-    local line = ""
+    -- Split text into lines first, then word-wrap each line
+    -- Pattern appends \n to ensure final line is captured, then matches each line
     local y_offset = 0
-    for _, word in ipairs(words) do
-        local test_line = line == "" and word or (line .. " " .. word)
-        local metrics = canvas.get_text_metrics(test_line)
-        if metrics.width > max_width and line ~= "" then
-            canvas.draw_text(text_x, text_y + y_offset, line)
+    for input_line in (dialogue.text .. "\n"):gmatch("([^\n]*)\n") do
+        -- Empty lines create blank spacing
+        if input_line == "" then
             y_offset = y_offset + LINE_HEIGHT
-            line = word
         else
-            line = test_line
+            -- Word-wrap this line
+            local words = {}
+            for word in input_line:gmatch("%S+") do
+                table.insert(words, word)
+            end
+
+            local line = ""
+            for _, word in ipairs(words) do
+                local test_line = line == "" and word or (line .. " " .. word)
+                local metrics = canvas.get_text_metrics(test_line)
+                if metrics.width > max_width and line ~= "" then
+                    canvas.draw_text(text_x, text_y + y_offset, line)
+                    y_offset = y_offset + LINE_HEIGHT
+                    line = word
+                else
+                    line = test_line
+                end
+            end
+            if line ~= "" then
+                canvas.draw_text(text_x, text_y + y_offset, line)
+                y_offset = y_offset + LINE_HEIGHT
+            end
         end
-    end
-    if line ~= "" then
-        canvas.draw_text(text_x, text_y + y_offset, line)
     end
 end
 

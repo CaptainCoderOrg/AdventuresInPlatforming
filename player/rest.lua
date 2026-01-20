@@ -65,6 +65,11 @@ function rest.start(player)
 			playtime = Playtime.get(),
 			max_health = player.max_health,
 			level = player.level,
+			experience = player.experience,
+			gold = player.gold,
+			defense = player.defense,
+			strength = player.strength,
+			critical_chance = player.critical_chance,
 		})
 	end
 
@@ -78,7 +83,7 @@ function rest.start(player)
 	-- Show rest screen centered on campfire
 	if campfire and rest.camera then
 		-- Center on campfire (add 0.5 to center on tile)
-		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera)
+		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera, player)
 	end
 
 	-- Fade to rest music

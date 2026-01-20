@@ -96,7 +96,7 @@ local function update(dt)
 
     -- During rest screen, only update prop animations (keep campfire flickering)
     if hud.is_rest_screen_active() then
-        Playtime.pause()
+        Playtime.update(dt)
         Prop.update_animations(dt)
         return
     end
@@ -192,8 +192,10 @@ local function init_level(level, spawn_override, player_data, options)
 
     -- Restore player stats if provided
     if player_data then
-        if player_data.max_health then player.max_health = player_data.max_health end
-        if player_data.level then player.level = player_data.level end
+        local stat_keys = { "max_health", "level", "experience", "gold", "defense", "strength", "critical_chance" }
+        for _, key in ipairs(stat_keys) do
+            if player_data[key] then player[key] = player_data[key] end
+        end
     end
 
     level_info = platforms.load_level(level)
@@ -279,10 +281,8 @@ local function continue_from_checkpoint(options)
     if data then
         local level = get_level_by_id(data.level_id)
         if level then
-            init_level(level, { x = data.x, y = data.y }, {
-                max_health = data.max_health,
-                level = data.level,
-            }, options)
+            -- Pass data directly; init_level extracts only the stat keys it needs
+            init_level(level, { x = data.x, y = data.y }, data, options)
             -- Apply direction after init_level since Player.new() defaults to facing right
             if data.direction then
                 player.direction = data.direction

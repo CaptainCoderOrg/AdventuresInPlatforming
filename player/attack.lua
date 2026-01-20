@@ -3,7 +3,7 @@ local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
 local Animation = require('Animation')
-local Enemy = require('Enemies')
+local combat = require('combat')
 local config = require('config')
 local canvas = require('canvas')
 
@@ -23,7 +23,9 @@ local SWORD_HEIGHT = 1.1
 local SWORD_Y_OFFSET = -0.1  -- Center vertically relative to player box
 
 local function get_sword_hitbox(player)
-	-- ATTACK_2 shows sword on frame 2 (index 1), others on frame 3 (index 2)
+	-- next_anim_ix points to NEXT animation (incremented in next_animation()).
+	-- When == 1, we just played ATTACK_2 (wrapped from 3->1), which shows sword on frame 2.
+	-- ATTACK_0/1 show sword on frame 3.
 	local min_frame = player.attack_state.next_anim_ix == 1 and 1 or 2
 	local max_frame = player.animation.definition.frame_count - 2
 
@@ -37,24 +39,17 @@ local function check_attack_hits(player)
 	local sword = get_sword_hitbox(player)
 	if not sword then return end
 
-	for enemy, _ in pairs(Enemy.all) do
-		-- Skip enemies without shape (dead/dying)
-		if not enemy.shape then goto continue end
+	-- Query combat system for enemies overlapping sword hitbox
+	local hits = combat.query_rect(sword.x, sword.y, sword.w, sword.h, function(entity)
+		-- Only hit enemies we haven't already hit this swing
+		return entity.is_enemy
+			and entity.shape  -- Has physics shape (not dead/dying)
+			and not player.attack_state.hit_enemies[entity]
+	end)
 
-		if not player.attack_state.hit_enemies[enemy] then
-			local ex = enemy.x + enemy.box.x
-			local ey = enemy.y + enemy.box.y
-			local ew = enemy.box.w
-			local eh = enemy.box.h
-
-			if sword.x < ex + ew and sword.x + sword.w > ex and
-			   sword.y < ey + eh and sword.y + sword.h > ey then
-				enemy:on_hit("weapon", { damage = player.weapon_damage, x = player.x })
-				player.attack_state.hit_enemies[enemy] = true
-			end
-		end
-
-		::continue::
+	for _, enemy in ipairs(hits) do
+		enemy:on_hit("weapon", { damage = player.weapon_damage, x = player.x })
+		player.attack_state.hit_enemies[enemy] = true
 	end
 end
 

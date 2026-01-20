@@ -1,5 +1,6 @@
 --- Shared utilities for prop definitions
 local sprites = require("sprites")
+local combat = require("combat")
 
 local common = {}
 
@@ -13,23 +14,13 @@ function common.draw(prop)
     end
 end
 
---- Check if player is touching a prop (AABB overlap)
+--- Check if player is touching a prop
+--- Uses combat system spatial indexing for efficient overlap detection
 ---@param prop table Prop instance with box
 ---@param player table Player instance with box
 ---@return boolean True if overlapping
 function common.player_touching(prop, player)
-    local px = player.x + player.box.x
-    local py = player.y + player.box.y
-    local pw = player.box.w
-    local ph = player.box.h
-
-    local bx = prop.x + prop.box.x
-    local by = prop.y + prop.box.y
-    local bw = prop.box.w
-    local bh = prop.box.h
-
-    return px < bx + bw and px + pw > bx and
-           py < by + bh and py + ph > by
+    return combat.collides(prop, player)
 end
 
 return common

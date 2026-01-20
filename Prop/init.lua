@@ -4,6 +4,7 @@ local canvas = require("canvas")
 local config = require("config")
 local sprites = require("sprites")
 local state = require("Prop/state")
+local combat = require("combat")
 
 local Prop = {}
 
@@ -72,6 +73,9 @@ function Prop.spawn(type_key, x, y, options)
 
     Prop.all[prop] = true
 
+    -- Add to combat hitbox system
+    combat.add(prop)
+
     return prop
 end
 
@@ -109,6 +113,7 @@ function Prop.update(dt, player)
                     end
                 end
             end
+            combat.remove(prop)
             Prop.all[prop] = nil
         else
             local definition = prop.definition
@@ -172,6 +177,7 @@ function Prop.clear()
         if prop.collider_shape then
             world.remove_collider(prop)
         end
+        combat.remove(prop)
         Prop.all[prop] = nil
     end
     for k in pairs(Prop.groups) do
@@ -193,32 +199,23 @@ function Prop.reset_all()
 end
 
 --- Check if a hitbox overlaps with any prop of a given type
+--- Uses spatial indexing via combat system for O(1) average lookup
 ---@param type_key string The prop type to check against
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
 ---@param filter function|nil Optional filter function(prop) returning true to include
 ---@return table|nil prop The first matching prop or nil
 function Prop.check_hit(type_key, hitbox, filter)
-    for prop in pairs(Prop.all) do
-        local matches_type = prop.type_key == type_key and not prop.marked_for_destruction
-        local passes_filter = not filter or filter(prop)
+    local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
+        -- Only match props of the specified type
+        if entity.type_key ~= type_key then return false end
+        if entity.marked_for_destruction then return false end
+        -- Apply custom filter if provided
+        if filter and not filter(entity) then return false end
+        return true
+    end)
 
-        if matches_type and passes_filter then
-            local bx = prop.x + prop.box.x
-            local by = prop.y + prop.box.y
-            local bw = prop.box.w
-            local bh = prop.box.h
-
-            local overlaps = hitbox.x < bx + bw and
-                             hitbox.x + hitbox.w > bx and
-                             hitbox.y < by + bh and
-                             hitbox.y + hitbox.h > by
-
-            if overlaps then
-                return prop
-            end
-        end
-    end
-    return nil
+    -- Return first match (or nil if empty)
+    return hits[1]
 end
 
 --- Trigger an action on all props in a group

@@ -5,6 +5,7 @@ local sprites = require("sprites")
 local audio = require("audio")
 local debug = require("debugger")
 local world = require("world")
+local combat = require("combat")
 
 -- Game systems
 local Player = require("player")
@@ -217,6 +218,7 @@ end
 --- Must be called before init_level to prevent orphaned colliders
 local function cleanup_level()
     world.remove_collider(player)
+    combat.remove(player)
     platforms.clear()
     Enemy.clear()
     Prop.clear()
@@ -228,6 +230,9 @@ local function cleanup_level()
     Projectile.all = {}
 
     Effects.all = {}
+
+    -- Final cleanup ensures no orphaned shapes in spatial hash
+    combat.clear()
 end
 
 --- Continue from active save slot (campfire checkpoint)

@@ -2,6 +2,7 @@ local canvas = require('canvas')
 local sprites = require('sprites')
 local config = require('config')
 local world = require('world')
+local combat = require('combat')
 local common = require('player.common')
 local Animation = require('Animation')
 local Projectile = require('Projectile')
@@ -161,26 +162,37 @@ function Player.new()
 	-- Register with collision system
 	world.add_collider(self)
 
+	-- Register with combat hitbox system
+	combat.add(self)
+
 	-- Initialize default state
 	self:set_state(states.idle)
 
 	return self
 end
 
+--- Cycles to the next available projectile type (wraps around to first).
 function Player:next_projectile()
 	self.projectile_ix = self.projectile_ix + 1
 	if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
 	self.projectile = self.projectile_options[self.projectile_ix]
 end
 
+--- Returns whether player is currently invincible (post-hit immunity frames).
+---@return boolean True if invincible
 function Player:is_invincible()
 	return self.invincible_time > 0
 end
 
+--- Returns current health (max_health minus accumulated damage, clamped to 0).
+---@return number Current health value
 function Player:health()
 	return math.max(0, self.max_health - self.damage)
 end
 
+--- Applies damage to player, transitioning to hit or death state.
+--- Ignored if amount <= 0, player is invincible, or already in hit state.
+---@param amount number Damage amount to apply
 function Player:take_damage(amount)
 	if amount <= 0 then return end
 	if self:is_invincible() then return end
@@ -261,6 +273,7 @@ function Player:update(dt)
 	self.x = self.x + (self.vx * dt)
 	self.y = self.y + (self.vy * dt)
 	local cols = world.move(self)
+	combat.update(self)
 
 	-- Check for collisions
 	common.check_ground(self, cols, dt)

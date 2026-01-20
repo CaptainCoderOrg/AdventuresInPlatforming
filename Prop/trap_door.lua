@@ -1,8 +1,10 @@
 --- Trap door prop definition - Collapsing platform with 4-state cycle
 --- States: closed -> opening -> open -> resetting -> closed
-local sprites = require("sprites")
 local Animation = require("Animation")
+local combat = require("combat")
+local prop_common = require("Prop/common")
 local Prop = require("Prop")
+local sprites = require("sprites")
 local world = require("world")
 
 -- Animation definitions (32x16 per frame)
@@ -31,6 +33,7 @@ local OPEN_DURATION = 2.0         -- Seconds door stays open
 local STANDING_TOLERANCE = 0.3    -- Vertical tolerance for standing detection (accounts for slopes/floating point)
 
 --- Check if player is standing on the trap door
+--- Uses combat system for spatial proximity, then checks vertical alignment
 ---@param prop table Trap door prop instance
 ---@param player table Player instance
 ---@return boolean True if player is standing on the door
@@ -39,29 +42,30 @@ local function is_player_standing(prop, player)
     if not player.is_grounded then return false end
     if player.vy < 0 then return false end  -- Player is moving upward (jumping through)
 
-    -- Check horizontal overlap (player within trap door width)
-    local door_left = prop.x + prop.box.x
-    local door_right = prop.x + prop.box.x + prop.box.w
-    local player_left = player.x + player.box.x
-    local player_right = player.x + player.box.x + player.box.w
-
-    if player_right <= door_left or player_left >= door_right then
-        return false
+    -- Quick spatial check using combat system
+    if not combat.collides(prop, player) then
+        -- Also check if player is just above (within tolerance) since trap door is thin
+        local door_top = prop.y + prop.box.y
+        local player_bottom = player.y + player.box.y + player.box.h
+        if math.abs(player_bottom - door_top) >= STANDING_TOLERANCE then
+            return false
+        end
+        -- Player is vertically close, but we still need horizontal overlap
+        local door_left = prop.x + prop.box.x
+        local door_right = prop.x + prop.box.x + prop.box.w
+        local player_left = player.x + player.box.x
+        local player_right = player.x + player.box.x + player.box.w
+        if player_right <= door_left or player_left >= door_right then
+            return false
+        end
+        return true
     end
 
-    -- Check vertical alignment (player bottom near door top)
+    -- Combat system detected overlap - verify vertical alignment (player standing on top)
     local door_top = prop.y + prop.box.y
     local player_bottom = player.y + player.box.y + player.box.h
 
     return math.abs(player_bottom - door_top) < STANDING_TOLERANCE
-end
-
---- Shared draw function for trap door states
----@param prop table Trap door prop instance
-local function draw_trap_door(prop)
-    local px = prop.x * sprites.tile_size
-    local py = prop.y * sprites.tile_size
-    prop.animation:draw(px, py)
 end
 
 local definition = {
@@ -107,7 +111,7 @@ local definition = {
                     end
                 end
             end,
-            draw = draw_trap_door
+            draw = prop_common.draw
         },
 
         opening = {
@@ -131,7 +135,7 @@ local definition = {
                     Prop.set_state(prop, "open")
                 end
             end,
-            draw = draw_trap_door
+            draw = prop_common.draw
         },
 
         open = {
@@ -155,7 +159,7 @@ local definition = {
                     Prop.set_state(prop, "resetting")
                 end
             end,
-            draw = draw_trap_door
+            draw = prop_common.draw
         },
 
         resetting = {
@@ -174,7 +178,7 @@ local definition = {
                     Prop.set_state(prop, "closed")
                 end
             end,
-            draw = draw_trap_door
+            draw = prop_common.draw
         }
     }
 }

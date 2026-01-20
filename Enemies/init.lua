@@ -1,6 +1,7 @@
 local sprites = require('sprites')
 local canvas = require('canvas')
 local world = require('world')
+local combat = require('combat')
 local config = require('config')
 local common = require('Enemies/common')
 local Effects = require('Effects')
@@ -73,16 +74,22 @@ function Enemy.spawn(type_key, x, y)
 	self.is_enemy = true
 
 	-- Create physical collider (for ground/wall detection)
-	-- Use circle for slope-rotating enemies (slides smoothly on slopes)
+	-- Slope-rotating enemies use:
+	--   1. Circle collider for smooth slope physics
+	--   2. Rotatable world hitbox for accurate player contact detection
+	-- Non-slope enemies use a single rectangle for both purposes.
 	if self.rotate_to_slope then
 		self.shape = world.add_circle_collider(self)
-		self.hitbox = world.add_hitbox(self)
+		self.hitbox = world.add_hitbox(self)  -- Rotates with sprite for contact damage
 	else
 		self.shape = world.add_collider(self)
 	end
 
 	-- Register in pool
 	Enemy.all[self] = true
+
+	-- Add to combat hitbox system (axis-aligned, for weapon sweep detection)
+	combat.add(self)
 
 	return self
 end
@@ -114,8 +121,9 @@ function Enemy.update(dt, player)
 		common.update_slope_rotation(enemy, dt)
 
 		-- Update combat hitbox position and rotation
+		local y_offset = common.get_slope_y_offset(enemy)
+		combat.update(enemy, y_offset)
 		if enemy.hitbox then
-			local y_offset = common.get_slope_y_offset(enemy)
 			world.update_hitbox(enemy, y_offset)
 		end
 
@@ -141,7 +149,6 @@ function Enemy.update(dt, player)
 		end
 	end
 
-	-- Cleanup destroyed enemies
 	for _, enemy in ipairs(to_remove) do
 		world.remove_collider(enemy)
 		world.remove_hitbox(enemy)
@@ -205,6 +212,7 @@ function Enemy.clear()
 	for enemy, _ in pairs(Enemy.all) do
 		world.remove_collider(enemy)
 		world.remove_hitbox(enemy)
+		combat.remove(enemy)
 	end
 	Enemy.all = {}
 end
@@ -221,7 +229,10 @@ function Enemy:check_ground(cols)
 	end
 end
 
---- Checks if enemy overlaps with player and triggers on_hit.
+--- Checks if enemy overlaps with player and triggers contact damage.
+--- Uses world hitbox system (not combat system) because contact damage needs
+--- the rotated hitbox for slope-following enemies, while combat.query_rect()
+--- uses axis-aligned boxes for weapon sweeps.
 --- @param player table The player object
 function Enemy:check_player_overlap(player)
 	local player_shape = world.shape_map[player]
@@ -246,7 +257,7 @@ end
 
 --- Called when enemy is hit by something.
 --- @param source_type string "player", "weapon", or "projectile"
---- @param source table The object that hit this enemy
+--- @param source table Hit source with optional .damage (number), .x (number), .vx (number)
 function Enemy:on_hit(source_type, source)
 	local damage = 1
 	if source and source.damage then
@@ -286,6 +297,7 @@ function Enemy:die()
 	-- Remove colliders immediately so nothing else can hit it
 	world.remove_collider(self)
 	world.remove_hitbox(self)
+	combat.remove(self)
 	self.shape = nil
 	self.hitbox = nil
 

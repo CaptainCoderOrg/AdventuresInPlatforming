@@ -52,7 +52,7 @@ return {
         C = { type = "campfire", name = "Tutorial Campfire" },
         c = { type = "sign", text = "Campfires restore health\nand save progress" },
         s = { type = "sign", text = "[color=#FF0000]DANGER![/color]\nSpikes" },
-        ["^"] = { type = "spike_trap", mode = "extended", group = "entrance_spikes" },
+        ["^"] = { type = "spike_trap", mode = "alternating", group = "entrance_spikes" },
         ["1"] = { type = "sign", text = "Move\n{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}" },
         ["2"] = { type = "sign", text = "Jump\n{jump}" },
         ["3"] = { type = "sign", text = "Drop\n{move_down} + {jump}", offset = { x = 0.5 } },

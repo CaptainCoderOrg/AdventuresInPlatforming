@@ -591,6 +591,7 @@ local function handle_controls_settings_input()
 end
 
 --- Handle input when in confirmation dialog mode
+---@return nil
 local function handle_confirm_input()
     if controls.menu_back_pressed() then
         return_to_status()
@@ -616,6 +617,7 @@ local function handle_confirm_input()
 end
 
 --- Handle input when in menu mode (navigating between menu items)
+---@return nil
 local function handle_menu_input()
     if controls.menu_up_pressed() then
         mouse_active = false
@@ -643,8 +645,14 @@ local function handle_menu_input()
 end
 
 --- Process keyboard and gamepad navigation input for the rest screen menu
+---@return nil
 function rest_screen.input()
     if state ~= STATE.OPEN then return end
+
+    -- Block all input when controls panel is listening for or just captured a keybind
+    if controls_panel and controls_panel:is_capturing_input() then
+        return
+    end
 
     if nav_mode == NAV_MODE.CONFIRM then
         handle_confirm_input()
@@ -713,6 +721,8 @@ function rest_screen.update(dt, block_mouse)
         local layout = calculate_layout(scale)
         position_buttons(layout.menu.x, layout.menu.y, layout.menu.width, layout.menu.height)
 
+        local is_capturing = controls_panel and controls_panel:is_capturing_input()
+
         if not block_mouse then
             local mx = canvas.get_mouse_x()
             local my = canvas.get_mouse_y()
@@ -725,59 +735,63 @@ function rest_screen.update(dt, block_mouse)
             local local_mx = mx / scale
             local local_my = my / scale
 
-            if mouse_active then
-                hovered_index = nil
-                for i, btn in ipairs(buttons) do
-                    if local_mx >= btn.x and local_mx <= btn.x + btn.width and
-                       local_my >= btn.y and local_my <= btn.y + btn.height then
-                        hovered_index = i
-                        if nav_mode == NAV_MODE.MENU then
-                            focused_index = i
+            -- Block menu/confirm interactions when controls panel is capturing input
+            if not is_capturing then
+                if mouse_active then
+                    hovered_index = nil
+                    for i, btn in ipairs(buttons) do
+                        if local_mx >= btn.x and local_mx <= btn.x + btn.width and
+                           local_my >= btn.y and local_my <= btn.y + btn.height then
+                            hovered_index = i
+                            if nav_mode == NAV_MODE.MENU then
+                                focused_index = i
+                            end
+                            if canvas.is_mouse_pressed(0) then
+                                focused_index = i
+                                trigger_focused_action()
+                            end
+                            break
                         end
+                    end
+                else
+                    hovered_index = nil
+                end
+
+                if nav_mode == NAV_MODE.CONFIRM and mouse_active then
+                    local info = layout.info
+                    local center_x = info.x + info.width / 2
+                    local center_y = info.y + info.height / 2
+
+                    canvas.set_font_family("menu_font")
+                    canvas.set_font_size(7)
+                    local yes_metrics = canvas.get_text_metrics("Yes")
+                    local sep_metrics = canvas.get_text_metrics("   /   ")
+                    local no_metrics = canvas.get_text_metrics("No")
+                    local total_width = yes_metrics.width + sep_metrics.width + no_metrics.width
+                    local start_x = center_x - total_width / 2
+                    local button_y = center_y + 10
+
+                    if local_mx >= start_x and local_mx <= start_x + yes_metrics.width and
+                       local_my >= button_y - 6 and local_my <= button_y + 6 then
+                        confirm_selection = 1
                         if canvas.is_mouse_pressed(0) then
-                            focused_index = i
-                            trigger_focused_action()
+                            rest_screen.hide()
+                            if return_to_title_callback then return_to_title_callback() end
                         end
-                        break
                     end
-                end
-            else
-                hovered_index = nil
-            end
 
-            if nav_mode == NAV_MODE.CONFIRM and mouse_active then
-                local info = layout.info
-                local center_x = info.x + info.width / 2
-                local center_y = info.y + info.height / 2
-
-                canvas.set_font_family("menu_font")
-                canvas.set_font_size(7)
-                local yes_metrics = canvas.get_text_metrics("Yes")
-                local sep_metrics = canvas.get_text_metrics("   /   ")
-                local no_metrics = canvas.get_text_metrics("No")
-                local total_width = yes_metrics.width + sep_metrics.width + no_metrics.width
-                local start_x = center_x - total_width / 2
-                local button_y = center_y + 10
-
-                if local_mx >= start_x and local_mx <= start_x + yes_metrics.width and
-                   local_my >= button_y - 6 and local_my <= button_y + 6 then
-                    confirm_selection = 1
-                    if canvas.is_mouse_pressed(0) then
-                        rest_screen.hide()
-                        if return_to_title_callback then return_to_title_callback() end
-                    end
-                end
-
-                local no_x = start_x + yes_metrics.width + sep_metrics.width
-                if local_mx >= no_x and local_mx <= no_x + no_metrics.width and
-                   local_my >= button_y - 6 and local_my <= button_y + 6 then
-                    confirm_selection = 2
-                    if canvas.is_mouse_pressed(0) then
-                        return_to_status()
+                    local no_x = start_x + yes_metrics.width + sep_metrics.width
+                    if local_mx >= no_x and local_mx <= no_x + no_metrics.width and
+                       local_my >= button_y - 6 and local_my <= button_y + 6 then
+                        confirm_selection = 2
+                        if canvas.is_mouse_pressed(0) then
+                            return_to_status()
+                        end
                     end
                 end
             end
 
+            -- Settings panels always receive updates (controls panel needs mouse input when listening)
             local info = layout.info
             if active_panel_index == 2 then
                 local slider_width = 80
@@ -892,6 +906,7 @@ local function draw_confirm_panel(x, y, width, height)
 end
 
 --- Draw the rest screen overlay including circular viewport, vignette, and menu UI
+---@return nil
 function rest_screen.draw()
     if state == STATE.HIDDEN then return end
 

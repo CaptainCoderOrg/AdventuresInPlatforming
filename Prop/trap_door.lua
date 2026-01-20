@@ -14,14 +14,12 @@ local TRAP_DOOR_CLOSED = Animation.create_definition(sprites.environment.trap_do
 })
 
 local TRAP_DOOR_OPEN = Animation.create_definition(sprites.environment.trap_door_open, 9, {
-    ms_per_frame = 50,
     width = 32,
     height = 16,
     loop = false
 })
 
 local TRAP_DOOR_RESET = Animation.create_definition(sprites.environment.trap_door_reset, 4, {
-    ms_per_frame = 100,
     width = 32,
     height = 16,
     loop = false
@@ -29,7 +27,7 @@ local TRAP_DOOR_RESET = Animation.create_definition(sprites.environment.trap_doo
 
 -- Constants
 local STAND_DELAY = 0.4           -- Seconds player must stand before triggering
-local OPEN_DURATION = 3.0         -- Seconds door stays open
+local OPEN_DURATION = 2.0         -- Seconds door stays open
 local STANDING_TOLERANCE = 0.3    -- Vertical tolerance for standing detection (accounts for slopes/floating point)
 
 --- Check if player is standing on the trap door

@@ -2,6 +2,7 @@ local Prop = require("Prop")
 
 return {
     id = "level1",
+    background = "library_bg",  -- Key from sprites.environment (e.g., dungeon_bg, garden_bg)
     map = {
         [[#X#################################################]],
         [[#                                                 #]],

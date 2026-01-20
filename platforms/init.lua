@@ -1,4 +1,15 @@
+local canvas = require("canvas")
+local config = require("config")
+local sprites = require("sprites")
+
 local platforms = {}
+
+-- Set by load_level(), cleared by clear()
+local background_sprite = nil
+
+-- Background sprite native dimensions (before scaling)
+local BG_NATIVE_WIDTH = 240
+local BG_NATIVE_HEIGHT = 160
 
 platforms.walls = require('platforms/walls')
 platforms.slopes = require('platforms/slopes')
@@ -27,6 +38,8 @@ function platforms.load_level(level_data)
 	local width = level_data.map[1] and #level_data.map[1] or 0
 	local height = #level_data.map
 	local symbols = level_data.symbols or {}
+
+	background_sprite = level_data.background
 
 	for y, row in ipairs(level_data.map) do
 		for x = 1, #row do
@@ -84,9 +97,39 @@ function platforms.build()
 	platforms.bridges.build_colliders()
 end
 
+--- Draws tiled background across the visible viewport.
+--- @param camera {_x: number, _y: number} Camera instance with position in tile coordinates
+--- @param sprite_key string Key into sprites.environment for background image
+local function draw_background(camera, sprite_key)
+	local scale = config.ui.SCALE
+	local bg_width = BG_NATIVE_WIDTH * scale
+	local bg_height = BG_NATIVE_HEIGHT * scale
+
+	local cam_x = camera._x * sprites.tile_size
+	local cam_y = camera._y * sprites.tile_size
+
+	local start_x = math.floor(cam_x / bg_width) * bg_width
+	local start_y = math.floor(cam_y / bg_height) * bg_height
+	local end_x = cam_x + config.ui.canvas_width + bg_width
+	local end_y = cam_y + config.ui.canvas_height + bg_height
+
+	for y = start_y, end_y, bg_height do
+		for x = start_x, end_x, bg_width do
+			canvas.draw_image(
+				sprites.environment[sprite_key],
+				x, y,
+				bg_width, bg_height
+			)
+		end
+	end
+end
+
 --- Draws all platforms (walls, slopes, ladders, and bridges).
 --- @param camera table Camera instance for viewport culling
 function platforms.draw(camera)
+	if background_sprite then
+		draw_background(camera, background_sprite)
+	end
 	platforms.walls.draw(camera)
 	platforms.slopes.draw(camera)
 	platforms.ladders.draw(camera)
@@ -95,6 +138,7 @@ end
 
 --- Clears all platform data (for level reloading).
 function platforms.clear()
+	background_sprite = nil
 	platforms.walls.clear()
 	platforms.slopes.clear()
 	platforms.ladders.clear()

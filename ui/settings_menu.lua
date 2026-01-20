@@ -14,7 +14,7 @@ local settings_menu = {}
 
 -- Base dimensions at 1x scale (will be scaled by canvas transform)
 -- At 5x scale: 384x216 effective pixels, so menu should fit comfortably
-local base_width = 160
+local base_width = 172
 local base_height = 205
 local slider_width = 100
 local slider_height = 16
@@ -137,11 +137,11 @@ function settings_menu.init()
     audio.set_music_volume(linear_to_perceptual(volume_sliders.music:get_value()))
     audio.set_sfx_volume(linear_to_perceptual(volume_sliders.sfx:get_value()))
 
-    -- Create controls panel
+    -- Create controls panel (two-column layout: 72px * 2 + 22px gap = 166px)
     controls_panel = keybind_panel.create({
         x = 0,
         y = 0,
-        width = base_width - 15,
+        width = 166,
         height = base_height - 40,
     })
 

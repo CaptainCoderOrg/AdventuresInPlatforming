@@ -7,11 +7,11 @@ local sprites = require("sprites")
 local keybind_row = {}
 keybind_row.__index = keybind_row
 
--- Layout constants
+-- Default layout constants (can be overridden via create opts)
 local ROW_HEIGHT = 12
-local LABEL_X = 10
-local BINDING_X = 95  -- Right side for binding display
-local BINDING_WIDTH = 45
+local DEFAULT_LABEL_X = 2
+local DEFAULT_BINDING_X = 38
+local DEFAULT_BINDING_WIDTH = 32
 
 -- Sprite scale constants (sized to fit in 12px row height)
 -- Keyboard sprites are 64x64 base
@@ -42,7 +42,7 @@ local function get_button_scale(code)
 end
 
 --- Create a new keybind row component
----@param opts {action_id: string, label: string, scheme: string}
+---@param opts {action_id: string, label: string, scheme: string, label_x: number|nil, binding_x: number|nil, binding_width: number|nil}
 ---@return table keybind_row
 function keybind_row.create(opts)
     local self = setmetatable({}, keybind_row)
@@ -57,22 +57,29 @@ function keybind_row.create(opts)
     self.listen_time = 0
     self.listen_timeout = 5  -- 5 second timeout
     self.just_captured = false  -- Prevents immediate re-listening after capture
+    -- Configurable layout options
+    self.label_x = opts.label_x or DEFAULT_LABEL_X
+    self.binding_x = opts.binding_x or DEFAULT_BINDING_X
+    self.binding_width = opts.binding_width or DEFAULT_BINDING_WIDTH
     return self
 end
 
 --- Set the control scheme (keyboard or gamepad)
 ---@param scheme string "keyboard" or "gamepad"
+---@return nil
 function keybind_row:set_scheme(scheme)
     self.scheme = scheme
 end
 
 --- Start listening for a new key/button press
+---@return nil
 function keybind_row:start_listening()
     self.listening = true
     self.listen_time = 0
 end
 
 --- Stop listening and keep the current binding
+---@return nil
 function keybind_row:cancel_listening()
     self.listening = false
     self.listen_time = 0
@@ -149,21 +156,17 @@ end
 --- Render the keybind row with label and current binding display
 ---@param focused boolean Whether this row is focused
 ---@param has_conflict boolean Whether this binding conflicts with another
+---@return nil
 function keybind_row:draw(focused, has_conflict)
-    local label_color = "#FFFFFF"
+    local label_color = focused and "#FFFF00" or "#FFFFFF"
     local binding_color = "#AAAAAA"
 
-    if has_conflict then
-        binding_color = "#FF4444"  -- Signals duplicate binding needs resolution
-    end
-
-    if focused then
-        label_color = "#FFFF00"
-        binding_color = has_conflict and "#FF8888" or "#FFFF00"
-    end
-
     if self.listening then
-        binding_color = "#88FF88"  -- Signals ready to accept input
+        binding_color = "#88FF88"  -- Ready to accept input
+    elseif focused then
+        binding_color = has_conflict and "#FF8888" or "#FFFF00"
+    elseif has_conflict then
+        binding_color = "#FF4444"  -- Duplicate binding
     end
 
     if focused then
@@ -176,12 +179,12 @@ function keybind_row:draw(focused, has_conflict)
     canvas.set_text_baseline("middle")
 
     local text_y = self.y + self.height / 2
-    utils.draw_outlined_text(self.label, self.x + LABEL_X, text_y, label_color)
+    utils.draw_outlined_text(self.label, self.x + self.label_x, text_y, label_color)
 
     if self.listening then
         local binding_text = "Press..."
         local metrics = canvas.get_text_metrics(binding_text)
-        local binding_x = self.x + BINDING_X + (BINDING_WIDTH - metrics.width) / 2
+        local binding_x = self.x + self.binding_x + (self.binding_width - metrics.width) / 2
         utils.draw_outlined_text(binding_text, binding_x, text_y, binding_color)
     else
         local code = controls.get_binding(self.scheme, self.action_id)
@@ -190,7 +193,7 @@ function keybind_row:draw(focused, has_conflict)
             local sprite_scale = is_gamepad and get_button_scale(code) or get_key_scale(code)
             local base_size = is_gamepad and 16 or 64
             local sprite_size = base_size * sprite_scale
-            local sprite_x = self.x + BINDING_X + (BINDING_WIDTH - sprite_size) / 2
+            local sprite_x = self.x + self.binding_x + (self.binding_width - sprite_size) / 2
             local sprite_y = self.y + (self.height - sprite_size) / 2
 
             if is_gamepad then

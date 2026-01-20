@@ -308,12 +308,12 @@ function rest_screen.init()
     volume_sliders.music:set_value(saved_volumes.music)
     volume_sliders.sfx:set_value(saved_volumes.sfx)
 
-    -- Create keybind panel
+    -- Create keybind panel (two-column layout: 72px * 2 + 22px gap = 166px)
     controls_panel = keybind_panel.create({
         x = 0,
         y = 0,
-        width = 120,
-        height = 140,
+        width = 166,
+        height = 110,
         on_change = mark_settings_dirty,
     })
 
@@ -506,6 +506,12 @@ end
 ---@return boolean is_active True if rest screen is visible or animating
 function rest_screen.is_active()
     return state ~= STATE.HIDDEN
+end
+
+--- Check if rest screen is in a submenu (settings or confirm dialog)
+---@return boolean is_submenu True if in a submenu that should handle back separately
+function rest_screen.is_in_submenu()
+    return state == STATE.OPEN and (nav_mode == NAV_MODE.SETTINGS or nav_mode == NAV_MODE.CONFIRM)
 end
 
 --- Get the original camera position from when rest screen was opened

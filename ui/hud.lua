@@ -44,8 +44,8 @@ function hud.input()
 
     -- Handle ESC/START for pause screen toggle
     if controls.settings_pressed() then
-        if rest_screen.is_pause_mode() then
-            -- Close pause screen
+        if rest_screen.is_pause_mode() and not rest_screen.is_in_submenu() then
+            -- Close pause screen (only if not in a submenu)
             rest_screen.trigger_continue()
         elseif not title_screen.is_active() and not slot_screen.is_active()
                and not game_over.is_active() and not rest_screen.is_active() then

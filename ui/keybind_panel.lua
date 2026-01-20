@@ -16,6 +16,21 @@ local ROW_SPACING = 0
 local RESET_BUTTON_HEIGHT = 12
 local RESET_BUTTON_WIDTH = 40
 
+-- Two-column layout configuration
+local COLUMN_WIDTH = 72
+local COLUMN_GAP = 22
+local COLUMN_X = { [1] = 0, [2] = COLUMN_WIDTH + COLUMN_GAP }
+
+-- Layout: { column (1=left, 2=right), row_within_column }
+-- Actions 1-4 (directional) -> right column, Actions 5-11 (abilities) -> left column
+local COLUMN_LAYOUT = {
+    { 2, 1 }, { 2, 2 }, { 2, 3 }, { 2, 4 },              -- Directional (right)
+    { 1, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 1, 5 }, { 1, 6 }, { 1, 7 }  -- Abilities (left)
+}
+
+-- Max rows in the taller column (left column has 7 rows)
+local MAX_ROWS_IN_COLUMN = 7
+
 local SCHEMES = { "keyboard", "gamepad" }
 local SCHEME_LABELS = {
     keyboard = "Keyboard & Mouse",
@@ -29,19 +44,26 @@ function keybind_panel.create(opts)
     local self = setmetatable({}, keybind_panel)
     self.x = opts.x or 0
     self.y = opts.y or 0
-    self.width = opts.width or 130
+    self.width = opts.width or 166  -- Two columns + gap
     self.height = opts.height or 160
     self.on_change = opts.on_change
 
     self.scheme_index = 1
 
     self.rows = {}
-    for _, action in ipairs(controls_config.actions) do
+    for i, action in ipairs(controls_config.actions) do
+        local layout = COLUMN_LAYOUT[i] or { 1, 1 }
         local row = keybind_row.create({
             action_id = action.id,
             label = action.label,
             scheme = SCHEMES[self.scheme_index],
+            label_x = 2,
+            binding_x = 62,
+            binding_width = 10,
         })
+        row.column = layout[1]
+        row.column_row = layout[2]
+        row.action_index = i
         table.insert(self.rows, row)
     end
 
@@ -58,8 +80,9 @@ function keybind_panel.create(opts)
     })
 
     -- Focus tracking
-    -- -1 = scheme tab, 0 to #rows = rows, #rows+1 = reset button
-    self.focus_index = 0  -- Start on first row
+    -- -1 = scheme tab, 1 to #rows = rows, #rows+1 = reset button
+    -- Start on first row of left column (abilities)
+    self.focus_index = self:find_row_at(1, 1) or 1
 
     return self
 end
@@ -138,6 +161,59 @@ function keybind_panel:get_focused_row()
     return nil
 end
 
+--- Find the row index at a given column and column_row position
+---@param column number Column (1=left, 2=right)
+---@param column_row number Row within the column (1-indexed)
+---@return number|nil Row index or nil if not found
+function keybind_panel:find_row_at(column, column_row)
+    for i, row in ipairs(self.rows) do
+        if row.column == column and row.column_row == column_row then
+            return i
+        end
+    end
+    return nil
+end
+
+--- Find the nearest row in an adjacent column
+---@param from_index number Current row index
+---@param to_column number Target column (1=left, 2=right)
+---@return number|nil Row index in target column or nil
+function keybind_panel:find_nearest_in_column(from_index, to_column)
+    local current_row = self.rows[from_index]
+    if not current_row then return nil end
+
+    -- Try to find a row at the same column_row position
+    local target = self:find_row_at(to_column, current_row.column_row)
+    if target then return target end
+
+    -- Find the closest row in the target column
+    local best_index = nil
+    local best_distance = math.huge
+    for i, row in ipairs(self.rows) do
+        if row.column == to_column then
+            local dist = math.abs(row.column_row - current_row.column_row)
+            if dist < best_distance then
+                best_distance = dist
+                best_index = i
+            end
+        end
+    end
+    return best_index
+end
+
+--- Get the max column_row for a given column
+---@param column number Column (1=left, 2=right)
+---@return number Max row count in that column
+function keybind_panel:get_max_row_in_column(column)
+    local max_row = 0
+    for _, row in ipairs(self.rows) do
+        if row.column == column and row.column_row > max_row then
+            max_row = row.column_row
+        end
+    end
+    return max_row
+end
+
 --- Handle keyboard/gamepad input for navigation and keybind editing
 --- Note: focus_index -2 (settings tab) and -1 (scheme tab) are handled by settings_menu
 ---@return nil
@@ -147,16 +223,69 @@ function keybind_panel:input()
     end
 
     local reset_focus = #self.rows + 1
+    local current_row = self.rows[self.focus_index]
 
     if controls.menu_up_pressed() then
-        self.focus_index = self.focus_index - 1
-        if self.focus_index < 1 then
-            self.focus_index = -1
+        if self.focus_index == reset_focus then
+            -- From reset button, go to bottom of left column
+            local max_left_row = self:get_max_row_in_column(1)
+            self.focus_index = self:find_row_at(1, max_left_row) or self.focus_index
+        elseif current_row then
+            if current_row.column_row > 1 then
+                -- Move up within the same column
+                local target = self:find_row_at(current_row.column, current_row.column_row - 1)
+                if target then
+                    self.focus_index = target
+                end
+            else
+                -- At top of column, go to scheme tab
+                self.focus_index = -1
+            end
+        elseif self.focus_index == -1 then
+            -- From scheme tab, wrap to reset button
+            self.focus_index = reset_focus
         end
     elseif controls.menu_down_pressed() then
-        self.focus_index = self.focus_index + 1
-        if self.focus_index > reset_focus then
+        if self.focus_index == -1 then
+            -- From scheme tab, go to first row of left column
+            self.focus_index = self:find_row_at(1, 1) or 5
+        elseif current_row then
+            local max_row = self:get_max_row_in_column(current_row.column)
+            if current_row.column_row < max_row then
+                -- Move down within the same column
+                local target = self:find_row_at(current_row.column, current_row.column_row + 1)
+                if target then
+                    self.focus_index = target
+                end
+            else
+                -- At bottom of column, go to reset button
+                self.focus_index = reset_focus
+            end
+        elseif self.focus_index == reset_focus then
+            -- From reset button, wrap to settings tab
             self.focus_index = -2
+        end
+    elseif controls.menu_left_pressed() then
+        if self.focus_index == -1 then
+            -- On scheme tab, cycle scheme
+            self:cycle_scheme(-1)
+        elseif current_row and current_row.column == 2 then
+            -- In right column, jump to nearest left column row
+            local target = self:find_nearest_in_column(self.focus_index, 1)
+            if target then
+                self.focus_index = target
+            end
+        end
+    elseif controls.menu_right_pressed() then
+        if self.focus_index == -1 then
+            -- On scheme tab, cycle scheme
+            self:cycle_scheme(1)
+        elseif current_row and current_row.column == 1 then
+            -- In left column, jump to nearest right column row
+            local target = self:find_nearest_in_column(self.focus_index, 2)
+            if target then
+                self.focus_index = target
+            end
         end
     end
 
@@ -217,9 +346,10 @@ function keybind_panel:update(dt, local_mx, local_my, mouse_active)
 
     local row_height = keybind_row.get_height()
     for i, row in ipairs(self.rows) do
-        local row_y = ROW_START_Y + (i - 1) * (row_height + ROW_SPACING)
+        local col_x = COLUMN_X[row.column]
+        local row_y = ROW_START_Y + (row.column_row - 1) * (row_height + ROW_SPACING)
         if local_my >= row_y and local_my <= row_y + row_height
-            and local_mx >= 0 and local_mx <= self.width then
+            and local_mx >= col_x and local_mx <= col_x + COLUMN_WIDTH then
             self.focus_index = i
             if canvas.is_mouse_pressed(0) and row:can_start_listening() then
                 row:start_listening()
@@ -239,7 +369,7 @@ end
 ---@return number
 function keybind_panel:get_reset_button_y()
     local row_height = keybind_row.get_height()
-    return ROW_START_Y + #self.rows * (row_height + ROW_SPACING) + 5
+    return ROW_START_Y + MAX_ROWS_IN_COLUMN * (row_height + ROW_SPACING) + 5
 end
 
 --- Render the keybind panel with scheme tabs, keybind rows, and reset button
@@ -265,9 +395,10 @@ function keybind_panel:draw()
 
     local row_height = keybind_row.get_height()
     for i, row in ipairs(self.rows) do
-        row.x = 0
-        row.y = ROW_START_Y + (i - 1) * (row_height + ROW_SPACING)
-        row.width = self.width
+        local col_x = COLUMN_X[row.column]
+        row.x = col_x
+        row.y = ROW_START_Y + (row.column_row - 1) * (row_height + ROW_SPACING)
+        row.width = COLUMN_WIDTH
         row:draw(self.focus_index == i, self:has_conflict(i))
     end
 
@@ -278,7 +409,7 @@ end
 ---@return number height Height in pixels
 function keybind_panel:get_content_height()
     local row_height = keybind_row.get_height()
-    return ROW_START_Y + #self.rows * (row_height + ROW_SPACING) + RESET_BUTTON_HEIGHT + 5
+    return ROW_START_Y + MAX_ROWS_IN_COLUMN * (row_height + ROW_SPACING) + RESET_BUTTON_HEIGHT + 5
 end
 
 --- Check if a row's binding conflicts with another row
@@ -300,10 +431,11 @@ function keybind_panel:has_conflict(row_index)
     return false
 end
 
---- Reset focus to the first row and auto-select scheme based on last input device
+--- Reset focus to the first row of left column and auto-select scheme based on last input device
 ---@return nil
 function keybind_panel:reset_focus()
-    self.focus_index = 1
+    -- Focus on first row of left column (abilities)
+    self.focus_index = self:find_row_at(1, 1) or 1
     self:cancel_listening()
 
     local last_device = controls.get_last_input_device()

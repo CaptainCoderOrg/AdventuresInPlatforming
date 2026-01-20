@@ -72,7 +72,7 @@ function wall_slide.update(player, dt)
 		common.apply_gravity(player, dt, WALL_SLIDE_SPEED)
 	end
 
-	player.vx = -player.wall_direction * player.speed
+	player.vx = -player.wall_direction * player:get_speed()
 
 	if player.is_grounded then
 		player:set_state(player.states.idle)

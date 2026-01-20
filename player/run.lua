@@ -69,14 +69,14 @@ function run.update(player, dt)
 		end
 	end
 
-	player.vx = player.direction * player.speed
+	player.vx = player.direction * player:get_speed()
 
 	-- Only apply slope logic when grounded and not jumping
 	if player.vy >= 0 and player.is_grounded then
 		local is_slope = math.abs(player.ground_normal.x) > 0.01
 		if is_slope then
 			local tangent = common.get_ground_tangent(player)
-			player.vy = player.direction * player.speed * (tangent.y / tangent.x)
+			player.vy = player.direction * player:get_speed() * (tangent.y / tangent.x)
 		else
 			common.handle_gravity(player, dt)
 		end

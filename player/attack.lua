@@ -136,7 +136,7 @@ function attack.update(player, dt)
 	player.attack_state.remaining_time = player.attack_state.remaining_time - dt
 	if player.attack_state.remaining_time <= 0 then
 		local can_combo = player.attack_state.queued and player.attacks > player.attack_state.count
-		if can_combo and player:use_stamina(1) then
+		if can_combo and player:use_stamina(common.ATTACK_STAMINA_COST) then
 			player.attack_state.count = player.attack_state.count + 1
 			next_animation(player)
 		elseif player.attack_state.remaining_time <= -HOLD_TIME then

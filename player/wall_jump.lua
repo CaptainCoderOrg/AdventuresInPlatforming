@@ -14,7 +14,7 @@ local WALL_JUMP_VELOCITY = common.GRAVITY * 12
 function wall_jump.start(player)
 	local wall_dir = player.wall_jump_dir
 	player.vy = -WALL_JUMP_VELOCITY
-	player.vx = wall_dir * player.speed
+	player.vx = wall_dir * player:get_speed()
 	player.direction = wall_dir
 	player.wall_jump_state.locked_direction = -wall_dir
 	player.animation = Animation.new(common.animations.JUMP)
@@ -35,7 +35,7 @@ end
 function wall_jump.update(player, dt)
 	common.apply_gravity(player, dt)
 
-	player.vx = -player.wall_jump_state.locked_direction * player.speed
+	player.vx = -player.wall_jump_state.locked_direction * player:get_speed()
 
 	if player.is_grounded then
 		player:set_state(player.states.idle)

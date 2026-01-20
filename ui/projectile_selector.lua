@@ -10,6 +10,7 @@ local config = require("config")
 ---@field displayed_hp number|nil Lerped health value for smooth animation
 ---@field displayed_stamina number|nil Lerped stamina value for smooth animation
 ---@field displayed_energy number|nil Lerped energy value for smooth animation
+---@field fatigue_pulse_timer number Timer for fatigue color pulsing (seconds)
 
 local projectile_selector = {}
 projectile_selector.__index = projectile_selector
@@ -63,6 +64,49 @@ local function draw_meter(alpha, y, max_value, displayed_value, fill_color, cap_
     canvas.draw_image(cap_sprite, METER_X + meter_width, y)
 end
 
+--- Returns a pulsating orange-to-red color for fatigue visualization.
+---@param timer number Pulse timer in seconds
+---@return string Hex color string
+local function get_fatigue_color(timer)
+    -- 2Hz pulse (4 * pi/2 radians/sec) feels urgent without being seizure-inducing
+    local t = (math.sin(timer * math.pi * 4) + 1) / 2
+    -- Interpolate green channel between 136 (orange #FF8800) and 0 (red #FF0000)
+    local green = math.floor(136 * (1 - t))
+    return string.format("#FF%02X00", green)
+end
+
+--- Draws the stamina meter with fatigue support (debt shown as pulsing orange/red bar).
+---@param alpha number Widget alpha for shine calculation
+---@param y number Y position of the meter
+---@param player table Player instance with stamina properties
+---@param displayed_stamina number Current displayed stamina value (can be negative)
+---@param fatigue_timer number Timer for fatigue color pulsing
+local function draw_stamina_meter(alpha, y, player, displayed_stamina, fatigue_timer)
+    local meter_width = player.max_stamina * PX_PER_UNIT
+
+    canvas.draw_image(sprites.ui.meter_background, METER_X, y, meter_width, METER_HEIGHT)
+
+    if displayed_stamina >= 0 then
+        -- Normal: green bar
+        local bar_width = displayed_stamina * PX_PER_UNIT
+        canvas.set_fill_style("#00FF00")
+        canvas.fill_rect(METER_X, y + BAR_Y_OFFSET, bar_width, BAR_HEIGHT)
+    else
+        -- Fatigue: pulsating orange/red bar showing debt
+        local debt = math.abs(displayed_stamina)
+        local bar_width = debt * PX_PER_UNIT
+        canvas.set_fill_style(get_fatigue_color(fatigue_timer))
+        canvas.fill_rect(METER_X, y + BAR_Y_OFFSET, bar_width, BAR_HEIGHT)
+    end
+
+    canvas.set_global_alpha(alpha * SHINE_OPACITY)
+    canvas.draw_image(sprites.ui.meter_shine, METER_X + 1, y, meter_width - 2, METER_HEIGHT)
+    canvas.set_global_alpha(alpha)
+
+    local cap_sprite = displayed_stamina >= 0 and sprites.ui.meter_cap_green or sprites.ui.meter_cap_red
+    canvas.draw_image(cap_sprite, METER_X + meter_width, y)
+end
+
 ---@param opts {x: number?, y: number?, alpha: number?}|nil Optional position and alpha settings
 ---@return projectile_selector widget instance
 function projectile_selector.create(opts)
@@ -74,6 +118,7 @@ function projectile_selector.create(opts)
     self.displayed_hp = nil -- Initialized on first update
     self.displayed_stamina = nil -- Initialized on first update
     self.displayed_energy = nil -- Initialized on first update
+    self.fatigue_pulse_timer = 0 -- For fatigue color pulsing
     return self
 end
 
@@ -87,6 +132,8 @@ function projectile_selector:update(dt, player)
     self.displayed_hp = lerp_toward(self.displayed_hp, target_hp, LERP_SPEED, dt)
     self.displayed_stamina = lerp_toward(self.displayed_stamina, target_stamina, LERP_SPEED, dt)
     self.displayed_energy = lerp_toward(self.displayed_energy, target_energy, LERP_SPEED, dt)
+
+    self.fatigue_pulse_timer = self.fatigue_pulse_timer + dt
 end
 
 ---@param player table Player instance with projectile, health, stamina, and energy properties
@@ -101,7 +148,7 @@ function projectile_selector:draw(player)
     canvas.draw_image(player.projectile.icon, 8, 8, 16, 16)
 
     draw_meter(self.alpha, METER_Y, player.max_health, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
-    draw_meter(self.alpha, METER_Y + METER_HEIGHT, player.max_stamina, self.displayed_stamina, "#00FF00", sprites.ui.meter_cap_green)
+    draw_stamina_meter(self.alpha, METER_Y + METER_HEIGHT, player, self.displayed_stamina, self.fatigue_pulse_timer)
     draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
 
     canvas.restore()

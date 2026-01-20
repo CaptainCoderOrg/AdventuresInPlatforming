@@ -13,6 +13,12 @@ common.AIR_JUMP_VELOCITY = common.GRAVITY * 11
 common.MAX_COYOTE_TIME = 4 / 60  -- 0.0667 seconds (4 frames at 60 FPS)
 common.MAX_FALL_SPEED = 20
 
+-- Stamina costs (balanced against max_stamina=5)
+-- Attack costs 2: allows 2 full attacks before fatigue
+common.ATTACK_STAMINA_COST = 2
+-- Hammer costs 5: single use depletes bar, high-risk/high-reward
+common.HAMMER_STAMINA_COST = 5
+
 -- Animations (converted to delta-time based, milliseconds per frame)
 common.animations = {
 	IDLE = Animation.create_definition(sprites.player.idle, 6, { ms_per_frame = 240 }),
@@ -43,7 +49,9 @@ common.animations = {
 ---@param player table The player object
 function common.handle_hammer(player)
     if controls.hammer_pressed() then
-        player:set_state(player.states.hammer)
+        if player:use_stamina(common.HAMMER_STAMINA_COST) then
+            player:set_state(player.states.hammer)
+        end
     end
 end
 
@@ -68,7 +76,7 @@ end
 function common.handle_attack(player)
 	if controls.attack_pressed() then
 		if player.attack_cooldown <= 0 then
-			if player:use_stamina(1) then
+			if player:use_stamina(common.ATTACK_STAMINA_COST) then
 				player:set_state(player.states.attack)
 			end
 		else
@@ -358,7 +366,7 @@ end
 ---@return boolean True if a state transition occurred
 function common.process_input_queue(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
-		if player:use_stamina(1) then
+		if player:use_stamina(common.ATTACK_STAMINA_COST) then
 			common.clear_input_queue(player)
 			transition_or_restart(player, player.states.attack)
 			return true
@@ -404,7 +412,7 @@ end
 ---@return boolean True if a state transition occurred
 function common.check_cooldown_queues(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
-		if player:use_stamina(1) then
+		if player:use_stamina(common.ATTACK_STAMINA_COST) then
 			player.input_queue.attack = false
 			player:set_state(player.states.attack)
 			return true

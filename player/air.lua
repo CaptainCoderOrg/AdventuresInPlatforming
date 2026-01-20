@@ -44,10 +44,10 @@ function air.input(player)
 
 	if controls.left_down() then
 		player.direction = -1
-		player.vx = player.direction * player.air_speed
+		player.vx = player.direction * player:get_speed()
 	elseif controls.right_down() then
 		player.direction = 1
-		player.vx = player.direction * player.air_speed
+		player.vx = player.direction * player:get_speed()
 	else
 		player.vx = 0
 	end

@@ -45,10 +45,10 @@ end
 function throw.input(player)
 	if controls.left_down() then
 		player.direction = -1
-		player.vx = player.direction * player.speed
+		player.vx = player.direction * player:get_speed()
 	elseif controls.right_down() then
 		player.direction = 1
-		player.vx = player.direction * player.speed
+		player.vx = player.direction * player:get_speed()
 	else
 		player.vx = 0
 	end

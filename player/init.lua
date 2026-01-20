@@ -32,6 +32,14 @@ local states = {
 -- Expose states for direct reference
 Player.states = states
 
+-- Fatigue system constants
+-- 75% speed is noticeable but still allows escape/repositioning
+local FATIGUE_SPEED_MULTIPLIER = 0.75
+-- 1/4 regen rate creates ~4 second recovery window as punishment for overcommitting
+local FATIGUE_REGEN_MULTIPLIER = 0.25
+-- Extra debt ensures player can't immediately attack again after recovering
+local FATIGUE_ENTRY_PENALTY = 1
+
 --- Creates a new player instance.
 --- @return table A new player object
 function Player.new()
@@ -43,7 +51,7 @@ function Player.new()
 	self.invincible_time = 0
 
 	-- Player Stamina
-	-- Consumed by attacks (1 per swing), regenerates gradually after delay
+	-- Consumed by attacks and abilities, regenerates gradually after delay
 	self.max_stamina = 5
 	self.stamina_used = 0
 	self.stamina_regen_rate = 5       -- Stamina regenerated per second
@@ -74,8 +82,7 @@ function Player.new()
 	self.last_safe_position = { x = self.x, y = self.y }
 
 	-- Movement
-	self.speed = 6
-	self.air_speed = self.speed
+	self._base_speed = 6
 	self.direction = 1
 	self.is_grounded = true
 	self.ground_normal = { x = 0, y = -1 }
@@ -101,7 +108,7 @@ function Player.new()
 	self.wants_drop_through = false
 	self.drop_through_y = nil
 	self.climb_touching_ground = false
-	self.climb_speed = self.speed / 2
+	self.climb_speed = self._base_speed / 2
 
 	-- Combat
 	self.attacks = 3
@@ -111,7 +118,7 @@ function Player.new()
 
 	-- Dash
 	self.dash_cooldown = 0
-	self.dash_speed = self.speed * 3
+	self.dash_speed = self._base_speed * 3
 	self.has_dash = true
 
 	-- Animation
@@ -204,18 +211,46 @@ function Player:is_invincible()
 end
 
 --- Attempts to consume stamina for an ability.
---- Only consumes if there's enough stamina available.
+--- Allows use as long as available stamina >= 0 (can push into fatigue).
+--- Blocks use when already fatigued (available < 0).
+--- Adds 1 extra stamina penalty when entering fatigue state.
 --- Resets regen timer on successful use.
 ---@param amount number Amount of stamina to consume
----@return boolean True if stamina was consumed, false if insufficient
+---@return boolean True if stamina was consumed, false if fatigued
 function Player:use_stamina(amount)
 	local available = self.max_stamina - self.stamina_used
-	if available < amount then
+
+	-- Block stamina use while fatigued (available < 0)
+	if available < 0 then
 		return false
 	end
+
+	-- Consume stamina (can push into fatigue)
 	self.stamina_used = self.stamina_used + amount
+
+	-- Entry penalty stacks with overspend (e.g., 4 used + 2 attack + 1 penalty = 7 debt)
+	-- This scales punishment: bigger overspends = longer recovery
+	if self.stamina_used > self.max_stamina then
+		self.stamina_used = self.stamina_used + FATIGUE_ENTRY_PENALTY
+	end
+
 	self.stamina_regen_timer = 0
 	return true
+end
+
+--- Returns whether player is currently fatigued (stamina debt).
+---@return boolean True if stamina_used > max_stamina
+function Player:is_fatigued()
+	return self.stamina_used > self.max_stamina
+end
+
+--- Returns effective movement speed, accounting for fatigue penalty.
+---@return number Effective speed (pixels/frame)
+function Player:get_speed()
+	if self:is_fatigued() then
+		return self._base_speed * FATIGUE_SPEED_MULTIPLIER
+	end
+	return self._base_speed
 end
 
 --- Returns current health (max_health minus accumulated damage, clamped to 0).
@@ -304,10 +339,11 @@ function Player:update(dt)
 	self.attack_cooldown = self.attack_cooldown - dt
 	self.throw_cooldown = self.throw_cooldown - dt
 
-	-- Stamina regeneration (after cooldown period)
+	-- Stamina regeneration (after cooldown period, reduced while fatigued)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
-		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * dt)
+		local regen_multiplier = self:is_fatigued() and FATIGUE_REGEN_MULTIPLIER or 1
+		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * dt)
 	end
 
 	self.x = self.x + (self.vx * dt)

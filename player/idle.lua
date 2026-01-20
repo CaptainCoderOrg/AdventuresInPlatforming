@@ -7,9 +7,11 @@ local sprites = require('sprites')
 --- Transitions to run on movement input, or dash/jump when triggered.
 local idle = { name = "idle" }
 
---- Called when entering idle state. Resets animation to idle.
+--- Called when entering idle state. Resets animation to idle and restores stamina.
 --- @param player table The player object
 function idle.start(player)
+	-- Full stamina restore on idle - encourages pacing between attack combos
+	player.stamina_used = 0
 	player.animation = Animation.new(common.animations.IDLE)
 end
 

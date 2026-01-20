@@ -42,6 +42,11 @@ function Player.new()
 	self.damage = 0
 	self.invincible_time = 0
 
+	-- Player Stamina
+	-- Consumed by attacks (1 per swing), fully restored when entering idle state
+	self.max_stamina = 5
+	self.stamina_used = 0
+
 	-- Progression / RPG Stats
 	self.level = 1              -- Player level, gates content and affects base stats
 	self.experience = 0         -- XP toward next level
@@ -177,6 +182,7 @@ function Player.new()
 end
 
 --- Cycles to the next available projectile type (wraps around to first).
+---@return nil
 function Player:next_projectile()
 	self.projectile_ix = self.projectile_ix + 1
 	if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end

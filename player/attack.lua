@@ -54,6 +54,8 @@ local function check_attack_hits(player)
 end
 
 local function next_animation(player)
+	-- Each attack in the combo costs 1 stamina (visual feedback only, does not limit attacks)
+	player.stamina_used = math.min(player.stamina_used + 1, player.max_stamina)
 	local animation = attack_animations[player.attack_state.next_anim_ix]
 	player.animation = Animation.new(animation)
 	player.attack_state.remaining_time = (animation.frame_count * animation.ms_per_frame) / 1000

@@ -380,6 +380,7 @@ local function build_stats_text(player)
         "Gold: " .. player.gold,
         "",
         "HP: " .. player:health() .. "/" .. player.max_health,
+        "SP: " .. (player.max_stamina - player.stamina_used) .. "/" .. player.max_stamina,
         "DEF: " .. player.defense,
         "STR: " .. player.strength,
         "CRIT: " .. player.critical_chance .. "%",

@@ -21,6 +21,7 @@ local rest_state = require("player.rest")
 -- UI
 local hud = require("ui/hud")
 local settings_menu = require("ui/settings_menu")
+local rest_screen = require("ui/rest_screen")
 
 -- Enemies
 local Enemy = require("Enemies")
@@ -105,6 +106,11 @@ local function update(dt)
     Playtime.update(dt)
 
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
+
+    -- Capture camera position each frame for rest screen restoration
+    -- (saved after camera update settles, used if player enters rest this frame)
+    rest_screen.save_camera_position(camera:get_x(), camera:get_y())
+
     player:update(dt)
 
     -- Damage and teleport player if too far outside world bounds
@@ -145,6 +151,13 @@ local function draw()
         -- Draw world-space entities (affected by camera)
         canvas.save()
         camera:apply_transform(sprites.tile_size)
+
+        -- Apply rest screen camera offset (keeps campfire centered in circle)
+        if rest_screen.is_active() then
+            local offset_x, offset_y = rest_screen.get_camera_offset()
+            canvas.translate(offset_x, offset_y)
+        end
+
         platforms.draw(camera)
         Prop.draw()
         Enemy.draw()
@@ -163,8 +176,10 @@ end
 ---@param level table|nil Level module to load (defaults to current_level)
 ---@param spawn_override table|nil Optional spawn position {x, y} to override level spawn
 ---@param player_data table|nil Optional player stats to restore (max_health, level)
+---@param options table|nil Optional settings { skip_camera_snap = bool }
 ---@return nil
-local function init_level(level, spawn_override, player_data)
+local function init_level(level, spawn_override, player_data, options)
+    options = options or {}
     level = level or current_level
     current_level = level
 
@@ -206,7 +221,12 @@ local function init_level(level, spawn_override, player_data)
     )
     camera:set_target(player)
     camera:set_look_ahead()
-    camera:snap_to_target(sprites.tile_size)
+    if options.camera_pos then
+        -- Restore camera to saved position (skips lerping on next update)
+        camera:restore_position(options.camera_pos.x, options.camera_pos.y)
+    elseif not options.skip_camera_snap then
+        camera:snap_to_target(sprites.tile_size)
+    end
 
     -- Update rest state's camera reference
     rest_state.camera = camera
@@ -216,6 +236,7 @@ end
 
 --- Clean up all game entities and colliders before level reload
 --- Must be called before init_level to prevent orphaned colliders
+---@return nil
 local function cleanup_level()
     world.remove_collider(player)
     combat.remove(player)
@@ -237,8 +258,16 @@ end
 
 --- Continue from active save slot (campfire checkpoint)
 --- Reloads level at saved position, or defaults to level spawn if no checkpoint exists
-local function continue_from_checkpoint()
+---@param options table|nil Optional settings { restore_camera_from_rest = bool }
+local function continue_from_checkpoint(options)
     local data = active_slot and SaveSlots.get(active_slot)
+    options = options or {}
+
+    -- Capture original camera position before cleanup if restoring from rest
+    if options.restore_camera_from_rest then
+        local cam_x, cam_y = rest_screen.get_original_camera_pos()
+        options.camera_pos = { x = cam_x, y = cam_y }
+    end
 
     cleanup_level()
 
@@ -248,26 +277,28 @@ local function continue_from_checkpoint()
             init_level(level, { x = data.x, y = data.y }, {
                 max_health = data.max_health,
                 level = data.level,
-            })
+            }, options)
             -- Apply direction after init_level since Player.new() defaults to facing right
             if data.direction then
                 player.direction = data.direction
                 player.animation.flipped = data.direction
             end
-            -- Restore playtime
             Playtime.set(data.playtime or 0)
         else
-            -- Fallback if level not found
-            init_level()
+            init_level(nil, nil, nil, options)
             Playtime.reset()
         end
     else
-        init_level()
+        init_level(nil, nil, nil, options)
         Playtime.reset()
     end
 
-    -- Restore ambient music after leaving rest screen
     audio.play_music(audio.level1)
+end
+
+--- Continue from rest screen (restores original camera position for smooth transition)
+local function continue_from_rest()
+    continue_from_checkpoint({ restore_camera_from_rest = true })
 end
 
 --- Start new game in active slot (clears slot, uses level spawn)
@@ -314,7 +345,7 @@ local function on_start()
         hud.show_title_screen()
         audio.play_music(audio.title_screen)
     end)
-    hud.set_rest_continue_callback(continue_from_checkpoint)
+    hud.set_rest_continue_callback(continue_from_rest)
 
     -- Title screen callbacks
     hud.set_title_play_game_callback(function()

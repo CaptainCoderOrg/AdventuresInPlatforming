@@ -7,7 +7,6 @@ local config = require("config")
 
 local rest_screen = {}
 
--- State machine
 local STATE = {
     HIDDEN = "hidden",
     FADING_IN = "fading_in",
@@ -27,8 +26,16 @@ local FADE_BACK_IN_DURATION = 0.4
 local CIRCLE_RADIUS = 40      -- Base radius in pixels (before scale)
 local PULSE_SPEED = 2         -- Pulses per second
 local PULSE_AMOUNT = 0.08     -- 8% radius variation
+local CIRCLE_EDGE_PADDING = 8 -- pixels from screen edge (configurable)
 
--- State
+--- Apply ease-out curve to interpolation value
+--- Uses quadratic ease-out: 1 - (1 - t)^2
+---@param t number Linear interpolation value (0-1)
+---@return number Eased interpolation value
+local function ease_out(t)
+    return 1 - (1 - t) * (1 - t)
+end
+
 local state = STATE.HIDDEN
 local fade_progress = 0
 local elapsed_time = 0
@@ -40,10 +47,24 @@ local campfire_y = 0
 -- Camera reference (set when showing)
 local camera_ref = nil
 
--- Callbacks
 local continue_callback = nil
 
--- Button
+-- Circle lerp state (screen pixels)
+local circle_start_x = 0
+local circle_start_y = 0
+local circle_target_x = 0
+local circle_target_y = 0
+local circle_lerp_t = 0  -- 0 = at campfire, 1 = at bottom-left
+local CIRCLE_LERP_DURATION = 0.3  -- seconds to move circle
+
+-- Original camera position (tiles) - saved on enter, restored on exit
+local original_camera_x = 0
+local original_camera_y = 0
+
+-- Last known good camera position (saved every frame from main.lua)
+local last_camera_x = 0
+local last_camera_y = 0
+
 local continue_button = nil
 
 -- Layout constants (at 1x scale)
@@ -55,7 +76,8 @@ local mouse_active = true
 local last_mouse_x = 0
 local last_mouse_y = 0
 
---- Initialize rest screen components
+--- Initialize rest screen components (creates continue button)
+---@return nil
 function rest_screen.init()
     continue_button = button.create({
         x = 0, y = 0,
@@ -72,9 +94,19 @@ function rest_screen.init()
 end
 
 --- Trigger the fade out and continue sequence
+---@return nil
 function rest_screen.trigger_continue()
     state = STATE.FADING_OUT
     fade_progress = 0
+end
+
+--- Save camera position every frame (called from main.lua before player:update)
+--- This ensures we capture the camera position before anything can modify it
+---@param x number Camera X position in tiles
+---@param y number Camera Y position in tiles
+function rest_screen.save_camera_position(x, y)
+    last_camera_x = x
+    last_camera_y = y
 end
 
 --- Show the rest screen centered on a campfire
@@ -89,6 +121,25 @@ function rest_screen.show(world_x, world_y, camera)
         state = STATE.FADING_IN
         fade_progress = 0
         elapsed_time = 0
+
+        -- Use the last known good camera position (saved in main.lua before player:update)
+        -- This ensures we capture the position before anything can modify it
+        original_camera_x = last_camera_x
+        original_camera_y = last_camera_y
+
+        -- Initialize circle lerp: start at campfire, target bottom-left
+        local sprites = require("sprites")
+        local scaled_radius = CIRCLE_RADIUS * config.ui.SCALE
+
+        -- Starting position (campfire screen coords)
+        circle_start_x = (world_x - camera:get_x()) * sprites.tile_size
+        circle_start_y = (world_y - camera:get_y()) * sprites.tile_size
+
+        -- Target position: bottom-left with padding (circle center offset by radius)
+        circle_target_x = CIRCLE_EDGE_PADDING + scaled_radius
+        circle_target_y = canvas.get_height() - CIRCLE_EDGE_PADDING - scaled_radius
+
+        circle_lerp_t = 0  -- Start at campfire position
         mouse_active = true
     end
 end
@@ -103,6 +154,34 @@ end
 ---@return boolean is_active True if rest screen is visible or animating
 function rest_screen.is_active()
     return state ~= STATE.HIDDEN
+end
+
+--- Get the original camera position from when rest screen was opened
+---@return number x Camera X position in tiles
+---@return number y Camera Y position in tiles
+function rest_screen.get_original_camera_pos()
+    return original_camera_x, original_camera_y
+end
+
+--- Check if the circle should be visible (during fade in/out or when open)
+---@return boolean True if circle is visible
+local function is_circle_visible()
+    return state == STATE.FADING_IN or state == STATE.OPEN or state == STATE.FADING_OUT
+end
+
+--- Get the current camera offset to keep campfire centered in circle
+---@return number offset_x Camera X offset in pixels
+---@return number offset_y Camera Y offset in pixels
+function rest_screen.get_camera_offset()
+    if not is_circle_visible() then
+        return 0, 0
+    end
+
+    local t = ease_out(circle_lerp_t)
+    local offset_x = (circle_target_x - circle_start_x) * t
+    local offset_y = (circle_target_y - circle_start_y) * t
+
+    return offset_x, offset_y
 end
 
 --- Process rest screen input
@@ -127,12 +206,16 @@ function rest_screen.update(dt)
             fade_progress = 1
             state = STATE.OPEN
         end
+        -- Move circle toward bottom-left
+        circle_lerp_t = math.min(circle_lerp_t + dt / CIRCLE_LERP_DURATION, 1)
     elseif state == STATE.FADING_OUT then
         fade_progress = fade_progress + dt / FADE_OUT_DURATION
         if fade_progress >= 1 then
             fade_progress = 0
             state = STATE.RELOADING
         end
+        -- Move circle back toward campfire
+        circle_lerp_t = math.max(circle_lerp_t - dt / CIRCLE_LERP_DURATION, 0)
     elseif state == STATE.RELOADING then
         fade_progress = fade_progress + dt / RELOAD_PAUSE
         if fade_progress >= 1 then
@@ -188,14 +271,11 @@ function rest_screen.draw()
     local scale = config.ui.SCALE
     local screen_w = canvas.get_width()
     local screen_h = canvas.get_height()
-    local sprites = require("sprites")
 
-    -- Calculate campfire screen position using camera
-    local screen_x, screen_y = screen_w / 2, screen_h / 2  -- Default to center
-    if camera_ref then
-        screen_x = (campfire_x - camera_ref:get_x()) * sprites.tile_size
-        screen_y = (campfire_y - camera_ref:get_y()) * sprites.tile_size
-    end
+    -- Calculate circle position using eased lerp progress
+    local t = ease_out(circle_lerp_t)
+    local screen_x = circle_start_x + (circle_target_x - circle_start_x) * t
+    local screen_y = circle_start_y + (circle_target_y - circle_start_y) * t
 
     -- Pulsing radius
     local pulse = math.sin(elapsed_time * PULSE_SPEED * math.pi * 2) * PULSE_AMOUNT

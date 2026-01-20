@@ -47,17 +47,41 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	return self
 end
 
---- Getters
+---@return number Camera X position in tiles
 function Camera:get_x() return self._x end
+
+---@return number Camera Y position in tiles
 function Camera:get_y() return self._y end
+
+---@return number Viewport width in pixels
 function Camera:get_viewport_width() return self._viewport_width end
+
+---@return number Viewport height in pixels
 function Camera:get_viewport_height() return self._viewport_height end
 
---- Setters
+---@param x number Camera X position in tiles
 function Camera:set_x(x) self._x = x end
+
+---@param y number Camera Y position in tiles
 function Camera:set_y(y) self._y = y end
+
+---@param x number Camera X position in tiles
+---@param y number Camera Y position in tiles
+function Camera:set_position(x, y) self._x = x; self._y = y end
+
+---@param w number Viewport width in pixels
 function Camera:set_viewport_width(w) self._viewport_width = w end
+
+---@param h number Viewport height in pixels
 function Camera:set_viewport_height(h) self._viewport_height = h end
+
+--- Restore camera to a specific position and skip lerping on next update
+---@param x number X position in tiles
+---@param y number Y position in tiles
+function Camera:restore_position(x, y)
+    self:set_position(x, y)
+    self._restored = true
+end
 
 --- Sets the target entity to follow
 --- @param target table Entity with .x and .y properties (in tiles)
@@ -190,6 +214,15 @@ end
 --- @param lerp_factor? number Interpolation factor (0-1, default 1.0)
 function Camera:update(tile_size, dt, lerp_factor)
 	if not self._target then return end
+
+	-- Skip lerping if position was just restored (e.g., from rest screen)
+	if self._restored then
+		self._restored = false
+		-- Initialize look-ahead to current position to prevent drift
+		self._look_ahead_offset_x = self._x + (self._viewport_width / 2 / tile_size) - self._target.x
+		self._ground_y = self._target.y
+		return
+	end
 
 	lerp_factor = lerp_factor or 1.0
 

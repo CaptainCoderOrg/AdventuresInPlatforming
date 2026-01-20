@@ -2,8 +2,8 @@
 local canvas = require("canvas")
 local controls = require("controls")
 local button = require("ui/button")
-local utils = require("ui/utils")
 local config = require("config")
+local simple_dialogue = require("ui/simple_dialogue")
 
 local rest_screen = {}
 
@@ -48,6 +48,8 @@ local campfire_y = 0
 local camera_ref = nil
 
 local continue_callback = nil
+local return_to_title_callback = nil
+local settings_callback = nil
 
 -- Circle lerp state (screen pixels)
 local circle_start_x = 0
@@ -66,15 +68,51 @@ local last_camera_x = 0
 local last_camera_y = 0
 
 local continue_button = nil
+local return_to_title_button = nil
+local settings_button = nil
+local rest_dialogue = nil
+local player_info_dialogue = nil
+local menu_dialogue = nil
 
 -- Layout constants (at 1x scale)
 local BUTTON_WIDTH = 70
 local BUTTON_HEIGHT = 12
+local BUTTON_SPACING = 4
+local BUTTON_TOP_OFFSET = 10
+local DIALOGUE_HEIGHT = 42
+local DIALOGUE_PADDING = 8
+local DIALOGUE_GAP = 8
+
+-- Menu navigation
+local MENU_ITEM_COUNT = 3
+local focused_index = 1  -- 1 = Continue, 2 = Return to Title, 3 = Settings
 
 -- Mouse input tracking
 local mouse_active = true
 local last_mouse_x = 0
 local last_mouse_y = 0
+
+-- Buttons array for iteration (populated in init)
+local buttons = nil
+
+--- Position all menu buttons vertically centered within the menu dialogue
+---@param menu_x number Menu dialogue X position
+---@param menu_y number Menu dialogue Y position
+---@param menu_width number Menu dialogue width
+---@return nil
+local function position_buttons(menu_x, menu_y, menu_width)
+    local button_x = menu_x + (menu_width - BUTTON_WIDTH) / 2
+    local button_start_y = menu_y + BUTTON_TOP_OFFSET
+
+    continue_button.x = button_x
+    continue_button.y = button_start_y
+
+    return_to_title_button.x = button_x
+    return_to_title_button.y = button_start_y + BUTTON_HEIGHT + BUTTON_SPACING
+
+    settings_button.x = button_x
+    settings_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
+end
 
 --- Initialize rest screen components (creates continue button)
 ---@return nil
@@ -91,6 +129,58 @@ function rest_screen.init()
             end
         end
     })
+
+    return_to_title_button = button.create({
+        x = 0, y = 0,
+        width = BUTTON_WIDTH,
+        height = BUTTON_HEIGHT,
+        label = "Return to Title",
+        text_only = true,
+        on_click = function()
+            if state == STATE.OPEN and return_to_title_callback then
+                return_to_title_callback()
+            end
+        end
+    })
+
+    settings_button = button.create({
+        x = 0, y = 0,
+        width = BUTTON_WIDTH,
+        height = BUTTON_HEIGHT,
+        label = "Settings",
+        text_only = true,
+        on_click = function()
+            if state == STATE.OPEN and settings_callback then
+                settings_callback()
+            end
+        end
+    })
+
+    rest_dialogue = simple_dialogue.create({
+        x = 0,
+        y = 0,
+        width = 100,
+        height = DIALOGUE_HEIGHT,
+        text = "Resting restores your hit points and saves your progress. Enemies also respawn when you rest."
+    })
+
+    player_info_dialogue = simple_dialogue.create({
+        x = 0,
+        y = 0,
+        width = 100,
+        height = 100,
+        text = ""
+    })
+
+    menu_dialogue = simple_dialogue.create({
+        x = 0,
+        y = 0,
+        width = 80,
+        height = 100,
+        text = ""
+    })
+
+    buttons = { continue_button, return_to_title_button, settings_button }
 end
 
 --- Trigger the fade out and continue sequence
@@ -141,6 +231,7 @@ function rest_screen.show(world_x, world_y, camera)
 
         circle_lerp_t = 0  -- Start at campfire position
         mouse_active = true
+        focused_index = 1  -- Default to Continue
     end
 end
 
@@ -148,6 +239,18 @@ end
 ---@param fn function Function to call when continuing
 function rest_screen.set_continue_callback(fn)
     continue_callback = fn
+end
+
+--- Set the return to title callback function
+---@param fn function Function to call when returning to title
+function rest_screen.set_return_to_title_callback(fn)
+    return_to_title_callback = fn
+end
+
+--- Set the settings callback function
+---@param fn function Function to call when opening settings
+function rest_screen.set_settings_callback(fn)
+    settings_callback = fn
 end
 
 --- Check if rest screen is blocking game input
@@ -184,17 +287,43 @@ function rest_screen.get_camera_offset()
     return offset_x, offset_y
 end
 
---- Process rest screen input
+--- Trigger the currently focused menu action based on focused_index
+---@return nil
+local function trigger_focused_action()
+    if focused_index == 1 then
+        rest_screen.trigger_continue()
+    elseif focused_index == 2 then
+        if return_to_title_callback then return_to_title_callback() end
+    elseif focused_index == 3 then
+        if settings_callback then settings_callback() end
+    end
+end
+
+--- Process keyboard and gamepad navigation input for the rest screen menu
+---@return nil
 function rest_screen.input()
     if state ~= STATE.OPEN then return end
 
+    -- Navigation
+    if controls.menu_up_pressed() then
+        mouse_active = false
+        focused_index = focused_index - 1
+        if focused_index < 1 then focused_index = MENU_ITEM_COUNT end
+    elseif controls.menu_down_pressed() then
+        mouse_active = false
+        focused_index = focused_index + 1
+        if focused_index > MENU_ITEM_COUNT then focused_index = 1 end
+    end
+
+    -- Confirm selection
     if controls.menu_confirm_pressed() then
-        rest_screen.trigger_continue()
+        trigger_focused_action()
     end
 end
 
 --- Advance fade animations and handle state transitions
 ---@param dt number Delta time in seconds
+---@return nil
 function rest_screen.update(dt)
     if state == STATE.HIDDEN then return end
 
@@ -219,7 +348,6 @@ function rest_screen.update(dt)
     elseif state == STATE.RELOADING then
         fade_progress = fade_progress + dt / RELOAD_PAUSE
         if fade_progress >= 1 then
-            -- Call continue callback
             if continue_callback then
                 continue_callback()
             end
@@ -237,8 +365,6 @@ function rest_screen.update(dt)
     -- Update button hover states when menu is open
     if state == STATE.OPEN then
         local scale = config.ui.SCALE
-        local screen_w = canvas.get_width()
-        local screen_h = canvas.get_height()
 
         -- Re-enable mouse input if mouse has moved
         local mx = canvas.get_mouse_x()
@@ -249,22 +375,32 @@ function rest_screen.update(dt)
             last_mouse_y = my
         end
 
-        -- Update button position
-        local center_x = screen_w / (2 * scale)
-        local center_y = screen_h / (2 * scale)
-        continue_button.x = center_x - BUTTON_WIDTH / 2
-        continue_button.y = center_y - BUTTON_HEIGHT / 2 + 30  -- Below center
+        local circle_right_edge = CIRCLE_EDGE_PADDING + CIRCLE_RADIUS * 2
+        local menu_width = circle_right_edge - DIALOGUE_PADDING
+        position_buttons(DIALOGUE_PADDING, DIALOGUE_PADDING, menu_width)
 
-        -- Handle mouse hover
+        -- Handle mouse hover and click
         if mouse_active then
             local local_mx = mx / scale
             local local_my = my / scale
-            continue_button:update(local_mx, local_my)
+
+            for i, btn in ipairs(buttons) do
+                if local_mx >= btn.x and local_mx <= btn.x + btn.width and
+                   local_my >= btn.y and local_my <= btn.y + btn.height then
+                    focused_index = i
+
+                    if canvas.is_mouse_pressed(0) then
+                        trigger_focused_action()
+                    end
+                    break
+                end
+            end
         end
     end
 end
 
---- Draw the rest screen overlay
+--- Draw the rest screen overlay including circular viewport, vignette, and menu UI
+---@return nil
 function rest_screen.draw()
     if state == STATE.HIDDEN then return end
 
@@ -309,7 +445,6 @@ function rest_screen.draw()
     -- Create the circular viewport effect using clip with evenodd
     -- This clips to the area OUTSIDE the circle, then fills with black
     if hole_radius > 1 then
-        -- Save state before clipping
         canvas.save()
 
         -- Create a compound path: outer rectangle + inner circle
@@ -370,15 +505,41 @@ function rest_screen.draw()
         canvas.save()
         canvas.scale(scale, scale)
 
-        local center_x = screen_w / (2 * scale)
-        local center_y = screen_h / (2 * scale)
+        local local_screen_w = screen_w / scale
+        local local_screen_h = screen_h / scale
+        local circle_right_edge = CIRCLE_EDGE_PADDING + CIRCLE_RADIUS * 2
+        local circle_top = local_screen_h - CIRCLE_EDGE_PADDING - CIRCLE_RADIUS * 2
 
-        -- Update button position
-        continue_button.x = center_x - BUTTON_WIDTH / 2
-        continue_button.y = center_y - BUTTON_HEIGHT / 2 + 30
+        -- Right side dialogues
+        local right_dialogue_x = circle_right_edge + DIALOGUE_PADDING
+        local right_dialogue_width = local_screen_w - right_dialogue_x - DIALOGUE_PADDING
 
-        -- Draw button (always focused since it's the only option)
-        continue_button:draw(true)
+        -- Bottom dialogue (rest info)
+        rest_dialogue.x = right_dialogue_x
+        rest_dialogue.y = local_screen_h - DIALOGUE_PADDING - DIALOGUE_HEIGHT
+        rest_dialogue.width = right_dialogue_width
+
+        -- Top-right dialogue (player info) - fills space above bottom dialogue
+        player_info_dialogue.x = right_dialogue_x
+        player_info_dialogue.y = DIALOGUE_PADDING
+        player_info_dialogue.width = right_dialogue_width
+        player_info_dialogue.height = rest_dialogue.y - DIALOGUE_GAP - DIALOGUE_PADDING
+
+        -- Left dialogue (menu) - above the circle
+        menu_dialogue.x = DIALOGUE_PADDING
+        menu_dialogue.y = DIALOGUE_PADDING
+        menu_dialogue.width = circle_right_edge - DIALOGUE_PADDING
+        menu_dialogue.height = circle_top - DIALOGUE_GAP - DIALOGUE_PADDING
+
+        position_buttons(menu_dialogue.x, menu_dialogue.y, menu_dialogue.width)
+
+        simple_dialogue.draw(menu_dialogue)
+        simple_dialogue.draw(player_info_dialogue)
+        simple_dialogue.draw(rest_dialogue)
+
+        for i, btn in ipairs(buttons) do
+            btn:draw(focused_index == i)
+        end
 
         canvas.restore()
     end

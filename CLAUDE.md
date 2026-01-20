@@ -570,24 +570,25 @@ All screens use identical states: `HIDDEN`, `FADING_IN`, `OPEN`, `FADING_OUT`
 - Mouse/keyboard input with priority blocking
 
 **Input Priority (highest to lowest):**
-1. Settings menu
+1. Audio/Controls dialogs
 2. Slot screen
 3. Title screen
 4. Game over screen
-5. Rest screen
+5. Rest screen (includes pause mode)
 
 **Title Screen** (`ui/title_screen.lua`):
-- Main menu with "Play Game" and "Settings" options
+- Main menu with "Play Game", "Audio", and "Controls" options
 - Animated cursor using player idle sprite
 - Callbacks for menu selections
 
 ```lua
-title_screen.show()                     -- Display with fade-in
-title_screen.input()                    -- Handle navigation
-title_screen.update(dt, block_mouse)    -- Update animations
-title_screen.draw()                     -- Render menu
-title_screen.set_play_game_callback(fn) -- "Play Game" callback
-title_screen.set_settings_callback(fn)  -- "Settings" callback
+title_screen.show()                      -- Display with fade-in
+title_screen.input()                     -- Handle navigation
+title_screen.update(dt, block_mouse)     -- Update animations
+title_screen.draw()                      -- Render menu
+title_screen.set_play_game_callback(fn)  -- "Play Game" callback
+title_screen.set_audio_callback(fn)      -- "Audio" callback
+title_screen.set_controls_callback(fn)   -- "Controls" callback
 ```
 
 **Slot Screen** (`ui/slot_screen.lua`):
@@ -607,26 +608,43 @@ slot_screen.set_back_callback(fn)   -- Callback when Back pressed
 **Modes:** `SELECTING` (browse slots), `CONFIRMING_DELETE` (delete confirmation)
 
 **Rest Screen** (`ui/rest_screen.lua`):
-- Circular viewport effect centered on campfire
-- Pulsing glow ring and vignette
-- Player stats display (level, exp, gold, HP, DEF, STR, CRIT, playtime)
-- "Continue" button to resume gameplay
+- Dual mode: Rest (campfire) and Pause (ESC/START during gameplay)
+- Circular viewport effect centered on campfire (rest mode only)
+- Menu navigation with sub-panels: Status, Audio, Controls, Continue, Return to Title
+- Integrated audio sliders and keybind panel
+- Confirmation dialog for Return to Title
 
 ```lua
-rest_screen.show(world_x, world_y, camera, player)  -- Show centered on campfire
+rest_screen.show(world_x, world_y, camera, player)  -- Show rest mode at campfire
+rest_screen.show_pause(player, camera)              -- Show pause mode during gameplay
 rest_screen.update(dt)                              -- Update animations
-rest_screen.draw()                                  -- Render circular viewport
+rest_screen.draw()                                  -- Render screen
 rest_screen.trigger_continue()                      -- Initiate fade-out
-rest_screen.set_continue_callback(fn)               -- Callback after fade completes
+rest_screen.is_pause_mode()                         -- Check if in pause vs rest mode
+rest_screen.is_in_submenu()                         -- Check if viewing a sub-panel
+rest_screen.set_continue_callback(fn)               -- Callback after rest continue
+rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 ```
+
+**Navigation Modes:** `MENU` (main buttons), `SETTINGS` (audio/controls panels), `CONFIRM` (return to title dialog)
 
 **Extended States:** `HIDDEN` → `FADING_IN` → `OPEN` → `FADING_OUT` → `RELOADING` → `FADING_BACK_IN` → `HIDDEN`
 
-**Visual Effects:**
+**Visual Effects (rest mode):**
 - Circular clipping with `evenodd` fill rule
 - Radial gradient vignette
 - Sine wave pulse (2 Hz, ±8% radius variation)
 - Glow ring with orange/yellow gradient
+
+**Audio Dialog** (`ui/audio_dialog.lua`):
+- Standalone dialog for volume settings (Master, Music, SFX sliders)
+- Accessible from title screen "Audio" option
+- Hold-to-repeat slider adjustment
+
+**Controls Dialog** (`ui/controls_dialog.lua`):
+- Standalone dialog for keybind settings
+- Accessible from title screen "Controls" option
+- Uses keybind_panel for two-column layout
 
 ### Game Flow
 
@@ -761,7 +779,8 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/rest_screen.lua` - Circular viewport rest interface
 - `ui/hud.lua` - UI screen aggregator and input/draw coordinator
 - `ui/game_over.lua` - Game over screen
-- `ui/settings_menu.lua` - Settings menu overlay
+- `ui/audio_dialog.lua` - Audio settings dialog with volume sliders
+- `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
 - `sprites/init.lua` - Asset loading (submodules: player, enemies, effects, projectiles, ui, environment)
 - `controls.lua` - Unified keyboard/gamepad input
 - `config.lua` - Debug flags, game settings, UI scaling

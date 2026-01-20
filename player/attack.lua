@@ -38,6 +38,9 @@ local function check_attack_hits(player)
 	if not sword then return end
 
 	for enemy, _ in pairs(Enemy.all) do
+		-- Skip enemies without shape (dead/dying)
+		if not enemy.shape then goto continue end
+
 		if not player.attack_state.hit_enemies[enemy] then
 			local ex = enemy.x + enemy.box.x
 			local ey = enemy.y + enemy.box.y
@@ -50,6 +53,8 @@ local function check_attack_hits(player)
 				player.attack_state.hit_enemies[enemy] = true
 			end
 		end
+
+		::continue::
 	end
 end
 

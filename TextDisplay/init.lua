@@ -379,7 +379,7 @@ function TextDisplay:draw(tile_x, tile_y, tile_w, tile_h)
 
     canvas.set_global_alpha(self.alpha)
 
-    canvas.set_color("#00000099")
+    canvas.set_color("#00000033")
     canvas.fill_rect(
         center_x - box_width / 2,
         box_top,

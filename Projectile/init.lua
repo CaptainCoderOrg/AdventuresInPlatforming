@@ -24,8 +24,8 @@ Projectile.animations = {
 }
 
 --- Returns the Axe projectile specification.
---- Axe has an arcing trajectory with gravity and costs 1 stamina to throw.
----@return table Projectile spec with name, sprite, icon, damage, stamina_cost, create
+--- Axe has an arcing trajectory with gravity, costs 1 stamina and 0 energy to throw.
+---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, energy_cost, create
 function Projectile.get_axe()
     return {
         name = "Axe",
@@ -33,13 +33,14 @@ function Projectile.get_axe()
         icon = sprites.projectiles.axe_icon,
         damage = 1,
         stamina_cost = 1,
+        energy_cost = 0,
         create = Projectile.create_axe,
     }
 end
 
 --- Returns the Shuriken projectile specification.
---- Shuriken travels in a straight line with no gravity and costs no stamina.
----@return table Projectile spec with name, sprite, icon, damage, stamina_cost, create
+--- Shuriken travels in a straight line with no gravity, costs no stamina and 1 energy.
+---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, energy_cost, create
 function Projectile.get_shuriken()
     return {
         name = "Shuriken",
@@ -47,6 +48,7 @@ function Projectile.get_shuriken()
         icon = sprites.projectiles.shuriken_icon,
         damage = 1,
         stamina_cost = 0,
+        energy_cost = 1,
         create = Projectile.create_shuriken,
     }
 end
@@ -92,9 +94,8 @@ function Projectile.draw()
             projectile.x * sprites.tile_size,
             projectile.y * sprites.tile_size)
 
-        -- Draw debug hitbox in bright yellow
         if config.bounding_boxes == true then
-            canvas.set_color("#FFFF00")  -- Bright yellow
+            canvas.set_color("#FFFF00")
             canvas.draw_rect(
                 (projectile.x + projectile.box.x) * sprites.tile_size,
                 (projectile.y + projectile.box.y) * sprites.tile_size,

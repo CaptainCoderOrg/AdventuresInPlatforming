@@ -60,6 +60,14 @@ local function try_use_throw_stamina(player)
     return stamina_cost == 0 or player:use_stamina(stamina_cost)
 end
 
+--- Checks if the player has enough energy for the current projectile's energy cost.
+---@param player table The player object
+---@return boolean True if player has sufficient energy to throw
+local function has_throw_energy(player)
+    local energy_cost = player.projectile.energy_cost or 1
+    return player.energy_used + energy_cost <= player.max_energy
+end
+
 --- Checks for hammer input and transitions to hammer state if pressed.
 ---@param player table The player object
 function common.handle_hammer(player)
@@ -71,12 +79,12 @@ function common.handle_hammer(player)
 end
 
 --- Checks for throw input and transitions to throw state or queues if on cooldown.
---- Requires available energy (energy_used < max_energy) and stamina (if projectile has stamina_cost) to throw.
+--- Requires sufficient energy and stamina (based on projectile costs) to throw.
 ---@param player table The player object
 function common.handle_throw(player)
     if controls.throw_pressed() then
-        -- Block throw entirely when out of energy (no cooldown queue needed)
-        if player.energy_used >= player.max_energy then return end
+        -- Block throw entirely when insufficient energy (no cooldown queue needed)
+        if not has_throw_energy(player) then return end
         if player.throw_cooldown <= 0 then
             if try_use_throw_stamina(player) then
                 player:set_state(player.states.throw)
@@ -397,7 +405,7 @@ function common.process_input_queue(player)
 			return true
 		end
 	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 and player.energy_used < player.max_energy then
+	if player.input_queue.throw and player.throw_cooldown <= 0 and has_throw_energy(player) then
 		if try_use_throw_stamina(player) then
 			common.clear_input_queue(player)
 			transition_or_restart(player, player.states.throw)
@@ -445,7 +453,7 @@ function common.check_cooldown_queues(player)
 			return true
 		end
 	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 and player.energy_used < player.max_energy then
+	if player.input_queue.throw and player.throw_cooldown <= 0 and has_throw_energy(player) then
 		if try_use_throw_stamina(player) then
 			player.input_queue.throw = false
 			player:set_state(player.states.throw)

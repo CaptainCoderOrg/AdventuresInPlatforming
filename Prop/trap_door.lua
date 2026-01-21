@@ -119,7 +119,8 @@ local definition = {
             ---@param prop table Trap door prop instance
             ---@param def table Definition table
             start = function(prop, def)
-                audio.play_sfx(audio.trap_door_open, 0.8)
+                -- Player triggers by standing on door, so always in range - no proximity check needed
+                audio.play_sfx(audio.trap_door_open, 0.5)  -- Louder than ambient traps since player triggered directly
                 prop.animation = Animation.new(TRAP_DOOR_OPEN)
                 -- Remove collider immediately so player falls
                 if prop.collider_shape then

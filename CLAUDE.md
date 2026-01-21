@@ -261,6 +261,99 @@ Camera:get_visible_bounds(tile_size) -- For culling
 
 Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead distance).
 
+### Audio System
+
+Modular audio architecture in `audio/` folder with sound pools, spatial audio, and music crossfade.
+
+**Architecture:**
+- Modular folder structure replacing monolithic `audio.lua`
+- Sound pool system with round-robin and random playback modes
+- Spatial audio for looping ambient sounds (campfire, etc.)
+- Dual-channel music crossfade system
+
+**Sound Pools (`audio/pool.lua`):**
+Factory pattern for reusable sound management:
+```lua
+pool.create({
+    channel = "footsteps_channel",
+    path_format = "sfx/landing/%d.ogg",
+    name_format = "footstep_%d",
+    start_index = 0, end_index = 8,
+    mode = "random",  -- or "round_robin" (default)
+    volume = pool.BASE_VOLUME
+})
+```
+- Skips playback if channel already playing (prevents overlap)
+- Volume constants: `BASE_VOLUME = 0.15`, `HIT_VOLUME = 0.1725`
+
+**Music System (`audio/music.lua`):**
+- Dual-channel crossfade (5s fade-in, 2s fade-out)
+- Smooth transitions between tracks
+- `audio.play_music(track)` initiates crossfade
+
+**Spatial Audio (`audio/spatial.lua`):**
+- Looping ambient sounds with dynamic volume
+- `audio.update_spatial_sound(sound_id, volume)` - 0 stops, >0 plays
+- Currently supports: "campfire"
+
+**Death Sounds (`audio/death.lua`):**
+- Per-enemy-type death sound pools
+- `audio.play_death_sound(key)` - falls back to default if key not found
+- Supports: "ratto", "spike_slug", default (squish)
+
+**Key Methods:**
+```lua
+audio.init()                        -- Initialize all audio systems
+audio.play_music(track)             -- Crossfade to music track
+audio.update(dt)                    -- Update crossfade (call each frame)
+audio.play_footstep()               -- Sound pool playback
+audio.play_sword_sound()            -- Attack sound
+audio.play_death_sound(key)         -- Enemy death sound
+audio.update_spatial_sound(id, vol) -- Ambient volume control
+audio.set_music_volume(volume)      -- Music group volume (0-1)
+audio.set_sfx_volume(volume)        -- SFX group volume (0-1)
+```
+
+### Proximity Audio System
+
+Distance-based volume control for ambient sound emitters using HC spatial hashing.
+
+**Architecture:**
+- HC world with 200px cell size for audio radii (3-5 tiles typical)
+- Registration-based emitter system
+- Per-frame cache for efficient queries
+- Inner/outer radius with configurable falloff curves
+
+**Falloff Functions (`proximity_audio/falloff.lua`):**
+- `linear` - Volume decreases linearly with distance
+- `smooth` - Cosine curve for smoother boundary transitions
+- `exponential` - Realistic sound attenuation
+
+**Registration:**
+```lua
+proximity_audio.register(emitter, {
+    sound_id = "campfire",     -- Matches audio/spatial.lua
+    radius = 4,                -- Outer radius in tiles (silence beyond)
+    inner_radius = 0.5,        -- Inner radius in tiles (full volume within)
+    max_volume = 1.0,          -- Volume at inner radius
+    falloff = "smooth"         -- Falloff curve type
+})
+```
+
+**Key Methods:**
+```lua
+proximity_audio.register(emitter, config)  -- Add sound emitter
+proximity_audio.remove(emitter)            -- Remove emitter
+proximity_audio.invalidate_cache()         -- Call at frame start
+proximity_audio.get_cached(x, y)           -- Query nearby emitters (cached)
+proximity_audio.query(x, y)                -- Direct query (uncached)
+proximity_audio.is_in_range(x, y, emitter) -- Check specific emitter
+proximity_audio.clear()                    -- Level cleanup
+```
+
+**Query Result:**
+Returns array of `{emitter, distance, volume, config}` for all in-range emitters.
+
 ### Combat System
 
 Player combat abilities managed through state machine.
@@ -349,7 +442,52 @@ self.hit_state = {              -- Hit stun tracking
 self.input_queue = {            -- Centralized input buffering
     jump, attack, throw         -- Boolean flags for pending inputs
 }
+self.max_stamina = 5            -- Maximum stamina points
+self.stamina_used = 0           -- Consumed stamina (can exceed max for fatigue)
+self.stamina_regen_rate = 5     -- Stamina regenerated per second
+self.stamina_regen_cooldown = 0.5  -- Seconds before regen begins after use
+self.stamina_regen_timer = 0    -- Time since last stamina use
+self.max_energy = 4             -- Maximum energy points (for projectiles)
+self.energy_used = 0            -- Consumed energy
 ```
+
+### Stamina/Energy System
+
+Resource management for abilities with fatigue mechanic.
+
+**Stamina Properties:**
+- `max_stamina = 5` - Maximum stamina pool
+- `stamina_used` - Tracks consumption (can exceed max for fatigue)
+- `stamina_regen_rate = 5` - Regeneration per second (normal)
+- `stamina_regen_cooldown = 0.5s` - Delay before regen starts
+
+**Stamina Costs (`player/common.lua`):**
+```lua
+ATTACK_STAMINA_COST = 2      -- Per sword swing
+HAMMER_STAMINA_COST = 5      -- Full bar (heavy attack)
+AIR_JUMP_STAMINA_COST = 1    -- Double jump
+DASH_STAMINA_COST = 2.5      -- Dash ability
+WALL_JUMP_STAMINA_COST = 1   -- Wall jump
+```
+
+**Fatigue System:**
+Triggered when `stamina_used > max_stamina`:
+- **Entry Penalty**: +1 stamina debt added on entering fatigue
+- **Speed Penalty**: 75% movement speed while fatigued
+- **Regen Penalty**: 25% regeneration rate (1.25/second vs 5/second)
+- **Visual Feedback**: TIRED effect, sweat particles, pulsing orange/red meter
+
+**Key Methods:**
+```lua
+player:use_stamina(amount)   -- Consume stamina, returns false if fatigued
+player:is_fatigued()         -- True if stamina_used > max_stamina
+player:get_speed()           -- Returns speed with fatigue penalty applied
+```
+
+**Energy System:**
+- `max_energy = 4` - Projectile ammunition pool
+- `energy_used` - Tracks projectile consumption
+- Currently used for throw ability resource tracking
 
 ### Collision System
 
@@ -358,12 +496,40 @@ Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
 - Ground probing for slope walking (`world.ground_probe()`)
 - Trigger volumes for ladders and hit zones
 - One-way platform support
+- Probe shapes for non-colliding queries
 
 **Entity Filtering:**
 - Players and enemies pass through each other (no physical collision)
 - `should_skip_collision()` in world.lua handles filtering
 - Enemies also pass through other enemies
-- Contact damage handled separately via `Enemy:check_player_overlap()`
+- Contact damage handled separately via combat system
+- `is_non_solid()` helper consolidates trigger/probe filtering
+
+**Probe Shapes:**
+- Shapes with `is_probe = true` are skipped in collision resolution
+- Used for persistent query shapes (ground probing optimization)
+- Avoids per-frame shape allocation overhead
+
+**Combat Spatial Indexing (`combat.lua`):**
+Separate HC world dedicated to combat hit detection:
+```lua
+combat.world = HC.new(100)  -- 100px cell size for combat hitboxes
+```
+
+**Key Methods:**
+```lua
+combat.add(entity)           -- Register entity hitbox (x, y, box properties)
+combat.remove(entity)        -- Remove from combat world
+combat.update(entity, y_off) -- Update hitbox position (supports slope rotation)
+combat.query_rect(x, y, w, h, filter)  -- Spatial query for overlapping entities
+combat.collides(e1, e2)      -- Check if two entities overlap
+combat.clear()               -- Level cleanup
+```
+
+**Query Optimization:**
+- Persistent query shape reused across frames (recreated only on size change)
+- O(1) average lookup via spatial hashing
+- Used for sword hitbox queries, enemy overlap detection
 
 **Trigger Movement:**
 - `world.move_trigger(obj)` - Sweeping collision for trigger objects (projectiles)
@@ -490,6 +656,16 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 - **Button** - Binary state (unpressed/pressed), triggers `on_press` callback
 - **Campfire** - Sets player restore point, transitions to lit state
 - **Spike Trap** - Togglable hazard, damages player when active
+
+**Common Utilities (`Prop/common.lua`):**
+Shared functions to reduce duplication across prop types:
+```lua
+common.draw(prop)                    -- Standard animation rendering
+common.player_touching(prop, player) -- Uses combat spatial indexing for overlap
+common.damage_player(prop, player, damage)  -- Consolidated hazard damage
+```
+
+`common.damage_player()` handles the full damage pattern: touch check, invincibility check, health check, and `player:take_damage()` call.
 
 ### Save Slot System
 
@@ -646,6 +822,29 @@ rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 - Accessible from title screen "Controls" option
 - Uses keybind_panel for two-column layout
 
+**Projectile Selector Widget** (`ui/projectile_selector.lua`):
+- Bottom-left HUD widget showing current throwable and resource meters
+- Three horizontal meters: HP (red), SP (green/orange), EP (blue)
+- Smooth lerp transitions for meter changes (8 units/second)
+- Fatigue visualization: pulsing orange→red when stamina negative (2 Hz)
+
+```lua
+local widget = projectile_selector.create({ x = 8, y = 8, alpha = 0.7 })
+widget:update(dt, player)  -- Lerp meter values
+widget:draw(player)        -- Render widget
+```
+
+**Status Panel** (`ui/status_panel.lua`):
+- Abstracted stats display for rest screen
+- Shows: Level, Exp, Gold, HP/SP/EP, DEF, STR, CRIT, Playtime
+- Used in rest screen's Status sub-panel
+
+```lua
+local panel = status_panel.create({ x, y, width, height, player })
+panel:set_player(player)   -- Update player reference
+panel:draw()               -- Render stats text
+```
+
 ### Game Flow
 
 Main game loop integration for save/load and screen transitions.
@@ -747,11 +946,20 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 - `main.lua` - Game loop (on_start, game tick, draw)
 - `player/init.lua` - Player state registry and core logic
-- `player/common.lua` - Shared physics and collision utilities
+- `player/common.lua` - Shared physics, collision utilities, stamina costs
 - `Animation/init.lua` - Delta-time animation system
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Camera/init.lua` - Camera system with following and framing
+- `audio/init.lua` - Main audio system with pool integration
+- `audio/pool.lua` - Sound pool factory (round-robin, random modes)
+- `audio/spatial.lua` - Spatial/ambient sound manager (looping sounds)
+- `audio/music.lua` - Dual-channel music crossfade
+- `audio/death.lua` - Enemy-specific death sounds
+- `proximity_audio/init.lua` - Distance-based audio volume system
+- `proximity_audio/falloff.lua` - Falloff curve functions (linear, smooth, exponential)
+- `proximity_audio/state.lua` - HC world and emitter state
+- `combat.lua` - Combat spatial indexing (separate HC world for hit detection)
 - `Enemies/init.lua` - Enemy manager and base class
 - `Enemies/common.lua` - Shared enemy utilities (draw, is_blocked, create_death_state)
 - `Enemies/ratto.lua` - Ratto enemy (patrol/chase AI)
@@ -762,11 +970,12 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance
 - `player/hit.lua` - Hit stun with invincibility and input queueing
-- `world.lua` - HC collision engine wrapper (includes raycast, enemy filtering)
+- `world.lua` - HC collision engine wrapper (includes raycast, probe shapes, filtering)
 - `platforms/init.lua` - Level geometry loader
 - `platforms/bridges.lua` - One-way platform system
 - `Sign/init.lua` - Interactive sign system
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
+- `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
 - `Prop/campfire.lua` - Campfire prop (restore point)
 - `Prop/spiketrap.lua` - Spike trap prop (togglable hazard)
@@ -781,6 +990,8 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/game_over.lua` - Game over screen
 - `ui/audio_dialog.lua` - Audio settings dialog with volume sliders
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
+- `ui/projectile_selector.lua` - Resource meters HUD widget (HP/SP/EP)
+- `ui/status_panel.lua` - Player stats panel for rest screen
 - `sprites/init.lua` - Asset loading (submodules: player, enemies, effects, projectiles, ui, environment)
 - `controls.lua` - Unified keyboard/gamepad input
 - `config.lua` - Debug flags, game settings, UI scaling

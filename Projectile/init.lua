@@ -4,6 +4,7 @@ local world = require('world')
 local Animation = require('Animation')
 local config = require('config')
 local Effects = require("Effects")
+local audio = require('audio')
 
 local Projectile = {}
 
@@ -118,6 +119,8 @@ function Projectile:on_collision(collision)
     if collision.other and collision.other.owner and collision.other.owner.is_enemy then
         local enemy = collision.other.owner
         enemy:on_hit("projectile", self)
+    else
+        audio.play_solid_sound()
     end
 
     self.create_effect(collision.x - 0.25, collision.y - 0.25, direction)
@@ -170,6 +173,7 @@ function Projectile.create_axe(x, y, direction)
     local axe_vy = -3
     local axe_gravity = 20
     local damage = 1
+    audio.play_axe_throw_sound()
     return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction, nil, damage)
 end
 
@@ -184,6 +188,7 @@ function Projectile.create_shuriken(x, y, direction)
     local gravity = 0
     local effect_callback = Effects.create_shuriken_hit
     local damage = 2
+    audio.play_shuriken_throw_sound()
     return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction, effect_callback, damage)
 end
 

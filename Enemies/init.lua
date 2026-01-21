@@ -5,6 +5,7 @@ local combat = require('combat')
 local config = require('config')
 local common = require('Enemies/common')
 local Effects = require('Effects')
+local audio = require('audio')
 
 local Enemy = {}
 Enemy.__index = Enemy
@@ -271,9 +272,13 @@ function Enemy:on_hit(source_type, source)
 	-- Create floating damage text (centered on enemy hitbox)
 	Effects.create_damage_text(self.x + self.box.x + self.box.w / 2, self.y, damage)
 
-	if damage <= 0 then return end
+	if damage <= 0 then
+		audio.play_solid_sound()
+		return
+	end
 
 	self.health = self.health - damage
+	audio.play_squish_sound()
 
 	-- Determine knockback direction from hit source
 	if source and source.vx then

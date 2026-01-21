@@ -40,7 +40,7 @@ Prop.register("sign", require("Prop/sign"))
 Prop.register("trap_door", require("Prop/trap_door"))
 
 -- Levels
-local level1 = require("levels/level1")
+local level1 = require("levels/level2")
 local level2 = require("levels/level2")
 
 local levels = {

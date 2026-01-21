@@ -8,6 +8,7 @@ local Animation = require('Animation')
 local Projectile = require('Projectile')
 local controls = require('controls')
 local Effects = require('Effects')
+local audio = require('audio')
 
 local Player = {}
 Player.__index = Player
@@ -272,6 +273,7 @@ function Player:take_damage(amount)
 	if self:is_invincible() then return end
 	if self.state == self.states.hit then return end
 	self.damage = self.damage + amount
+	audio.play_squish_sound()
 	if self:health() > 0 then
 		self:set_state(self.states.hit)
 	else

@@ -11,6 +11,7 @@ audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg
 audio.spiketrap = canvas.assets.load_sound("spiketrap", "sfx/environment/spiketrap.ogg")
 
 local REPEAT_SOUND_VOLUME = 0.15
+local HIT_SOUND_VOLUME = 0.1725  -- 15% louder than REPEAT_SOUND_VOLUME
 
 audio.footstep = {}
 local footstep_channel = "footsteps_channel"
@@ -34,6 +35,25 @@ audio.sword = {}
 for i = 0,5 do
     table.insert(audio.sword, canvas.assets.load_sound(string.format("sword_%d", i), string.format("sfx/attack/sword_%d.ogg", i)))
 end
+
+local hit_channel = "hit_channel"
+audio.squish = {}
+for i = 1,9 do
+    table.insert(audio.squish, canvas.assets.load_sound(
+        string.format("squish_%02d", i),
+        string.format("sfx/hits/squish/squish_%02d.ogg", i)))
+end
+
+local solid_hit_channel = "solid_hit_channel"
+audio.solid = {}
+for i = 0,8 do
+    table.insert(audio.solid, canvas.assets.load_sound(
+        string.format("solid_%02d", i),
+        string.format("sfx/hits/solid/solid_%02d.ogg", i)))
+end
+
+local axe_throw_channel = "axe_throw_channel"
+local shuriken_throw_channel = "shuriken_throw_channel"
 
 local sound_check_channel = "sound_check_channel"
 
@@ -76,6 +96,10 @@ function audio.init()
 
     canvas.channel_create(footstep_channel, { parent = sfx_group })
     canvas.channel_create(sound_check_channel, { parent = sfx_group })
+    canvas.channel_create(hit_channel, { parent = sfx_group })
+    canvas.channel_create(solid_hit_channel, { parent = sfx_group })
+    canvas.channel_create(axe_throw_channel, { parent = sfx_group })
+    canvas.channel_create(shuriken_throw_channel, { parent = sfx_group })
 
     -- Environment/spatial audio group and channels
     canvas.channel_create(environment_group, { parent = sfx_group })
@@ -168,6 +192,42 @@ function audio.play_sword_sound()
     next_sword_sound = next_sword_sound + 1
     if next_sword_sound > #audio.sword then next_sword_sound = 1 end
     canvas.channel_play(attack_channel, sfx, { volume = REPEAT_SOUND_VOLUME, loop = false })
+end
+
+local next_squish_sound = 1
+function audio.play_squish_sound()
+    if canvas.channel_is_playing(hit_channel) then return end
+    local sfx = audio.squish[next_squish_sound]
+    next_squish_sound = next_squish_sound + 1
+    if next_squish_sound > #audio.squish then next_squish_sound = 1 end
+    canvas.channel_play(hit_channel, sfx, { volume = HIT_SOUND_VOLUME, loop = false })
+end
+
+local next_solid_sound = 1
+function audio.play_solid_sound()
+    if canvas.channel_is_playing(solid_hit_channel) then return end
+    local sfx = audio.solid[next_solid_sound]
+    next_solid_sound = next_solid_sound + 1
+    if next_solid_sound > #audio.solid then next_solid_sound = 1 end
+    canvas.channel_play(solid_hit_channel, sfx, { volume = HIT_SOUND_VOLUME, loop = false })
+end
+
+local next_axe_throw_sound = 1
+function audio.play_axe_throw_sound()
+    if canvas.channel_is_playing(axe_throw_channel) then return end
+    local sfx = audio.sword[next_axe_throw_sound]
+    next_axe_throw_sound = next_axe_throw_sound + 1
+    if next_axe_throw_sound > #audio.sword then next_axe_throw_sound = 1 end
+    canvas.channel_play(axe_throw_channel, sfx, { volume = REPEAT_SOUND_VOLUME, loop = false })
+end
+
+local next_shuriken_throw_sound = 1
+function audio.play_shuriken_throw_sound()
+    if canvas.channel_is_playing(shuriken_throw_channel) then return end
+    local sfx = audio.sword[next_shuriken_throw_sound]
+    next_shuriken_throw_sound = next_shuriken_throw_sound + 1
+    if next_shuriken_throw_sound > #audio.sword then next_shuriken_throw_sound = 1 end
+    canvas.channel_play(shuriken_throw_channel, sfx, { volume = REPEAT_SOUND_VOLUME, loop = false })
 end
 
 --- Play sound check sample (skips if already playing)

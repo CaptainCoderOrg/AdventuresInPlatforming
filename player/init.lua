@@ -7,6 +7,7 @@ local common = require('player.common')
 local Animation = require('Animation')
 local Projectile = require('Projectile')
 local controls = require('controls')
+local Effects = require('Effects')
 
 local Player = {}
 Player.__index = Player
@@ -39,6 +40,8 @@ local FATIGUE_SPEED_MULTIPLIER = 0.75
 local FATIGUE_REGEN_MULTIPLIER = 0.25
 -- Extra debt ensures player can't immediately attack again after recovering
 local FATIGUE_ENTRY_PENALTY = 1
+-- Seconds between sweat particle spawns (50ms = rapid dripping effect)
+local FATIGUE_PARTICLE_INTERVAL = 0.05
 
 --- Creates a new player instance.
 --- @return table A new player object
@@ -57,6 +60,8 @@ function Player.new()
 	self.stamina_regen_rate = 5       -- Stamina regenerated per second
 	self.stamina_regen_cooldown = 0.5 -- Seconds before regen begins after use
 	self.stamina_regen_timer = 0      -- Time since last stamina use (seconds)
+	self.was_fatigued = false         -- Tracks previous fatigue state for transition detection
+	self.fatigue_particle_timer = 0   -- Timer for spawning fatigue particles
 
 	-- Player Energy
 	-- Consumed by thrown weapons (1 per throw), restored when resting at campfire
@@ -344,6 +349,24 @@ function Player:update(dt)
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
 		local regen_multiplier = self:is_fatigued() and FATIGUE_REGEN_MULTIPLIER or 1
 		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * dt)
+	end
+
+	-- Check for fatigue state transition (show "TIRED" text when entering fatigue)
+	local is_now_fatigued = self:is_fatigued()
+	if is_now_fatigued and not self.was_fatigued then
+		Effects.create_fatigue_text(self.x, self.y)
+	end
+	self.was_fatigued = is_now_fatigued
+
+	-- Spawn fatigue particles while fatigued
+	if is_now_fatigued then
+		self.fatigue_particle_timer = self.fatigue_particle_timer + dt
+		while self.fatigue_particle_timer >= FATIGUE_PARTICLE_INTERVAL do
+			self.fatigue_particle_timer = self.fatigue_particle_timer - FATIGUE_PARTICLE_INTERVAL
+			Effects.create_fatigue_particle(self.x + 0.5, self.y + 0.5)
+		end
+	else
+		self.fatigue_particle_timer = 0
 	end
 
 	self.x = self.x + (self.vx * dt)

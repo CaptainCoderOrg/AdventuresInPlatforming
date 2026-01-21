@@ -3,5 +3,7 @@
 return {
 	all = {},
 	damage_texts = {},
+	status_texts = {},
+	fatigue_particles = {},
 	next_id = 1
 }

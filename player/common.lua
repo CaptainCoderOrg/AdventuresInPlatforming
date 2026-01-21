@@ -392,28 +392,40 @@ local function transition_or_restart(player, state)
 	end
 end
 
---- Processes queued inputs with priority (attack > throw > jump).
---- Called when exiting locked states (throw, hammer, hit) to chain actions.
---- Respects cooldowns and resource costs - blocked entries persist for check_cooldown_queues.
+--- Attempts to process queued attack or throw input.
+--- Clears queue entry when cooldown ready, returns target state on successful stamina use.
 ---@param player table The player object
----@return boolean True if a state transition occurred
-function common.process_input_queue(player)
+---@return table|nil Target state if action succeeded, nil otherwise
+local function try_queued_combat_action(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
+		player.input_queue.attack = false
 		if player:use_stamina(common.ATTACK_STAMINA_COST) then
-			common.clear_input_queue(player)
-			transition_or_restart(player, player.states.attack)
-			return true
+			return player.states.attack
 		end
 	end
 	if player.input_queue.throw and player.throw_cooldown <= 0 and has_throw_energy(player) then
+		player.input_queue.throw = false
 		if try_use_throw_stamina(player) then
-			common.clear_input_queue(player)
-			transition_or_restart(player, player.states.throw)
-			return true
+			return player.states.throw
 		end
 	end
+	return nil
+end
+
+--- Processes queued inputs with priority (attack > throw > jump).
+--- Called when exiting locked states (throw, hammer, hit) to chain actions.
+--- Respects cooldowns and resource costs. Queued actions are cleared once cooldown
+--- is ready, regardless of stamina availability, to prevent infinite retry loops.
+---@param player table The player object
+---@return boolean True if a state transition occurred
+function common.process_input_queue(player)
+	local state = try_queued_combat_action(player)
+	if state then
+		common.clear_input_queue(player)
+		transition_or_restart(player, state)
+		return true
+	end
 	if player.input_queue.jump then
-		-- Jump can't be deferred, clear it regardless of success
 		player.input_queue.jump = false
 		if player.is_grounded then
 			player.vy = -common.JUMP_VELOCITY
@@ -421,7 +433,6 @@ function common.process_input_queue(player)
 			return true
 		end
 	end
-	-- Don't clear attack/throw - they persist for check_cooldown_queues
 	return false
 end
 
@@ -446,19 +457,10 @@ end
 ---@param player table The player object
 ---@return boolean True if a state transition occurred
 function common.check_cooldown_queues(player)
-	if player.input_queue.attack and player.attack_cooldown <= 0 then
-		if player:use_stamina(common.ATTACK_STAMINA_COST) then
-			player.input_queue.attack = false
-			player:set_state(player.states.attack)
-			return true
-		end
-	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 and has_throw_energy(player) then
-		if try_use_throw_stamina(player) then
-			player.input_queue.throw = false
-			player:set_state(player.states.throw)
-			return true
-		end
+	local state = try_queued_combat_action(player)
+	if state then
+		player:set_state(state)
+		return true
 	end
 	return false
 end

@@ -9,6 +9,7 @@ local sprites = require('sprites')
 ---@field shape_map table<table, table> Maps game objects to their HC shapes
 ---@field trigger_map table<table, table> Maps game objects to their trigger shapes
 ---@field hitbox_map table<table, table> Maps game objects to their combat hitboxes
+---@field ground_probe table|nil Persistent probe shape for point_has_ground queries
 return {
     -- Initialize HC with spatial hash cell size (50 tiles * tile_size in pixels)
     hc = HC:new(50 * sprites.tile_size),
@@ -17,5 +18,7 @@ return {
     -- Maps game objects to their HC trigger shapes
     trigger_map = {},
     -- Maps game objects to their combat hitboxes (for hit detection, can rotate)
-    hitbox_map = {}
+    hitbox_map = {},
+    -- Persistent probe shape for point_has_ground queries (lazy-initialized)
+    ground_probe = nil
 }

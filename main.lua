@@ -271,6 +271,7 @@ end
 local function cleanup_level()
     world.remove_collider(player)
     combat.remove(player)
+    world.clear_probes()
     platforms.clear()
     Enemy.clear()
     Prop.clear()

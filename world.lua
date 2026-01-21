@@ -4,11 +4,10 @@ local state = require('world_state')
 
 local world = {}
 
--- Configuration
 local MAX_ITERATIONS = 4
 local GROUND_PROBE_DISTANCE = 4 -- Pixels to probe downward for ground adhesion
 
--- Debug flag - set to true to see collision info
+-- Prints collision source to console on each ground contact
 world.debug_collisions = false
 
 --- Helper to identify what a shape belongs to
@@ -78,6 +77,20 @@ local function should_skip_collision(obj, other_owner)
 	if obj.is_player and other_owner and other_owner.is_enemy then return true end
 	if obj.is_enemy and other_owner and other_owner.is_player then return true end
 	if obj.is_enemy and other_owner and other_owner.is_enemy then return true end
+	return false
+end
+
+--- Checks if a shape is non-solid (trigger or probe) and should be skipped for physics.
+--- If the shape is a trigger, it is added to the collision triggers list.
+--- @param other table The collision shape to check
+--- @param cols table Collision result with triggers array
+--- @return boolean True if this shape should be skipped
+local function is_non_solid(other, cols)
+	if other.is_probe then return true end
+	if other.is_trigger then
+		table.insert(cols.triggers, other)
+		return true
+	end
 	return false
 end
 
@@ -215,13 +228,8 @@ function world.move(obj)
 			local any_collision = false
 
 			for other, sep in pairs(collisions) do
-				if other.is_trigger then
-					table.insert(cols.triggers, other)
-					goto skip_x_collision
-				end
-				if should_skip_collision(obj, other.owner) then
-					goto skip_x_collision
-				end
+				if is_non_solid(other, cols) then goto skip_x_collision end
+				if should_skip_collision(obj, other.owner) then goto skip_x_collision end
 				if other ~= shape and sep.x ~= 0 then
 					-- Only treat as wall if more horizontal than vertical (steeper than 45°)
 					-- Slopes (<=45°) should be handled by Y pass, not blocked by X pass
@@ -256,13 +264,8 @@ function world.move(obj)
 		local any_collision = false
 
 		for other, sep in pairs(collisions) do
-			if other.is_trigger then
-				table.insert(cols.triggers, other)
-				goto skip_y_collision
-			end
-			if should_skip_collision(obj, other.owner) then
-				goto skip_y_collision
-			end
+			if is_non_solid(other, cols) then goto skip_y_collision end
+			if should_skip_collision(obj, other.owner) then goto skip_y_collision end
 			-- Detect ladder top collision before one-way platform check
 			-- This ensures standing_on_ladder_top works even when pressing down
 			if other.owner and other.owner.is_ladder_top then
@@ -314,13 +317,8 @@ function world.move(obj)
 		local found_ground = false
 
 		for other, sep in pairs(collisions) do
-			if other.is_trigger then
-				table.insert(cols.triggers, other)
-				goto skip_ground_collision
-			end
-			if should_skip_collision(obj, other.owner) then
-				goto skip_ground_collision
-			end
+			if is_non_solid(other, cols) then goto skip_ground_collision end
+			if should_skip_collision(obj, other.owner) then goto skip_ground_collision end
 			-- Apply bridge pass-through logic (overlap, falling direction, drop-through)
 			if other.owner and other.owner.is_bridge then
 				if should_skip_bridge(obj, other.owner) then
@@ -378,6 +376,9 @@ function world.move_trigger(obj)
 	local solid_hit = nil
 
 	for other, sep in pairs(collisions) do
+		-- Skip probe and trigger shapes
+		if other.is_probe or other.is_trigger then goto continue end
+
 		local owner = other.owner
 		local is_player = owner and owner.is_player
 		local is_enemy = owner and owner.is_enemy
@@ -402,6 +403,7 @@ function world.move_trigger(obj)
 				end
 			end
 		end
+		::continue::
 	end
 
 	-- Return enemy hit if found, otherwise solid hit
@@ -479,21 +481,39 @@ function world.sync_position(obj)
 end
 
 --- Checks if a point has solid ground.
+--- Uses a persistent probe shape to avoid allocations.
 --- @param x number X position in tiles
 --- @param y number Y position in tiles
 --- @return boolean True if solid ground exists at point
 function world.point_has_ground(x, y)
 	local ts = sprites.tile_size
-	local px, py = x * ts, y * ts
-	local probe = world.hc:rectangle(px - ts/2, py - ts, ts, ts)
-	local collisions = world.hc:collisions(probe)
-	world.hc:remove(probe)
+	local px, py = x * ts - ts/2, y * ts - ts
+
+	-- Lazy-init persistent probe (once per level)
+	if not state.ground_probe then
+		state.ground_probe = world.hc:rectangle(px, py, ts, ts)
+		state.ground_probe.is_probe = true
+	else
+		-- moveTo uses center coordinates, not top-left
+		state.ground_probe:moveTo(px + ts/2, py + ts/2)
+	end
+
+	local collisions = world.hc:collisions(state.ground_probe)
 
 	for other, _ in pairs(collisions) do
-		local dominated = other.is_trigger or (other.owner and other.owner.is_enemy)
-		if not dominated then return true end
+		local skip = other.is_probe or other.is_trigger or (other.owner and other.owner.is_enemy)
+		if not skip then return true end
 	end
 	return false
+end
+
+--- Clears persistent probe shapes.
+--- Call when clearing/reloading a level to prevent stale shapes.
+function world.clear_probes()
+	if state.ground_probe then
+		world.hc:remove(state.ground_probe)
+		state.ground_probe = nil
+	end
 end
 
 --- Raycasts downward to find the ground below a position

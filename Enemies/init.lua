@@ -156,7 +156,7 @@ function Enemy.update(dt, player)
 	end
 end
 
---- Draws all enemies.
+--- Draws all enemies and their debug bounding boxes when config.bounding_boxes is enabled.
 function Enemy.draw()
 	canvas.save()
 	for enemy, _ in pairs(Enemy.all) do
@@ -207,7 +207,8 @@ function Enemy.draw()
 	canvas.restore()
 end
 
---- Clears all enemies (for level reloading).
+--- Clears all enemies and their collision shapes.
+--- Call when reloading levels to prevent orphaned colliders.
 function Enemy.clear()
 	for enemy, _ in pairs(Enemy.all) do
 		world.remove_collider(enemy)

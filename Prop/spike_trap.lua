@@ -7,7 +7,7 @@ local audio = require("audio")
 local proximity_audio = require("proximity_audio")
 
 local SPIKE_ANIM = Animation.create_definition(sprites.environment.spikes, 6, {
-    ms_per_frame = 160,
+    ms_per_frame = 40,
     width = 16,
     height = 16,
     loop = false
@@ -18,7 +18,7 @@ local DEFAULT_EXTEND_TIME = 1.5
 local DEFAULT_RETRACT_TIME = 1.5
 
 -- Roughly one screen width; prevents distant traps from creating noise clutter
-local SOUND_RADIUS = 5
+local SOUND_RADIUS = 8
 
 --- Start animation transition
 ---@param prop table SpikeTrap instance with `animation` field

@@ -11,6 +11,9 @@ Projectile.__index = Projectile
 Projectile.all = {}
 Projectile.next_id = 1
 
+-- Module-level table to avoid allocation each frame
+local to_remove = {}
+
 Projectile.animations = {
 	AXE = Animation.create_definition(sprites.projectiles.axe, 4, {
 		width = 8,
@@ -57,7 +60,8 @@ end
 ---@param dt number Delta time in seconds
 ---@param level_info table Level metadata with width and height for bounds checking
 function Projectile.update(dt, level_info)
-    local to_remove = {}
+    -- Clear module-level table instead of allocating new one
+    for i = 1, #to_remove do to_remove[i] = nil end
 
     for projectile, _ in pairs(Projectile.all) do
         projectile.x = projectile.x + projectile.vx * dt

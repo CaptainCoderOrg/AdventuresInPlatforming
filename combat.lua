@@ -10,6 +10,10 @@ combat.world = HC.new(100)
 
 combat.shapes = {}
 
+-- Persistent query shape to avoid per-frame allocations in query_rect
+local query_shape = nil
+local query_shape_size = { w = 0, h = 0 }
+
 --- Add an entity to the combat world
 ---@param entity table Entity with x, y, box properties
 ---@return table The created HC shape
@@ -63,6 +67,7 @@ end
 
 --- Query for entities overlapping a rectangular area
 --- Uses spatial hashing for O(1) average lookup
+--- Uses a persistent query shape to avoid allocations (recreated only on size change)
 ---@param x number X position in tiles
 ---@param y number Y position in tiles
 ---@param w number Width in tiles
@@ -71,13 +76,28 @@ end
 ---@return table Array of matching entities
 function combat.query_rect(x, y, w, h, filter)
     local ts = sprites.tile_size
-    local temp = combat.world:rectangle(x * ts, y * ts, w * ts, h * ts)
-    local collisions = combat.world:collisions(temp)
-    combat.world:remove(temp)
+    local px, py = x * ts, y * ts
+    local pw, ph = w * ts, h * ts
+
+    -- Lazy-init or recreate if size changed
+    if not query_shape or query_shape_size.w ~= pw or query_shape_size.h ~= ph then
+        if query_shape then
+            combat.world:remove(query_shape)
+        end
+        query_shape = combat.world:rectangle(px, py, pw, ph)
+        query_shape.is_query = true
+        query_shape_size.w = pw
+        query_shape_size.h = ph
+    else
+        -- moveTo uses center coordinates, not top-left
+        query_shape:moveTo(px + pw/2, py + ph/2)
+    end
+
+    local collisions = combat.world:collisions(query_shape)
 
     local results = {}
     for other, _ in pairs(collisions) do
-        if other.owner and (not filter or filter(other.owner)) then
+        if not other.is_query and other.owner and (not filter or filter(other.owner)) then
             table.insert(results, other.owner)
         end
     end
@@ -97,13 +117,17 @@ function combat.collides(entity1, entity2)
     return collides_result
 end
 
---- Clear all entities from the combat world
+--- Clears all entities from the combat world.
+--- Recreates the HC world instance and resets the persistent query shape.
 function combat.clear()
     for _, shape in pairs(combat.shapes) do
         combat.world:remove(shape)
     end
     combat.shapes = {}
     combat.world = HC.new(100)
+    -- Reset persistent query shape (invalidated by world recreation)
+    query_shape = nil
+    query_shape_size = { w = 0, h = 0 }
 end
 
 return combat

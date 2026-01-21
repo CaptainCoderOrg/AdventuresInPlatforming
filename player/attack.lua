@@ -22,6 +22,10 @@ local SWORD_WIDTH = 1.15
 local SWORD_HEIGHT = 1.1
 local SWORD_Y_OFFSET = -0.1  -- Center vertically relative to player box
 
+--- Returns the sword hitbox for the current attack frame, or nil if not active.
+--- Hitbox is only active during specific animation frames to match visual sword position.
+---@param player table The player object
+---@return table|nil Hitbox {x, y, w, h} in tiles, or nil if sword not active
 local function get_sword_hitbox(player)
 	-- next_anim_ix points to NEXT animation (incremented in next_animation()).
 	-- When == 1, we just played ATTACK_2 (wrapped from 3->1), which shows sword on frame 2.

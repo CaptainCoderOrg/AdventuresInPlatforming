@@ -1,8 +1,9 @@
 --- Trap door prop definition - Collapsing platform with 4-state cycle
 --- States: closed -> opening -> open -> resetting -> closed
 local Animation = require("Animation")
+local audio = require("audio")
 local combat = require("combat")
-local prop_common = require("Prop/common")
+local common = require("Prop/common")
 local Prop = require("Prop")
 local sprites = require("sprites")
 local world = require("world")
@@ -98,22 +99,27 @@ local definition = {
             ---@param dt number Delta time in seconds
             ---@param player table Player instance
             update = function(prop, dt, player)
-                -- Once triggered (player landed), always continue to opening
-                if prop.triggered or is_player_standing(prop, player) then
+                -- Trigger on first contact
+                if not prop.triggered and is_player_standing(prop, player) then
                     prop.triggered = true
+                end
+
+                -- Once triggered, count down to opening
+                if prop.triggered then
                     prop.stand_timer = prop.stand_timer + dt
                     if prop.stand_timer >= STAND_DELAY then
                         Prop.set_state(prop, "opening")
                     end
                 end
             end,
-            draw = prop_common.draw
+            draw = common.draw
         },
 
         opening = {
             ---@param prop table Trap door prop instance
             ---@param def table Definition table
             start = function(prop, def)
+                audio.play_sfx(audio.trap_door_open, 0.8)
                 prop.animation = Animation.new(TRAP_DOOR_OPEN)
                 -- Remove collider immediately so player falls
                 if prop.collider_shape then
@@ -130,7 +136,7 @@ local definition = {
                     Prop.set_state(prop, "open")
                 end
             end,
-            draw = prop_common.draw
+            draw = common.draw
         },
 
         open = {
@@ -153,7 +159,7 @@ local definition = {
                     Prop.set_state(prop, "resetting")
                 end
             end,
-            draw = prop_common.draw
+            draw = common.draw
         },
 
         resetting = {
@@ -171,7 +177,7 @@ local definition = {
                     Prop.set_state(prop, "closed")
                 end
             end,
-            draw = prop_common.draw
+            draw = common.draw
         }
     }
 }

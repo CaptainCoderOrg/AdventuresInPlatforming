@@ -15,6 +15,7 @@ audio.rest = canvas.assets.load_music("rest", "music/rest.ogg")
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
 audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")
 audio.spiketrap = canvas.assets.load_sound("spiketrap", "sfx/environment/spiketrap.ogg")
+audio.trap_door_open = canvas.assets.load_sound("trap_door_open", "sfx/environment/trap_door_open.ogg")
 
 local sfx_group = "sfx_group"
 local sfx_ch = { "sfx_1", "sfx_2", "sfx_3", "sfx_4" }

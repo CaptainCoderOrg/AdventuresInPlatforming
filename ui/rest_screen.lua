@@ -6,10 +6,9 @@ local controls = require("controls")
 local button = require("ui/button")
 local config = require("config")
 local simple_dialogue = require("ui/simple_dialogue")
-local Playtime = require("Playtime")
-local SaveSlots = require("SaveSlots")
 local slider = require("ui/slider")
 local keybind_panel = require("ui/keybind_panel")
+local status_panel = require("ui/status_panel")
 local audio = require("audio")
 local settings_storage = require("settings_storage")
 local utils = require("ui/utils")
@@ -120,11 +119,11 @@ local controls_button = nil
 local continue_button = nil
 local return_to_title_button = nil
 local rest_dialogue = nil
-local player_info_dialogue = nil
 local menu_dialogue = nil
 local buttons = nil
 local volume_sliders = {}
 local controls_panel = nil
+local player_status_panel = nil
 
 ---@type table|nil Player reference for stats display
 local player_ref = nil
@@ -325,12 +324,11 @@ function rest_screen.init()
         text = "Resting restores your hit points and saves your progress. Enemies also respawn when you rest."
     })
 
-    player_info_dialogue = simple_dialogue.create({
+    player_status_panel = status_panel.create({
         x = 0,
         y = 0,
         width = 100,
         height = 100,
-        text = ""
     })
 
     menu_dialogue = simple_dialogue.create({
@@ -366,29 +364,6 @@ end
 function rest_screen.save_camera_position(x, y)
     last_camera_x = x
     last_camera_y = y
-end
-
---- Build the stats text for the player info dialogue
----@param player table Player instance
----@return string Stats text with newlines
-local function build_stats_text(player)
-    if not player then return "" end
-
-    local lines = {
-        "Level: " .. player.level,
-        "Exp: " .. player.experience,
-        "Gold: " .. player.gold,
-        "",
-        "HP: " .. player:health() .. "/" .. player.max_health,
-        "SP: " .. (player.max_stamina - player.stamina_used) .. "/" .. player.max_stamina,
-        "EP: " .. (player.max_energy - player.energy_used) .. "/" .. player.max_energy,
-        "DEF: " .. player.defense,
-        "STR: " .. player.strength,
-        "CRIT: " .. player.critical_chance .. "%",
-        "",
-        "Time: " .. SaveSlots.format_playtime(Playtime.get())
-    }
-    return table.concat(lines, "\n")
 end
 
 --- Reset navigation state to defaults (called when showing rest/pause screen)
@@ -432,6 +407,7 @@ end
 ---@param world_y number Campfire center Y in tile coordinates
 ---@param camera table Camera instance for position calculation
 ---@param player table|nil Player instance for stats display
+---@return nil
 function rest_screen.show(world_x, world_y, camera, player)
     if state == STATE.HIDDEN then
         current_mode = MODE.REST
@@ -456,6 +432,7 @@ end
 --- Show the pause screen (circular viewport around player, no save, no level reload)
 ---@param player table Player instance for stats display and position
 ---@param camera table Camera instance for position calculation
+---@return nil
 function rest_screen.show_pause(player, camera)
     if state == STATE.HIDDEN then
         current_mode = MODE.PAUSE
@@ -482,18 +459,21 @@ end
 
 --- Set the continue callback function (reloads level from checkpoint)
 ---@param fn function Function to call when continuing
+---@return nil
 function rest_screen.set_continue_callback(fn)
     continue_callback = fn
 end
 
 --- Set the return to title callback function
 ---@param fn function Function to call when returning to title
+---@return nil
 function rest_screen.set_return_to_title_callback(fn)
     return_to_title_callback = fn
 end
 
 --- Set the pause continue callback function (just resumes gameplay, no reload)
 ---@param fn function Function to call when continuing from pause
+---@return nil
 function rest_screen.set_pause_continue_callback(fn)
     pause_continue_callback = fn
 end
@@ -895,9 +875,16 @@ function rest_screen.update(dt, block_mouse)
                 end
             end
 
-            -- Settings panels always receive updates (controls panel needs mouse input when listening)
+            -- Panels always receive updates
             local info = layout.info
-            if active_panel_index == 2 then
+            if active_panel_index == 1 then
+                player_status_panel.x = info.x
+                player_status_panel.y = info.y
+                player_status_panel.width = info.width
+                player_status_panel.height = info.height
+                player_status_panel:set_player(player_ref)
+                player_status_panel:update(dt, local_mx - info.x, local_my - info.y, mouse_active)
+            elseif active_panel_index == 2 then
                 local slider_width = 80
                 local slider_x = info.x + (info.width - slider_width) / 2
                 local slider_start_y = info.y + 20
@@ -1132,12 +1119,12 @@ function rest_screen.draw()
         if nav_mode == NAV_MODE.CONFIRM then
             draw_confirm_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 1 then
-            player_info_dialogue.x = info.x
-            player_info_dialogue.y = info.y
-            player_info_dialogue.width = info.width
-            player_info_dialogue.height = info.height
-            player_info_dialogue.text = build_stats_text(player_ref)
-            simple_dialogue.draw(player_info_dialogue)
+            player_status_panel.x = info.x
+            player_status_panel.y = info.y
+            player_status_panel.width = info.width
+            player_status_panel.height = info.height
+            player_status_panel:set_player(player_ref)
+            player_status_panel:draw()
         elseif active_panel_index == 2 then
             draw_audio_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 3 then

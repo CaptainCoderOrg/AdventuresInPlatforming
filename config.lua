@@ -1,6 +1,7 @@
 return {
 	debug = false,
 	bounding_boxes = false,
+	profiler = false,
 	ui = {
 		TILE = 16,
 		SCALE = 5,

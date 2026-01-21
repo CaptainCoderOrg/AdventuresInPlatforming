@@ -15,6 +15,7 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Green boxes: World collision geometry
   - Cyan boxes: Enemy hitboxes / Bridge colliders
   - Orange boxes: Sign hitboxes
+- `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
 - `1`/`2` - Switch between level1/title music
 
@@ -83,6 +84,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `controls.lua` - Unified keyboard/gamepad input
 - `world.lua` - HC collision engine wrapper
 - `combat.lua` - Combat spatial indexing
+- `profiler.lua` - Per-system timing profiler
 
 ### Player
 - `player/init.lua` - State registry and core logic

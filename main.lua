@@ -3,9 +3,10 @@ local canvas = require("canvas")
 local config = require("config")
 local sprites = require("sprites")
 local audio = require("audio")
-local debug = require("debugger")
+local debugger = require("debugger")
 local world = require("world")
 local combat = require("combat")
+local profiler = require("profiler")
 
 -- Game systems
 local Player = require("player")
@@ -70,6 +71,12 @@ canvas.set_image_smoothing(false)
 local function user_input()
     hud.input()
 
+    -- Profiler toggle works on any screen
+    if canvas.is_key_pressed(canvas.keys.O) then
+        profiler.toggle()
+        config.profiler = profiler.enabled
+    end
+
     if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active() then
         return
     end
@@ -106,18 +113,23 @@ local function update(dt)
     end
 
     -- Resume playtime tracking during gameplay
+    profiler.start("playtime")
     Playtime.resume()
     Playtime.update(dt)
+    profiler.stop("playtime")
 
     -- Reset cache so props querying player proximity get fresh results this frame
     proximity_audio.invalidate_cache()
 
+    profiler.start("camera")
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
 
     -- Capture camera position each frame for rest screen restoration
     -- (saved after camera update settles, used if player enters rest this frame)
     rest_screen.save_camera_position(camera:get_x(), camera:get_y())
+    profiler.stop("camera")
 
+    profiler.start("player")
     player:update(dt)
 
     -- Damage and teleport player if too far outside world bounds
@@ -135,12 +147,26 @@ local function update(dt)
             end
         end
     end
+    profiler.stop("player")
+
+    profiler.start("projectiles")
     Projectile.update(dt, level_info)
+    profiler.stop("projectiles")
+
+    profiler.start("effects")
     Effects.update(dt)
+    profiler.stop("effects")
+
+    profiler.start("enemies")
     Enemy.update(dt, player)
+    profiler.stop("enemies")
+
+    profiler.start("props")
     Prop.update(dt, player)
+    profiler.stop("props")
 
     -- Aggregate volumes by sound_id so multiple emitters of same type combine naturally
+    profiler.start("proximity")
     local nearby = proximity_audio.get_cached(player.x, player.y)
     local volumes = {}
     for _, result in ipairs(nearby) do
@@ -151,6 +177,7 @@ local function update(dt)
     for _, sound_id in ipairs(audio.get_spatial_sound_ids()) do
         audio.update_spatial_sound(sound_id, volumes[sound_id] or 0)
     end
+    profiler.stop("proximity")
 
     -- Trigger game over once when player first enters death state
     -- (was_dead prevents retriggering each frame while dead)
@@ -165,7 +192,6 @@ end
 local function draw()
     canvas.clear()
 
-    -- Skip world rendering when title screen is active
     if not hud.is_title_screen_active() then
         -- Draw world-space entities (affected by camera)
         canvas.save()
@@ -196,7 +222,6 @@ local function draw()
 
     -- Draw screen-space UI (not affected by camera)
     hud.draw(player)
-    debug.draw(player)
 end
 
 --- Initialize or reload a level with player and entities
@@ -291,6 +316,7 @@ end
 --- Continue from active save slot (campfire checkpoint)
 --- Reloads level at saved position, or defaults to level spawn if no checkpoint exists
 ---@param options table|nil Optional settings { restore_camera_from_rest = bool }
+---@return nil
 local function continue_from_checkpoint(options)
     local data = active_slot and SaveSlots.get(active_slot)
     options = options or {}
@@ -347,6 +373,7 @@ local started = false
 
 --- Load a save slot and start the game
 ---@param slot_index number Slot index (1-3)
+---@return nil
 local function load_slot(slot_index)
     active_slot = slot_index
     local data = SaveSlots.get(slot_index)
@@ -412,13 +439,34 @@ end
 --- Main game loop - called every frame by canvas.tick
 ---@return nil
 local function game()
+    profiler.begin_frame()
     on_start()
     local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/30 limits to 30 FPS minimum to prevent physics tunneling
+
+    profiler.start("audio")
     audio.update(dt)
+    profiler.stop("audio")
+
+    profiler.start("hud")
     hud.update(dt, player)
+    profiler.stop("hud")
+
+    profiler.start("input")
     user_input()
+    profiler.stop("input")
+
+    profiler.start("update")
     update(dt)
+    profiler.stop("update")
+
+    profiler.start("draw")
     draw()
+    profiler.stop("draw")
+
+    profiler.end_frame()
+
+    -- Draw debug/profiler overlay (excluded from profiler timing)
+    debugger.draw(player)
 end
 
 -- Initialization order: init_level creates player/camera, then on_start runs on first tick

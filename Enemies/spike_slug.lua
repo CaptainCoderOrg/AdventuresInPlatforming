@@ -93,6 +93,7 @@ return {
 	max_fall_speed = 20,
 	max_health = 3,
 	damage = 1,
+	death_sound = "spike_slug",
 	get_armor = function(self)
 		return self.is_defending and 5 or 0
 	end,

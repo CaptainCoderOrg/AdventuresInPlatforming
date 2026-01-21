@@ -307,6 +307,9 @@ function Enemy:die()
 	self.shape = nil
 	self.hitbox = nil
 
+	local definition = Enemy.types[self.type_key]
+	audio.play_death_sound(definition.death_sound)
+
 	-- Transition to death state if available, otherwise destroy immediately
 	if self.states.death then
 		self:set_state(self.states.death)

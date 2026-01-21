@@ -1,7 +1,9 @@
 local canvas = require('canvas')
 local pool = {}
 
+--- Default volume for most sound effects
 local BASE_VOLUME = 0.15
+--- Boosted volume for hit feedback sounds
 local HIT_VOLUME = BASE_VOLUME * 1.15
 
 --- SoundPool factory for reusable sound pool management
@@ -100,5 +102,10 @@ function pool.init_channels(parent)
         end
     end
 end
+
+--- Expose factory and volume constants for reuse by other audio modules
+pool.create = create_sound_pool
+pool.BASE_VOLUME = BASE_VOLUME
+pool.HIT_VOLUME = HIT_VOLUME
 
 return pool

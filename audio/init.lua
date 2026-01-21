@@ -2,6 +2,7 @@ local canvas = require('canvas')
 local pool = require('audio/pool')
 local music = require('audio/music')
 local spatial = require('audio/spatial')
+local death = require('audio/death')
 
 canvas.assets.add_path("assets/")
 
@@ -38,6 +39,8 @@ function audio.init()
 
     spatial.init(sfx_group)
 
+    death.init(sfx_group)
+
     initialized = true
 end
 
@@ -57,6 +60,9 @@ function audio.play_solid_sound() pool.all.solid:play() end
 function audio.play_axe_throw_sound() pool.all.axe_throw:play() end
 --- Play shuriken throw sound (skips if channel busy)
 function audio.play_shuriken_throw_sound() pool.all.shuriken_throw:play() end
+--- Play enemy death sound (uses enemy-specific sound or default)
+---@param key string|nil Enemy death sound key
+function audio.play_death_sound(key) death.play(key) end
 
 --- Wall slide uses landing sound for consistent contact feedback
 audio.play_wall_slide_start = audio.play_landing_sound

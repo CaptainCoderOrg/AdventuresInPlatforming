@@ -148,6 +148,7 @@ return {
 	max_fall_speed = 20,
 	max_health = 5,
 	damage = 1,
+	death_sound = "ratto",
 	states = ratto.states,
 	animations = ratto.animations,
 	initial_state = "idle",

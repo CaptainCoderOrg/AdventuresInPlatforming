@@ -17,6 +17,7 @@ local Effects = require("Effects")
 local SaveSlots = require("SaveSlots")
 local Playtime = require("Playtime")
 local rest_state = require("player.rest")
+local proximity_audio = require("proximity_audio")
 
 -- UI
 local hud = require("ui/hud")
@@ -108,6 +109,9 @@ local function update(dt)
     Playtime.resume()
     Playtime.update(dt)
 
+    -- Reset cache so props querying player proximity get fresh results this frame
+    proximity_audio.invalidate_cache()
+
     camera:update(sprites.tile_size, dt, camera_cfg.default_lerp)
 
     -- Capture camera position each frame for rest screen restoration
@@ -135,6 +139,18 @@ local function update(dt)
     Effects.update(dt)
     Enemy.update(dt, player)
     Prop.update(dt, player)
+
+    -- Aggregate volumes by sound_id so multiple emitters of same type combine naturally
+    local nearby = proximity_audio.get_cached(player.x, player.y)
+    local volumes = {}
+    for _, result in ipairs(nearby) do
+        local id = result.config.sound_id
+        volumes[id] = math.min(1, (volumes[id] or 0) + result.volume)
+    end
+    -- Update all spatial sounds (including those not in range -> volume 0)
+    for _, sound_id in ipairs(audio.get_spatial_sound_ids()) do
+        audio.update_spatial_sound(sound_id, volumes[sound_id] or 0)
+    end
 
     -- Trigger game over once when player first enters death state
     -- (was_dead prevents retriggering each frame while dead)
@@ -172,6 +188,9 @@ local function draw()
         player:draw()
         Projectile.draw()
         Effects.draw()
+        if config.bounding_boxes then
+            proximity_audio.draw_debug()
+        end
         canvas.restore()
     end
 

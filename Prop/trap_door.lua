@@ -40,32 +40,29 @@ local STANDING_TOLERANCE = 0.3    -- Vertical tolerance for standing detection (
 local function is_player_standing(prop, player)
     if not player then return false end
     if not player.is_grounded then return false end
-    if player.vy < 0 then return false end  -- Player is moving upward (jumping through)
+    if player.vy < 0 then return false end
 
-    -- Quick spatial check using combat system
-    if not combat.collides(prop, player) then
-        -- Also check if player is just above (within tolerance) since trap door is thin
-        local door_top = prop.y + prop.box.y
-        local player_bottom = player.y + player.box.y + player.box.h
-        if math.abs(player_bottom - door_top) >= STANDING_TOLERANCE then
-            return false
-        end
-        -- Player is vertically close, but we still need horizontal overlap
-        local door_left = prop.x + prop.box.x
-        local door_right = prop.x + prop.box.x + prop.box.w
-        local player_left = player.x + player.box.x
-        local player_right = player.x + player.box.x + player.box.w
-        if player_right <= door_left or player_left >= door_right then
-            return false
-        end
-        return true
-    end
-
-    -- Combat system detected overlap - verify vertical alignment (player standing on top)
+    -- Calculate vertical alignment once
     local door_top = prop.y + prop.box.y
     local player_bottom = player.y + player.box.y + player.box.h
 
-    return math.abs(player_bottom - door_top) < STANDING_TOLERANCE
+    -- Player must be standing on top (within vertical tolerance)
+    if math.abs(player_bottom - door_top) >= STANDING_TOLERANCE then
+        return false
+    end
+
+    -- Quick spatial check using combat system
+    if combat.collides(prop, player) then
+        return true
+    end
+
+    -- Manual horizontal overlap check for edge cases (thin door)
+    local door_left = prop.x + prop.box.x
+    local door_right = door_left + prop.box.w
+    local player_left = player.x + player.box.x
+    local player_right = player_left + player.box.w
+
+    return player_right > door_left and player_left < door_right
 end
 
 local definition = {
@@ -86,7 +83,6 @@ local definition = {
 
     states = {
         closed = {
-            name = "closed",
             ---@param prop table Trap door prop instance
             ---@param def table Trap door definition (box, states, initial_state)
             start = function(prop, def)
@@ -115,7 +111,6 @@ local definition = {
         },
 
         opening = {
-            name = "opening",
             ---@param prop table Trap door prop instance
             ---@param def table Definition table
             start = function(prop, def)
@@ -139,7 +134,6 @@ local definition = {
         },
 
         open = {
-            name = "open",
             ---@param prop table Trap door prop instance
             ---@param def table Definition table
             start = function(prop, def)
@@ -163,7 +157,6 @@ local definition = {
         },
 
         resetting = {
-            name = "resetting",
             ---@param prop table Trap door prop instance
             ---@param def table Definition table
             start = function(prop, def)

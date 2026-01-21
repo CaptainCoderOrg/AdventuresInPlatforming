@@ -5,6 +5,7 @@ local config = require("config")
 local sprites = require("sprites")
 local state = require("Prop/state")
 local combat = require("combat")
+local proximity_audio = require("proximity_audio")
 
 local Prop = {}
 
@@ -183,6 +184,8 @@ function Prop.clear()
     for k in pairs(Prop.groups) do
         Prop.groups[k] = nil
     end
+    -- Clear proximity audio emitters
+    proximity_audio.clear()
     state.next_id = 1
 end
 

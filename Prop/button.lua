@@ -1,6 +1,7 @@
 --- Button prop definition - Binary state (unpressed/pressed) with callback
 local sprites = require("sprites")
 local Animation = require("Animation")
+local Prop = require("Prop")
 
 local BUTTON_ANIM = Animation.create_definition(sprites.environment.button, 5, {
     ms_per_frame = 100,
@@ -34,11 +35,9 @@ local definition = {
 
     states = {
         unpressed = {
-            name = "unpressed",
             draw = draw_button
         },
         pressed = {
-            name = "pressed",
             start = function(prop, def, skip_callback)
                 prop.is_pressed = true
                 prop.animation:resume()
@@ -46,24 +45,18 @@ local definition = {
                     prop.on_press()
                 end
             end,
-            update = function(prop, dt, player)
-                prop.animation:play(dt)
-            end,
             draw = draw_button
         },
         resetting = {
-            name = "resetting",
             start = function(prop, def)
                 prop.animation = Animation.new(BUTTON_ANIM, {
                     start_frame = BUTTON_ANIM.frame_count - 1,
                     reverse = true
                 })
             end,
-            update = function(prop, dt, player)
-                prop.animation:play(dt)
+            update = function(prop, dt)
                 if prop.animation:is_finished() then
                     prop.is_pressed = false
-                    local Prop = require("Prop")
                     Prop.set_state(prop, "unpressed")
                 end
             end,
@@ -76,7 +69,6 @@ local definition = {
 ---@param prop table Button prop instance
 function definition.press(prop)
     if not prop.is_pressed then
-        local Prop = require("Prop")
         Prop.set_state(prop, "pressed")
     end
 end
@@ -85,7 +77,6 @@ end
 ---@param prop table Button prop instance
 function definition.reset(prop)
     if prop.is_pressed then
-        local Prop = require("Prop")
         Prop.set_state(prop, "resetting")
     end
 end

@@ -1,7 +1,10 @@
 --- Spike trap prop definition - Complex 4-state machine with groups
 local sprites = require("sprites")
 local Animation = require("Animation")
+local Prop = require("Prop")
 local common = require("Prop/common")
+local audio = require("audio")
+local proximity_audio = require("proximity_audio")
 
 local SPIKE_ANIM = Animation.create_definition(sprites.environment.spikes, 6, {
     ms_per_frame = 160,
@@ -14,9 +17,12 @@ local SPIKE_ANIM = Animation.create_definition(sprites.environment.spikes, 6, {
 local DEFAULT_EXTEND_TIME = 1.5
 local DEFAULT_RETRACT_TIME = 1.5
 
+-- Roughly one screen width; prevents distant traps from creating noise clutter
+local SOUND_RADIUS = 5
+
 --- Start animation transition
----@param prop table SpikeTrap instance
----@param anim_options table Animation options (start_frame, reverse)
+---@param prop table SpikeTrap instance with `animation` field
+---@param anim_options {start_frame: number, reverse: boolean|nil} Animation playback options
 local function start_animation(prop, anim_options)
     prop.animation = Animation.new(SPIKE_ANIM, anim_options)
 end
@@ -32,6 +38,13 @@ local definition = {
         prop.retract_time = options.retract_time or DEFAULT_RETRACT_TIME
         prop.timer = 0
 
+        -- Register for spatial audio queries
+        proximity_audio.register(prop, {
+            sound_id = "spiketrap",
+            radius = SOUND_RADIUS,
+            max_volume = 0.4
+        })
+
         local start_retracted = options.start_retracted or false
         local initial_frame = start_retracted and 5 or 0
 
@@ -40,7 +53,6 @@ local definition = {
 
         -- Override initial state if starting retracted
         if start_retracted then
-            local Prop = require("Prop")
             Prop.set_state(prop, "retracted")
         end
     end,
@@ -52,16 +64,11 @@ local definition = {
                 prop.animation:pause()
             end,
             update = function(prop, dt, player)
-                -- Check damage
-                if common.player_touching(prop, player) and not player:is_invincible() and player:health() > 0 then
-                    player:take_damage(1)
-                end
+                common.damage_player(prop, player, 1)
 
-                -- Alternating mode timer
                 if prop.mode == "alternating" then
                     prop.timer = prop.timer + dt
                     if prop.timer >= prop.extend_time then
-                        local Prop = require("Prop")
                         Prop.set_state(prop, "retracting")
                     end
                 end
@@ -73,10 +80,8 @@ local definition = {
             start = function(prop, def)
                 start_animation(prop, { start_frame = 0 })
             end,
-            update = function(prop, dt, player)
-                prop.animation:play(dt)
+            update = function(prop, dt)
                 if prop.animation:is_finished() then
-                    local Prop = require("Prop")
                     Prop.set_state(prop, "retracted")
                 end
             end,
@@ -89,11 +94,9 @@ local definition = {
                 prop.animation:pause()
             end,
             update = function(prop, dt, player)
-                -- Alternating mode timer
                 if prop.mode == "alternating" then
                     prop.timer = prop.timer + dt
                     if prop.timer >= prop.retract_time then
-                        local Prop = require("Prop")
                         Prop.set_state(prop, "extending")
                     end
                 end
@@ -104,17 +107,19 @@ local definition = {
         extending = {
             start = function(prop, def)
                 start_animation(prop, { start_frame = 5, reverse = true })
+                prop.sound_played = false
             end,
             update = function(prop, dt, player)
-                prop.animation:play(dt)
-
-                -- Check damage while extending
-                if common.player_touching(prop, player) and not player:is_invincible() and player:health() > 0 then
-                    player:take_damage(1)
+                if not prop.sound_played and player then
+                    if proximity_audio.is_in_range(player.x, player.y, prop) then
+                        audio.play_sfx(audio.spiketrap, 0.4)
+                        prop.sound_played = true
+                    end
                 end
 
+                common.damage_player(prop, player, 1)
+
                 if prop.animation:is_finished() then
-                    local Prop = require("Prop")
                     Prop.set_state(prop, "extended")
                 end
             end,

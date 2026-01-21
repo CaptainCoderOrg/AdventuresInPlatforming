@@ -8,6 +8,7 @@ audio.rest = canvas.assets.load_music("rest", "music/rest.ogg")
 
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
 audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")
+audio.spiketrap = canvas.assets.load_sound("spiketrap", "sfx/environment/spiketrap.ogg")
 
 local REPEAT_SOUND_VOLUME = 0.15
 
@@ -35,6 +36,15 @@ for i = 0,5 do
 end
 
 local sound_check_channel = "sound_check_channel"
+
+-- Environment/spatial sounds channel group
+local environment_group = "environment_group"
+local spatial_channels = {}  -- sound_id -> channel name
+local spatial_sounds = {}    -- sound_id -> sound asset
+local spatial_volumes = {}   -- sound_id -> current target volume
+
+-- Register spatial sounds
+spatial_sounds["campfire"] = canvas.assets.load_sound("campfire", "sfx/environment/campfire.ogg")
 
 local current_track = nil
 
@@ -67,11 +77,61 @@ function audio.init()
     canvas.channel_create(footstep_channel, { parent = sfx_group })
     canvas.channel_create(sound_check_channel, { parent = sfx_group })
 
+    -- Environment/spatial audio group and channels
+    canvas.channel_create(environment_group, { parent = sfx_group })
+    for sound_id, _ in pairs(spatial_sounds) do
+        local channel = "spatial_" .. sound_id
+        spatial_channels[sound_id] = channel
+        spatial_volumes[sound_id] = 0
+        canvas.channel_create(channel, { parent = environment_group })
+    end
+
     initialized = true
 end
 
-function audio.play_dash_sound()
+--- Update or stop a spatial sound based on volume
+--- Plays looped sound when volume > 0, stops when volume == 0
+---@param sound_id string The spatial sound identifier
+---@param volume number Target volume (0 to stop, >0 to play)
+function audio.update_spatial_sound(sound_id, volume)
+    local channel = spatial_channels[sound_id]
+    local sound = spatial_sounds[sound_id]
+    if not channel or not sound then return end
 
+    local prev_volume = spatial_volumes[sound_id] or 0
+
+    if volume > 0 then
+        -- Start playing if not already
+        if not canvas.channel_is_playing(channel) then
+            canvas.channel_play(channel, sound, { volume = volume, loop = true })
+        else
+            -- Update volume
+            canvas.channel_set_volume(channel, volume)
+        end
+    elseif prev_volume > 0 then
+        -- Stop if volume dropped to 0
+        canvas.channel_stop(channel)
+    end
+
+    spatial_volumes[sound_id] = volume
+end
+
+--- Stop all spatial sounds (for level cleanup)
+function audio.stop_all_spatial()
+    for sound_id, channel in pairs(spatial_channels) do
+        canvas.channel_stop(channel)
+        spatial_volumes[sound_id] = 0
+    end
+end
+
+--- Get all registered spatial sound IDs
+---@return table Array of sound_id strings
+function audio.get_spatial_sound_ids()
+    local ids = {}
+    for sound_id, _ in pairs(spatial_sounds) do
+        table.insert(ids, sound_id)
+    end
+    return ids
 end
 
 function audio.play_footstep()

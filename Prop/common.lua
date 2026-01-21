@@ -23,4 +23,20 @@ function common.player_touching(prop, player)
     return combat.collides(prop, player)
 end
 
+--- Check if player should take damage from a hazard and apply it
+--- Consolidates the common pattern of checking touch, invincibility, and health
+---@param prop table Prop instance with box
+---@param player table Player instance
+---@param damage number Amount of damage to deal
+---@return boolean True if damage was dealt
+function common.damage_player(prop, player, damage)
+    if not player then return false end
+    if not common.player_touching(prop, player) then return false end
+    if player:is_invincible() then return false end
+    if player:health() <= 0 then return false end
+
+    player:take_damage(damage)
+    return true
+end
+
 return common

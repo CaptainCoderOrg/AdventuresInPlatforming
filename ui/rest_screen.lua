@@ -411,8 +411,9 @@ end
 function rest_screen.show(world_x, world_y, camera, player)
     if state == STATE.HIDDEN then
         current_mode = MODE.REST
-        campfire_x = world_x
-        campfire_y = world_y
+        -- Use player position for circle center (matching pause mode behavior)
+        campfire_x = player.x + 0.5
+        campfire_y = player.y + 0.5
         camera_ref = camera
         player_ref = player
         state = STATE.FADING_IN
@@ -423,7 +424,9 @@ function rest_screen.show(world_x, world_y, camera, player)
         original_camera_x = last_camera_x
         original_camera_y = last_camera_y
 
-        init_circle_lerp(world_x, world_y, camera)
+        init_circle_lerp(campfire_x, campfire_y, camera)
+
+        rest_dialogue.text = "Resting restores your hit points and saves your progress. Enemies also respawn when you rest."
     end
 
     reset_navigation_state()
@@ -703,6 +706,12 @@ end
 --- Handle input when in menu mode (navigating between menu items)
 ---@return nil
 local function handle_menu_input()
+    -- ESC/Start triggers continue when not in a submenu
+    if controls.menu_back_pressed() or controls.settings_pressed() then
+        rest_screen.trigger_continue()
+        return
+    end
+
     if controls.menu_up_pressed() then
         mouse_active = false
         focused_index = wrap_index(focused_index, -1, MENU_ITEM_COUNT)

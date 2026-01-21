@@ -414,7 +414,7 @@ end
 local function game()
     on_start()
     local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/30 limits to 30 FPS minimum to prevent physics tunneling
-    audio.update()
+    audio.update(dt)
     hud.update(dt, player)
     user_input()
     update(dt)

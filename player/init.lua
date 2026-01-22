@@ -125,7 +125,7 @@ function Player.new()
 	self.attacks = 3
 	self.attack_cooldown = 0
 	self.throw_cooldown = 0
-	self.weapon_damage = 2.5
+	self.weapon_damage = 2
 
 	-- Dash
 	self.dash_cooldown = 0

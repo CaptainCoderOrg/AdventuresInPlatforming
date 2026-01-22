@@ -5,6 +5,7 @@ local Prop = require('Prop')
 local config = require('config')
 local canvas = require('canvas')
 local audio = require('audio')
+local combat = require('combat')
 
 local hammer = { name = "hammer" }
 
@@ -27,6 +28,24 @@ local function get_hammer_hitbox(player)
 		return nil
 	end
 	return common.create_melee_hitbox(player, HAMMER_WIDTH, HAMMER_HEIGHT, HAMMER_Y_OFFSET)
+end
+
+--- Check for enemy hits with the hammer
+---@param player table The player object
+local function check_hammer_hits(player)
+	local hitbox = get_hammer_hitbox(player)
+	if not hitbox then return end
+
+	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
+		return entity.is_enemy
+			and entity.shape
+			and not player.hammer_state.hit_enemies[entity]
+	end)
+
+	for _, enemy in ipairs(hits) do
+		enemy:on_hit("weapon", { damage = 5, x = player.x })
+		player.hammer_state.hit_enemies[enemy] = true
+	end
 end
 
 --- Check for button hits with the hammer
@@ -54,6 +73,7 @@ function hammer.start(player)
 	player.animation = Animation.new(common.animations.HAMMER)
 	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
 	player.hammer_state.hit_button = false
+	player.hammer_state.hit_enemies = {}
 	player.hammer_state.sound_played = false
 	common.clear_input_queue(player)
 	audio.play_hammer_grunt()
@@ -63,6 +83,7 @@ end
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function hammer.update(player, dt)
+	check_hammer_hits(player)
 	check_button_hits(player)
 	player.vx = 0
 	player.vy = 0

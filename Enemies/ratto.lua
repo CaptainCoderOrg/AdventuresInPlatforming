@@ -146,7 +146,7 @@ return {
 	box = { w = 0.9, h = 0.45, x = 0.05, y = 0.05 },
 	gravity = 1.5,
 	max_fall_speed = 20,
-	max_health = 5,
+	max_health = 3,
 	damage = 1,
 	death_sound = "ratto",
 	loot = { xp = 3, gold = { min = 0, max = 5 } },

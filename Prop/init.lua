@@ -49,13 +49,28 @@ function Prop.spawn(type_key, x, y, options)
         } or { x = 0, y = 0, w = 1, h = 1 },
         debug_color = definition.debug_color or "#FFFFFF",
         marked_for_destruction = false,
-        definition = definition
+        definition = definition,
+        flipped = options.flip and -1 or 1,
     }
+
+    -- Reset behavior: instance option > definition default > true
+    if options.reset ~= nil then
+        prop.should_reset = options.reset
+    elseif definition.default_reset ~= nil then
+        prop.should_reset = definition.default_reset
+    else
+        prop.should_reset = true
+    end
 
     state.next_id = state.next_id + 1
 
     if definition.on_spawn then
         definition.on_spawn(prop, definition, options)
+    end
+
+    -- Apply flip to animation created during on_spawn
+    if prop.animation then
+        prop.animation.flipped = prop.flipped
     end
 
     if definition.states and definition.initial_state then
@@ -97,6 +112,11 @@ function Prop.set_state(prop, state_name, skip_callback)
     prop.state_name = state_name
     if new_state.start then
         new_state.start(prop, prop.definition, skip_callback)
+    end
+
+    -- Apply flip to animation created during state.start
+    if prop.animation and prop.flipped then
+        prop.animation.flipped = prop.flipped
     end
 end
 
@@ -211,13 +231,72 @@ function Prop.clear()
 end
 
 --- Reset all props to their initial states with animation
+--- Props with should_reset = false are skipped (persistent props)
 function Prop.reset_all()
     local prop = next(Prop.all)
     while prop do
-        if not prop.marked_for_destruction then
+        if not prop.marked_for_destruction and prop.should_reset then
             local def = prop.definition
             if def.reset then
                 def.reset(prop)
+            end
+        end
+        prop = next(Prop.all, prop)
+    end
+end
+
+--- Generate a unique key for a prop based on type and position
+---@param prop table The prop instance
+---@return string key Unique identifier for this prop
+local function get_prop_key(prop)
+    return prop.type_key .. "_" .. prop.x .. "_" .. prop.y
+end
+
+--- Get save states for all persistent props (reset = false)
+--- Returns a table keyed by prop identifier with state data
+---@return table states Map of prop_key -> state_data
+function Prop.get_persistent_states()
+    local states = {}
+    local prop = next(Prop.all)
+    while prop do
+        if not prop.marked_for_destruction and not prop.should_reset then
+            local key = get_prop_key(prop)
+            local def = prop.definition
+
+            -- Use custom get_save_state if defined, otherwise save state_name
+            if def.get_save_state then
+                states[key] = def.get_save_state(prop)
+            elseif prop.state_name then
+                states[key] = { state_name = prop.state_name }
+            end
+        end
+        prop = next(Prop.all, prop)
+    end
+    return states
+end
+
+--- Restore persistent prop states from saved data
+--- Called after props are spawned during level load
+---@param states table Map of prop_key -> state_data from save file
+function Prop.restore_persistent_states(states)
+    if not states then return end
+
+    local prop = next(Prop.all)
+    while prop do
+        if not prop.marked_for_destruction and not prop.should_reset then
+            local key = get_prop_key(prop)
+            local saved_state = states[key]
+
+            if saved_state then
+                local def = prop.definition
+
+                -- Use custom restore_save_state if defined
+                if def.restore_save_state then
+                    def.restore_save_state(prop, saved_state)
+                elseif saved_state.state_name and prop.states then
+                    -- Default: restore state by name
+                    Prop.set_state(prop, saved_state.state_name)
+                end
             end
         end
         prop = next(Prop.all, prop)

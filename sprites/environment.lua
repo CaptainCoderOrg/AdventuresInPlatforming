@@ -17,6 +17,8 @@ local environment = {
 	trap_door = "trap_door",
 	trap_door_open = "trap_door_open",
 	trap_door_reset = "trap_door_reset",
+	brown_chest = "brown_chest",
+	brown_chest_opening = "brown_chest_opening",
 	-- Tiling background images (240x160 native, scaled for display)
 	dungeon_bg = "dungeon_bg",
 	garden_bg = "garden_bg",
@@ -38,6 +40,8 @@ canvas.assets.load_image(environment.campfire, "sprites/environment/campfire.png
 canvas.assets.load_image(environment.trap_door, "sprites/environment/trap_door.png")
 canvas.assets.load_image(environment.trap_door_open, "sprites/environment/trap_door_open.png")
 canvas.assets.load_image(environment.trap_door_reset, "sprites/environment/trap_door_reset.png")
+canvas.assets.load_image(environment.brown_chest, "sprites/environment/brown_chest.png")
+canvas.assets.load_image(environment.brown_chest_opening, "sprites/environment/brown_chest_opening.png")
 canvas.assets.load_image(environment.dungeon_bg, "sprites/environment/dungeon_bg.png")
 canvas.assets.load_image(environment.garden_bg, "sprites/environment/garden_bg.png")
 canvas.assets.load_image(environment.library_bg, "sprites/environment/library_bg.png")

@@ -71,6 +71,7 @@ function rest.start(player)
 			defense = player.defense,
 			strength = player.strength,
 			critical_chance = player.critical_chance,
+			prop_states = Prop.get_persistent_states(),
 		})
 	end
 
@@ -98,7 +99,7 @@ end
 
 --- Updates rest state. Keeps player stationary until level reload from rest screen.
 ---@param player table The player object
----@param dt number Delta time in seconds
+---@param dt number Delta time in seconds (unused: rest state is static, waiting for UI)
 function rest.update(player, dt)
 	player.vx = 0
 	player.vy = 0

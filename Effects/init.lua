@@ -246,6 +246,31 @@ function Effects.create_fatigue_text(x, y)
 	state.status_texts[text] = true
 end
 
+--- Factory: Creates floating gold text at specified location (e.g. "+100 gold")
+--- @param x number X position in tile coordinates
+--- @param y number Y position in tile coordinates
+--- @param amount number Gold amount to display
+--- @return nil
+function Effects.create_gold_text(x, y, amount)
+	local message = "+" .. tostring(amount) .. " gold"
+	-- Cache text width at creation to avoid per-frame allocation
+	canvas.set_font_family("menu_font")
+	canvas.set_font_size(6*config.ui.SCALE)
+	local cached_width = canvas.get_text_width(message)
+
+	local text = {
+		x = x + 0.5,      -- Center on chest
+		y = y,            -- Start at chest top
+		vy = -2,          -- Float upward (tiles/second)
+		message = message,
+		color = "#FFD700", -- Gold color
+		lifetime = 1.0,   -- Duration in seconds
+		elapsed = 0,
+		cached_width = cached_width,
+	}
+	state.status_texts[text] = true
+end
+
 --- Factory: Creates a sweat droplet that drips from the player
 --- @param x number X position in tile coordinates (player center)
 --- @param y number Y position in tile coordinates (player center)
@@ -284,10 +309,10 @@ end
 --- Clears all effects (for level reloading)
 --- @return nil
 function Effects.clear()
-	state.all = {}
-	state.damage_texts = {}
-	state.status_texts = {}
-	state.fatigue_particles = {}
+	for k in pairs(state.all) do state.all[k] = nil end
+	for k in pairs(state.damage_texts) do state.damage_texts[k] = nil end
+	for k in pairs(state.status_texts) do state.status_texts[k] = nil end
+	for k in pairs(state.fatigue_particles) do state.fatigue_particles[k] = nil end
 end
 
 return Effects

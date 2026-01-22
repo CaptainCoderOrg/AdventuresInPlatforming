@@ -39,6 +39,7 @@ Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
 Prop.register("sign", require("Prop/sign"))
 Prop.register("trap_door", require("Prop/trap_door"))
+Prop.register("chest", require("Prop/chest"))
 
 -- Levels
 local level1 = require("levels/level1")
@@ -270,6 +271,11 @@ local function init_level(level, spawn_override, player_data, options)
     Prop.clear()
     for _, prop_data in ipairs(level_info.props) do
         Prop.spawn(prop_data.type, prop_data.x, prop_data.y, prop_data)
+    end
+
+    -- Restore persistent prop states from save data
+    if player_data and player_data.prop_states then
+        Prop.restore_persistent_states(player_data.prop_states)
     end
 
     camera = Camera.new(

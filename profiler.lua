@@ -5,6 +5,13 @@ local BUDGET_60FPS = 16.67  -- 60 fps target
 local BUDGET_30FPS = 33.33  -- 30 fps minimum
 local SIGNIFICANT_MS = 0.5  -- Sections below this threshold are omitted from warnings
 
+-- Module-level reusable tables to avoid per-frame allocations
+local cached_results = {}
+local cached_result_entries = {}  -- Pool of reusable entry tables
+local result_sort_fn = function(a, b) return a.max > b.max end
+local cached_samples = {}
+local warning_details = {}
+
 local profiler = {
     enabled = false,
     sections = {},      -- { name = { elapsed = 0, calls = 0, parent = nil, max = 0 } }
@@ -90,15 +97,16 @@ function profiler.end_frame()
 
     -- Log warning for frames above 60fps budget
     if profiler.frame_total > BUDGET_60FPS then
+        -- Clear warning_details by truncating
+        for i = 1, #warning_details do warning_details[i] = nil end
         -- Build details from sections sorted by elapsed time
-        local details = {}
         for name, data in pairs(profiler.sections) do
             if data.elapsed > SIGNIFICANT_MS then
-                table.insert(details, string.format("%s:%.1fms", name, data.elapsed))
+                warning_details[#warning_details + 1] = string.format("%s:%.1fms", name, data.elapsed)
             end
         end
-        table.sort(details)
-        local details_str = #details > 0 and table.concat(details, ", ") or "no section data"
+        table.sort(warning_details)
+        local details_str = #warning_details > 0 and table.concat(warning_details, ", ") or "no section data"
         print(string.format("\27[33m[PROFILER] FRAME TOOK %.2fms - %s\27[0m", profiler.frame_total, details_str))
         profiler._skip_frame = true  -- Skip next frame (printing is expensive)
     end
@@ -114,30 +122,41 @@ end
 ---@return table results Sorted list of { name, elapsed, calls, parent, max }
 ---@return number frame_total Total frame time in ms
 function profiler.get_results()
-    local results = {}
+    -- Clear cached_results by truncating
+    for i = 1, #cached_results do cached_results[i] = nil end
+
+    local count = 0
     for name, data in pairs(profiler.sections) do
-        table.insert(results, {
-            name = name,
-            elapsed = data.elapsed,
-            calls = data.calls,
-            parent = data.parent,
-            max = data.max
-        })
+        count = count + 1
+        -- Reuse or create entry table from pool
+        local entry = cached_result_entries[count]
+        if not entry then
+            entry = {}
+            cached_result_entries[count] = entry
+        end
+        entry.name = name
+        entry.elapsed = data.elapsed
+        entry.calls = data.calls
+        entry.parent = data.parent
+        entry.max = data.max
+        cached_results[count] = entry
     end
     -- Sort by max time (highest first) for stable ordering
-    table.sort(results, function(a, b) return a.max > b.max end)
-    return results, profiler.frame_total
+    table.sort(cached_results, result_sort_fn)
+    return cached_results, profiler.frame_total
 end
 
 --- Get frame time history for graph display (max of every 2 frames)
 ---@return table samples Array of frame times, oldest to newest
 ---@return number max_value Maximum frame time in the history
 function profiler.get_history()
+    -- Clear cached_samples by truncating
+    for i = 1, #cached_samples do cached_samples[i] = nil end
+
     if profiler.history_count == 0 then
-        return {}, 0
+        return cached_samples, 0
     end
 
-    local samples = {}
     local max_val = 0
 
     -- Oldest entry: when buffer is full, it's at the write position; otherwise start at 1
@@ -156,11 +175,11 @@ function profiler.get_history()
         end
 
         local bucket_max = math.max(val1, val2)
-        table.insert(samples, bucket_max)
+        cached_samples[#cached_samples + 1] = bucket_max
         max_val = math.max(max_val, bucket_max)
     end
 
-    return samples, max_val
+    return cached_samples, max_val
 end
 
 --- Toggle profiler on/off and reset history when enabling

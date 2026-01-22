@@ -95,13 +95,18 @@ function Enemy.spawn(type_key, x, y)
 	return self
 end
 
+-- Module-level table to avoid allocation each frame
+local to_remove = {}
+
 --- Updates all enemies.
 --- @param dt number Delta time in seconds
 --- @param player table The player object (for overlap detection)
 function Enemy.update(dt, player)
-	local to_remove = {}
+	-- Clear module-level table instead of allocating new one
+	for i = 1, #to_remove do to_remove[i] = nil end
 
-	for enemy, _ in pairs(Enemy.all) do
+	local enemy = next(Enemy.all)
+	while enemy do
 		common.apply_gravity(enemy, dt)
 
 		-- Apply velocity
@@ -146,21 +151,24 @@ function Enemy.update(dt, player)
 
 		-- Check for destruction
 		if enemy.marked_for_destruction then
-			table.insert(to_remove, enemy)
+			to_remove[#to_remove + 1] = enemy
 		end
+		enemy = next(Enemy.all, enemy)
 	end
 
-	for _, enemy in ipairs(to_remove) do
-		world.remove_collider(enemy)
-		world.remove_hitbox(enemy)
-		Enemy.all[enemy] = nil
+	for i = 1, #to_remove do
+		local e = to_remove[i]
+		world.remove_collider(e)
+		world.remove_hitbox(e)
+		Enemy.all[e] = nil
 	end
 end
 
 --- Draws all enemies and their debug bounding boxes when config.bounding_boxes is enabled.
 function Enemy.draw()
 	canvas.save()
-	for enemy, _ in pairs(Enemy.all) do
+	local enemy = next(Enemy.all)
+	while enemy do
 		enemy.state.draw(enemy)
 
 		-- Draw debug shapes
@@ -204,6 +212,7 @@ function Enemy.draw()
 				end
 			end
 		end
+		enemy = next(Enemy.all, enemy)
 	end
 	canvas.restore()
 end
@@ -211,10 +220,12 @@ end
 --- Clears all enemies and their collision shapes.
 --- Call when reloading levels to prevent orphaned colliders.
 function Enemy.clear()
-	for enemy, _ in pairs(Enemy.all) do
+	local enemy = next(Enemy.all)
+	while enemy do
 		world.remove_collider(enemy)
 		world.remove_hitbox(enemy)
 		combat.remove(enemy)
+		enemy = next(Enemy.all, enemy)
 	end
 	Enemy.all = {}
 end

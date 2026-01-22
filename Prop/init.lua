@@ -100,11 +100,18 @@ function Prop.set_state(prop, state_name, skip_callback)
     end
 end
 
+-- Module-level table to avoid allocation each frame
+local props_to_remove = {}
+
 --- Update all props
 ---@param dt number Delta time in seconds
 ---@param player table|nil Player reference for interaction checks
 function Prop.update(dt, player)
-    for prop in pairs(Prop.all) do
+    -- Clear module-level table instead of allocating new one
+    for i = 1, #props_to_remove do props_to_remove[i] = nil end
+
+    local prop = next(Prop.all)
+    while prop do
         if prop.marked_for_destruction then
             if prop.group and Prop.groups[prop.group] then
                 for i, p in ipairs(Prop.groups[prop.group]) do
@@ -115,7 +122,7 @@ function Prop.update(dt, player)
                 end
             end
             combat.remove(prop)
-            Prop.all[prop] = nil
+            props_to_remove[#props_to_remove + 1] = prop
         else
             local definition = prop.definition
 
@@ -129,22 +136,31 @@ function Prop.update(dt, player)
                 prop.animation:play(dt)
             end
         end
+        prop = next(Prop.all, prop)
+    end
+
+    -- Remove props after iteration completes
+    for i = 1, #props_to_remove do
+        Prop.all[props_to_remove[i]] = nil
     end
 end
 
 --- Update only prop animations (lightweight update for paused states)
 ---@param dt number Delta time in seconds
 function Prop.update_animations(dt)
-    for prop in pairs(Prop.all) do
+    local prop = next(Prop.all)
+    while prop do
         if not prop.marked_for_destruction and prop.animation then
             prop.animation:play(dt)
         end
+        prop = next(Prop.all, prop)
     end
 end
 
 --- Draw all props
 function Prop.draw()
-    for prop in pairs(Prop.all) do
+    local prop = next(Prop.all)
+    while prop do
         if not prop.marked_for_destruction then
             local definition = prop.definition
 
@@ -167,6 +183,7 @@ function Prop.draw()
                 canvas.draw_rect(bx, by, bw, bh, prop.debug_color)
             end
         end
+        prop = next(Prop.all, prop)
     end
 end
 
@@ -174,15 +191,19 @@ end
 function Prop.clear()
     local world = require("world")
     -- Remove colliders and clear props in a single pass
-    for prop in pairs(Prop.all) do
+    local prop = next(Prop.all)
+    while prop do
         if prop.collider_shape then
             world.remove_collider(prop)
         end
         combat.remove(prop)
         Prop.all[prop] = nil
+        prop = next(Prop.all)
     end
-    for k in pairs(Prop.groups) do
+    local k = next(Prop.groups)
+    while k do
         Prop.groups[k] = nil
+        k = next(Prop.groups)
     end
     -- Clear proximity audio emitters
     proximity_audio.clear()
@@ -191,13 +212,15 @@ end
 
 --- Reset all props to their initial states with animation
 function Prop.reset_all()
-    for prop in pairs(Prop.all) do
+    local prop = next(Prop.all)
+    while prop do
         if not prop.marked_for_destruction then
             local def = prop.definition
             if def.reset then
                 def.reset(prop)
             end
         end
+        prop = next(Prop.all, prop)
     end
 end
 
@@ -245,10 +268,12 @@ end
 ---@return table props Array of props
 function Prop.get_all_of_type(type_key)
     local result = {}
-    for prop in pairs(Prop.all) do
+    local prop = next(Prop.all)
+    while prop do
         if prop.type_key == type_key and not prop.marked_for_destruction then
-            table.insert(result, prop)
+            result[#result + 1] = prop
         end
+        prop = next(Prop.all, prop)
     end
     return result
 end

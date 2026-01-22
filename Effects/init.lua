@@ -21,84 +21,91 @@ Effects.animations = {
 	}),
 }
 
+-- Module-level table to avoid allocation each frame
+local to_remove = {}
+
 --- Removes items from a set that match a predicate.
 --- @param set table Set (table with items as keys)
 --- @param should_remove function Predicate returning true if item should be removed
 local function remove_from_set(set, should_remove)
-	local to_remove = {}
-	for item in pairs(set) do
+	-- Clear module-level table instead of allocating new one
+	for i = 1, #to_remove do to_remove[i] = nil end
+	local item = next(set)
+	while item do
 		if should_remove(item) then
-			table.insert(to_remove, item)
+			to_remove[#to_remove + 1] = item
 		end
+		item = next(set, item)
 	end
-	for _, item in ipairs(to_remove) do
-		set[item] = nil
+	for i = 1, #to_remove do
+		set[to_remove[i]] = nil
 	end
+end
+
+-- Module-level predicates to avoid closure allocation per frame
+local function effect_finished(effect)
+	return effect.animation:is_finished()
+end
+
+local function text_expired(text)
+	return text.elapsed >= text.lifetime
+end
+
+local function particle_expired(particle)
+	return particle.elapsed >= particle.lifetime
 end
 
 --- Updates all active effects, removes finished ones
 --- @param dt number Delta time in seconds
 function Effects.update(dt)
-	for effect in pairs(state.all) do
+	local effect = next(state.all)
+	while effect do
 		effect.animation:play(dt)
+		effect = next(state.all, effect)
 	end
-	remove_from_set(state.all, function(effect)
-		return effect.animation:is_finished()
-	end)
+	remove_from_set(state.all, effect_finished)
 
-	for text in pairs(state.damage_texts) do
+	local text = next(state.damage_texts)
+	while text do
 		text.y = text.y + text.vy * dt
 		text.elapsed = text.elapsed + dt
+		text = next(state.damage_texts, text)
 	end
-	remove_from_set(state.damage_texts, function(text)
-		return text.elapsed >= text.lifetime
-	end)
+	remove_from_set(state.damage_texts, text_expired)
 
-	for text in pairs(state.status_texts) do
+	text = next(state.status_texts)
+	while text do
 		text.y = text.y + text.vy * dt
 		text.elapsed = text.elapsed + dt
+		text = next(state.status_texts, text)
 	end
-	remove_from_set(state.status_texts, function(text)
-		return text.elapsed >= text.lifetime
-	end)
+	remove_from_set(state.status_texts, text_expired)
 
-	for particle in pairs(state.fatigue_particles) do
+	local particle = next(state.fatigue_particles)
+	while particle do
 		particle.x = particle.x + particle.vx * dt
 		particle.y = particle.y + particle.vy * dt
 		particle.elapsed = particle.elapsed + dt
+		particle = next(state.fatigue_particles, particle)
 	end
-	remove_from_set(state.fatigue_particles, function(particle)
-		return particle.elapsed >= particle.lifetime
-	end)
+	remove_from_set(state.fatigue_particles, particle_expired)
 end
 
---- Draws all active effects
+--- Draws all active effects (hit effects, damage text, status text, particles)
+---@return nil
 function Effects.draw()
 	canvas.save()
-	for effect, _ in pairs(state.all) do
+	local effect = next(state.all)
+	while effect do
 		effect.animation:draw(
 			effect.x * sprites.tile_size,
 			effect.y * sprites.tile_size
 		)
+		effect = next(state.all, effect)
 	end
 
-	for text, _ in pairs(state.damage_texts) do
-		local alpha = 1 - (text.elapsed / text.lifetime)
-		local color = text.damage > 0 and "#FF0000" or "#FFFFFF"
-		local display = tostring(text.damage)
-
-		canvas.set_global_alpha(alpha)
-		canvas.set_color(color)
-		canvas.set_font_family("menu_font")
-		canvas.set_font_size(6*config.ui.SCALE)
-
-		local text_width = canvas.get_text_width(display)
-		local px = text.x * sprites.tile_size - text_width / 2
-		local py = text.y * sprites.tile_size
-		canvas.draw_text(px, py, display)
-	end
-
-	for text, _ in pairs(state.status_texts) do
+	local text = next(state.damage_texts)
+	while text do
 		local alpha = 1 - (text.elapsed / text.lifetime)
 
 		canvas.set_global_alpha(alpha)
@@ -106,19 +113,36 @@ function Effects.draw()
 		canvas.set_font_family("menu_font")
 		canvas.set_font_size(6*config.ui.SCALE)
 
-		local text_width = canvas.get_text_width(text.message)
-		local px = text.x * sprites.tile_size - text_width / 2
+		local px = text.x * sprites.tile_size - text.cached_width / 2
 		local py = text.y * sprites.tile_size
-		canvas.draw_text(px, py, text.message)
+		canvas.draw_text(px, py, text.display)
+		text = next(state.damage_texts, text)
 	end
 
-	for particle, _ in pairs(state.fatigue_particles) do
+	text = next(state.status_texts)
+	while text do
+		local alpha = 1 - (text.elapsed / text.lifetime)
+
+		canvas.set_global_alpha(alpha)
+		canvas.set_color(text.color)
+		canvas.set_font_family("menu_font")
+		canvas.set_font_size(6*config.ui.SCALE)
+
+		local px = text.x * sprites.tile_size - text.cached_width / 2
+		local py = text.y * sprites.tile_size
+		canvas.draw_text(px, py, text.message)
+		text = next(state.status_texts, text)
+	end
+
+	local particle = next(state.fatigue_particles)
+	while particle do
 		local alpha = 1 - (particle.elapsed / particle.lifetime)
 		canvas.set_global_alpha(alpha * 0.7)
 		canvas.set_fill_style(particle.color)
 		local px = particle.x * sprites.tile_size
 		local py = particle.y * sprites.tile_size
 		canvas.fill_rect(px, py, particle.size, particle.size)
+		particle = next(state.fatigue_particles, particle)
 	end
 
 	canvas.set_global_alpha(1)
@@ -177,14 +201,23 @@ end
 --- @param x number X position in tile coordinates
 --- @param y number Y position in tile coordinates
 --- @param damage number Damage amount (0 for blocked hits)
+--- @return nil
 function Effects.create_damage_text(x, y, damage)
+	local display = tostring(damage)
+	-- Cache text width at creation to avoid per-frame allocation
+	canvas.set_font_family("menu_font")
+	canvas.set_font_size(6*config.ui.SCALE)
+	local cached_width = canvas.get_text_width(display)
+
 	local text = {
 		x = x,
 		y = y,
 		vy = -2,          -- Float upward (tiles/second)
-		damage = damage,
+		display = display,  -- Pre-cache string conversion
+		color = damage > 0 and "#FF0000" or "#FFFFFF",  -- Pre-cache color
 		lifetime = 0.8,   -- Duration in seconds
 		elapsed = 0,
+		cached_width = cached_width,
 	}
 	state.damage_texts[text] = true
 end
@@ -192,15 +225,23 @@ end
 --- Factory: Creates floating status text at specified location (e.g. "TIRED")
 --- @param x number X position in tile coordinates
 --- @param y number Y position in tile coordinates
+--- @return nil
 function Effects.create_fatigue_text(x, y)
+	local message = "TIRED"
+	-- Cache text width at creation to avoid per-frame allocation
+	canvas.set_font_family("menu_font")
+	canvas.set_font_size(6*config.ui.SCALE)
+	local cached_width = canvas.get_text_width(message)
+
 	local text = {
 		x = x + 0.5,      -- Center on player
 		y = y + 0.5,      -- Start at player center
 		vy = -1,          -- Float upward slowly (tiles/second)
-		message = "TIRED",
+		message = message,
 		color = "#FF0000", -- Red
 		lifetime = 1.0,   -- Duration in seconds
 		elapsed = 0,
+		cached_width = cached_width,
 	}
 	state.status_texts[text] = true
 end
@@ -208,6 +249,7 @@ end
 --- Factory: Creates a sweat droplet that drips from the player
 --- @param x number X position in tile coordinates (player center)
 --- @param y number Y position in tile coordinates (player center)
+--- @return nil
 function Effects.create_fatigue_particle(x, y)
 	-- Spawn from sides/top of player (around the head area)
 	local side = math.random()
@@ -240,6 +282,7 @@ function Effects.create_fatigue_particle(x, y)
 end
 
 --- Clears all effects (for level reloading)
+--- @return nil
 function Effects.clear()
 	state.all = {}
 	state.damage_texts = {}

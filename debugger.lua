@@ -6,6 +6,11 @@ local BUDGET_60FPS = profiler.BUDGET_60FPS
 local BUDGET_30FPS = profiler.BUDGET_30FPS
 local SECTION_WARNING_MS = 2  -- Individual sections above this threshold are highlighted red
 
+-- Module-level reusable tables to avoid per-frame allocations
+local cached_children = {}
+local cached_roots = {}
+local child_sort_fn = function(a, b) return a.max > b.max end
+
 local debugger = {}
 
 --- Get color for a frame time value based on fps budget
@@ -88,29 +93,38 @@ function debugger.draw_profiler()
     canvas.set_color("#0000004D")
     canvas.fill_rect(x - padding, y - padding, bar_max_width + 250, section_height)
 
+    -- Clear cached tables by truncating arrays
+    for i = 1, #cached_roots do cached_roots[i] = nil end
+    for _, list in pairs(cached_children) do
+        for i = 1, #list do list[i] = nil end
+    end
+
     -- Build hierarchy: group children by parent
-    local children = {}  -- parent_name -> list of child results
-    local roots = {}     -- results with no parent
     local update_result = nil  -- Keep "update" separate to pin at top
     for _, result in ipairs(results) do
         if result.parent then
-            children[result.parent] = children[result.parent] or {}
-            table.insert(children[result.parent], result)
+            if not cached_children[result.parent] then
+                cached_children[result.parent] = {}
+            end
+            local list = cached_children[result.parent]
+            list[#list + 1] = result
         elseif result.name == "update" then
             update_result = result
         else
-            table.insert(roots, result)
+            cached_roots[#cached_roots + 1] = result
         end
     end
 
     -- Sort children by max time for stable ordering
-    for _, list in pairs(children) do
-        table.sort(list, function(a, b) return a.max > b.max end)
+    for _, list in pairs(cached_children) do
+        if #list > 0 then
+            table.sort(list, child_sort_fn)
+        end
     end
 
     -- Pin "update" at top of roots
     if update_result then
-        table.insert(roots, 1, update_result)
+        table.insert(cached_roots, 1, update_result)
     end
 
     -- Draw a single section row, returns the y position for the next row
@@ -145,11 +159,11 @@ function debugger.draw_profiler()
 
     -- Per-system breakdown (hierarchical)
     canvas.set_font_size(14)
-    for _, result in ipairs(roots) do
+    for _, result in ipairs(cached_roots) do
         y = draw_section(result, 0, y)
         -- Draw children indented
-        if children[result.name] then
-            for _, child in ipairs(children[result.name]) do
+        if cached_children[result.name] then
+            for _, child in ipairs(cached_children[result.name]) do
                 y = draw_section(child, 1, y)
             end
         end

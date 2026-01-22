@@ -64,7 +64,8 @@ function Projectile.update(dt, level_info)
     -- Clear module-level table instead of allocating new one
     for i = 1, #to_remove do to_remove[i] = nil end
 
-    for projectile, _ in pairs(Projectile.all) do
+    local projectile = next(Projectile.all)
+    while projectile do
         projectile.x = projectile.x + projectile.vx * dt
         projectile.vy = math.min(20, projectile.vy + projectile.gravity_scale*dt)
         projectile.y = projectile.y + projectile.vy * dt
@@ -81,20 +82,23 @@ function Projectile.update(dt, level_info)
         end
 
         if projectile.marked_for_destruction then
-            table.insert(to_remove, projectile)
+            to_remove[#to_remove + 1] = projectile
         end
+        projectile = next(Projectile.all, projectile)
     end
 
-    for _, projectile in ipairs(to_remove) do
-        world.remove_collider(projectile)
-        Projectile.all[projectile] = nil
+    for i = 1, #to_remove do
+        local p = to_remove[i]
+        world.remove_collider(p)
+        Projectile.all[p] = nil
     end
 end
 
 --- Renders all active projectiles and their debug hitboxes if enabled.
 function Projectile.draw()
     canvas.save()
-    for projectile, _ in pairs(Projectile.all) do
+    local projectile = next(Projectile.all)
+    while projectile do
         projectile.animation:draw(
             projectile.x * sprites.tile_size,
             projectile.y * sprites.tile_size)
@@ -107,6 +111,7 @@ function Projectile.draw()
                 projectile.box.w * sprites.tile_size,
                 projectile.box.h * sprites.tile_size)
         end
+        projectile = next(Projectile.all, projectile)
     end
     canvas.restore()
 end

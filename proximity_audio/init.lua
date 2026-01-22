@@ -93,6 +93,18 @@ local function calculate_volume(distance, config)
     return config.max_volume * falloff_fn(t)
 end
 
+--- Get or create a pooled result entry table
+---@return table Reusable entry table with emitter, distance, volume, config fields
+local function get_pooled_entry()
+    state.result_pool_idx = state.result_pool_idx + 1
+    local entry = state.result_pool[state.result_pool_idx]
+    if not entry then
+        entry = { emitter = nil, distance = 0, volume = 0, config = nil }
+        state.result_pool[state.result_pool_idx] = entry
+    end
+    return entry
+end
+
 --- Query nearby emitters and calculate volumes
 ---@param x number Query X position in tiles
 ---@param y number Query Y position in tiles
@@ -100,13 +112,24 @@ end
 function proximity_audio.query(x, y)
     local px, py = tile_to_pixel_center(x, y)
 
-    -- HC requires a shape for collision queries; 1px circle approximates a point
-    local point = state.world:circle(px, py, 1)
-    local collisions = state.world:collisions(point)
-    state.world:remove(point)
+    -- Use persistent query point (lazy-init once per level)
+    if not state.query_point then
+        state.query_point = state.world:circle(px, py, 1)
+        state.query_point.is_query = true
+    else
+        state.query_point:moveTo(px, py)
+    end
 
-    local results = {}
+    local collisions = state.world:collisions(state.query_point)
+
+    -- Clear and reuse results array, reset pool index
+    local results = state.query_results
+    for i = 1, #results do results[i] = nil end
+    state.result_pool_idx = 0
+
+    local result_count = 0
     for shape, _ in pairs(collisions) do
+        if shape.is_query then goto continue end
         local emitter = shape.owner
         if emitter then
             local config = state.emitters[emitter]
@@ -117,15 +140,17 @@ function proximity_audio.query(x, y)
 
                 local volume = calculate_volume(distance, config)
                 if volume > 0 then
-                    table.insert(results, {
-                        emitter = emitter,
-                        distance = distance,
-                        volume = volume,
-                        config = config
-                    })
+                    local entry = get_pooled_entry()
+                    entry.emitter = emitter
+                    entry.distance = distance
+                    entry.volume = volume
+                    entry.config = config
+                    result_count = result_count + 1
+                    results[result_count] = entry
                 end
             end
         end
+        ::continue::
     end
 
     return results
@@ -158,8 +183,8 @@ end
 ---@return boolean True if emitter is in range
 function proximity_audio.is_in_range(x, y, emitter)
     local results = proximity_audio.get_cached(x, y)
-    for _, result in ipairs(results) do
-        if result.emitter == emitter then
+    for i = 1, #results do
+        if results[i].emitter == emitter then
             return true
         end
     end
@@ -175,6 +200,8 @@ function proximity_audio.clear()
     state.emitters = {}
     state.shapes = {}
     state.cached_results = nil
+    state.query_point = nil  -- Invalidated by world recreation
+    state.result_pool_idx = 0
     state.world = HC.new(state.cell_size)
 
     -- Update module references

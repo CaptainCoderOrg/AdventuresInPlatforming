@@ -62,6 +62,7 @@ local level_info  -- Level dimensions from loaded level
 local was_dead = false  -- Track death state for game over trigger
 local current_level = level1  -- Track current level module
 local active_slot = nil  -- Currently active save slot (1-3)
+local proximity_volumes = {}  -- Reused per-frame to avoid allocations
 
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
@@ -168,14 +169,18 @@ local function update(dt)
     -- Aggregate volumes by sound_id so multiple emitters of same type combine naturally
     profiler.start("proximity")
     local nearby = proximity_audio.get_cached(player.x, player.y)
-    local volumes = {}
-    for _, result in ipairs(nearby) do
+    -- Clear reused table (avoids allocation)
+    for k in pairs(proximity_volumes) do proximity_volumes[k] = nil end
+    for i = 1, #nearby do
+        local result = nearby[i]
         local id = result.config.sound_id
-        volumes[id] = math.min(1, (volumes[id] or 0) + result.volume)
+        proximity_volumes[id] = math.min(1, (proximity_volumes[id] or 0) + result.volume)
     end
     -- Update all spatial sounds (including those not in range -> volume 0)
-    for _, sound_id in ipairs(audio.get_spatial_sound_ids()) do
-        audio.update_spatial_sound(sound_id, volumes[sound_id] or 0)
+    local sound_ids = audio.get_spatial_sound_ids()
+    for i = 1, #sound_ids do
+        local sound_id = sound_ids[i]
+        audio.update_spatial_sound(sound_id, proximity_volumes[sound_id] or 0)
     end
     profiler.stop("proximity")
 

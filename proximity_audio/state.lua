@@ -11,5 +11,9 @@ return {
     emitters = {},               -- emitter -> config mapping
     shapes = {},                 -- emitter -> HC shape mapping
     cell_size = CELL_SIZE,
-    cached_results = nil         -- Query results cache (nil = invalid)
+    cached_results = nil,        -- Query results cache (nil = invalid)
+    query_point = nil,           -- Persistent query point shape (avoids allocations)
+    query_results = {},          -- Reusable results array
+    result_pool = {},            -- Pool of reusable entry tables
+    result_pool_idx = 0          -- Current index into pool
 }

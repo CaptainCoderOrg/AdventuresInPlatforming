@@ -92,6 +92,11 @@ function Player.new()
 	self.direction = 1
 	self.is_grounded = true
 	self.ground_normal = { x = 0, y = -1 }
+	-- Persistent collision result table (avoids per-frame allocation)
+	self._cols = {
+		ground = false, ceiling = false, wall_left = false, wall_right = false,
+		ground_normal = { x = 0, y = -1 }, triggers = {}
+	}
 
 	-- Jumping
 	self.jumps = 2
@@ -373,7 +378,7 @@ function Player:update(dt)
 
 	self.x = self.x + (self.vx * dt)
 	self.y = self.y + (self.vy * dt)
-	local cols = world.move(self)
+	local cols = world.move(self, self._cols)
 	combat.update(self)
 
 	-- Check for collisions

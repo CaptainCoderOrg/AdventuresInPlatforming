@@ -203,16 +203,53 @@ function world.update_hitbox(obj, y_offset)
 	end
 end
 
+--- Resets a cols table to default values (avoids allocation when reusing)
+--- @param cols table Collision flags table to reset
+local function reset_cols(cols)
+	cols.ground = false
+	cols.ceiling = false
+	cols.wall_left = false
+	cols.wall_right = false
+	cols.ground_normal.x = 0
+	cols.ground_normal.y = -1
+	cols.ceiling_normal = nil
+	cols.is_ladder_top = nil
+	cols.ladder_from_top = nil
+	cols.is_bridge = nil
+	-- Clear triggers array
+	for i = 1, #cols.triggers do cols.triggers[i] = nil end
+end
+
+--- Creates a new cols table with default values
+--- @return table Fresh collision flags table
+local function new_cols()
+	return {
+		ground = false, ceiling = false, wall_left = false, wall_right = false,
+		ground_normal = { x = 0, y = -1 }, triggers = {}
+	}
+end
+
 --- Moves an object using separated X/Y collision passes.
 --- Returns collision flags for ground, ceiling, and walls.
 --- @param obj table Object with x, y, vx, vy, and box properties
+--- @param cols table|nil Optional reusable collision result table (avoids allocation)
 --- @return table Collision flags {ground, ceiling, wall_left, wall_right}
-function world.move(obj)
+function world.move(obj, cols)
 	local shape = world.shape_map[obj]
-	if not shape then return { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 } } end
+	if not shape then
+		if cols then
+			reset_cols(cols)
+			return cols
+		end
+		return new_cols()
+	end
 
 	local ts = sprites.tile_size
-	local cols = { ground = false, ceiling = false, wall_left = false, wall_right = false, ground_normal = { x = 0, y = -1 }, triggers = {} }
+	if cols then
+		reset_cols(cols)
+	else
+		cols = new_cols()
+	end
 
 	-- Get current shape position
 	local x1, y1, _, _ = shape:bbox()

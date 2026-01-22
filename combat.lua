@@ -73,8 +73,9 @@ end
 ---@param w number Width in tiles
 ---@param h number Height in tiles
 ---@param filter function|nil Optional filter(entity) -> boolean. Entity has .is_enemy, .type_key, .box, .shape, etc.
+---@param out table|nil Optional output table to reuse (avoids allocation)
 ---@return table Array of matching entities
-function combat.query_rect(x, y, w, h, filter)
+function combat.query_rect(x, y, w, h, filter, out)
     local ts = sprites.tile_size
     local px, py = x * ts, y * ts
     local pw, ph = w * ts, h * ts
@@ -95,10 +96,19 @@ function combat.query_rect(x, y, w, h, filter)
 
     local collisions = combat.world:collisions(query_shape)
 
-    local results = {}
+    local results
+    if out then
+        for i = 1, #out do out[i] = nil end
+        results = out
+    else
+        results = {}
+    end
+
+    local count = 0
     for other, _ in pairs(collisions) do
         if not other.is_query and other.owner and (not filter or filter(other.owner)) then
-            table.insert(results, other.owner)
+            count = count + 1
+            results[count] = other.owner
         end
     end
     return results
@@ -119,6 +129,7 @@ end
 
 --- Clears all entities from the combat world.
 --- Recreates the HC world instance and resets the persistent query shape.
+---@return nil
 function combat.clear()
     for _, shape in pairs(combat.shapes) do
         combat.world:remove(shape)

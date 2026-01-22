@@ -73,6 +73,11 @@ function Enemy.spawn(type_key, x, y)
 
 	-- Mark as enemy (for collision filtering)
 	self.is_enemy = true
+	-- Persistent collision result table (avoids per-frame allocation)
+	self._cols = {
+		ground = false, ceiling = false, wall_left = false, wall_right = false,
+		ground_normal = { x = 0, y = -1 }, triggers = {}
+	}
 
 	-- Create physical collider (for ground/wall detection)
 	-- Slope-rotating enemies use:
@@ -114,7 +119,7 @@ function Enemy.update(dt, player)
 		enemy.y = enemy.y + enemy.vy * dt
 
 		-- Resolve collisions
-		local cols = world.move(enemy)
+		local cols = world.move(enemy, enemy._cols)
 		enemy:check_ground(cols)
 		enemy.wall_left = cols.wall_left
 		enemy.wall_right = cols.wall_right

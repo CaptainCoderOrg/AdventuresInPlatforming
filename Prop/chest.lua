@@ -4,7 +4,7 @@ local Animation = require("Animation")
 local TextDisplay = require("TextDisplay")
 local common = require("Prop/common")
 local controls = require("controls")
-local Effects = require("Effects")
+local Collectible = require("Collectible")
 local Prop = require("Prop")
 
 local CHEST_IDLE = Animation.create_definition(sprites.environment.brown_chest, 5, {
@@ -127,26 +127,25 @@ return {
         },
 
         opening = {
-            --- Begin opening animation and award gold to player
+            --- Begin opening animation and spawn gold particles
             ---@param prop table The chest prop instance
             ---@param def table The chest definition
             start = function(prop, def)
                 prop.animation = Animation.new(CHEST_OPENING)
                 prop.is_open = true
 
-                -- Award gold and show effect
+                -- Spawn gold particles that will be collected by player
                 if prop.gold_amount > 0 then
-                    if prop.last_player then
-                        prop.last_player.gold = prop.last_player.gold + prop.gold_amount
-                    end
-                    Effects.create_gold_text(prop.x, prop.y, prop.gold_amount)
-                    prop.gold_amount = 0  -- Prevent re-awarding
+                    local cx = prop.x + 0.5  -- Center of chest
+                    local cy = prop.y + 0.3  -- Slightly above center
+                    Collectible.spawn_gold_burst(cx, cy, prop.gold_amount)
+                    prop.gold_amount = 0  -- Prevent re-spawning
                 end
             end,
 
             --- Wait for opening animation to complete then transition to opened state
             ---@param prop table The chest prop instance
-            ---@param dt number Delta time in seconds (handled by Prop.update via animation:play)
+            ---@param dt number Delta time in seconds
             update = function(prop, dt)
                 if prop.animation:is_finished() then
                     Prop.set_state(prop, "opened")
@@ -169,8 +168,8 @@ return {
 
             --- Static state, no updates needed
             ---@param prop table The chest prop instance
-            ---@param dt number Delta time in seconds
-            update = function(prop, dt) end,
+            ---@param _dt number Delta time in seconds (unused)
+            update = function(prop, _dt) end,
 
             draw = common.draw
         }

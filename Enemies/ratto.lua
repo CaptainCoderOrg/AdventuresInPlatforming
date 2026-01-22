@@ -149,6 +149,7 @@ return {
 	max_health = 5,
 	damage = 1,
 	death_sound = "ratto",
+	loot = { xp = 3, gold = { min = 0, max = 5 } },
 	states = ratto.states,
 	animations = ratto.animations,
 	initial_state = "idle",

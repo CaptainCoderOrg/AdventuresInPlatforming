@@ -1,0 +1,252 @@
+local canvas = require('canvas')
+local sprites = require('sprites')
+local state = require('Collectible/state')
+local Effects = require('Effects')
+
+local Collectible = {}
+
+-- Physics constants (in tiles/second, matching enemy physics)
+local GRAVITY = 1.5 * 60  -- tiles/second^2 (1.5 px/frame * 60fps)
+local MAX_FALL_SPEED = 20 * 60  -- tiles/second (20 px/frame * 60fps)
+local FRICTION = 0.92  -- velocity multiplier per frame
+
+-- Collection constants (in tiles)
+local COLLECT_RANGE = 0.3  -- tiles
+local HOMING_DELAY = 1.0  -- seconds before particles home to player
+local HOMING_ACCEL_MIN = 8  -- tiles/second^2
+local HOMING_ACCEL_MAX = 16  -- tiles/second^2
+local HOMING_MAX_SPEED = 20  -- tiles/second
+
+-- Visual constants
+local LIFETIME = 10  -- seconds
+local FADE_START = 8  -- seconds (fade out in last 2 seconds)
+local SIZE = 4  -- pixels
+
+-- Colors
+local COLORS = {
+	xp = "#FFFFFF",  -- white
+	gold = "#FFD700"  -- gold
+}
+
+-- Module-level table to avoid allocation each frame
+local to_remove = {}
+
+--- Spawns a single collectible particle.
+---@param type string "xp" or "gold"
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param value number Value of this collectible (usually 1)
+---@param velocity table Optional {vx, vy} initial velocity in tiles/second
+---@return table The created collectible
+function Collectible.spawn(type, x, y, value, velocity)
+	velocity = velocity or {}
+
+	local collectible = {
+		id = type .. "_" .. state.next_id,
+		type = type,
+		x = x,
+		y = y,
+		w = SIZE / sprites.tile_size,  -- Convert to tiles
+		h = SIZE / sprites.tile_size,
+		vx = velocity.vx or 0,
+		vy = velocity.vy or 0,
+		value = value or 1,
+		color = COLORS[type] or COLORS.xp,
+		size = SIZE,
+		lifetime = LIFETIME,
+		elapsed = 0,
+		homing_accel = HOMING_ACCEL_MIN + math.random() * (HOMING_ACCEL_MAX - HOMING_ACCEL_MIN)
+	}
+
+	state.next_id = state.next_id + 1
+	state.all[collectible] = true
+
+	return collectible
+end
+
+--- Rotates a 2D vector by an angle (radians)
+---@param vx number X component of vector
+---@param vy number Y component of vector
+---@param angle number Rotation angle in radians
+---@return number, number Rotated x and y components
+local function rotate_vector(vx, vy, angle)
+	local c, s = math.cos(angle), math.sin(angle)
+	return vx * c - vy * s, vx * s + vy * c
+end
+
+--- Helper: Spawns multiple collectibles with explosion velocity in a cone.
+---@param type string "xp" or "gold"
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param count number Number of particles to spawn
+---@param away_x number Normalized X direction away from player
+---@param away_y number Normalized Y direction away from player
+local function spawn_explosion(type, x, y, count, away_x, away_y)
+	for _ = 1, count do
+		local spread = (math.random() - 0.5) * 2.1  -- ~120 degree cone
+		local dir_x, dir_y = rotate_vector(away_x, away_y, spread)
+		local speed = 4 + math.random() * 2
+		Collectible.spawn(type, x, y, 1, {
+			vx = dir_x * speed,
+			vy = dir_y * speed - 2  -- Slight upward bias
+		})
+	end
+end
+
+--- Spawns loot explosion from enemy death.
+--- Particles explode away from the player, then home back after a delay.
+---@param x number X position in tiles (enemy center)
+---@param y number Y position in tiles (enemy center)
+---@param loot_def table Loot definition {xp = number, gold = {min, max}}
+---@param player table The player object (for explosion direction)
+function Collectible.spawn_loot(x, y, loot_def, player)
+	if not loot_def then return end
+
+	-- Calculate direction away from player
+	local px, py = player.x + 0.5, player.y + 0.5
+	local dx, dy = x - px, y - py
+	local dist = math.sqrt(dx * dx + dy * dy)
+	local away_x, away_y = 0, -1  -- Default: up if player is exactly on enemy
+	if dist > 0.01 then
+		away_x, away_y = dx / dist, dy / dist
+	end
+
+	-- Spawn XP particles
+	local xp_count = loot_def.xp or 0
+	if xp_count > 0 then
+		spawn_explosion("xp", x, y, xp_count, away_x, away_y)
+	end
+
+	-- Spawn gold particles (random amount in range)
+	local gold_def = loot_def.gold
+	if gold_def then
+		local gold_count = math.random(gold_def.min, gold_def.max)
+		if gold_count > 0 then
+			spawn_explosion("gold", x, y, gold_count, away_x, away_y)
+		end
+	end
+end
+
+--- Spawns gold particles exploding upward from a source (chests, etc).
+---@param x number X position in tiles (source center)
+---@param y number Y position in tiles (source center)
+---@param amount number Total gold amount to spawn as particles
+function Collectible.spawn_gold_burst(x, y, amount)
+	if not amount or amount <= 0 then return end
+
+	for _ = 1, amount do
+		-- Spread in upward arc (roughly 180 degree cone pointing up)
+		local spread = (math.random() - 0.5) * 3.14  -- -1.57 to 1.57 radians
+		local dir_x, dir_y = rotate_vector(0, -1, spread)  -- Base direction: up
+		local speed = 3 + math.random() * 3
+		local vx = dir_x * speed
+		local vy = dir_y * speed - 1  -- Extra upward boost
+		Collectible.spawn("gold", x, y, 1, { vx = vx, vy = vy })
+	end
+end
+
+--- Updates all collectibles: physics, homing, collection.
+---@param dt number Delta time in seconds
+---@param player table The player object (for collection)
+function Collectible.update(dt, player)
+	-- Clear module-level table instead of allocating new one
+	for i = 1, #to_remove do to_remove[i] = nil end
+
+	local px, py = player.x + 0.5, player.y + 0.5  -- Player center
+
+	local collectible = next(state.all)
+	while collectible do
+		-- Update elapsed time
+		collectible.elapsed = collectible.elapsed + dt
+
+		-- Check lifetime expiry
+		if collectible.elapsed >= collectible.lifetime then
+			to_remove[#to_remove + 1] = collectible
+			collectible = next(state.all, collectible)
+			goto continue
+		end
+
+		-- Calculate distance to player
+		local cx, cy = collectible.x + collectible.w / 2, collectible.y + collectible.h / 2
+		local dx, dy = px - cx, py - cy
+		local dist = math.sqrt(dx * dx + dy * dy)
+
+		-- Collection check
+		if dist < COLLECT_RANGE then
+			-- Award stats to player
+			if collectible.type == "xp" then
+				player.experience = (player.experience or 0) + collectible.value
+				Effects.create_xp_text(collectible.x, collectible.y, collectible.value, player)
+			elseif collectible.type == "gold" then
+				player.gold = (player.gold or 0) + collectible.value
+				Effects.create_gold_text(collectible.x, collectible.y, collectible.value, player)
+			end
+			to_remove[#to_remove + 1] = collectible
+			collectible = next(state.all, collectible)
+			goto continue
+		end
+
+		-- After delay: accelerate toward player
+		if collectible.elapsed >= HOMING_DELAY then
+			if dist > 0 then
+				local nx, ny = dx / dist, dy / dist
+				collectible.vx = collectible.vx + nx * collectible.homing_accel * dt
+				collectible.vy = collectible.vy + ny * collectible.homing_accel * dt
+				-- Clamp to max speed
+				local speed = math.sqrt(collectible.vx * collectible.vx + collectible.vy * collectible.vy)
+				if speed > HOMING_MAX_SPEED then
+					collectible.vx = collectible.vx / speed * HOMING_MAX_SPEED
+					collectible.vy = collectible.vy / speed * HOMING_MAX_SPEED
+				end
+			end
+		else
+			-- Explosion phase: apply friction only (no gravity, no homing)
+			collectible.vx = collectible.vx * (FRICTION ^ (dt * 60))
+			collectible.vy = collectible.vy * (FRICTION ^ (dt * 60))
+		end
+
+		-- Apply velocity
+		collectible.x = collectible.x + collectible.vx * dt
+		collectible.y = collectible.y + collectible.vy * dt
+
+		collectible = next(state.all, collectible)
+		::continue::
+	end
+
+	-- Remove collected/expired collectibles
+	for i = 1, #to_remove do
+		state.all[to_remove[i]] = nil
+	end
+end
+
+--- Draws all collectibles.
+function Collectible.draw()
+	canvas.save()
+
+	local collectible = next(state.all)
+	while collectible do
+		local alpha = 1
+		if collectible.elapsed > FADE_START then
+			alpha = 1 - (collectible.elapsed - FADE_START) / (collectible.lifetime - FADE_START)
+		end
+
+		canvas.set_global_alpha(alpha * 0.9)
+		canvas.set_fill_style(collectible.color)
+
+		local px = collectible.x * sprites.tile_size
+		local py = collectible.y * sprites.tile_size
+		canvas.fill_rect(px, py, collectible.size, collectible.size)
+
+		collectible = next(state.all, collectible)
+	end
+
+	canvas.set_global_alpha(1)
+	canvas.restore()
+end
+
+--- Clears all collectibles (for level reloading).
+function Collectible.clear()
+	for k in pairs(state.all) do state.all[k] = nil end
+end
+
+return Collectible

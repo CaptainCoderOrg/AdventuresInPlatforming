@@ -15,6 +15,7 @@ local Camera = require("Camera")
 local camera_cfg = require("config/camera")
 local Projectile = require("Projectile")
 local Effects = require("Effects")
+local Collectible = require("Collectible")
 local SaveSlots = require("SaveSlots")
 local Playtime = require("Playtime")
 local rest_state = require("player.rest")
@@ -159,6 +160,10 @@ local function update(dt)
     Effects.update(dt)
     profiler.stop("effects")
 
+    profiler.start("collectibles")
+    Collectible.update(dt, player)
+    profiler.stop("collectibles")
+
     profiler.start("enemies")
     Enemy.update(dt, player)
     profiler.stop("enemies")
@@ -220,6 +225,7 @@ local function draw()
         player:draw()
         Projectile.draw()
         Effects.draw()
+        Collectible.draw()
         if config.bounding_boxes then
             proximity_audio.draw_debug()
         end
@@ -318,7 +324,8 @@ local function cleanup_level()
     end
     Projectile.all = {}
 
-    Effects.all = {}
+    Effects.clear()
+    Collectible.clear()
 
     -- Final cleanup ensures no orphaned shapes in spatial hash
     combat.clear()

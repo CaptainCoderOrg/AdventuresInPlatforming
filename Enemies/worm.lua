@@ -1,3 +1,6 @@
+--- Worm enemy: A simple patrol enemy that reverses on obstacles.
+--- States: run (patrol), death
+--- Health: 1 HP. Contact damage: 1.
 local Animation = require('Animation')
 local sprites = require('sprites')
 local common = require('Enemies/common')
@@ -43,6 +46,7 @@ return {
 	max_fall_speed = 20,
 	max_health = 1,
 	damage = 1,
+	loot = { xp = 1 },
 	states = worm.states,
 	animations = worm.animations,
 	initial_state = "run",

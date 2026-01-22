@@ -25,8 +25,8 @@ Effects.animations = {
 local to_remove = {}
 
 --- Removes items from a set that match a predicate.
---- @param set table Set (table with items as keys)
---- @param should_remove function Predicate returning true if item should be removed
+---@param set table Set (table with items as keys)
+---@param should_remove function Predicate returning true if item should be removed
 local function remove_from_set(set, should_remove)
 	-- Clear module-level table instead of allocating new one
 	for i = 1, #to_remove do to_remove[i] = nil end
@@ -56,7 +56,7 @@ local function particle_expired(particle)
 end
 
 --- Updates all active effects, removes finished ones
---- @param dt number Delta time in seconds
+---@param dt number Delta time in seconds
 function Effects.update(dt)
 	local effect = next(state.all)
 	while effect do
@@ -75,7 +75,14 @@ function Effects.update(dt)
 
 	text = next(state.status_texts)
 	while text do
-		text.y = text.y + text.vy * dt
+		-- Follow player if set
+		if text.follow_player then
+			text.x = text.follow_player.x + 0.5
+			text.y = text.follow_player.y + text.offset_y
+			text.offset_y = text.offset_y + text.vy * dt  -- Float upward relative to player
+		else
+			text.y = text.y + text.vy * dt
+		end
 		text.elapsed = text.elapsed + dt
 		text = next(state.status_texts, text)
 	end
@@ -151,11 +158,11 @@ function Effects.draw()
 end
 
 --- Creates a new effect instance
---- @param name string Effect name for ID generation
---- @param animation_def table Animation definition
---- @param x number X position in tile coordinates
---- @param y number Y position in tile coordinates
---- @return table Effect instance
+---@param name string Effect name for ID generation
+---@param animation_def table Animation definition
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@return table Effect instance
 function Effects.new(name, animation_def, x, y)
 	local self = setmetatable({}, Effects)
 
@@ -173,10 +180,10 @@ function Effects.new(name, animation_def, x, y)
 end
 
 --- Factory: Creates a hit effect at specified location
---- @param x number X position in tile coordinates
---- @param y number Y position in tile coordinates
---- @param direction number Direction for flipping (1 = right, -1 = left)
---- @return table Hit effect instance
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param direction number Direction for flipping (1 = right, -1 = left)
+---@return table Hit effect instance
 function Effects.create_hit(x, y, direction)
 	direction = direction or 1
 	local effect = Effects.new("hit", Effects.animations.HIT, x, y)
@@ -185,10 +192,10 @@ function Effects.create_hit(x, y, direction)
 end
 
 --- Factory: Creates a shuriken hit effect at specified location
---- @param x number X position in tile coordinates
---- @param y number Y position in tile coordinates
---- @param direction number|nil Direction for flipping (1 = right, -1 = left), defaults to 1
---- @return table Shuriken hit effect instance
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param direction number|nil Direction for flipping (1 = right, -1 = left), defaults to 1
+---@return table Shuriken hit effect instance
 function Effects.create_shuriken_hit(x, y, direction)
 	direction = direction or 1
 	local off_x = 0.25
@@ -198,13 +205,12 @@ function Effects.create_shuriken_hit(x, y, direction)
 end
 
 --- Factory: Creates floating damage text at specified location
---- @param x number X position in tile coordinates
---- @param y number Y position in tile coordinates
---- @param damage number Damage amount (0 for blocked hits)
---- @return nil
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param damage number Damage amount (0 for blocked hits)
+---@return nil
 function Effects.create_damage_text(x, y, damage)
 	local display = tostring(damage)
-	-- Cache text width at creation to avoid per-frame allocation
 	canvas.set_font_family("menu_font")
 	canvas.set_font_size(6*config.ui.SCALE)
 	local cached_width = canvas.get_text_width(display)
@@ -212,10 +218,10 @@ function Effects.create_damage_text(x, y, damage)
 	local text = {
 		x = x,
 		y = y,
-		vy = -2,          -- Float upward (tiles/second)
-		display = display,  -- Pre-cache string conversion
-		color = damage > 0 and "#FF0000" or "#FFFFFF",  -- Pre-cache color
-		lifetime = 0.8,   -- Duration in seconds
+		vy = -2,
+		display = display,
+		color = damage > 0 and "#FF0000" or "#FFFFFF",
+		lifetime = 0.8,
 		elapsed = 0,
 		cached_width = cached_width,
 	}
@@ -223,9 +229,9 @@ function Effects.create_damage_text(x, y, damage)
 end
 
 --- Factory: Creates floating status text at specified location (e.g. "TIRED")
---- @param x number X position in tile coordinates
---- @param y number Y position in tile coordinates
---- @return nil
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@return nil
 function Effects.create_fatigue_text(x, y)
 	local message = "TIRED"
 	-- Cache text width at creation to avoid per-frame allocation
@@ -246,35 +252,80 @@ function Effects.create_fatigue_text(x, y)
 	state.status_texts[text] = true
 end
 
---- Factory: Creates floating gold text at specified location (e.g. "+100 gold")
---- @param x number X position in tile coordinates
---- @param y number Y position in tile coordinates
---- @param amount number Gold amount to display
---- @return nil
-function Effects.create_gold_text(x, y, amount)
-	local message = "+" .. tostring(amount) .. " gold"
-	-- Cache text width at creation to avoid per-frame allocation
+--- Helper: Recalculates cached text width for a status text entry.
+---@param text table The status text entry to update
+local function update_text_width(text)
 	canvas.set_font_family("menu_font")
-	canvas.set_font_size(6*config.ui.SCALE)
-	local cached_width = canvas.get_text_width(message)
+	canvas.set_font_size(6 * config.ui.SCALE)
+	text.cached_width = canvas.get_text_width(text.message)
+end
 
+--- Helper: Creates or updates an accumulating status text (gold, XP, etc).
+---@param tracker_key string Key in state for tracking active text (e.g. "active_gold_text")
+---@param label string Display label (e.g. "gold", "XP")
+---@param color string Hex color for the text
+---@param offset_y number Vertical offset above player head
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param amount number Amount to add
+---@param player table|nil Optional player to follow
+local function create_accumulating_text(tracker_key, label, color, offset_y, x, y, amount, player)
+	local active = state[tracker_key]
+	if active and state.status_texts[active] then
+		active.amount = active.amount + amount
+		active.message = "+" .. tostring(active.amount) .. " " .. label
+		active.elapsed = 0
+		update_text_width(active)
+		return
+	end
+
+	local message = "+" .. tostring(amount) .. " " .. label
+	local start_x = player and (player.x + 0.5) or (x + 0.5)
+	local start_y = player and (player.y + offset_y) or y
 	local text = {
-		x = x + 0.5,      -- Center on chest
-		y = y,            -- Start at chest top
-		vy = -1,          -- Float upward (tiles/second)
+		x = start_x,
+		y = start_y,
+		vy = -0.5,
 		message = message,
-		color = "#FFD700", -- Gold color
-		lifetime = 1.5,   -- Duration in seconds
+		color = color,
+		lifetime = 1.5,
 		elapsed = 0,
-		cached_width = cached_width,
+		cached_width = 0,
+		amount = amount,
+		follow_player = player,
+		offset_y = offset_y,
 	}
+	update_text_width(text)
 	state.status_texts[text] = true
+	state[tracker_key] = text
+end
+
+--- Factory: Creates or updates floating gold text (e.g. "+1 gold")
+--- If an active gold text exists, adds to it instead of creating a new one.
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param amount number Gold amount to add
+---@param player table|nil Optional player to follow
+---@return nil
+function Effects.create_gold_text(x, y, amount, player)
+	create_accumulating_text("active_gold_text", "gold", "#FFD700", -0.2, x, y, amount, player)
+end
+
+--- Factory: Creates or updates floating XP text (e.g. "+1 XP")
+--- If an active XP text exists, adds to it instead of creating a new one.
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param amount number XP amount to add
+---@param player table|nil Optional player to follow
+---@return nil
+function Effects.create_xp_text(x, y, amount, player)
+	create_accumulating_text("active_xp_text", "XP", "#FFFFFF", -0.5, x, y, amount, player)
 end
 
 --- Factory: Creates a sweat droplet that drips from the player
---- @param x number X position in tile coordinates (player center)
---- @param y number Y position in tile coordinates (player center)
---- @return nil
+---@param x number X position in tile coordinates (player center)
+---@param y number Y position in tile coordinates (player center)
+---@return nil
 function Effects.create_fatigue_particle(x, y)
 	-- Spawn from sides/top of player (around the head area)
 	local side = math.random()
@@ -307,12 +358,14 @@ function Effects.create_fatigue_particle(x, y)
 end
 
 --- Clears all effects (for level reloading)
---- @return nil
+---@return nil
 function Effects.clear()
 	for k in pairs(state.all) do state.all[k] = nil end
 	for k in pairs(state.damage_texts) do state.damage_texts[k] = nil end
 	for k in pairs(state.status_texts) do state.status_texts[k] = nil end
 	for k in pairs(state.fatigue_particles) do state.fatigue_particles[k] = nil end
+	state.active_xp_text = nil
+	state.active_gold_text = nil
 end
 
 return Effects

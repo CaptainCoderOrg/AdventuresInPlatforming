@@ -6,6 +6,7 @@ local config = require('config')
 local common = require('Enemies/common')
 local Effects = require('Effects')
 local audio = require('audio')
+local Collectible = require('Collectible')
 
 local Enemy = {}
 Enemy.__index = Enemy
@@ -325,6 +326,13 @@ function Enemy:die()
 
 	local definition = Enemy.types[self.type_key]
 	audio.play_death_sound(definition.death_sound)
+
+	-- Spawn loot at enemy center (explodes away from player)
+	if definition.loot and self.target_player then
+		local cx = self.x + self.box.x + self.box.w / 2
+		local cy = self.y + self.box.y + self.box.h / 2
+		Collectible.spawn_loot(cx, cy, definition.loot, self.target_player)
+	end
 
 	-- Transition to death state if available, otherwise destroy immediately
 	if self.states.death then

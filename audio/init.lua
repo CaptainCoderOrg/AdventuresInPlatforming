@@ -47,6 +47,10 @@ end
 
 --- Play footstep sound (skips if channel busy)
 function audio.play_footstep() pool.all.footstep:play() end
+--- Play hammer sound (skips if channel busy)
+function audio.play_hammer_hit() pool.all.hammer_hit:play() end
+--- Play hammer grunt sound (skips if channel busy)
+function audio.play_hammer_grunt() pool.all.hammer_grunt:play() end
 --- Play landing sound (skips if channel busy)
 function audio.play_landing_sound() pool.all.landing:play() end
 --- Play jump sound (skips if channel busy)

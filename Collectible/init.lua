@@ -5,17 +5,15 @@ local Effects = require('Effects')
 
 local Collectible = {}
 
--- Physics constants (in tiles/second, matching enemy physics)
-local GRAVITY = 1.5 * 60  -- tiles/second^2 (1.5 px/frame * 60fps)
-local MAX_FALL_SPEED = 20 * 60  -- tiles/second (20 px/frame * 60fps)
+-- Physics constants
 local FRICTION = 0.92  -- velocity multiplier per frame
 
 -- Collection constants (in tiles)
 local COLLECT_RANGE = 0.3  -- tiles
 local HOMING_DELAY = 1.0  -- seconds before particles home to player
-local HOMING_ACCEL_MIN = 8  -- tiles/second^2
-local HOMING_ACCEL_MAX = 16  -- tiles/second^2
-local HOMING_MAX_SPEED = 20  -- tiles/second
+local HOMING_SPEED_MIN = 5  -- tiles/second
+local HOMING_SPEED_MAX = 16  -- tiles/second
+local ACCELERATION = 5
 
 -- Visual constants
 local LIFETIME = 10  -- seconds
@@ -55,7 +53,7 @@ function Collectible.spawn(type, x, y, value, velocity)
 		size = SIZE,
 		lifetime = LIFETIME,
 		elapsed = 0,
-		homing_accel = HOMING_ACCEL_MIN + math.random() * (HOMING_ACCEL_MAX - HOMING_ACCEL_MIN)
+		homing_speed = HOMING_SPEED_MIN + math.random() * (HOMING_SPEED_MAX - HOMING_SPEED_MIN)
 	}
 
 	state.next_id = state.next_id + 1
@@ -186,28 +184,23 @@ function Collectible.update(dt, player)
 			goto continue
 		end
 
-		-- After delay: accelerate toward player
+		-- After delay: move directly toward player
 		if collectible.elapsed >= HOMING_DELAY then
 			if dist > 0 then
-				local nx, ny = dx / dist, dy / dist
-				collectible.vx = collectible.vx + nx * collectible.homing_accel * dt
-				collectible.vy = collectible.vy + ny * collectible.homing_accel * dt
-				-- Clamp to max speed
-				local speed = math.sqrt(collectible.vx * collectible.vx + collectible.vy * collectible.vy)
-				if speed > HOMING_MAX_SPEED then
-					collectible.vx = collectible.vx / speed * HOMING_MAX_SPEED
-					collectible.vy = collectible.vy / speed * HOMING_MAX_SPEED
+				if collectible.homing_speed < HOMING_SPEED_MAX then 
+					collectible.homing_speed = collectible.homing_speed + ACCELERATION * dt
 				end
+				local nx, ny = dx / dist, dy / dist
+				collectible.x = collectible.x + nx * collectible.homing_speed * dt
+				collectible.y = collectible.y + ny * collectible.homing_speed * dt
 			end
 		else
-			-- Explosion phase: apply friction only (no gravity, no homing)
+			-- Explosion phase: apply friction
 			collectible.vx = collectible.vx * (FRICTION ^ (dt * 60))
 			collectible.vy = collectible.vy * (FRICTION ^ (dt * 60))
+			collectible.x = collectible.x + collectible.vx * dt
+			collectible.y = collectible.y + collectible.vy * dt
 		end
-
-		-- Apply velocity
-		collectible.x = collectible.x + collectible.vx * dt
-		collectible.y = collectible.y + collectible.vy * dt
 
 		collectible = next(state.all, collectible)
 		::continue::

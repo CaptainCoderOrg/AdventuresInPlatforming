@@ -53,6 +53,16 @@ pool.all = {
         path_format = "sfx/landing/%d.ogg", name_format = "footstep_%d",
         start_index = 0, end_index = 8, mode = "random"
     }),
+    hammer_hit = create_sound_pool({
+        channel = "hammer_channel",
+        path_format = "sfx/hits/hammer/hammer_%d.ogg", name_format = "hammer_%d",
+        start_index = 0, end_index = 0, mode = "random", volume = 1.0
+    }),
+    hammer_grunt = create_sound_pool({
+        channel = "hammer_grunt_channel",
+        path_format = "sfx/hits/hammer/hammer_grunt_%d.ogg", name_format = "hammer_grunt_%d",
+        start_index = 0, end_index = 0, mode = "random", volume = 0.5
+    }),
     jump = create_sound_pool({
         channel = "jump_channel",
         path_format = "sfx/woosh/%d.ogg", name_format = "jump_%d",

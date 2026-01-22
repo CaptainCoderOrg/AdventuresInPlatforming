@@ -4,7 +4,7 @@ local Animation = require('Animation')
 local Prop = require('Prop')
 local config = require('config')
 local canvas = require('canvas')
-
+local audio = require('audio')
 
 local hammer = { name = "hammer" }
 
@@ -54,7 +54,9 @@ function hammer.start(player)
 	player.animation = Animation.new(common.animations.HAMMER)
 	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
 	player.hammer_state.hit_button = false
+	player.hammer_state.sound_played = false
 	common.clear_input_queue(player)
+	audio.play_hammer_grunt()
 end
 
 --- Updates hammer state. Checks for button hits, locks movement, and handles timing.
@@ -65,6 +67,10 @@ function hammer.update(player, dt)
 	player.vx = 0
 	player.vy = 0
 	player.hammer_state.remaining_time = player.hammer_state.remaining_time - dt
+	if player.animation.frame >= 3 and not player.hammer_state.sound_played then
+		audio.play_hammer_hit()
+		player.hammer_state.sound_played = true
+	end
 	if player.hammer_state.remaining_time < 0 then
 		if not common.process_input_queue(player) then
 			player:set_state(player.states.idle)

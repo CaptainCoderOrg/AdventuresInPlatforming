@@ -27,6 +27,12 @@ local function start_animation(prop, anim_options)
     prop.animation = Animation.new(SPIKE_ANIM, anim_options)
 end
 
+--- Spike trap options:
+---@field mode string|nil "static" or "alternating" (default: "static")
+---@field extend_time number|nil Time in extended state (default: 1.5)
+---@field retract_time number|nil Time in retracted state (default: 1.5)
+---@field alternating_offset number|nil Initial timer offset for staggered groups (default: 0)
+---@field start_retracted boolean|nil Whether to start in retracted state (default: false)
 local definition = {
     box = { x = 0, y = 0.2, w = 1, h = 0.8 },
     debug_color = "#FF00FF",  -- Magenta
@@ -36,6 +42,7 @@ local definition = {
         prop.mode = options.mode or "static"
         prop.extend_time = options.extend_time or DEFAULT_EXTEND_TIME
         prop.retract_time = options.retract_time or DEFAULT_RETRACT_TIME
+        prop.alternating_offset = options.alternating_offset or 0
         prop.timer = 0
 
         -- Register for spatial audio queries
@@ -51,7 +58,6 @@ local definition = {
         prop.animation = Animation.new(SPIKE_ANIM, { start_frame = initial_frame })
         prop.animation:pause()
 
-        -- Override initial state if starting retracted
         if start_retracted then
             Prop.set_state(prop, "retracted")
         end
@@ -62,6 +68,23 @@ local definition = {
         -- Only trigger retraction if not already retracted/retracting
         if prop.state_name == "extended" or prop.state_name == "extending" then
             Prop.set_state(prop, "retracting")
+        end
+    end,
+
+    --- Activates alternating mode with the configured offset.
+    --- The offset is applied once to stagger this trap relative to others in the group.
+    set_alternating = function(prop)
+        prop.mode = "alternating"
+
+        -- Normalize offset to within a single cycle for predictable behavior
+        local cycle_time = prop.extend_time + prop.retract_time
+        local effective_offset = prop.alternating_offset % cycle_time
+        prop.timer = effective_offset
+
+        -- When offset exceeds extend_time, the trap will transition through retracting
+        -- and into retracted state. Pre-calculate how far into the retracted phase it should start.
+        if effective_offset > prop.extend_time then
+            prop.retracted_timer_start = effective_offset - prop.extend_time
         end
     end,
 
@@ -98,7 +121,8 @@ local definition = {
 
         retracted = {
             start = function(prop, def)
-                prop.timer = 0
+                prop.timer = prop.retracted_timer_start or 0
+                prop.retracted_timer_start = nil
                 prop.animation:pause()
             end,
             update = function(prop, dt, player)

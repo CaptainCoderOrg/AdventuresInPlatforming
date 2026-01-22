@@ -55,7 +55,9 @@ function air.input(player)
 	common.handle_block(player)
 	common.handle_attack(player)
 	common.handle_dash(player)
-	common.handle_air_jump(player)
+	if not common.handle_jump(player) then
+		common.handle_air_jump(player)
+	end
 	common.handle_climb(player)
 end
 

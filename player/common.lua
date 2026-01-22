@@ -10,7 +10,7 @@ local common = {}
 common.GRAVITY = 1.5
 common.JUMP_VELOCITY = common.GRAVITY * 14
 common.AIR_JUMP_VELOCITY = common.GRAVITY * 11
-common.MAX_COYOTE_TIME = 4 / 60  -- 0.0667 seconds (4 frames at 60 FPS)
+common.MAX_COYOTE_TIME = 6 / 60
 common.MAX_FALL_SPEED = 20
 
 -- Stamina costs (balanced against max_stamina=5)

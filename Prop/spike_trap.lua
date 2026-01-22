@@ -57,6 +57,14 @@ local definition = {
         end
     end,
 
+    disable = function(prop)
+        prop.mode = "static"
+        -- Only trigger retraction if not already retracted/retracting
+        if prop.state_name == "extended" or prop.state_name == "extending" then
+            Prop.set_state(prop, "retracting")
+        end
+    end,
+
     states = {
         extended = {
             start = function(prop, def)

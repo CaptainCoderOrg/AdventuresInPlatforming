@@ -8,18 +8,18 @@ local sprites = require('sprites')
 local idle = { name = "idle" }
 
 --- Called when entering idle state. Resets animation to idle.
---- @param player table The player object
+---@param player table The player object
 function idle.start(player)
 	player.animation = Animation.new(common.animations.IDLE)
 end
 
 --- Handles input while idle. Movement transitions to run state.
---- @param player table The player object
+---@param player table The player object
 function idle.input(player)
 	if common.check_cooldown_queues(player) then return end
 
-	-- Check rest before attack (down+attack combo)
-	if common.handle_rest(player) then return end
+	-- Check interactions before attack (down+attack combo for campfire/chest)
+	if common.handle_interact(player) then return end
 
 	if controls.left_down() then
 		player.direction = -1
@@ -38,15 +38,15 @@ function idle.input(player)
 end
 
 --- Updates idle state. Stops horizontal movement and applies gravity.
---- @param player table The player object
---- @param dt number Delta time
+---@param player table The player object
+---@param dt number Delta time
 function idle.update(player, dt)
 	player.vx = 0
 	common.handle_gravity(player, dt)
 end
 
 --- Renders the player in idle pose.
---- @param player table The player object
+---@param player table The player object
 function idle.draw(player)
 	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
 end

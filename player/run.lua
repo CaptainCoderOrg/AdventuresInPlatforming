@@ -8,10 +8,11 @@ local Animation = require('Animation')
 --- Transitions to idle when stopping, or dash/jump when triggered.
 local run = { name = "run" }
 
+-- Half the run animation duration in seconds (ms / 1000 / 2) for two footsteps per cycle
 local FOOTSTEP_COOLDOWN_TIME = (common.animations.RUN.frame_count * common.animations.RUN.ms_per_frame) / 2000
 
 --- Called when entering run state. Resets animation and footstep timer.
---- @param player table The player object
+---@param player table The player object
 function run.start(player)
 	player.animation = Animation.new(common.animations.RUN)
 	player.run_state.footstep_cooldown = 0
@@ -22,7 +23,7 @@ function run.start(player)
 end
 
 --- Handles input while running. Updates direction or transitions to idle.
---- @param player table The player object
+---@param player table The player object
 function run.input(player)
 	if common.check_cooldown_queues(player) then return end
 
@@ -47,6 +48,9 @@ function run.input(player)
 	player.direction = new_direction
 	player.run_state.previous_direction = new_direction
 
+	-- Check interactions before attack (down+attack combo for campfire/chest)
+	if common.handle_interact(player) then return end
+
 	common.handle_throw(player)
 	common.handle_hammer(player)
 	common.handle_block(player)
@@ -56,8 +60,8 @@ function run.input(player)
 end
 
 --- Updates run state. Applies movement, gravity, and triggers footstep sounds.
---- @param player table The player object
---- @param dt number Delta time
+---@param player table The player object
+---@param dt number Delta time
 function run.update(player, dt)
 	-- Handle turn animation countdown
 	if player.run_state.is_turning then
@@ -93,7 +97,7 @@ function run.update(player, dt)
 end
 
 --- Renders the player in running animation.
---- @param player table The player object
+---@param player table The player object
 function run.draw(player)
 	local visual_dir = player.run_state.turn_visual_direction or player.direction
 	player.animation.flipped = visual_dir

@@ -261,10 +261,10 @@ function Effects.create_gold_text(x, y, amount)
 	local text = {
 		x = x + 0.5,      -- Center on chest
 		y = y,            -- Start at chest top
-		vy = -2,          -- Float upward (tiles/second)
+		vy = -1,          -- Float upward (tiles/second)
 		message = message,
 		color = "#FFD700", -- Gold color
-		lifetime = 1.0,   -- Duration in seconds
+		lifetime = 1.5,   -- Duration in seconds
 		elapsed = 0,
 		cached_width = cached_width,
 	}

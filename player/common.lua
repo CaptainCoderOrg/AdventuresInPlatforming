@@ -131,13 +131,31 @@ function common.is_near_campfire(player)
 	return false
 end
 
---- Checks for rest input (down + attack) and transitions to rest state if near campfire.
+--- Checks if the player is touching an interactable chest (not yet opened).
 ---@param player table The player object
----@return boolean True if transitioned to rest state
-function common.handle_rest(player)
+---@return boolean True if player is touching an unopened chest
+function common.is_near_interactable_chest(player)
+	for prop in pairs(Prop.all) do
+		if prop.type_key == "chest" and not prop.is_open and prop_common.player_touching(prop, player) then
+			return true
+		end
+	end
+	return false
+end
+
+--- Checks for interact input (down + attack) and handles interactions.
+--- Campfire: transitions to rest state. Chest: consumes input (chest handles opening).
+---@param player table The player object
+---@return boolean True if interaction occurred (prevents attack)
+function common.handle_interact(player)
 	if controls.down_down() and controls.attack_pressed() then
+		-- Campfire triggers rest state
 		if common.is_near_campfire(player) then
 			player:set_state(player.states.rest)
+			return true
+		end
+		-- Chest interaction - just consume input, chest handles its own state
+		if common.is_near_interactable_chest(player) then
 			return true
 		end
 	end

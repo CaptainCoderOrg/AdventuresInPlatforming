@@ -40,6 +40,9 @@ Spear.all = {}
 Spear.needs_update = true
 Spear.needs_draw = false
 
+-- Module-level table to avoid allocation each frame
+local spear_to_remove = {}
+
 --- Spawn a new spear projectile
 ---@param x number X position in tiles
 ---@param y number Y position in tiles
@@ -95,11 +98,12 @@ function Spear.update_all(dt, player)
     Spear.needs_update = false
     Spear.needs_draw = true
 
-    local to_remove = {}
+    -- Clear module-level table instead of allocating new one
+    for i = 1, #spear_to_remove do spear_to_remove[i] = nil end
 
     for spear, _ in pairs(Spear.all) do
         if spear.marked_for_destruction then
-            to_remove[#to_remove + 1] = spear
+            spear_to_remove[#spear_to_remove + 1] = spear
         else
             spear.x = spear.x + spear.direction * SPEAR_SPEED * dt
             combat.update(spear)
@@ -116,8 +120,8 @@ function Spear.update_all(dt, player)
         end
     end
 
-    for i = 1, #to_remove do
-        destroy_spear(to_remove[i])
+    for i = 1, #spear_to_remove do
+        destroy_spear(spear_to_remove[i])
     end
 end
 

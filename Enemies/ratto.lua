@@ -148,6 +148,7 @@ return {
 	max_fall_speed = 20,
 	max_health = 3,
 	damage = 1,
+	damages_shield = true,  -- Contact damage triggers shield stamina drain
 	death_sound = "ratto",
 	loot = { xp = 3, gold = { min = 0, max = 5 } },
 	states = ratto.states,

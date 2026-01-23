@@ -176,7 +176,6 @@ local function update(dt)
     -- Aggregate volumes by sound_id so multiple emitters of same type combine naturally
     profiler.start("proximity")
     local nearby = proximity_audio.get_cached(player.x, player.y)
-    -- Clear reused table (avoids allocation)
     for k in pairs(proximity_volumes) do proximity_volumes[k] = nil end
     for i = 1, #nearby do
         local result = nearby[i]

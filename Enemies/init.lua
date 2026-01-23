@@ -14,6 +14,9 @@ Enemy.all = {}
 Enemy.next_id = 1
 Enemy.types = {}
 
+-- Shield collision debounce: 3 frames between contact hits to prevent rapid stamina drain
+local SHIELD_HIT_COOLDOWN = 3 / 60
+
 --- Registers an enemy type definition.
 --- @param key string Type identifier (e.g., "ratto")
 --- @param definition table Enemy type definition from type module
@@ -65,6 +68,8 @@ function Enemy.spawn(type_key, x, y)
 	self.health = self.max_health
 	self.damage = definition.damage or 1
 	self.armor = definition.armor or 0
+	self.damages_shield = definition.damages_shield or false
+	self.shield_hit_cooldown = 0  -- Debounce timer for shield contact damage
 	self.marked_for_destruction = false
 
 	-- Copy custom get_armor function if defined
@@ -113,6 +118,7 @@ function Enemy.update(dt, player)
 
 	local enemy = next(Enemy.all)
 	while enemy do
+		enemy.shield_hit_cooldown = math.max(0, enemy.shield_hit_cooldown - dt)
 		common.apply_gravity(enemy, dt)
 
 		-- Apply velocity
@@ -260,6 +266,19 @@ function Enemy:check_player_overlap(player)
 	-- Use combat hitbox if available, otherwise fall back to physics shape
 	local enemy_shape = self.hitbox or self.shape
 	if not enemy_shape then return end
+
+	-- Check shield collision first (for enemies that damage shields)
+	if self.damages_shield and self.shield_hit_cooldown <= 0 then
+		local shield_shape = world.shield_map[player]
+		if shield_shape then
+			local shield_collides, _ = enemy_shape:collidesWith(shield_shape)
+			if shield_collides then
+				player:take_damage(self.damage, self.x)
+				self.shield_hit_cooldown = SHIELD_HIT_COOLDOWN
+				return  -- Don't also check body collision
+			end
+		end
+	end
 
 	local collides, _ = enemy_shape:collidesWith(player_shape)
 	if collides then

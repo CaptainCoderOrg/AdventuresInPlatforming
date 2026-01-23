@@ -94,7 +94,7 @@ local function calculate_volume(distance, config)
 end
 
 --- Get or create a pooled result entry table
----@return table Reusable entry table with emitter, distance, volume, config fields
+---@return {emitter: table, distance: number, volume: number, config: table} Reusable entry
 local function get_pooled_entry()
     state.result_pool_idx = state.result_pool_idx + 1
     local entry = state.result_pool[state.result_pool_idx]

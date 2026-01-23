@@ -10,7 +10,10 @@ local GROUND_PROBE_DISTANCE = 4 -- Pixels to probe downward for ground adhesion
 -- Prints collision source to console on each ground contact
 world.debug_collisions = false
 
---- Helper to identify what a shape belongs to
+--- Returns a debug identifier string for an HC collision shape.
+--- Used for logging collision sources when debug_collisions is enabled.
+---@param shape table|nil The HC shape to identify
+---@return string Human-readable shape description
 local function identify_shape(shape)
 	if not shape then return "nil" end
 	if not shape.owner then return "no_owner" end
@@ -119,7 +122,8 @@ world.hitbox_map = state.hitbox_map
 world.shield_map = state.shield_map
 
 --- Adds a rectangular collider for an object.
---- @param obj table Object with x, y, and box properties
+---@param obj table Object with x, y, and box properties
+---@return table The created HC shape
 function world.add_collider(obj)
 	local ts = sprites.tile_size
 	local px = (obj.x + obj.box.x) * ts
@@ -136,7 +140,8 @@ end
 
 --- Adds a circle collider for an object.
 --- Uses the smaller of width/height as diameter.
---- @param obj table Object with x, y, and box properties
+---@param obj table Object with x, y, and box properties
+---@return table The created HC shape
 function world.add_circle_collider(obj)
 	local ts = sprites.tile_size
 	local radius = math.min(obj.box.w, obj.box.h) * ts / 2
@@ -171,7 +176,8 @@ end
 
 --- Adds a combat hitbox for an object (separate from physics shape).
 --- Used for hit detection with projectiles/attacks. Can be rotated.
---- @param obj table Object with x, y, and box properties
+---@param obj table Object with x, y, and box properties
+---@return table The created HC shape
 function world.add_hitbox(obj)
 	local ts = sprites.tile_size
 	local px = (obj.x + obj.box.x) * ts
@@ -221,8 +227,20 @@ function world.update_hitbox(obj, y_offset)
 	end
 end
 
+---@class CollisionResult
+---@field ground boolean Whether standing on ground
+---@field ceiling boolean Whether touching ceiling
+---@field wall_left boolean Whether touching wall on left
+---@field wall_right boolean Whether touching wall on right
+---@field ground_normal {x: number, y: number} Normal vector of ground surface
+---@field ceiling_normal {x: number, y: number}|nil Normal vector of ceiling surface
+---@field is_ladder_top boolean|nil Whether standing on ladder top
+---@field ladder_from_top table|nil Ladder object when standing on top
+---@field is_bridge boolean|nil Whether standing on bridge
+---@field triggers table[] Array of trigger shapes overlapping
+
 --- Resets a cols table to default values (avoids allocation when reusing)
---- @param cols table Collision flags table to reset
+---@param cols CollisionResult Collision flags table to reset
 local function reset_cols(cols)
 	cols.ground = false
 	cols.ceiling = false
@@ -239,7 +257,7 @@ local function reset_cols(cols)
 end
 
 --- Creates a new cols table with default values
---- @return table Fresh collision flags table
+---@return CollisionResult Fresh collision flags table
 local function new_cols()
 	return {
 		ground = false, ceiling = false, wall_left = false, wall_right = false,

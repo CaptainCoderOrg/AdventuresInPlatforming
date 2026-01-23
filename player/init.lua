@@ -44,6 +44,9 @@ local FATIGUE_ENTRY_PENALTY = 1
 -- Seconds between sweat particle spawns (50ms = rapid dripping effect)
 local FATIGUE_PARTICLE_INTERVAL = 0.05
 
+-- Block knockback speed when absorbing a hit with shield
+local BLOCK_KNOCKBACK_SPEED = 8
+
 --- Creates a new player instance.
 --- @return table A new player object
 function Player.new()
@@ -184,6 +187,9 @@ function Player.new()
 		knockback_speed = 2,
 		remaining_time = 0
 	}
+	self.block_state = {
+		knockback_velocity = 0
+	}
 
 	-- Centralized input queue for locked states (hit, throw, attack).
 	-- Inputs are queued during locked states and processed on state exit.
@@ -272,7 +278,8 @@ end
 
 --- Applies damage to player, transitioning to hit or death state.
 --- Ignored if amount <= 0, player is invincible, or already in hit state.
---- When blocking and facing the source, damage is blocked with a shield clang sound.
+--- When blocking and facing the source: drains stamina proportional to damage,
+--- applies knockback, and stays in block state. Guard breaks if out of stamina.
 ---@param amount number Damage amount to apply
 ---@param source_x number|nil X position of damage source (for shield check)
 function Player:take_damage(amount, source_x)
@@ -284,9 +291,21 @@ function Player:take_damage(amount, source_x)
 	if self.state == self.states.block and source_x then
 		local from_front = (self.direction == 1 and source_x > self.x) or
 		                   (self.direction == -1 and source_x < self.x)
-		if from_front then
-			audio.play_solid_sound()  -- Shield clang
-			return  -- Damage blocked
+		local current_stamina = self.max_stamina - self.stamina_used
+
+		if from_front and current_stamina > 0 then
+			-- Successful block: drain stamina, apply knockback, stay in block state
+			local stamina_cost = amount * common.BLOCK_STAMINA_COST_PER_DAMAGE
+			self.stamina_used = self.stamina_used + stamina_cost
+			self.stamina_regen_timer = 0
+			-- Knockback away from source
+			local knockback_dir = source_x > self.x and -1 or 1
+			self.block_state.knockback_velocity = knockback_dir * BLOCK_KNOCKBACK_SPEED
+			audio.play_solid_sound()
+			return
+		elseif from_front then
+			-- Guard break: no stamina remaining, remove shield and take damage
+			world.remove_shield(self)
 		end
 	end
 
@@ -364,10 +383,11 @@ function Player:update(dt)
 	self.attack_cooldown = self.attack_cooldown - dt
 	self.throw_cooldown = self.throw_cooldown - dt
 
-	-- Stamina regeneration (after cooldown period, reduced while fatigued)
+	-- Stamina regeneration (after cooldown period, reduced while fatigued or blocking)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
-		local regen_multiplier = self:is_fatigued() and FATIGUE_REGEN_MULTIPLIER or 1
+		local is_slowed = self:is_fatigued() or self.state == self.states.block
+		local regen_multiplier = is_slowed and FATIGUE_REGEN_MULTIPLIER or 1
 		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * dt)
 	end
 

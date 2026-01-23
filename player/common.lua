@@ -1,9 +1,7 @@
 local Animation = require('Animation')
-local combat = require('combat')
-local Prop = require('Prop')
 local audio = require('audio')
+local combat = require('combat')
 local controls = require('controls')
-local prop_common = require('Prop/common')
 local sprites = require('sprites')
 
 local common = {}
@@ -25,6 +23,8 @@ common.AIR_JUMP_STAMINA_COST = 1
 common.DASH_STAMINA_COST = 2.5
 -- Wall jump costs 1: matches air jump cost
 common.WALL_JUMP_STAMINA_COST = 1
+-- Block stamina cost: 1.5 stamina per point of damage blocked (5 stamina blocks ~3 damage)
+common.BLOCK_STAMINA_COST_PER_DAMAGE = 1.5
 
 -- Animations (converted to delta-time based, milliseconds per frame)
 common.animations = {
@@ -113,9 +113,10 @@ function common.handle_attack(player)
 end
 
 --- Checks for block input and transitions to block state if held.
+--- Requires positive stamina (cannot block while fatigued).
 ---@param player table The player object
 function common.handle_block(player)
-    if controls.block_down() then
+    if controls.block_down() and not player:is_fatigued() then
 		player:set_state(player.states.block)
 	end
 end

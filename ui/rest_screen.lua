@@ -1037,8 +1037,9 @@ end
 local function draw_campfire_glow(x, y, radius, pulse)
     -- Vignette gradient
     local gradient = canvas.create_radial_gradient(x, y, radius * 0.5, x, y, radius)
-    gradient:add_color_stop(0, "rgba(0,0,0,0)")
-    gradient:add_color_stop(0.7, "rgba(0,0,0,0.3)")
+    gradient:add_color_stop(0, "rgba(255, 106, 0, 0.1)")
+    gradient:add_color_stop(0.7, "rgba(255, 106, 0, 0.3)")
+    gradient:add_color_stop(0.7, "rgba(255, 106, 0, 0.3)")
     gradient:add_color_stop(1, "rgba(0,0,0,0.7)")
     canvas.set_fill_style(gradient)
     canvas.begin_path()

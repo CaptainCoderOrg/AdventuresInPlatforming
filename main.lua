@@ -41,6 +41,7 @@ Prop.register("spike_trap", require("Prop/spike_trap"))
 Prop.register("sign", require("Prop/sign"))
 Prop.register("trap_door", require("Prop/trap_door"))
 Prop.register("chest", require("Prop/chest"))
+Prop.register("spear_trap", require("Prop/spear_trap"))
 
 -- Levels
 local level1 = require("levels/level1")

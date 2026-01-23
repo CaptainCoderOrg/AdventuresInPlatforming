@@ -272,11 +272,24 @@ end
 
 --- Applies damage to player, transitioning to hit or death state.
 --- Ignored if amount <= 0, player is invincible, or already in hit state.
+--- When blocking and facing the source, damage is blocked with a shield clang sound.
 ---@param amount number Damage amount to apply
-function Player:take_damage(amount)
+---@param source_x number|nil X position of damage source (for shield check)
+function Player:take_damage(amount, source_x)
 	if amount <= 0 then return end
 	if self:is_invincible() then return end
 	if self.state == self.states.hit then return end
+
+	-- Shield check: block damage from front when in block state
+	if self.state == self.states.block and source_x then
+		local from_front = (self.direction == 1 and source_x > self.x) or
+		                   (self.direction == -1 and source_x < self.x)
+		if from_front then
+			audio.play_solid_sound()  -- Shield clang
+			return  -- Damage blocked
+		end
+	end
+
 	self.damage = self.damage + amount
 	audio.play_squish_sound()
 	if self:health() > 0 then

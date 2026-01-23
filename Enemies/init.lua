@@ -263,7 +263,7 @@ function Enemy:check_player_overlap(player)
 
 	local collides, _ = enemy_shape:collidesWith(player_shape)
 	if collides then
-		player:take_damage(self.damage)
+		player:take_damage(self.damage, self.x)  -- Pass enemy X for shield check
 	end
 end
 

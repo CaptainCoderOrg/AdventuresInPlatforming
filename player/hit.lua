@@ -3,6 +3,7 @@ local controls = require('controls')
 local sprites = require('sprites')
 local audio = require('audio')
 local Animation = require('Animation')
+local world = require('world')
 
 
 --- Hit state: Player is stunned after taking damage.
@@ -13,6 +14,7 @@ local INVINCIBLE_TIME = 1.2
 --- Called when entering hit state. Sets knockback and clears input queue.
 --- @param player table The player object
 function hit.start(player)
+	world.remove_shield(player)  -- Clean up shield if blocking when hit from behind
 	player.hit_state.knockback_speed = 2
 	player.animation = Animation.new(common.animations.HIT)
 	player.hit_state.remaining_time = (common.animations.HIT.frame_count * common.animations.HIT.ms_per_frame) / 1000

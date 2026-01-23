@@ -35,7 +35,7 @@ function common.damage_player(prop, player, damage)
     if player:is_invincible() then return false end
     if player:health() <= 0 then return false end
 
-    player:take_damage(damage)
+    player:take_damage(damage, prop.x)  -- Pass prop X for shield check
     return true
 end
 

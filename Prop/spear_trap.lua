@@ -76,6 +76,17 @@ local function destroy_spear(spear)
     Spear.all[spear] = nil
 end
 
+--- Creates hit effect at spear tip and marks spear for destruction
+---@param spear table Spear instance
+---@param x number X position of impact
+---@param y number Y position of impact
+local function spear_impact(spear, x, y)
+    local effect_x = x + spear.box.x - 0.25
+    local effect_y = y - 0.25
+    Effects.create_hit(effect_x, effect_y, spear.direction)
+    spear.marked_for_destruction = true
+end
+
 --- Update all spears (called once per frame via dirty flag)
 ---@param dt number Delta time in seconds
 ---@param player table Player instance for collision
@@ -90,29 +101,17 @@ function Spear.update_all(dt, player)
         if spear.marked_for_destruction then
             to_remove[#to_remove + 1] = spear
         else
-            -- Move spear
             spear.x = spear.x + spear.direction * SPEAR_SPEED * dt
-
-            -- Update combat hitbox position for player collision detection
             combat.update(spear)
-
-            -- Update animation
             spear.animation:play(dt)
 
             -- Check for wall collision via trigger movement
             local collision = world.move_trigger(spear)
             if collision then
-                -- Position effect at spear tip (collision.x is object pos, add box.x to get hitbox pos)
-                local effect_x = collision.x + spear.box.x - 0.25
-                local effect_y = collision.y - 0.25
-                Effects.create_hit(effect_x, effect_y, spear.direction)
+                spear_impact(spear, collision.x, collision.y)
                 audio.play_solid_sound()
-                spear.marked_for_destruction = true
-            else
-                -- Check for player collision
-                if common.damage_player(spear, player, SPEAR_DAMAGE) then
-                    spear.marked_for_destruction = true
-                end
+            elseif common.damage_player(spear, player, SPEAR_DAMAGE) then
+                spear_impact(spear, spear.x, spear.y)
             end
         end
     end
@@ -123,7 +122,6 @@ function Spear.update_all(dt, player)
 end
 
 --- Draw all spears (called once per frame via dirty flag)
----@return nil
 function Spear.draw_all()
     if not Spear.needs_draw then return end
     Spear.needs_draw = false
@@ -148,7 +146,6 @@ function Spear.draw_all()
 end
 
 --- Clear all spears (called on level reload)
----@return nil
 function Spear.clear_all()
     for spear, _ in pairs(Spear.all) do
         world.remove_trigger_collider(spear)

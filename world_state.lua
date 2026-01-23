@@ -19,6 +19,8 @@ return {
     trigger_map = {},
     -- Maps game objects to their combat hitboxes (for hit detection, can rotate)
     hitbox_map = {},
+    -- Maps players to their shield colliders (for blocking projectiles/attacks)
+    shield_map = {},
     -- Persistent probe shape for point_has_ground queries (lazy-initialized)
     ground_probe = nil
 }

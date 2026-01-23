@@ -69,14 +69,31 @@ local function should_skip_bridge(obj, bridge)
 	return false
 end
 
---- Checks if collision should be skipped (player/enemy pass through each other).
+--- Checks if collision should be skipped (entities passing through each other).
+--- Players and enemies pass through each other, except shields block enemies.
 --- @param obj table First collision object
---- @param other_owner table Owner of the other collision shape
+--- @param other table The other collision shape
 --- @return boolean True if collision should be skipped
-local function should_skip_collision(obj, other_owner)
-	if obj.is_player and other_owner and other_owner.is_enemy then return true end
-	if obj.is_enemy and other_owner and other_owner.is_player then return true end
-	if obj.is_enemy and other_owner and other_owner.is_enemy then return true end
+local function should_skip_collision(obj, other)
+	-- Shields are solid barriers for enemies
+	if obj.is_enemy and other.is_shield then
+		return false
+	end
+
+	local other_owner = other.owner
+
+	-- Players pass through enemies
+	if obj.is_player and other_owner and other_owner.is_enemy then
+		return true
+	end
+
+	-- Enemies pass through players and other enemies
+	if obj.is_enemy and other_owner then
+		if other_owner.is_player or other_owner.is_enemy then
+			return true
+		end
+	end
+
 	return false
 end
 
@@ -99,6 +116,7 @@ world.hc = state.hc
 world.shape_map = state.shape_map
 world.trigger_map = state.trigger_map
 world.hitbox_map = state.hitbox_map
+world.shield_map = state.shield_map
 
 --- Adds a rectangular collider for an object.
 --- @param obj table Object with x, y, and box properties
@@ -266,7 +284,7 @@ function world.move(obj, cols)
 
 			for other, sep in pairs(collisions) do
 				if is_non_solid(other, cols) then goto skip_x_collision end
-				if should_skip_collision(obj, other.owner) then goto skip_x_collision end
+				if should_skip_collision(obj, other) then goto skip_x_collision end
 				if other ~= shape and sep.x ~= 0 then
 					-- Only treat as wall if more horizontal than vertical (steeper than 45°)
 					-- Slopes (<=45°) should be handled by Y pass, not blocked by X pass
@@ -302,7 +320,7 @@ function world.move(obj, cols)
 
 		for other, sep in pairs(collisions) do
 			if is_non_solid(other, cols) then goto skip_y_collision end
-			if should_skip_collision(obj, other.owner) then goto skip_y_collision end
+			if should_skip_collision(obj, other) then goto skip_y_collision end
 			-- Detect ladder top collision before one-way platform check
 			-- This ensures standing_on_ladder_top works even when pressing down
 			if other.owner and other.owner.is_ladder_top then
@@ -355,7 +373,7 @@ function world.move(obj, cols)
 
 		for other, sep in pairs(collisions) do
 			if is_non_solid(other, cols) then goto skip_ground_collision end
-			if should_skip_collision(obj, other.owner) then goto skip_ground_collision end
+			if should_skip_collision(obj, other) then goto skip_ground_collision end
 			-- Apply bridge pass-through logic (overlap, falling direction, drop-through)
 			if other.owner and other.owner.is_bridge then
 				if should_skip_bridge(obj, other.owner) then
@@ -435,8 +453,9 @@ function world.move_trigger(obj)
 				-- Non-enemy physics shape (walls, platforms)
 				-- Skip bridges so projectiles pass through
 				local is_bridge = owner and owner.is_bridge
+				local is_shield = other.is_shield
 				if not is_bridge then
-					solid_hit = { shape = other, sep = sep }
+					solid_hit = { shape = other, sep = sep, is_shield = is_shield }
 				end
 			end
 		end
@@ -455,7 +474,8 @@ function world.move_trigger(obj)
 		return {
 			other = hit.shape,
 			x = obj.x,
-			y = obj.y
+			y = obj.y,
+			is_shield = hit.is_shield
 		}
 	end
 
@@ -479,6 +499,65 @@ function world.remove_trigger_collider(obj)
 	if shape then
 		world.hc:remove(shape)
 		world.trigger_map[obj] = nil
+	end
+end
+
+--- Calculates shield X offset based on player direction.
+--- Shield is positioned at player's front edge.
+--- @param player table Player with direction, box properties
+--- @param shield_w number Shield width in tiles
+--- @return number X offset in tiles from player.x
+local function get_shield_x_offset(player, shield_w)
+	if player.direction == 1 then
+		return player.box.x + player.box.w
+	end
+	return player.box.x - shield_w
+end
+
+--- Adds a shield collider for a player (solid physics collider).
+--- @param player table Player object
+--- @param shield_box table Shield dimensions {w, h}
+--- @return table The created shield shape
+function world.add_shield(player, shield_box)
+	local ts = sprites.tile_size
+	local x_offset = get_shield_x_offset(player, shield_box.w)
+
+	local px = (player.x + x_offset) * ts
+	local py = (player.y + player.box.y) * ts
+	local pw = shield_box.w * ts
+	local ph = shield_box.h * ts
+
+	local shape = world.hc:rectangle(px, py, pw, ph)
+	shape.is_shield = true
+	shape.owner = player
+	world.shield_map[player] = shape
+	return shape
+end
+
+--- Updates shield position based on player position and direction.
+--- @param player table Player with x, y, direction, box properties
+--- @param shield_box table Shield dimensions {w, h}
+function world.update_shield(player, shield_box)
+	local shape = world.shield_map[player]
+	if not shape then return end
+
+	local ts = sprites.tile_size
+	local x_offset = get_shield_x_offset(player, shield_box.w)
+
+	local target_x = (player.x + x_offset) * ts
+	local target_y = (player.y + player.box.y) * ts
+
+	local old_x, old_y, _, _ = shape:bbox()
+	shape:move(target_x - old_x, target_y - old_y)
+end
+
+--- Removes the shield collider for a player.
+--- @param player table The player object
+function world.remove_shield(player)
+	local shape = world.shield_map[player]
+	if shape then
+		world.hc:remove(shape)
+		world.shield_map[player] = nil
 	end
 end
 

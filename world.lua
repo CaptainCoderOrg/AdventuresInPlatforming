@@ -105,7 +105,7 @@ end
 local function is_non_solid(other, cols)
 	if other.is_probe then return true end
 	if other.is_trigger then
-		table.insert(cols.triggers, other)
+		cols.triggers[#cols.triggers + 1] = other
 		return true
 	end
 	return false

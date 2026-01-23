@@ -63,7 +63,9 @@ local function next_animation(player)
 	player.attack_state.remaining_time = (animation.frame_count * animation.ms_per_frame) / 1000
 	audio.play_sword_sound()
 	player.attack_state.queued = false
-	player.attack_state.hit_enemies = {}
+	-- Clear existing table instead of allocating new one
+	local hit_enemies = player.attack_state.hit_enemies
+	for k in pairs(hit_enemies) do hit_enemies[k] = nil end
 	player.attack_state.next_anim_ix = player.attack_state.next_anim_ix + 1
 	if player.attack_state.next_anim_ix > #attack_animations then
 		player.attack_state.next_anim_ix = 1

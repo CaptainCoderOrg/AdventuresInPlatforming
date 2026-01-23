@@ -31,7 +31,7 @@ function common.player_in_range(enemy, range)
 	if not enemy.target_player then return false end
 	local dx = enemy.target_player.x - enemy.x
 	local dy = enemy.target_player.y - enemy.y
-	return math.sqrt(dx * dx + dy * dy) <= range
+	return dx * dx + dy * dy <= range * range
 end
 
 --- Get direction toward player (-1 or 1)

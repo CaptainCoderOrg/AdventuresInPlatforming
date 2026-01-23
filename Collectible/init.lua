@@ -10,6 +10,7 @@ local FRICTION = 0.92  -- velocity multiplier per frame
 
 -- Collection constants (in tiles)
 local COLLECT_RANGE = 0.3  -- tiles
+local COLLECT_RANGE_SQ = COLLECT_RANGE * COLLECT_RANGE  -- squared for fast comparison
 local HOMING_DELAY = 1.0  -- seconds before particles home to player
 local HOMING_SPEED_MIN = 5  -- tiles/second
 local HOMING_SPEED_MAX = 16  -- tiles/second
@@ -164,13 +165,13 @@ function Collectible.update(dt, player)
 			goto continue
 		end
 
-		-- Calculate distance to player
+		-- Calculate distance to player (squared to avoid sqrt in hot path)
 		local cx, cy = collectible.x + collectible.w / 2, collectible.y + collectible.h / 2
 		local dx, dy = px - cx, py - cy
-		local dist = math.sqrt(dx * dx + dy * dy)
+		local dist_sq = dx * dx + dy * dy
 
-		-- Collection check
-		if dist < COLLECT_RANGE then
+		-- Collection check (using squared distance)
+		if dist_sq < COLLECT_RANGE_SQ then
 			-- Award stats to player
 			if collectible.type == "xp" then
 				player.experience = (player.experience or 0) + collectible.value
@@ -186,10 +187,12 @@ function Collectible.update(dt, player)
 
 		-- After delay: move directly toward player
 		if collectible.elapsed >= HOMING_DELAY then
-			if dist > 0 then
-				if collectible.homing_speed < HOMING_SPEED_MAX then 
+			if dist_sq > 0 then
+				if collectible.homing_speed < HOMING_SPEED_MAX then
 					collectible.homing_speed = collectible.homing_speed + ACCELERATION * dt
 				end
+				-- Only calculate sqrt when needed for direction normalization
+				local dist = math.sqrt(dist_sq)
 				local nx, ny = dx / dist, dy / dist
 				collectible.x = collectible.x + nx * collectible.homing_speed * dt
 				collectible.y = collectible.y + ny * collectible.homing_speed * dt

@@ -1,4 +1,5 @@
 local Animation = require('Animation')
+local combat = require('combat')
 local Prop = require('Prop')
 local audio = require('audio')
 local controls = require('controls')
@@ -120,11 +121,19 @@ function common.handle_block(player)
 end
 
 --- Checks if the player is touching a campfire prop.
+--- Uses combat spatial indexing for O(1) lookup instead of iterating all props.
 ---@param player table The player object
 ---@return boolean True if player is touching a campfire prop
 function common.is_near_campfire(player)
-	for prop in pairs(Prop.all) do
-		if prop.type_key == "campfire" and prop_common.player_touching(prop, player) then
+	local hit = combat.query_rect(
+		player.x + player.box.x,
+		player.y + player.box.y,
+		player.box.w,
+		player.box.h
+	)
+	for i = 1, #hit do
+		local obj = hit[i]
+		if obj.type_key == "campfire" then
 			return true
 		end
 	end
@@ -132,11 +141,19 @@ function common.is_near_campfire(player)
 end
 
 --- Checks if the player is touching an interactable chest (not yet opened).
+--- Uses combat spatial indexing for O(1) lookup instead of iterating all props.
 ---@param player table The player object
 ---@return boolean True if player is touching an unopened chest
 function common.is_near_interactable_chest(player)
-	for prop in pairs(Prop.all) do
-		if prop.type_key == "chest" and not prop.is_open and prop_common.player_touching(prop, player) then
+	local hit = combat.query_rect(
+		player.x + player.box.x,
+		player.y + player.box.y,
+		player.box.w,
+		player.box.h
+	)
+	for i = 1, #hit do
+		local obj = hit[i]
+		if obj.type_key == "chest" and not obj.is_open then
 			return true
 		end
 	end

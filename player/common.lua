@@ -6,6 +6,7 @@ local config = require('config')
 local controls = require('controls')
 local sprites = require('sprites')
 local world = require('world')
+local Prop = require('Prop')
 
 local common = {}
 
@@ -210,18 +211,24 @@ function common.apply_gravity(player, dt, max_speed)
 	player.vy = math.min(max_speed, player.vy + common.GRAVITY * dt * 60)
 end
 
+--- Returns true if the player is in a state that prevents air transition.
+---@param player table The player object
+---@return boolean True if in a locked state
+local function is_locked_state(player)
+	local state = player.state
+	return state == player.states.block
+		or state == player.states.block_move
+		or state == player.states.hit
+		or state == player.states.throw
+end
+
 --- Applies gravity and transitions to air state if not grounded.
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 ---@param max_speed number|nil Maximum fall speed (defaults to MAX_FALL_SPEED)
 function common.handle_gravity(player, dt, max_speed)
 	common.apply_gravity(player, dt, max_speed)
-	if not player.is_grounded and
-           player.state ~= player.states.block and
-           player.state ~= player.states.block_move and
-           player.state ~= player.states.hit and
-		   player.state ~= player.states.throw
-		   then
+	if not player.is_grounded and not is_locked_state(player) then
 		player:set_state(player.states.air)
 	end
 end
@@ -608,8 +615,31 @@ end
 --- Shared by block and block_move states.
 ---@param player table The player object
 function common.draw_blocking(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	local lift = Prop.get_pressure_plate_lift(player)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size - lift)
 	draw_shield_debug(player)
+end
+
+--- Standard draw helper that applies pressure plate lift.
+--- Call this instead of player.animation:draw() in state draw functions.
+---@param player table The player object
+function common.draw(player)
+	local lift = Prop.get_pressure_plate_lift(player)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size - lift)
+end
+
+--- Draws a debug hitbox when bounding boxes are enabled.
+--- Used by attack and hammer states to visualize weapon reach.
+---@param hitbox table|nil Hitbox with x, y, w, h in tile coordinates (nil = no draw)
+---@param color string Hex color string for the hitbox
+function common.draw_debug_hitbox(hitbox, color)
+	if not config.bounding_boxes or not hitbox then return end
+	canvas.set_color(color)
+	canvas.draw_rect(
+		hitbox.x * sprites.tile_size,
+		hitbox.y * sprites.tile_size,
+		hitbox.w * sprites.tile_size,
+		hitbox.h * sprites.tile_size)
 end
 
 return common

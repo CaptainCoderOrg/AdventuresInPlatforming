@@ -1,8 +1,7 @@
+local Animation = require('Animation')
+local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
-local sprites = require('sprites')
-local audio = require('audio')
-local Animation = require('Animation')
 
 --- Run state: Player is moving horizontally on the ground.
 --- Transitions to idle when stopping, or dash/jump when triggered.
@@ -101,7 +100,7 @@ end
 function run.draw(player)
 	local visual_dir = player.run_state.turn_visual_direction or player.direction
 	player.animation.flipped = visual_dir
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	common.draw(player)
 end
 
 return run

@@ -1,8 +1,7 @@
+local Animation = require('Animation')
 local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
-local sprites = require('sprites')
-local Animation = require('Animation')
 
 local climb = { name = "climb" }
 
@@ -134,7 +133,7 @@ end
 --- Renders the player using the climb animation.
 --- @param player table The player object
 function climb.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	common.draw(player)
 end
 
 return climb

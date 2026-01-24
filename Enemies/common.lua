@@ -1,6 +1,7 @@
 local Animation = require('Animation')
 local sprites = require('sprites')
 local config = require('config')
+local Prop = require('Prop')
 
 local common = {}
 
@@ -48,10 +49,11 @@ function common.draw(enemy)
 	if enemy.animation then
 		local rotation = common.get_slope_rotation(enemy)
 		local y_offset = common.get_slope_y_offset(enemy)
+		local lift = Prop.get_pressure_plate_lift(enemy)
 
 		enemy.animation:draw(
 			enemy.x * sprites.tile_size,
-			enemy.y * sprites.tile_size + y_offset,
+			enemy.y * sprites.tile_size + y_offset - lift,
 			rotation
 		)
 	end

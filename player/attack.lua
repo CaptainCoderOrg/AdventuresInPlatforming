@@ -1,11 +1,8 @@
+local Animation = require('Animation')
+local audio = require('audio')
+local combat = require('combat')
 local common = require('player.common')
 local controls = require('controls')
-local sprites = require('sprites')
-local audio = require('audio')
-local Animation = require('Animation')
-local combat = require('combat')
-local config = require('config')
-local canvas = require('canvas')
 local world = require('world')
 
 
@@ -171,17 +168,8 @@ end
 --- Renders the player in attack animation with optional debug hitbox.
 ---@param player table The player object
 function attack.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
-
-	local sword = get_sword_hitbox(player)
-	if config.bounding_boxes and sword then
-		canvas.set_color("#FF00FF")
-		canvas.draw_rect(
-			sword.x * sprites.tile_size,
-			sword.y * sprites.tile_size,
-			sword.w * sprites.tile_size,
-			sword.h * sprites.tile_size)
-	end
+	common.draw(player)
+	common.draw_debug_hitbox(get_sword_hitbox(player), "#FF00FF")
 end
 
 return attack

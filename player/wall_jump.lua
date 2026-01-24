@@ -1,7 +1,6 @@
-local common = require('player.common')
-local sprites = require('sprites')
-local audio = require('audio')
 local Animation = require('Animation')
+local audio = require('audio')
+local common = require('player.common')
 
 --- Wall jump state: Player leaps away from a wall with locked horizontal direction.
 --- Transitions to idle on landing, wall_slide if hitting same wall, or air when falling.
@@ -49,7 +48,7 @@ end
 --- Renders the player with jump animation.
 --- @param player table The player object
 function wall_jump.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	common.draw(player)
 end
 
 return wall_jump

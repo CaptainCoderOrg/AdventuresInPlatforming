@@ -1,10 +1,6 @@
+local Animation = require('Animation')
 local common = require('player.common')
 local controls = require('controls')
-local sprites = require('sprites')
-local audio = require('audio')
-local Projectile = require('Projectile')
-local Animation = require('Animation')
-
 
 --- Throw state: Player throws the selected projectile.
 --- Movement allowed during throw animation. Clears input queue on entry.
@@ -63,7 +59,7 @@ end
 --- Renders the player in throw animation.
 ---@param player table The player object
 function throw.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	common.draw(player)
 end
 
 return throw

@@ -1,13 +1,12 @@
-local common = require('player.common')
-local sprites = require('sprites')
 local Animation = require('Animation')
-local Prop = require('Prop')
-local config = require('config')
-local canvas = require('canvas')
 local audio = require('audio')
 local combat = require('combat')
+local common = require('player.common')
+local Prop = require('Prop')
 local world = require('world')
 
+--- Hammer state: Player performs a heavy overhead attack.
+--- High damage, hits buttons, but consumes full stamina bar.
 local hammer = { name = "hammer" }
 
 -- Hammer hitbox dimensions (centered relative to player box)
@@ -113,17 +112,8 @@ end
 --- Renders the player in hammer animation with optional debug hitbox.
 ---@param player table The player object
 function hammer.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
-
-	local hitbox = get_hammer_hitbox(player)
-	if config.bounding_boxes and hitbox then
-		canvas.set_color("#FF00FF")
-		canvas.draw_rect(
-			hitbox.x * sprites.tile_size,
-			hitbox.y * sprites.tile_size,
-			hitbox.w * sprites.tile_size,
-			hitbox.h * sprites.tile_size)
-	end
+	common.draw(player)
+	common.draw_debug_hitbox(get_hammer_hitbox(player), "#FF00FF")
 end
 
 return hammer

@@ -169,6 +169,21 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 - `Prop.set_state(prop, state_name, skip_callback)` - State transition
 - `Prop.group_action(group_name, action)` - Trigger group-wide state change
 - `Prop.check_hit(type_key, hitbox, filter)` - Hitbox overlap detection
+- `Prop.get_pressure_plate_lift(entity)` - Get cached lift amount for entity
+
+### Pressure Plate Lift Pattern
+
+Entities standing on pressure plates are visually raised to simulate plate depression. The pattern avoids spatial queries during draw by caching lift on entities:
+
+1. Player/Enemy `update()` clears `pressure_plate_lift = 0` before Prop.update()
+2. Pressure plates set `entity.pressure_plate_lift` during their `update()`
+3. Entity draw functions read via `Prop.get_pressure_plate_lift(entity)` (O(1) lookup)
+
+```lua
+-- In draw functions:
+local lift = Prop.get_pressure_plate_lift(entity)
+animation:draw(x, y - lift)
+```
 
 ### Current Props
 
@@ -179,6 +194,11 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
   - Configurable: `extend_time`, `retract_time`, `alternating_offset`
   - `disable()` permanently retracts and disables the trap
   - Proximity audio within 8 tiles
+- **Pressure Plate** - Trigger activated by player/enemy standing on it
+  - States: unpressed, pressed, release
+  - Callbacks: `on_pressed` (when fully pressed), `on_release` (when entity leaves)
+  - Lift effect: entities standing on plate are visually raised 0-3px based on animation frame
+  - Uses combat spatial indexing for entity detection
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -282,5 +302,6 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
 - `Prop/campfire.lua` - Campfire prop (restore point)
 - `Prop/spike_trap.lua` - Spike trap prop (5-state hazard with alternating mode)
+- `Prop/pressure_plate.lua` - Pressure plate prop (entity-triggered with lift effect)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

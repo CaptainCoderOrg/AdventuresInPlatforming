@@ -118,6 +118,7 @@ function Enemy.update(dt, player)
 
 	local enemy = next(Enemy.all)
 	while enemy do
+		enemy.pressure_plate_lift = 0  -- Clear before pressure plates set it
 		enemy.shield_hit_cooldown = math.max(0, enemy.shield_hit_cooldown - dt)
 		common.apply_gravity(enemy, dt)
 

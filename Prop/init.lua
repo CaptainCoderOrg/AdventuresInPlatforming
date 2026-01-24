@@ -357,4 +357,14 @@ function Prop.get_all_of_type(type_key)
     return result
 end
 
+--- Get pressure plate lift amount for an entity.
+--- Returns cached value set by pressure plates during their update phase.
+--- This avoids spatial queries during draw - pressure plates set this value
+--- on entities they detect as occupying them.
+---@param entity table Entity with pressure_plate_lift property (set by pressure plates)
+---@return number Lift amount in pixels (0 if not on a plate)
+function Prop.get_pressure_plate_lift(entity)
+    return entity.pressure_plate_lift or 0
+end
+
 return Prop

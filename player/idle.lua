@@ -1,7 +1,6 @@
 local Animation = require('Animation')
 local common = require('player.common')
 local controls = require('controls')
-local sprites = require('sprites')
 
 --- Idle state: Player is standing still on the ground.
 --- Transitions to run on movement input, or dash/jump when triggered.
@@ -48,7 +47,7 @@ end
 --- Renders the player in idle pose.
 ---@param player table The player object
 function idle.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	common.draw(player)
 end
 
 return idle

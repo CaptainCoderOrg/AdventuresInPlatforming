@@ -170,6 +170,8 @@ end
 ---@field cooldown_time number|nil Time after firing before next cycle (default: 0.5)
 ---@field initial_offset number|nil Timer offset for staggered firing (default: 0)
 ---@field flip boolean|nil If true, faces and fires right (default: false/left)
+---@field auto_fire boolean|nil If false, only fires via external trigger (default: true)
+---@field enabled boolean|nil If false, trap cannot fire (default: true)
 local definition = {
     box = { x = 0, y = 0, w = 1, h = 1 },
     debug_color = "#FF00FF",  -- Magenta
@@ -193,6 +195,8 @@ local definition = {
         prop.cooldown_time = options.cooldown_time or DEFAULT_COOLDOWN_TIME
         prop.initial_offset = options.initial_offset or 0
         prop.timer = prop.initial_offset
+        prop.auto_fire = options.auto_fire ~= false  -- Default true for backward compatibility
+        prop.enabled = options.enabled ~= false  -- Default true
 
         prop.animation = Animation.new(TRAP_ANIM, { start_frame = 0 })
         prop.animation:pause()
@@ -218,8 +222,10 @@ local definition = {
             update = function(prop, dt, player)
                 Spear.update_all(dt, player)
 
+                if not prop.enabled then return end
+
                 prop.timer = prop.timer + dt
-                if prop.timer >= prop.fire_delay then
+                if prop.auto_fire and prop.timer >= prop.fire_delay then
                     prop.first_cycle_done = true
                     Prop.set_state(prop, "firing")
                 end
@@ -268,7 +274,28 @@ local definition = {
                 end
             end,
         }
-    }
+    },
+
+    --- Trigger the trap to fire (external API for pressure plates, etc.)
+    ---@param prop table Spear trap prop instance
+    fire = function(prop)
+        if not prop.enabled then return end
+        if prop.state_name == "idle" then
+            Prop.set_state(prop, "firing")
+        end
+    end,
+
+    --- Enable the trap (allows auto-fire and manual fire)
+    ---@param prop table Spear trap prop instance
+    enable = function(prop)
+        prop.enabled = true
+    end,
+
+    --- Disable the trap (prevents auto-fire and manual fire)
+    ---@param prop table Spear trap prop instance
+    disable = function(prop)
+        prop.enabled = false
+    end,
 }
 
 return definition

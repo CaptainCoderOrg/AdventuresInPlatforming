@@ -1,8 +1,7 @@
+local Animation = require('Animation')
+local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
-local sprites = require('sprites')
-local audio = require('audio')
-local Animation = require('Animation')
 
 --- Air state: Player is airborne (jumping or falling).
 --- Transitions to idle on landing, wall_slide when pressing into wall, or allows air jump/dash.
@@ -13,26 +12,44 @@ local air = { name = "air" }
 function air.start(player)
 end
 
+--- Returns the appropriate air animation based on player state.
+---@param player table The player object
+---@return table|nil Animation definition, or nil if no change needed
+local function get_target_animation(player)
+	if player.vy > 0 then
+		return common.animations.FALL
+	elseif player.vy < 0 then
+		return player.is_air_jumping and common.animations.AIR_JUMP or common.animations.JUMP
+	end
+	return nil
+end
+
 --- Updates air state. Applies gravity and manages animation based on vertical velocity.
 --- @param player table The player object
 --- @param dt number Delta time
 function air.update(player, dt)
 	common.handle_gravity(player, dt)
+
 	if player.is_grounded then
 		player:set_state(player.states.idle)
 		audio.play_landing_sound()
-	elseif player.has_wall_slide and player.vy > 0 and player.wall_direction ~= 0 then
+		return
+	end
+
+	-- Check for wall slide entry
+	if player.has_wall_slide and player.vy > 0 and player.wall_direction ~= 0 then
 		if common.is_pressing_into_wall(player) then
 			player:set_state(player.states.wall_slide)
+			return
 		end
-	elseif player.vy > 0 and player.animation.definition ~= common.animations.FALL then
-		player.animation = Animation.new(common.animations.FALL)
-		player.is_air_jumping = false
-	elseif player.vy < 0 then
-		if player.is_air_jumping and player.animation.definition ~= common.animations.AIR_JUMP then
-			player.animation = Animation.new(common.animations.AIR_JUMP)
-		elseif not player.is_air_jumping and player.animation.definition ~= common.animations.JUMP then
-			player.animation = Animation.new(common.animations.JUMP)
+	end
+
+	-- Update animation based on vertical velocity
+	local target = get_target_animation(player)
+	if target and player.animation.definition ~= target then
+		player.animation = Animation.new(target)
+		if player.vy > 0 then
+			player.is_air_jumping = false
 		end
 	end
 end
@@ -64,7 +81,7 @@ end
 --- Renders the player with current air animation (jump, air jump, or fall).
 --- @param player table The player object
 function air.draw(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	common.draw(player)
 end
 
 return air

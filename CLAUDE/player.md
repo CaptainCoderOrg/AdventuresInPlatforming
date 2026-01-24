@@ -202,10 +202,24 @@ player.animation:draw(x * sprites.tile_size, y * sprites.tile_size)
 
 Animation definitions in `player/common.lua` specify timing in milliseconds (e.g., 80ms = 12.5 fps, 240ms = 4.2 fps).
 
+## Rendering
+
+Player states should use `common.draw(player)` for rendering, which applies pressure plate lift offset automatically:
+
+```lua
+function state.draw(player)
+    common.draw(player)  -- Handles pressure plate lift
+end
+```
+
+**Special cases:**
+- `common.draw_blocking(player)` - For block states (includes shield debug rendering)
+- Manual draw with custom Y offset (e.g., rest state with `REST_Y_OFFSET`)
+
 ## Key Files
 
 - `player/init.lua` - Player state registry and core logic
-- `player/common.lua` - Shared physics, collision utilities, stamina costs
+- `player/common.lua` - Shared physics, collision utilities, stamina costs, rendering helpers
 - `player/attack.lua` - Combat combo system (includes sword hitbox)
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state

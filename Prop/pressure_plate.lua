@@ -1,9 +1,10 @@
 --- Pressure plate prop - Triggered by player/enemy collision with press/release callbacks
-local sprites = require("sprites")
 local Animation = require("Animation")
-local Prop = require("Prop")
-local common = require("Prop/common")
+local audio = require("audio")
 local combat = require("combat")
+local common = require("Prop/common")
+local Prop = require("Prop")
+local sprites = require("sprites")
 
 -- Lift height in pixels per animation frame (0-indexed: frame 0, 1, 2, 3)
 -- Frame 0 (unpressed): 0px, Frame 1: 3px, Frame 2: 2px, Frame 3 (fully pressed): 1px
@@ -113,6 +114,7 @@ local definition = {
                 prop.animation = Animation.new(PLATE_ANIM)
                 prop.animation:resume()
                 prop.callback_fired = false
+                audio.play_sfx(audio.stone_slab_pressed)
             end,
             update = function(prop, _dt, player)
                 update_lift_amount(prop)
@@ -152,6 +154,7 @@ local definition = {
                     start_frame = PLATE_ANIM.frame_count - 1,
                     reverse = true
                 })
+                audio.play_sfx(audio.stone_slab_released)
             end,
             update = function(prop, _dt, _player)
                 update_lift_amount(prop)

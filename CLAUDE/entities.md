@@ -199,6 +199,12 @@ animation:draw(x, y - lift)
   - Callbacks: `on_pressed` (when fully pressed), `on_release` (when entity leaves)
   - Lift effect: entities standing on plate are visually raised 0-3px based on animation frame
   - Uses combat spatial indexing for entity detection
+- **Spear Trap** - Wall-mounted trap that fires damaging spears
+  - States: idle, firing, cooldown
+  - Configurable: `fire_delay`, `cooldown_time`, `initial_offset`, `auto_fire`, `enabled`
+  - `fire()` triggers manually, `enable()`/`disable()` control state
+  - Proximity audio within 16 tiles
+  - Manages internal Spear projectile pool with combat integration
 
 ### Common Utilities (`Prop/common.lua`)
 

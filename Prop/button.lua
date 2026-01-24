@@ -1,7 +1,8 @@
 --- Button prop definition - Binary state (unpressed/pressed) with callback
-local sprites = require("sprites")
 local Animation = require("Animation")
+local audio = require("audio")
 local Prop = require("Prop")
+local sprites = require("sprites")
 
 local BUTTON_ANIM = Animation.create_definition(sprites.environment.button, 5, {
     ms_per_frame = 100,
@@ -35,12 +36,14 @@ local definition = {
 
     states = {
         unpressed = {
+            -- No start/update needed - static state until externally triggered
             draw = draw_button
         },
         pressed = {
-            start = function(prop, def, skip_callback)
+            start = function(prop, _def, skip_callback)
                 prop.is_pressed = true
                 prop.animation:resume()
+                audio.play_sfx(audio.stone_slab_pressed)
                 if prop.on_press and not skip_callback then
                     prop.on_press()
                 end
@@ -48,13 +51,13 @@ local definition = {
             draw = draw_button
         },
         resetting = {
-            start = function(prop, def)
+            start = function(prop, _def)
                 prop.animation = Animation.new(BUTTON_ANIM, {
                     start_frame = BUTTON_ANIM.frame_count - 1,
                     reverse = true
                 })
             end,
-            update = function(prop, dt)
+            update = function(prop, _dt)
                 if prop.animation:is_finished() then
                     prop.is_pressed = false
                     Prop.set_state(prop, "unpressed")

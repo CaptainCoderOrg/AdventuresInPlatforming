@@ -16,6 +16,9 @@ audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
 audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")
 audio.spiketrap = canvas.assets.load_sound("spiketrap", "sfx/environment/spiketrap.ogg")
 audio.trap_door_open = canvas.assets.load_sound("trap_door_open", "sfx/environment/trap_door_open.ogg")
+audio.stone_slab_pressed = canvas.assets.load_sound("stone_slab_pressed", "sfx/environment/stone_slab_pressed.ogg")
+audio.stone_slab_released = canvas.assets.load_sound("stone_slab_released", "sfx/environment/stone_slab_released.ogg")
+audio.spear_trap_fire = canvas.assets.load_sound("spear_trap_fire", "sfx/environment/spear_trap_fire.ogg")
 
 local sfx_group = "sfx_group"
 local sfx_ch = { "sfx_1", "sfx_2", "sfx_3", "sfx_4" }

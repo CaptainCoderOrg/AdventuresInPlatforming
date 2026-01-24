@@ -1,14 +1,15 @@
 --- Spear trap prop definition - Wall-mounted trap that fires damaging spears
-local canvas = require("canvas")
-local config = require("config")
-local sprites = require("sprites")
 local Animation = require("Animation")
+local audio = require("audio")
+local canvas = require("canvas")
+local combat = require("combat")
+local config = require("config")
+local Effects = require("Effects")
 local Prop = require("Prop")
 local common = require("Prop/common")
+local proximity_audio = require("proximity_audio")
+local sprites = require("sprites")
 local world = require("world")
-local combat = require("combat")
-local Effects = require("Effects")
-local audio = require("audio")
 
 local TRAP_ANIM = Animation.create_definition(sprites.environment.spear_trap, 7, {
     ms_per_frame = 60,
@@ -28,6 +29,7 @@ local DEFAULT_FIRE_DELAY = 2.0
 local DEFAULT_COOLDOWN_TIME = 0.5
 local SPEAR_SPEED = 12  -- tiles per second
 local SPEAR_DAMAGE = 1
+local SOUND_RADIUS = 16  -- tiles
 
 --------------------------------------------------------------------------------
 -- Spear projectile pool (local to this module)
@@ -165,7 +167,7 @@ end
 -- Spear trap prop definition
 --------------------------------------------------------------------------------
 
---- Spear trap options:
+---@class SpearTrapOptions
 ---@field fire_delay number|nil Time between shots (default: 2.0)
 ---@field cooldown_time number|nil Time after firing before next cycle (default: 0.5)
 ---@field initial_offset number|nil Timer offset for staggered firing (default: 0)
@@ -200,6 +202,13 @@ local definition = {
 
         prop.animation = Animation.new(TRAP_ANIM, { start_frame = 0 })
         prop.animation:pause()
+
+        -- Register for spatial audio queries
+        proximity_audio.register(prop, {
+            sound_id = "spear_trap_fire",
+            radius = SOUND_RADIUS,
+            max_volume = 1.0
+        })
     end,
 
     --- Shared draw for all states - draws trap animation and spears
@@ -236,9 +245,18 @@ local definition = {
             start = function(prop)
                 prop.animation = Animation.new(TRAP_ANIM, { start_frame = 0 })
                 prop.spear_spawned = false
+                prop.fire_sound_played = false
             end,
             update = function(prop, dt, player)
                 Spear.update_all(dt, player)
+
+                -- Play fire sound on frame 5 if player is in range
+                if not prop.fire_sound_played and prop.animation.frame >= 5 then
+                    prop.fire_sound_played = true
+                    if player and proximity_audio.is_in_range(player.x, player.y, prop) then
+                        audio.play_sfx(audio.spear_trap_fire)
+                    end
+                end
 
                 -- Spawn spear when animation reaches frame 6
                 if not prop.spear_spawned and prop.animation.frame >= 6 then

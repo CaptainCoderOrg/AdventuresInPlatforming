@@ -35,6 +35,7 @@ Enemy.register("spike_slug", require("Enemies/spike_slug"))
 
 -- Props
 local Prop = require("Prop")
+local prop_common = require("Prop/common")
 Prop.register("campfire", require("Prop/campfire"))
 Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
@@ -44,6 +45,7 @@ Prop.register("chest", require("Prop/chest"))
 Prop.register("spear_trap", require("Prop/spear_trap"))
 Prop.register("pressure_plate", require("Prop/pressure_plate"))
 Prop.register("locked_door", require("Prop/locked_door"))
+Prop.register("unique_item", require("Prop/unique_item"))
 
 -- Levels
 local level1 = require("levels/level1")
@@ -257,6 +259,10 @@ local function init_level(level, spawn_override, player_data, options)
         for _, key in ipairs(stat_keys) do
             if player_data[key] then player[key] = player_data[key] end
         end
+        -- Copy unique_items array to avoid sharing reference with save cache
+        if player_data.unique_items then
+            player.unique_items = prop_common.copy_array(player_data.unique_items)
+        end
     end
 
     level_info = platforms.load_level(level)
@@ -278,7 +284,12 @@ local function init_level(level, spawn_override, player_data, options)
 
     Prop.clear()
     for _, prop_data in ipairs(level_info.props) do
-        Prop.spawn(prop_data.type, prop_data.x, prop_data.y, prop_data)
+        local prop_def = Prop.types[prop_data.type]
+        -- Props spawn by default; only skip if should_spawn explicitly returns false
+        local spawn_check = prop_def and prop_def.should_spawn
+        if not spawn_check or spawn_check(prop_data, player) then
+            Prop.spawn(prop_data.type, prop_data.x, prop_data.y, prop_data)
+        end
     end
 
     -- Restore persistent prop states from save data

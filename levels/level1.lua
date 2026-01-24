@@ -9,8 +9,8 @@ return {
         [[######################################                                                               ###]],
         [[######################################                                                               ###]],
         [[######################################                                                               ###]],
-        [[#                                    D                                                               ###]],
-        [[#                                      P                                                         [######]],
+        [[#                                    D                                                             K ###]],
+        [[#                                                                                                [######]],
         [[##########################################H                                                      [######]],
         [[##########################################H                  s                 bB    ! *    *    [######]],
         [[##########################################H               T ###HT T T T T T T ##########################]],
@@ -40,13 +40,7 @@ return {
         [[########################################################################################################]],
     },
     symbols = {
-        ["D"] = { type = "locked_door", group = "door1" },
-        ["P"] = {
-            type = "button",
-            on_press = function()
-                Prop.group_action("door1", "unlock")
-            end
-        },
+        ["D"] = { type = "locked_door", required_key = "gold_key" },
         ["*"] = {
             type = "pressure_plate",
             on_pressed = function()
@@ -90,5 +84,6 @@ return {
         ["0"] = { type = "sign", text = "Wall Jump\n{move_right} + {jump}", offset = { x = -0.5 } },
         T = { type = "trap_door" },
         A = { type = "chest", text = "Open\n{move_down} + {attack}", gold = 20, flip = true },
+        K = { type = "unique_item", item_id = "gold_key" },
     }
 } 

@@ -39,4 +39,28 @@ function common.damage_player(prop, player, damage)
     return true
 end
 
+--- Check if player has a specific unique item
+---@param player table Player instance
+---@param item_id string Item identifier to check
+---@return boolean True if player has the item
+function common.player_has_item(player, item_id)
+    if not player or not player.unique_items then return false end
+    local items = player.unique_items
+    for i = 1, #items do
+        if items[i] == item_id then return true end
+    end
+    return false
+end
+
+--- Create a shallow copy of an array (for saving without reference issues)
+---@param arr table Array to copy
+---@return table copy New array with same values
+function common.copy_array(arr)
+    local copy = {}
+    for i = 1, #arr do
+        copy[i] = arr[i]
+    end
+    return copy
+end
+
 return common

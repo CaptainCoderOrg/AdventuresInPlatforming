@@ -11,7 +11,7 @@ local proximity_audio = require("proximity_audio")
 local sprites = require("sprites")
 local world = require("world")
 
-local TRAP_ANIM = Animation.create_definition(sprites.environment.spear_trap, 7, {
+local TRAP_ANIM = Animation.create_definition(sprites.environment.spear_trap, 8, {
     ms_per_frame = 60,
     width = 16,
     height = 16,
@@ -279,7 +279,7 @@ local definition = {
             start = function(prop)
                 prop.timer = 0
                 -- Keep showing frame 6 (empty chamber)
-                prop.animation = Animation.new(TRAP_ANIM, { start_frame = 6 })
+                prop.animation = Animation.new(TRAP_ANIM, { start_frame = 7 })
                 prop.animation:pause()
             end,
             update = function(prop, dt, player)

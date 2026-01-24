@@ -24,6 +24,8 @@ local environment = {
 	spear = "spear",
 	pressure_plate = "pressure_plate",
 	locked_door = "locked_door",
+	gold_key_spin = "gold_key_spin",
+	gold_key_collected = "gold_key_collected",
 	-- Tiling background images (240x160 native, scaled for display)
 	dungeon_bg = "dungeon_bg",
 	garden_bg = "garden_bg",
@@ -52,6 +54,8 @@ canvas.assets.load_image(environment.spear_trap, "sprites/environment/spear_trap
 canvas.assets.load_image(environment.spear, "sprites/environment/spear.png")
 canvas.assets.load_image(environment.pressure_plate, "sprites/environment/pressure_plate.png")
 canvas.assets.load_image(environment.locked_door, "sprites/environment/locked_door.png")
+canvas.assets.load_image(environment.gold_key_spin, "sprites/environment/gold_key_spin.png")
+canvas.assets.load_image(environment.gold_key_collected, "sprites/environment/key_collected.png")
 canvas.assets.load_image(environment.dungeon_bg, "sprites/environment/dungeon_bg.png")
 canvas.assets.load_image(environment.garden_bg, "sprites/environment/garden_bg.png")
 canvas.assets.load_image(environment.library_bg, "sprites/environment/library_bg.png")

@@ -80,6 +80,7 @@ function Player.new()
 	self.defense = 0            -- Reduces incoming damage
 	self.strength = 5           -- Base damage multiplier for attacks
 	self.critical_chance = 0    -- Percent chance for critical hit damage
+	self.unique_items = {}      -- Permanently collected key items (for locked doors, etc.)
 
 	-- Position and velocity
 	self.x = 2

@@ -46,6 +46,11 @@ pool.create({
 - `audio.update_spatial_sound(sound_id, volume)` - 0 stops, >0 plays
 - Currently supports: "campfire", "spear_trap"
 
+## Door Sounds
+
+- `audio.locked_door` - Played when player tries to open locked door without key
+- `audio.unlock_door` - Played when door unlocks (key used or group action)
+
 ## Death Sounds (`audio/death.lua`)
 
 - Per-enemy-type death sound pools

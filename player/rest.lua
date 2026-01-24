@@ -71,6 +71,7 @@ function rest.start(player)
 			defense = player.defense,
 			strength = player.strength,
 			critical_chance = player.critical_chance,
+			unique_items = prop_common.copy_array(player.unique_items),
 			prop_states = Prop.get_persistent_states(),
 		})
 	end

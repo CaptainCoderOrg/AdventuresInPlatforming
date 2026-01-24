@@ -17,6 +17,9 @@ local GAMEPAD_SHOULDER_SCALE = 0.75
 local KEYBOARD_SPRITE_SCALE = 0.125
 local KEYBOARD_WORD_SCALE = 0.1875
 
+-- Reusable cache to avoid per-frame allocation in draw()
+local line_widths_cache = {}
+
 --- Find the earliest position among candidates
 ---@param candidates table Array of {pos=number|nil, type=string}
 ---@return number|nil position Earliest position found
@@ -354,10 +357,12 @@ function TextDisplay:draw(tile_x, tile_y, tile_w, tile_h)
     canvas.set_font_size(FONT_SIZE)
     canvas.set_text_baseline("bottom")
 
-    -- Calculate max width across all lines
+    -- Calculate max width and cache line widths (reuse module-level table)
     local max_line_width = 0
-    for _, segments in ipairs(lines) do
-        local line_width = get_segments_width(segments, scheme)
+    for i = 1, #line_widths_cache do line_widths_cache[i] = nil end
+    for i = 1, num_lines do
+        local line_width = get_segments_width(lines[i], scheme)
+        line_widths_cache[i] = line_width
         if line_width > max_line_width then
             max_line_width = line_width
         end
@@ -388,11 +393,10 @@ function TextDisplay:draw(tile_x, tile_y, tile_w, tile_h)
     )
 
     canvas.set_color("#ffffffee")
-    for i, segments in ipairs(lines) do
-        local line_width = get_segments_width(segments, scheme)
-        local start_x = center_x - line_width / 2
+    for i = 1, num_lines do
+        local start_x = center_x - line_widths_cache[i] / 2
         local line_y = box_top + TEXT_PADDING + i * FONT_SIZE + (i - 1) * LINE_SPACING
-        draw_segments(segments, scheme, start_x, line_y)
+        draw_segments(lines[i], scheme, start_x, line_y)
     end
 
     canvas.set_global_alpha(1)

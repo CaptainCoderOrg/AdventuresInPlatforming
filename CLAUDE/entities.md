@@ -207,6 +207,18 @@ animation:draw(x, y - lift)
   - `fire()` triggers manually, `enable()`/`disable()` control state
   - Proximity audio within 16 tiles
   - Manages internal Spear projectile pool with combat integration
+- **Locked Door** - Blocks passage until unlocked
+  - States: locked, unlock, unlocked
+  - Unlock methods: player has `required_key` item + down+attack, or `group_action("unlock")`
+  - Shows "Open" prompt when player has the required key
+  - "Locked" feedback with 5s debounce when player lacks key
+  - Removes world collider when unlocked (door becomes passable and invisible)
+- **Unique Item** - Permanent collectible that persists across saves
+  - States: idle, collect, collected
+  - Items stored in `player.unique_items` for gameplay checks (e.g., locked doors)
+  - `should_spawn` callback prevents respawning if player already has item
+  - Collection via down+attack input
+  - Configurable: `item_id` (e.g., "gold_key")
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -311,5 +323,7 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/campfire.lua` - Campfire prop (restore point)
 - `Prop/spike_trap.lua` - Spike trap prop (5-state hazard with alternating mode)
 - `Prop/pressure_plate.lua` - Pressure plate prop (entity-triggered with lift effect)
+- `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
+- `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

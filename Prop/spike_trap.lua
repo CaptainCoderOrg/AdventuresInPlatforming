@@ -1,4 +1,4 @@
---- Spike trap prop definition - Complex 4-state machine with groups
+--- Spike trap prop definition - Complex 5-state machine with groups
 local sprites = require("sprites")
 local Animation = require("Animation")
 local Prop = require("Prop")
@@ -8,6 +8,13 @@ local proximity_audio = require("proximity_audio")
 
 local SPIKE_ANIM = Animation.create_definition(sprites.environment.spikes, 6, {
     ms_per_frame = 40,
+    width = 16,
+    height = 16,
+    loop = false
+})
+
+local SPIKE_DISABLED_ANIM = Animation.create_definition(sprites.environment.spike_trap_disabled, 1, {
+    ms_per_frame = 1000,
     width = 16,
     height = 16,
     loop = false
@@ -27,17 +34,22 @@ local function start_animation(prop, anim_options)
     prop.animation = Animation.new(SPIKE_ANIM, anim_options)
 end
 
---- Spike trap options:
+---@class SpikeTrapOptions
 ---@field mode string|nil "static" or "alternating" (default: "static")
 ---@field extend_time number|nil Time in extended state (default: 1.5)
 ---@field retract_time number|nil Time in retracted state (default: 1.5)
 ---@field alternating_offset number|nil Initial timer offset for staggered groups (default: 0)
 ---@field start_retracted boolean|nil Whether to start in retracted state (default: false)
+
 local definition = {
     box = { x = 0, y = 0.2, w = 1, h = 0.8 },
     debug_color = "#FF00FF",  -- Magenta
     initial_state = "extended",
 
+    --- Initializes a new spike trap instance with mode and timing configuration
+    ---@param prop table The prop instance being spawned
+    ---@param def table The prop definition table
+    ---@param options SpikeTrapOptions Spawn options for behavior configuration
     on_spawn = function(prop, def, options)
         prop.mode = options.mode or "static"
         prop.extend_time = options.extend_time or DEFAULT_EXTEND_TIME
@@ -63,16 +75,23 @@ local definition = {
         end
     end,
 
+    --- Permanently disables the spike trap, transitioning to retracted/disabled state
+    ---@param prop table The prop instance to disable
     disable = function(prop)
         prop.mode = "static"
-        -- Only trigger retraction if not already retracted/retracting
+        prop.is_disabled = true
+        -- Transition based on current state
         if prop.state_name == "extended" or prop.state_name == "extending" then
             Prop.set_state(prop, "retracting")
+        elseif prop.state_name == "retracted" then
+            Prop.set_state(prop, "disabled")
         end
+        -- If already retracting, the state will check is_disabled when animation finishes
     end,
 
     --- Activates alternating mode with the configured offset.
     --- The offset is applied once to stagger this trap relative to others in the group.
+    ---@param prop table The prop instance to configure
     set_alternating = function(prop)
         prop.mode = "alternating"
 
@@ -90,7 +109,7 @@ local definition = {
 
     states = {
         extended = {
-            start = function(prop, def)
+            start = function(prop, _def)
                 prop.timer = 0
                 prop.animation:pause()
             end,
@@ -108,24 +127,28 @@ local definition = {
         },
 
         retracting = {
-            start = function(prop, def)
+            start = function(prop, _def)
                 start_animation(prop, { start_frame = 0 })
             end,
-            update = function(prop, dt)
+            update = function(prop, _dt, _player)
                 if prop.animation:is_finished() then
-                    Prop.set_state(prop, "retracted")
+                    if prop.is_disabled then
+                        Prop.set_state(prop, "disabled")
+                    else
+                        Prop.set_state(prop, "retracted")
+                    end
                 end
             end,
             draw = common.draw
         },
 
         retracted = {
-            start = function(prop, def)
+            start = function(prop, _def)
                 prop.timer = prop.retracted_timer_start or 0
                 prop.retracted_timer_start = nil
                 prop.animation:pause()
             end,
-            update = function(prop, dt, player)
+            update = function(prop, dt, _player)
                 if prop.mode == "alternating" then
                     prop.timer = prop.timer + dt
                     if prop.timer >= prop.retract_time then
@@ -137,11 +160,11 @@ local definition = {
         },
 
         extending = {
-            start = function(prop, def)
+            start = function(prop, _def)
                 start_animation(prop, { start_frame = 5, reverse = true })
                 prop.sound_played = false
             end,
-            update = function(prop, dt, player)
+            update = function(prop, _dt, player)
                 if not prop.sound_played and player then
                     if proximity_audio.is_in_range(player.x, player.y, prop) then
                         audio.play_sfx(audio.spiketrap, 0.4)
@@ -154,6 +177,17 @@ local definition = {
                 if prop.animation:is_finished() then
                     Prop.set_state(prop, "extended")
                 end
+            end,
+            draw = common.draw
+        },
+
+        disabled = {
+            start = function(prop, _def)
+                prop.animation = Animation.new(SPIKE_DISABLED_ANIM)
+                prop.animation:pause()
+            end,
+            update = function(_prop, _dt, _player)
+                -- No collision damage, no state transitions - permanently disabled
             end,
             draw = common.draw
         }

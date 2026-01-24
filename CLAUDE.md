@@ -37,11 +37,12 @@ Detailed documentation for each system is in the `CLAUDE/` directory:
 
 **State Machine:** Player, enemies, and props all use the same pattern:
 ```lua
-state = {
-  name = "state_name",
-  start(entity)      -- called on state entry
-  update(entity, dt) -- called each frame
-  draw(entity)       -- called each frame
+states = {
+  state_name = {
+    start(entity)      -- called on state entry
+    update(entity, dt) -- called each frame
+    draw(entity)       -- called each frame
+  }
 }
 ```
 

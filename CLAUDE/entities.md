@@ -38,11 +38,12 @@ enemy = {
 
 Each enemy type defines states with the same pattern as player:
 ```lua
-state = {
-    name = "state_name",
-    start = function(enemy, definition) end,
-    update = function(enemy, dt) end,
-    draw = function(enemy) end,
+states = {
+    state_name = {
+        start = function(enemy, definition) end,
+        update = function(enemy, dt) end,
+        draw = function(enemy) end,
+    }
 }
 ```
 
@@ -132,11 +133,12 @@ definition = {
 
 Props support states identical to enemies/player:
 ```lua
-state = {
-    name = "state_name",
-    start = function(prop, def, skip_callback) end,
-    update = function(prop, dt, player) end,
-    draw = function(prop) end,
+states = {
+    state_name = {
+        start = function(prop, def, skip_callback) end,
+        update = function(prop, dt, player) end,
+        draw = function(prop) end,
+    }
 }
 ```
 
@@ -172,7 +174,11 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 
 - **Button** - Binary state (unpressed/pressed), triggers `on_press` callback
 - **Campfire** - Sets player restore point, transitions to lit state
-- **Spike Trap** - Togglable hazard, damages player when active
+- **Spike Trap** - 5-state hazard (extended, extending, retracted, retracting, disabled)
+  - Modes: "static" (always extended) or "alternating" (cycles on timer)
+  - Configurable: `extend_time`, `retract_time`, `alternating_offset`
+  - `disable()` permanently retracts and disables the trap
+  - Proximity audio within 8 tiles
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -275,6 +281,6 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
 - `Prop/campfire.lua` - Campfire prop (restore point)
-- `Prop/spiketrap.lua` - Spike trap prop (togglable hazard)
+- `Prop/spike_trap.lua` - Spike trap prop (5-state hazard with alternating mode)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

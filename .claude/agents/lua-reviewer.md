@@ -1,6 +1,6 @@
 ---
 name: lua-reviewer
-description: Reviews Lua code for comment quality, LuaDoc documentation, and game design patterns. Use after writing code or to audit existing files.
+description: Reviews Lua code for comment quality, LuaDoc documentation, game design patterns, and flags when CLAUDE.md or CLAUDE/ docs need updates. Use after writing code or to audit existing files.
 tools: Read, Grep, Glob
 model: opus
 ---
@@ -106,16 +106,18 @@ function M.example(name, optional_param)
 
 **State machine states must have:**
 ```lua
-state = {
-    name = "state_name",
-    start = function(entity) end,    -- Called on state entry
-    update = function(entity, dt) end, -- Called each frame
-    draw = function(entity) end,      -- Called for rendering
+states = {
+    state_name = {
+        start = function(entity) end,     -- Called on state entry
+        update = function(entity, dt) end, -- Called each frame
+        draw = function(entity) end,       -- Called for rendering
+    }
 }
 ```
-- Flag missing required functions
-- Flag states without `name` property
+- States are keyed by name in a `states` table
+- Flag missing required functions (start, update, draw)
 - Flag `update` functions not using `dt` parameter
+- Flag unused parameters that should use `_` prefix convention
 
 **Object pool pattern:**
 - Entities should have `.all` table for instances
@@ -131,6 +133,30 @@ state = {
 - Game logic uses tile coordinates
 - Rendering converts to pixels (multiply by tile_size)
 - Flag mixing coordinate systems without conversion
+
+### 5. Documentation Consistency
+
+After reviewing code, check if changes require updates to project documentation:
+
+**CLAUDE.md** - Main project documentation at repository root
+**CLAUDE/** - Detailed docs in the CLAUDE/ directory
+
+**Flag when documentation updates may be needed:**
+- New patterns introduced that contradict documented patterns
+- New public APIs or modules not mentioned in key files lists
+- New conventions established that should be documented
+- Existing documented patterns that don't match actual implementation
+
+**Examples requiring doc updates:**
+- Adding a new entity type → update CLAUDE/entities.md
+- New audio system feature → update CLAUDE/audio.md
+- New player state → update CLAUDE/player.md
+- New key file → update Key Files section in CLAUDE.md
+
+**Do NOT flag:**
+- Implementation details that don't affect documented patterns
+- Bug fixes that don't change APIs
+- Internal refactors with no external impact
 
 ## Output Format
 
@@ -163,6 +189,11 @@ Organize findings by category:
 
 ---
 
+## Documentation Updates Needed
+[List any CLAUDE.md or CLAUDE/*.md files that may need updates based on the code changes, with specific suggestions]
+
+---
+
 ## Summary
 
 **Files Reviewed:** [count]
@@ -171,6 +202,7 @@ Organize findings by category:
 - LuaDoc: [count]
 - Lua Patterns: [count]
 - Game Design: [count]
+- Documentation: [count]
 
 **Overall Health:** [Good / Needs Improvement / Poor]
 [Brief summary of main concerns and priorities]

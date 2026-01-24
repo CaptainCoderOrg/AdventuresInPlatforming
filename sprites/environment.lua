@@ -19,7 +19,7 @@ local environment = {
 	trap_door_reset = "trap_door_reset",
 	brown_chest = "brown_chest",
 	brown_chest_opening = "brown_chest_opening",
-	-- Spear trap
+	spike_trap_disabled = "spike_trap_disabled",
 	spear_trap = "spear_trap",
 	spear = "spear",
 	-- Tiling background images (240x160 native, scaled for display)
@@ -45,6 +45,7 @@ canvas.assets.load_image(environment.trap_door_open, "sprites/environment/trap_d
 canvas.assets.load_image(environment.trap_door_reset, "sprites/environment/trap_door_reset.png")
 canvas.assets.load_image(environment.brown_chest, "sprites/environment/brown_chest.png")
 canvas.assets.load_image(environment.brown_chest_opening, "sprites/environment/brown_chest_opening.png")
+canvas.assets.load_image(environment.spike_trap_disabled, "sprites/environment/spike_trap_disabled.png")
 canvas.assets.load_image(environment.spear_trap, "sprites/environment/spear_trap.png")
 canvas.assets.load_image(environment.spear, "sprites/environment/spear.png")
 canvas.assets.load_image(environment.dungeon_bg, "sprites/environment/dungeon_bg.png")

@@ -14,7 +14,7 @@ return {
         [[#############################################             T ###HT T T T T T T ###########]],
         [[#############################################          T    ###H              ###########]],
         [[#############################################  c C  T       ###H              ###########]],
-        [[#############################################  ####       R ###H^^ || ^^ || ^^ ||  A#####]],
+        [[#############################################  ####       R ###H^^$||$^^$||$^^$||$$A#####]],
         [[#############################################  ##########################################]],
         [[#############################################  ##########################################]],
         [[#                ##                  # 9      0##########################################]],
@@ -46,6 +46,7 @@ return {
             on_press = function()
                 Prop.group_action("entrance_spikes", "set_alternating")
                 Prop.group_action("offset_spikes", "set_alternating")
+                Prop.group_action("drop_spikes", "disable")
                 Prop.group_action("spike_buttons", "pressed")
             end,
             group = "spike_buttons"
@@ -59,6 +60,7 @@ return {
         s = { type = "sign", text = "[color=#FF0000]DANGER![/color]\nSpikes" },
         ["^"] = { type = "spike_trap", mode = "extended", group = "entrance_spikes", extend_time = 1, retract_time = 3 },
         ["|"] = { type = "spike_trap", mode = "extended", group = "offset_spikes", extend_time = 1, retract_time = 3, alternating_offset = 2 },
+        ["$"] = { type = "spike_trap", mode = "extended", group = "drop_spikes" },
         ["1"] = { type = "sign", text = "Move\n{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}" },
         ["2"] = { type = "sign", text = "Jump\n{jump}" },
         ["3"] = { type = "sign", text = "Drop\n{move_down} + {jump}", offset = { x = 0.5 } },

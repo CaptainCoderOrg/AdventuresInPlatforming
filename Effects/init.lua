@@ -322,6 +322,30 @@ function Effects.create_xp_text(x, y, amount, player)
 	create_accumulating_text("active_xp_text", "XP", "#FFFFFF", -0.5, x, y, amount, player)
 end
 
+--- Factory: Creates "Locked" text above the player
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param player table|nil Optional player to follow
+---@return nil
+function Effects.create_locked_text(x, y, player)
+	local start_x = player and (player.x + 0.5) or (x + 0.5)
+	local start_y = player and (player.y - 0.3) or y
+	local text = {
+		x = start_x,
+		y = start_y,
+		vy = -0.5,
+		message = "Locked",
+		color = "#FF6666",  -- Light red
+		lifetime = 1.5,
+		elapsed = 0,
+		cached_width = 0,
+		follow_player = player,
+		offset_y = -0.3,
+	}
+	update_text_width(text)
+	state.status_texts[text] = true
+end
+
 --- Factory: Creates a sweat droplet that drips from the player
 ---@param x number X position in tile coordinates (player center)
 ---@param y number Y position in tile coordinates (player center)

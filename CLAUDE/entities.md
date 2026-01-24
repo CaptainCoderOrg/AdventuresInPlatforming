@@ -142,6 +142,8 @@ states = {
 }
 ```
 
+**Note:** Props may define a shared `draw` function at the definition level instead of per-state when all states share identical draw logic. The Prop system falls back to `definition.draw(prop)` if no state-level draw exists.
+
 ### Skip Callback Pattern
 
 The `skip_callback` parameter prevents callback recursion during group actions:

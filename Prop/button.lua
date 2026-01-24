@@ -40,6 +40,9 @@ local definition = {
             draw = draw_button
         },
         pressed = {
+            ---@param prop table Button prop instance
+            ---@param _def table Button definition (unused)
+            ---@param skip_callback boolean|nil If true, don't fire on_press callback
             start = function(prop, _def, skip_callback)
                 prop.is_pressed = true
                 prop.animation:resume()

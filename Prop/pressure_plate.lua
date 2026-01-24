@@ -3,12 +3,13 @@ local Animation = require("Animation")
 local audio = require("audio")
 local combat = require("combat")
 local common = require("Prop/common")
+local config = require("config")
 local Prop = require("Prop")
 local sprites = require("sprites")
 
 -- Lift height in pixels per animation frame (0-indexed: frame 0, 1, 2, 3)
 -- Frame 0 (unpressed): 0px, Frame 1: 3px, Frame 2: 2px, Frame 3 (fully pressed): 1px
-local LIFT_BY_FRAME = { [0] = 0, [1] = 3, [2] = 2, [3] = 1 }
+local LIFT_BY_FRAME = { [0] = 0, [1] = 3*config.ui.SCALE, [2] = 2*config.ui.SCALE, [3] = 1*config.ui.SCALE }
 
 local PLATE_ANIM = Animation.create_definition(sprites.environment.pressure_plate, 3, {
     ms_per_frame = 100,

@@ -42,8 +42,8 @@ Spear.all = {}
 Spear.needs_update = true
 Spear.needs_draw = false
 
--- Module-level table to avoid allocation each frame
-local spear_to_remove = {}
+-- Module-level table to track removal indices (avoids allocation each frame)
+local spear_indices_to_remove = {}
 
 --- Spawn a new spear projectile
 ---@param x number X position in tiles
@@ -69,16 +69,8 @@ function Spear.spawn(x, y, direction)
     -- Add to combat system for player collision
     combat.add(spear)
 
-    Spear.all[spear] = true
+    Spear.all[#Spear.all + 1] = spear
     return spear
-end
-
---- Remove a spear from the pool
----@param spear table Spear instance
-local function destroy_spear(spear)
-    world.remove_trigger_collider(spear)
-    combat.remove(spear)
-    Spear.all[spear] = nil
 end
 
 --- Creates hit effect at spear tip and marks spear for destruction
@@ -100,18 +92,20 @@ function Spear.update_all(dt, player)
     Spear.needs_update = false
     Spear.needs_draw = true
 
-    -- Clear module-level table instead of allocating new one
-    for i = 1, #spear_to_remove do spear_to_remove[i] = nil end
+    -- Clear removal indices
+    for i = 1, #spear_indices_to_remove do spear_indices_to_remove[i] = nil end
 
-    for spear, _ in pairs(Spear.all) do
+    for i = 1, #Spear.all do
+        local spear = Spear.all[i]
         if spear.marked_for_destruction then
-            spear_to_remove[#spear_to_remove + 1] = spear
+            world.remove_trigger_collider(spear)
+            combat.remove(spear)
+            spear_indices_to_remove[#spear_indices_to_remove + 1] = i
         else
             spear.x = spear.x + spear.direction * SPEAR_SPEED * dt
             combat.update(spear)
             spear.animation:play(dt)
 
-            -- Check for wall collision via trigger movement
             local collision = world.move_trigger(spear)
             if collision then
                 spear_impact(spear, collision.x, collision.y)
@@ -122,8 +116,11 @@ function Spear.update_all(dt, player)
         end
     end
 
-    for i = 1, #spear_to_remove do
-        destroy_spear(spear_to_remove[i])
+    -- Remove in reverse order, swap with last element
+    for i = #spear_indices_to_remove, 1, -1 do
+        local idx = spear_indices_to_remove[i]
+        Spear.all[idx] = Spear.all[#Spear.all]
+        Spear.all[#Spear.all] = nil
     end
 end
 
@@ -133,7 +130,8 @@ function Spear.draw_all()
     Spear.needs_draw = false
     Spear.needs_update = true
 
-    for spear, _ in pairs(Spear.all) do
+    for i = 1, #Spear.all do
+        local spear = Spear.all[i]
         if not spear.marked_for_destruction then
             local px = spear.x * sprites.tile_size
             local py = spear.y * sprites.tile_size
@@ -153,7 +151,8 @@ end
 
 --- Clear all spears (called on level reload)
 function Spear.clear_all()
-    for spear, _ in pairs(Spear.all) do
+    for i = 1, #Spear.all do
+        local spear = Spear.all[i]
         world.remove_trigger_collider(spear)
         combat.remove(spear)
     end
@@ -250,7 +249,7 @@ local definition = {
             update = function(prop, dt, player)
                 Spear.update_all(dt, player)
 
-                -- Play fire sound on frame 5 if player is in range
+                -- Frame 5: mechanism releases, play sound slightly before visual spawn
                 if not prop.fire_sound_played and prop.animation.frame >= 5 then
                     prop.fire_sound_played = true
                     if player and proximity_audio.is_in_range(player.x, player.y, prop) then
@@ -258,7 +257,7 @@ local definition = {
                     end
                 end
 
-                -- Spawn spear when animation reaches frame 6
+                -- Frame 6: chamber is empty, spear has visually left the trap
                 if not prop.spear_spawned and prop.animation.frame >= 6 then
                     prop.spear_spawned = true
 

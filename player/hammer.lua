@@ -6,6 +6,7 @@ local config = require('config')
 local canvas = require('canvas')
 local audio = require('audio')
 local combat = require('combat')
+local world = require('world')
 
 local hammer = { name = "hammer" }
 
@@ -32,10 +33,8 @@ end
 
 --- Check for enemy hits with the hammer
 ---@param player table The player object
-local function check_hammer_hits(player)
-	local hitbox = get_hammer_hitbox(player)
-	if not hitbox then return end
-
+---@param hitbox table Hitbox with x, y, w, h in tile coordinates
+local function check_hammer_hits(player, hitbox)
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
 		return entity.is_enemy
 			and entity.shape
@@ -50,10 +49,8 @@ end
 
 --- Check for button hits with the hammer
 ---@param player table The player object
-local function check_button_hits(player)
-	local hitbox = get_hammer_hitbox(player)
-	if not hitbox then return end
-
+---@param hitbox table Hitbox with x, y, w, h in tile coordinates
+local function check_button_hits(player, hitbox)
 	-- Only check if we haven't already hit a button this swing
 	if not player.hammer_state.hit_button then
 		local button = Prop.check_hit("button", hitbox, function(prop)
@@ -68,12 +65,16 @@ end
 
 
 --- Initializes hammer attack state. Sets animation, timing, and clears input queue.
+--- Removes shield if transitioning from block/block_move state.
 ---@param player table The player object
 function hammer.start(player)
+	world.remove_shield(player)
 	player.animation = Animation.new(common.animations.HAMMER)
 	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
 	player.hammer_state.hit_button = false
-	player.hammer_state.hit_enemies = {}
+	-- Clear existing table instead of allocating new one
+	local hit_enemies = player.hammer_state.hit_enemies
+	for k in pairs(hit_enemies) do hit_enemies[k] = nil end
 	player.hammer_state.sound_played = false
 	common.clear_input_queue(player)
 	audio.play_hammer_grunt()
@@ -83,8 +84,12 @@ end
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function hammer.update(player, dt)
-	check_hammer_hits(player)
-	check_button_hits(player)
+	-- Compute hitbox once and pass to both check functions
+	local hitbox = get_hammer_hitbox(player)
+	if hitbox then
+		check_hammer_hits(player, hitbox)
+		check_button_hits(player, hitbox)
+	end
 	player.vx = 0
 	player.vy = 0
 	player.hammer_state.remaining_time = player.hammer_state.remaining_time - dt

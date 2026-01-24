@@ -4,6 +4,7 @@ local canvas = require("canvas")
 ---@type table<string, string>
 local player = {
 	block = "player_block",
+	block_step = "player_block_step",
 	idle = "player_idle",
 	run = "player_run",
 	dash = "player_dash",
@@ -25,6 +26,7 @@ local player = {
 }
 
 canvas.assets.load_image(player.block, "sprites/character/block.png")
+canvas.assets.load_image(player.block_step, "sprites/character/block-step.png")
 canvas.assets.load_image(player.idle, "sprites/character/idle.png")
 canvas.assets.load_image(player.run, "sprites/character/run.png")
 canvas.assets.load_image(player.dash, "sprites/character/dash.png")

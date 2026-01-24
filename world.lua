@@ -34,13 +34,17 @@ local function identify_shape(shape)
 end
 
 --- Sets ground collision flag and calculates normalized ground normal from separation vector.
+--- Updates ground_normal in-place to avoid allocation (if ground_normal table exists).
 --- @param cols table Collision flags to update
 --- @param sep table Separation vector {x, y}
 local function set_ground_from_sep(cols, sep)
 	cols.ground = true
-	local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
-	if len > 0 then
-		cols.ground_normal = { x = sep.x / len, y = sep.y / len }
+	if cols.ground_normal then
+		local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+		if len > 0 then
+			cols.ground_normal.x = sep.x / len
+			cols.ground_normal.y = sep.y / len
+		end
 	end
 end
 
@@ -81,6 +85,11 @@ local function should_skip_collision(obj, other)
 	-- Shields are solid barriers for enemies
 	if obj.is_enemy and other.is_shield then
 		return false
+	end
+
+	-- Players pass through their own shield
+	if obj.is_player and other.is_shield and other.owner == obj then
+		return true
 	end
 
 	local other_owner = other.owner
@@ -233,7 +242,8 @@ end
 ---@field wall_left boolean Whether touching wall on left
 ---@field wall_right boolean Whether touching wall on right
 ---@field ground_normal {x: number, y: number} Normal vector of ground surface
----@field ceiling_normal {x: number, y: number}|nil Normal vector of ceiling surface
+---@field ceiling_normal {x: number, y: number} Normal vector of ceiling surface (check has_ceiling_normal)
+---@field has_ceiling_normal boolean Whether ceiling_normal was set this frame
 ---@field is_ladder_top boolean|nil Whether standing on ladder top
 ---@field ladder_from_top table|nil Ladder object when standing on top
 ---@field is_bridge boolean|nil Whether standing on bridge
@@ -246,14 +256,22 @@ local function reset_cols(cols)
 	cols.ceiling = false
 	cols.wall_left = false
 	cols.wall_right = false
-	cols.ground_normal.x = 0
-	cols.ground_normal.y = -1
-	cols.ceiling_normal = nil
+	if cols.ground_normal then
+		cols.ground_normal.x = 0
+		cols.ground_normal.y = -1
+	end
+	if cols.ceiling_normal then
+		cols.ceiling_normal.x = 0
+		cols.ceiling_normal.y = 1
+		cols.has_ceiling_normal = false
+	end
 	cols.is_ladder_top = nil
 	cols.ladder_from_top = nil
 	cols.is_bridge = nil
-	-- Clear triggers array
-	for i = 1, #cols.triggers do cols.triggers[i] = nil end
+	-- Clear triggers array if present
+	if cols.triggers then
+		for i = 1, #cols.triggers do cols.triggers[i] = nil end
+	end
 end
 
 --- Creates a new cols table with default values
@@ -261,7 +279,10 @@ end
 local function new_cols()
 	return {
 		ground = false, ceiling = false, wall_left = false, wall_right = false,
-		ground_normal = { x = 0, y = -1 }, triggers = {}
+		ground_normal = { x = 0, y = -1 },
+		ceiling_normal = { x = 0, y = 1 },
+		has_ceiling_normal = false,
+		triggers = {}
 	}
 end
 
@@ -362,9 +383,13 @@ function world.move(obj, cols)
 					-- Ceiling: apply full separation to prevent sliding on angled ceilings
 					shape:move(sep.x, sep.y)
 					cols.ceiling = true
-					local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
-					if len > 0 then
-						cols.ceiling_normal = { x = sep.x / len, y = sep.y / len }
+					if cols.ceiling_normal then
+						local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+						if len > 0 then
+							cols.ceiling_normal.x = sep.x / len
+							cols.ceiling_normal.y = sep.y / len
+							cols.has_ceiling_normal = true
+						end
 					end
 				else
 					-- Ground: only apply Y to allow slope walking
@@ -522,9 +547,9 @@ end
 
 --- Calculates shield X offset based on player direction.
 --- Shield is positioned at player's front edge.
---- @param player table Player with direction, box properties
---- @param shield_w number Shield width in tiles
---- @return number X offset in tiles from player.x
+---@param player table Player with direction, box properties
+---@param shield_w number Shield width in tiles
+---@return number X offset in tiles from player.x
 local function get_shield_x_offset(player, shield_w)
 	if player.direction == 1 then
 		return player.box.x + player.box.w
@@ -533,10 +558,14 @@ local function get_shield_x_offset(player, shield_w)
 end
 
 --- Adds a shield collider for a player (solid physics collider).
+--- Idempotent: removes existing shield before creating new one.
 --- @param player table Player object
 --- @param shield_box table Shield dimensions {w, h}
 --- @return table The created shield shape
 function world.add_shield(player, shield_box)
+	-- Remove existing shield to prevent orphaned colliders
+	world.remove_shield(player)
+
 	local ts = sprites.tile_size
 	local x_offset = get_shield_x_offset(player, shield_box.w)
 

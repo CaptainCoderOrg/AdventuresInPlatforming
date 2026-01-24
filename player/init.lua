@@ -24,6 +24,7 @@ local states = {
 	attack = require('player.attack'),
 	climb = require('player.climb'),
 	block = require('player.block'),
+	block_move = require('player.block_move'),
 	hammer = require('player.hammer'),
 	throw = require('player.throw'),
 	hit = require('player.hit'),
@@ -95,10 +96,15 @@ function Player.new()
 	self.direction = 1
 	self.is_grounded = true
 	self.ground_normal = { x = 0, y = -1 }
+	self.has_ceiling = false
+	self.ceiling_normal = { x = 0, y = 1 }
 	-- Persistent collision result table (avoids per-frame allocation)
 	self._cols = {
 		ground = false, ceiling = false, wall_left = false, wall_right = false,
-		ground_normal = { x = 0, y = -1 }, triggers = {}
+		ground_normal = { x = 0, y = -1 },
+		ceiling_normal = { x = 0, y = 1 },
+		has_ceiling_normal = false,
+		triggers = {}
 	}
 
 	-- Jumping
@@ -178,7 +184,10 @@ function Player.new()
 		locked_direction = 0
 	}
 	self.hammer_state = {
-		remaining_time = 0
+		remaining_time = 0,
+		hit_enemies = {},
+		hit_button = false,
+		sound_played = false
 	}
 	self.throw_state = {
 		remaining_time = 0
@@ -214,7 +223,6 @@ function Player.new()
 end
 
 --- Cycles to the next available projectile type (wraps around to first).
----@return nil
 function Player:next_projectile()
 	self.projectile_ix = self.projectile_ix + 1
 	if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
@@ -287,8 +295,9 @@ function Player:take_damage(amount, source_x)
 	if self:is_invincible() then return end
 	if self.state == self.states.hit then return end
 
-	-- Shield check: block damage from front when in block state
-	if self.state == self.states.block and source_x then
+	-- Shield check: block damage from front when in block or block_move state
+	local is_blocking = self.state == self.states.block or self.state == self.states.block_move
+	if is_blocking and source_x then
 		local from_front = (self.direction == 1 and source_x > self.x) or
 		                   (self.direction == -1 and source_x < self.x)
 		local current_stamina = self.max_stamina - self.stamina_used
@@ -386,7 +395,8 @@ function Player:update(dt)
 	-- Stamina regeneration (after cooldown period, reduced while fatigued or blocking)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
-		local is_slowed = self:is_fatigued() or self.state == self.states.block
+		local is_blocking = self.state == self.states.block or self.state == self.states.block_move
+		local is_slowed = self:is_fatigued() or is_blocking
 		local regen_multiplier = is_slowed and FATIGUE_REGEN_MULTIPLIER or 1
 		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * dt)
 	end

@@ -1,10 +1,17 @@
 local Animation = require('Animation')
 local audio = require('audio')
+local canvas = require('canvas')
 local combat = require('combat')
+local config = require('config')
 local controls = require('controls')
 local sprites = require('sprites')
+local world = require('world')
 
 local common = {}
+
+-- Reusable tables to avoid per-frame allocations
+local _melee_hitbox = { x = 0, y = 0, w = 0, h = 0 }
+local _ground_tangent = { x = 0, y = 0 }
 
 common.GRAVITY = 1.5
 common.JUMP_VELOCITY = common.GRAVITY * 14
@@ -25,11 +32,22 @@ common.DASH_STAMINA_COST = 2.5
 common.WALL_JUMP_STAMINA_COST = 1
 -- Block stamina cost: 1.5 stamina per point of damage blocked (5 stamina blocks ~3 damage)
 common.BLOCK_STAMINA_COST_PER_DAMAGE = 1.5
+-- Block move speed: 35% of normal speed for slow defensive movement
+common.BLOCK_MOVE_SPEED_MULTIPLIER = 0.35
+
+-- Shield dimensions: 4px (0.25 tiles) wide, matches player height
+common.SHIELD_BOX = { w = 0.25, h = 0.85 }
+
+-- Knockback decay rate (per 60fps frame, applied with dt scaling)
+common.KNOCKBACK_DECAY = 0.85
+-- Knockback threshold below which velocity is zeroed
+common.KNOCKBACK_THRESHOLD = 0.1
 
 -- Animations (converted to delta-time based, milliseconds per frame)
 common.animations = {
 	IDLE = Animation.create_definition(sprites.player.idle, 6, { ms_per_frame = 240 }),
 	BLOCK = Animation.create_definition(sprites.player.block, 1, { ms_per_frame = 17, loop = false }),
+	BLOCK_MOVE = Animation.create_definition(sprites.player.block_step, 4, { ms_per_frame = 160 }),
 	RUN = Animation.create_definition(sprites.player.run, 8 ),
 	TURN = Animation.create_definition(sprites.player.turn, 4, { loop = false }),
 	DASH = Animation.create_definition(sprites.player.dash, 4, { loop = false }),
@@ -99,17 +117,20 @@ end
 --- Checks for attack input and transitions to attack state or queues if on cooldown.
 --- Requires available stamina to attack (consumed via use_stamina).
 ---@param player table The player object
+---@return boolean True if transitioned to attack state
 function common.handle_attack(player)
 	if controls.attack_pressed() then
 		if player.attack_cooldown <= 0 then
 			if player:use_stamina(common.ATTACK_STAMINA_COST) then
 				player:set_state(player.states.attack)
+				return true
 			end
 		else
 			-- Queue attack during cooldown (stamina checked when queue is processed)
 			common.queue_input(player, "attack")
 		end
 	end
+	return false
 end
 
 --- Checks for block input and transitions to block state if held.
@@ -197,6 +218,7 @@ function common.handle_gravity(player, dt, max_speed)
 	common.apply_gravity(player, dt, max_speed)
 	if not player.is_grounded and
            player.state ~= player.states.block and
+           player.state ~= player.states.block_move and
            player.state ~= player.states.hit and
 		   player.state ~= player.states.throw
 		   then
@@ -232,7 +254,6 @@ end
 ---@param player table The player object
 ---@param _cols table Collision results (unused, kept for interface consistency)
 function common.check_hit(player, _cols)
-    local canvas = require('canvas')
     if canvas.is_key_pressed(canvas.keys.Y) and not player:is_invincible() then
         player:take_damage(1)
     end
@@ -246,7 +267,9 @@ function common.check_ladder(player, cols)
 	player.can_climb = false
 	player.current_ladder = nil
 	player.on_ladder_top = false
-	for _, trigger in pairs(cols.triggers) do
+	local triggers = cols.triggers
+	for i = 1, #triggers do
+		local trigger = triggers[i]
 		if trigger.owner.is_ladder then
 			player.can_climb = true
 			player.current_ladder = trigger.owner
@@ -314,12 +337,16 @@ function common.check_ground(player, cols, dt)
 
 	-- Ceiling detection
 	if cols.ceiling then
-		player.ceiling_normal = cols.ceiling_normal
+		player.has_ceiling = true
+		if cols.has_ceiling_normal then
+			player.ceiling_normal.x = cols.ceiling_normal.x
+			player.ceiling_normal.y = cols.ceiling_normal.y
+		end
 		if player.vy < 0 then
 			player.vy = 0
 		end
 	else
-		player.ceiling_normal = nil
+		player.has_ceiling = false
 	end
 
 	-- Wall detection for wall slide/jump
@@ -389,13 +416,14 @@ end
 
 --- Returns the tangent vector of the ground the player is standing on.
 --- Tangent points right along the surface.
+--- Note: Returns a reused table - do not store the reference.
 ---@param player table The player object
 ---@return table Tangent vector {x, y}
 function common.get_ground_tangent(player)
-	local nx = player.ground_normal.x
-	local ny = player.ground_normal.y
 	-- Tangent perpendicular to normal, pointing right
-	return { x = -ny, y = nx }
+	_ground_tangent.x = -player.ground_normal.y
+	_ground_tangent.y = player.ground_normal.x
+	return _ground_tangent
 end
 
 -- Input Queue System
@@ -503,25 +531,85 @@ end
 
 --- Creates a melee weapon hitbox positioned relative to the player.
 --- The hitbox extends from the player's front edge in their facing direction.
+--- Note: Returns a reused table - do not store the reference.
 ---@param player table The player object
 ---@param width number Hitbox width in tiles
 ---@param height number Hitbox height in tiles
 ---@param y_offset number Vertical offset from player box top (negative = up)
 ---@return table Hitbox with x, y, w, h in tile coordinates
 function common.create_melee_hitbox(player, width, height, y_offset)
-	local hitbox_x
 	if player.direction == 1 then
-		hitbox_x = player.x + player.box.x + player.box.w
+		_melee_hitbox.x = player.x + player.box.x + player.box.w
 	else
-		hitbox_x = player.x + player.box.x - width
+		_melee_hitbox.x = player.x + player.box.x - width
 	end
+	_melee_hitbox.y = player.y + player.box.y + y_offset
+	_melee_hitbox.w = width
+	_melee_hitbox.h = height
+	return _melee_hitbox
+end
 
-	return {
-		x = hitbox_x,
-		y = player.y + player.box.y + y_offset,
-		w = width,
-		h = height
-	}
+--- Applies knockback decay to block_state.knockback_velocity when grounded.
+--- Returns updated knockback velocity (also stored in player.block_state).
+---@param player table The player object
+---@param dt number Delta time in seconds
+---@return number Updated knockback velocity
+function common.decay_knockback(player, dt)
+	local kb = player.block_state.knockback_velocity
+	if kb == 0 then return 0 end
+
+	if player.is_grounded then
+		kb = kb * (common.KNOCKBACK_DECAY ^ (dt * 60))
+		if math.abs(kb) < common.KNOCKBACK_THRESHOLD then
+			kb = 0
+		end
+		player.block_state.knockback_velocity = kb
+	end
+	return kb
+end
+
+--- Initializes block state: sets animation, clears knockback, creates shield.
+--- Shared by block and block_move states.
+---@param player table The player object
+---@param animation table Animation definition to use
+function common.init_block_state(player, animation)
+	player.animation = Animation.new(animation)
+	player.block_state.knockback_velocity = 0
+	world.add_shield(player, common.SHIELD_BOX)
+end
+
+--- Exits block state: removes shield, clears knockback, transitions to idle.
+---@param player table The player object
+function common.exit_block(player)
+	world.remove_shield(player)
+	player.block_state.knockback_velocity = 0
+	player:set_state(player.states.idle)
+end
+
+--- Draws debug shield bounding box (blue) when config.bounding_boxes is enabled.
+---@param player table The player object
+local function draw_shield_debug(player)
+	if not config.bounding_boxes then return end
+
+	local shield = common.SHIELD_BOX
+	local x_offset
+	if player.direction == 1 then
+		x_offset = player.box.x + player.box.w
+	else
+		x_offset = player.box.x - shield.w
+	end
+	local sx = (player.x + x_offset) * sprites.tile_size
+	local sy = (player.y + player.box.y) * sprites.tile_size
+	canvas.set_color("#0088FF")
+	canvas.draw_rect(sx, sy, shield.w * sprites.tile_size, shield.h * sprites.tile_size)
+end
+
+--- Draws player animation and shield debug box.
+--- Shared by block and block_move states.
+---@param player table The player object
+function common.draw_blocking(player)
+	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size)
+	draw_shield_debug(player)
 end
 
 return common

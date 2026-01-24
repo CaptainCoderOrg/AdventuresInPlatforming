@@ -6,6 +6,7 @@ local Animation = require('Animation')
 local combat = require('combat')
 local config = require('config')
 local canvas = require('canvas')
+local world = require('world')
 
 
 --- Attack state: Player performs melee combo attacks.
@@ -39,6 +40,9 @@ local function get_sword_hitbox(player)
 	return common.create_melee_hitbox(player, SWORD_WIDTH, SWORD_HEIGHT, SWORD_Y_OFFSET)
 end
 
+--- Checks for enemies overlapping the sword hitbox and applies damage.
+--- Tracks hit enemies to prevent multi-hit within a single swing.
+---@param player table The player object
 local function check_attack_hits(player)
 	local sword = get_sword_hitbox(player)
 	if not sword then return end
@@ -57,6 +61,9 @@ local function check_attack_hits(player)
 	end
 end
 
+--- Advances to the next attack animation in the combo chain.
+--- Resets hit tracking, plays sword sound, and wraps to first animation after final.
+---@param player table The player object
 local function next_animation(player)
 	local animation = attack_animations[player.attack_state.next_anim_ix]
 	player.animation = Animation.new(animation)
@@ -73,14 +80,20 @@ local function next_animation(player)
 end
 
 --- Called when entering attack state. Initializes combo and clears input queue.
+--- Removes shield if transitioning from block/block_move state.
 ---@param player table The player object
 function attack.start(player)
+    world.remove_shield(player)
     player.attack_state.count = 1
     player.attack_state.next_anim_ix = 1
     common.clear_input_queue(player)
     next_animation(player)
 end
 
+--- Returns whether the attack can be canceled into another action.
+--- Allows canceling on last frame or during post-animation hold window.
+---@param player table The player object
+---@return boolean True if attack can be canceled
 local function can_cancel(player)
 	local on_last_frame = player.animation.frame >= player.animation.definition.frame_count - 1
 	local in_hold_time = player.attack_state.remaining_time <= 0
@@ -137,6 +150,7 @@ end
 ---@param dt number Delta time in seconds
 function attack.update(player, dt)
 	check_attack_hits(player)
+	-- Lock player in place during attack animation (no movement, no gravity)
 	player.vx = 0
 	player.vy = 0
 	player.attack_state.remaining_time = player.attack_state.remaining_time - dt

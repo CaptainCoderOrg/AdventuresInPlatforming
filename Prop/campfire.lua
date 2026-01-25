@@ -16,12 +16,20 @@ return {
     box = { x = 0, y = 0, w = 1, h = 1 },
     debug_color = "#FFA500",
 
+    --- Handle player interaction - transition to rest state
+    ---@param _prop table The campfire prop instance (unused)
+    ---@param _player table The player instance (unused)
+    ---@return table Interaction result with player state transition
+    interact = function(_prop, _player)
+        return { player_state = "rest" }
+    end,
+
     ---@param prop table The prop instance being spawned
     ---@param def table The campfire definition (unused)
     ---@param options table Spawn options (may contain name)
     on_spawn = function(prop, def, options)
         prop.animation = Animation.new(CAMPFIRE)
-        prop.text_display = TextDisplay.new("Rest\n{move_down} + {attack}", { anchor = "top" })
+        prop.text_display = TextDisplay.new("Rest\n{move_up}", { anchor = "top" })
         -- Copy name from level symbol definition for save slot display
         prop.name = options and options.name or nil
 

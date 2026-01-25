@@ -70,6 +70,9 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - Block: U / Gamepad RT (hold)
 - Switch Projectile: 0 / Gamepad SELECT
 
+**Interaction:**
+- Interact: Up Arrow / D-pad UP (rest at campfires, open chests, collect items, unlock doors)
+
 **Movement:**
 - Arrow keys / D-pad / Left Stick
 - Jump: Space / Gamepad SOUTH

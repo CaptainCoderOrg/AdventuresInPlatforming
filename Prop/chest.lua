@@ -3,7 +3,6 @@ local sprites = require("sprites")
 local Animation = require("Animation")
 local TextDisplay = require("TextDisplay")
 local common = require("Prop/common")
-local controls = require("controls")
 local Collectible = require("Collectible")
 local Prop = require("Prop")
 
@@ -65,7 +64,7 @@ return {
         prop.animation = Animation.new(CHEST_IDLE)
         prop.animation:pause()  -- Shine effect starts after idle delay, not immediately
 
-        local text = options and options.text or "Open\n{move_down} + {attack}"
+        local text = options and options.text or "Open\n{move_up}"
         prop.text_display = TextDisplay.new(text, { anchor = "top" })
     end,
 
@@ -83,7 +82,18 @@ return {
                 end
             end,
 
-            --- Handle shine animation cycling and player interaction
+            --- Handle player interaction - open chest if not already opened
+            ---@param prop table The chest prop instance
+            ---@param player table The player instance
+            ---@return boolean True if interaction occurred
+            interact = function(prop, player)
+                if prop.is_open then return false end
+                prop.last_player = player
+                Prop.set_state(prop, "opening")
+                return true
+            end,
+
+            --- Handle shine animation cycling
             ---@param prop table The chest prop instance
             ---@param dt number Delta time in seconds
             ---@param player table The player object
@@ -108,15 +118,8 @@ return {
                     end
                 end
 
-                -- Check for player interaction
+                -- Update text display based on player proximity
                 local touching = common.player_touching(prop, player)
-                if touching and player then
-                    prop.last_player = player
-                    if controls.down_down() and controls.attack_pressed() then
-                        Prop.set_state(prop, "opening")
-                    end
-                end
-
                 prop.text_display:update(dt, touching)
             end,
 

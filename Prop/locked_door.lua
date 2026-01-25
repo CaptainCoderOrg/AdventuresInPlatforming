@@ -3,7 +3,6 @@
 local Animation = require("Animation")
 local audio = require("audio")
 local common = require("Prop/common")
-local controls = require("controls")
 local Effects = require("Effects")
 local Prop = require("Prop")
 local sprites = require("sprites")
@@ -20,9 +19,6 @@ local DOOR_ANIM_OPTIONS = {
 local DOOR_LOCKED = Animation.create_definition(sprites.environment.locked_door, 1, DOOR_ANIM_OPTIONS)
 local DOOR_UNLOCK = Animation.create_definition(sprites.environment.locked_door, 13, DOOR_ANIM_OPTIONS)
 
--- Prevents spamming "Locked" feedback; 5s gives player time to find key
-local FEEDBACK_DEBOUNCE = 5.0
-
 return {
     box = { x = 0, y = 0, w = 1, h = 2 },
     debug_color = "#8B4513",
@@ -34,7 +30,7 @@ return {
     on_spawn = function(prop, _def, options)
         prop.required_key = options and options.required_key
         if prop.required_key then
-            prop.text_display = TextDisplay.new("Open\n{move_down} + {attack}", { anchor = "top" })
+            prop.text_display = TextDisplay.new("Open\n{move_up}", { anchor = "top" })
         end
     end,
 
@@ -44,35 +40,34 @@ return {
             start = function(prop)
                 prop.animation = Animation.new(DOOR_LOCKED)
                 prop.animation:pause()
-                prop.feedback_timer = 0
                 if not prop.collider_shape then
                     prop.collider_shape = world.add_collider(prop)
                 end
+            end,
+
+            --- Handle player interaction - unlock if player has key, else show feedback
+            ---@param prop table The door prop instance
+            ---@param player table The player instance
+            ---@return boolean True if interaction occurred
+            interact = function(prop, player)
+                if not prop.required_key then return false end
+                if common.player_has_item(player, prop.required_key) then
+                    Prop.set_state(prop, "unlock")
+                else
+                    Effects.create_locked_text(prop.x + 0.5, prop.y, player)
+                    audio.play_sfx(audio.locked_door)
+                end
+                return true
             end,
 
             ---@param prop table The door prop instance
             ---@param dt number Delta time in seconds
             ---@param player table The player object
             update = function(prop, dt, player)
-                if prop.feedback_timer > 0 then
-                    prop.feedback_timer = prop.feedback_timer - dt
-                end
-
                 local touching = player and common.player_touching(prop, player)
 
                 if prop.text_display then
                     prop.text_display:update(dt, touching)
-                end
-
-                if not touching or not prop.required_key then return end
-                if not controls.down_down() or not controls.attack_pressed() then return end
-
-                if common.player_has_item(player, prop.required_key) then
-                    Prop.set_state(prop, "unlock")
-                elseif prop.feedback_timer <= 0 then
-                    Effects.create_locked_text(prop.x + 0.5, prop.y, player)
-                    audio.play_sfx(audio.locked_door)
-                    prop.feedback_timer = FEEDBACK_DEBOUNCE
                 end
             end,
 

@@ -2,7 +2,6 @@
 --- Items are stored on player.unique_items for gameplay checks (e.g., locked doors)
 local Animation = require("Animation")
 local common = require("Prop/common")
-local controls = require("controls")
 local Prop = require("Prop")
 local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
@@ -59,26 +58,30 @@ return {
         prop.item_id = (options and options.item_id) or "gold_key"
         local item = ITEMS[prop.item_id] or ITEMS.gold_key
 
-        local spin_def = create_item_anim(item.spin_sprite, item.spin_frames, 100, true)
+        local spin_def = create_item_anim(item.spin_sprite, item.spin_frames, 80, true)
         prop.animation = Animation.new(spin_def)
         prop.collected_anim_def = create_item_anim(item.collected_sprite, item.collected_frames, 80, false)
-        prop.text_display = TextDisplay.new("Collect\n{move_down} + {attack}", { anchor = "top" })
+        prop.text_display = TextDisplay.new("Collect\n{move_up}", { anchor = "top" })
     end,
 
     states = {
         idle = {
+            --- Handle player interaction - collect the item
+            ---@param prop table The unique_item prop instance
+            ---@param player table The player instance
+            ---@return boolean True if interaction occurred
+            interact = function(prop, player)
+                prop.last_player = player
+                Prop.set_state(prop, "collect")
+                return true
+            end,
+
             ---@param prop table The unique_item prop instance
             ---@param dt number Delta time in seconds
             ---@param player table The player object
             update = function(prop, dt, player)
                 local touching = player and common.player_touching(prop, player)
                 prop.text_display:update(dt, touching)
-
-                if not touching then return end
-                prop.last_player = player
-                if controls.down_down() and controls.attack_pressed() then
-                    Prop.set_state(prop, "collect")
-                end
             end,
 
             draw = function(prop)

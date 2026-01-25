@@ -209,7 +209,7 @@ animation:draw(x, y - lift)
   - Manages internal Spear projectile pool with combat integration
 - **Locked Door** - Blocks passage until unlocked
   - States: locked, unlock, unlocked
-  - Unlock methods: player has `required_key` item + down+attack, or `group_action("unlock")`
+  - Unlock methods: player has `required_key` item + up, or `group_action("unlock")`
   - Shows "Open" prompt when player has the required key
   - "Locked" feedback with 5s debounce when player lacks key
   - Removes world collider when unlocked (door becomes passable and invisible)
@@ -217,7 +217,7 @@ animation:draw(x, y - lift)
   - States: idle, collect, collected
   - Items stored in `player.unique_items` for gameplay checks (e.g., locked doors)
   - `should_spawn` callback prevents respawning if player already has item
-  - Collection via down+attack input
+  - Collection via up input
   - Configurable: `item_id` (e.g., "gold_key")
 
 ### Common Utilities (`Prop/common.lua`)

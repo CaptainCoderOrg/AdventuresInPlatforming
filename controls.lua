@@ -272,6 +272,13 @@ function controls.up_down()
         or is_button_binding_down("move_up")
 end
 
+--- Check if up directional input was pressed this frame
+---@return boolean pressed True if move_up binding was pressed
+function controls.up_pressed()
+    return is_key_binding_pressed("move_up")
+        or is_button_binding_pressed("move_up")
+end
+
 --- Check if down directional input is currently held
 ---@return boolean down True if move_down binding is held
 function controls.down_down()

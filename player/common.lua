@@ -143,11 +143,12 @@ function common.handle_block(player)
 	end
 end
 
---- Checks if the player is touching a campfire prop.
---- Uses combat spatial indexing for O(1) lookup instead of iterating all props.
+--- Finds the first interactable prop overlapping the player.
+--- Returns both the prop and its interact function (state-level takes precedence).
 ---@param player table The player object
----@return boolean True if player is touching a campfire prop
-function common.is_near_campfire(player)
+---@return table|nil prop The first interactable prop found, or nil
+---@return function|nil interact_fn The interact function, or nil
+function common.find_interactable(player)
 	local hit = combat.query_rect(
 		player.x + player.box.x,
 		player.y + player.box.y,
@@ -155,51 +156,36 @@ function common.is_near_campfire(player)
 		player.box.h
 	)
 	for i = 1, #hit do
-		local obj = hit[i]
-		if obj.type_key == "campfire" then
-			return true
+		local prop = hit[i]
+		local state = prop.states and prop.states[prop.state_name]
+		local interact_fn = (state and state.interact) or (prop.definition and prop.definition.interact)
+		if interact_fn then
+			return prop, interact_fn
 		end
 	end
-	return false
+	return nil, nil
 end
 
---- Checks if the player is touching an interactable chest (not yet opened).
---- Uses combat spatial indexing for O(1) lookup instead of iterating all props.
----@param player table The player object
----@return boolean True if player is touching an unopened chest
-function common.is_near_interactable_chest(player)
-	local hit = combat.query_rect(
-		player.x + player.box.x,
-		player.y + player.box.y,
-		player.box.w,
-		player.box.h
-	)
-	for i = 1, #hit do
-		local obj = hit[i]
-		if obj.type_key == "chest" and not obj.is_open then
-			return true
-		end
-	end
-	return false
-end
-
---- Checks for interact input (down + attack) and handles interactions.
---- Campfire: transitions to rest state. Chest: consumes input (chest handles opening).
+--- Checks for interact input (up) and handles prop interactions.
+--- Calls prop's interact() method and handles the result.
 ---@param player table The player object
 ---@return boolean True if interaction occurred (prevents attack)
 function common.handle_interact(player)
-	if controls.down_down() and controls.attack_pressed() then
-		-- Campfire triggers rest state
-		if common.is_near_campfire(player) then
-			player:set_state(player.states.rest)
-			return true
-		end
-		-- Chest interaction - just consume input, chest handles its own state
-		if common.is_near_interactable_chest(player) then
-			return true
-		end
+	if not controls.up_pressed() then
+		return false
 	end
-	return false
+
+	local prop, interact_fn = common.find_interactable(player)
+	if not interact_fn then return false end
+
+	local result = interact_fn(prop, player)
+	if not result then return false end
+
+	if type(result) == "table" and result.player_state then
+		player:set_state(player.states[result.player_state])
+	end
+
+	return true
 end
 
 --- Applies gravity acceleration to the player without state transitions.

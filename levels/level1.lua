@@ -83,7 +83,7 @@ return {
         ["9"] = { type = "sign", text = "Dash\n{dash}" },
         ["0"] = { type = "sign", text = "Wall Jump\n{move_right} + {jump}", offset = { x = -0.5 } },
         T = { type = "trap_door" },
-        A = { type = "chest", text = "Open\n{move_down} + {attack}", gold = 20, flip = true },
+        A = { type = "chest", gold = 20, flip = true },
         K = { type = "unique_item", item_id = "gold_key" },
     }
 } 

@@ -23,7 +23,9 @@ local environment = {
 	spear_trap = "spear_trap",
 	spear = "spear",
 	pressure_plate = "pressure_plate",
-	locked_door = "locked_door",
+	locked_door_idle = "locked_door_idle",
+	locked_door_open = "locked_door_open",
+	locked_door_jiggle = "locked_door_jiggle",
 	gold_key_spin = "gold_key_spin",
 	gold_key_collected = "gold_key_collected",
 	-- Tiling background images (240x160 native, scaled for display)
@@ -53,7 +55,9 @@ canvas.assets.load_image(environment.spike_trap_disabled, "sprites/environment/s
 canvas.assets.load_image(environment.spear_trap, "sprites/environment/spear_trap.png")
 canvas.assets.load_image(environment.spear, "sprites/environment/spear.png")
 canvas.assets.load_image(environment.pressure_plate, "sprites/environment/pressure_plate.png")
-canvas.assets.load_image(environment.locked_door, "sprites/environment/locked_door.png")
+canvas.assets.load_image(environment.locked_door_idle, "sprites/environment/locked_door_idle.png")
+canvas.assets.load_image(environment.locked_door_open, "sprites/environment/locked_door_open.png")
+canvas.assets.load_image(environment.locked_door_jiggle, "sprites/environment/locked_door_jiggle.png")
 canvas.assets.load_image(environment.gold_key_spin, "sprites/environment/gold_key_spin.png")
 canvas.assets.load_image(environment.gold_key_collected, "sprites/environment/key_collected.png")
 canvas.assets.load_image(environment.dungeon_bg, "sprites/environment/dungeon_bg.png")

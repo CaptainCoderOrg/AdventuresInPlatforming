@@ -1,6 +1,7 @@
 --- Unique Item prop definition - Permanent collectibles that persist across saves
 --- Items are stored on player.unique_items for gameplay checks (e.g., locked doors)
 local Animation = require("Animation")
+local audio = require("audio")
 local common = require("Prop/common")
 local Prop = require("Prop")
 local sprites = require("sprites")
@@ -16,6 +17,7 @@ local ITEMS = {
         collected_sprite = sprites.environment.gold_key_collected,
         spin_frames = 8,
         collected_frames = 5,
+        collect_sfx = audio.pick_up_key,
     }
 }
 
@@ -34,6 +36,12 @@ local function create_item_anim(sprite, frames, ms_per_frame, loop)
     })
 end
 
+-- Pre-compute animation definitions at module load time
+for _, item in pairs(ITEMS) do
+    item.spin_anim = create_item_anim(item.spin_sprite, item.spin_frames, 160, true)
+    item.collected_anim = create_item_anim(item.collected_sprite, item.collected_frames, 160, false)
+end
+
 --- Check if this item should spawn (not already in player's inventory)
 ---@param options table Spawn options containing item_id
 ---@param player table Player instance
@@ -44,7 +52,7 @@ local function should_spawn(options, player)
 end
 
 return {
-    box = { x = 0.1875, y = 0, w = 0.625, h = 1 },
+    box = { x = -0.5, y = 0, w = 2, h = 1 },
     debug_color = "#FFD700",  -- Gold
     initial_state = "idle",
 
@@ -55,12 +63,10 @@ return {
     ---@param _def table The unique_item definition (unused)
     ---@param options table Spawn options (contains item_id)
     on_spawn = function(prop, _def, options)
-        prop.item_id = (options and options.item_id) or "gold_key"
-        local item = ITEMS[prop.item_id] or ITEMS.gold_key
+        prop.item_id = options and options.item_id or "gold_key"
+        prop.item = ITEMS[prop.item_id] or ITEMS.gold_key
 
-        local spin_def = create_item_anim(item.spin_sprite, item.spin_frames, 80, true)
-        prop.animation = Animation.new(spin_def)
-        prop.collected_anim_def = create_item_anim(item.collected_sprite, item.collected_frames, 80, false)
+        prop.animation = Animation.new(prop.item.spin_anim)
         prop.text_display = TextDisplay.new("Collect\n{move_up}", { anchor = "top" })
     end,
 
@@ -84,6 +90,7 @@ return {
                 prop.text_display:update(dt, touching)
             end,
 
+            ---@param prop table The unique_item prop instance
             draw = function(prop)
                 common.draw(prop)
                 prop.text_display:draw(prop.x, prop.y)
@@ -93,12 +100,13 @@ return {
         collect = {
             ---@param prop table The unique_item prop instance
             start = function(prop)
-                prop.animation = Animation.new(prop.collected_anim_def)
+                prop.animation = Animation.new(prop.item.collected_anim)
 
                 -- Add to player's unique_items (item_id is always set in on_spawn)
                 if prop.last_player then
                     table.insert(prop.last_player.unique_items, prop.item_id)
                 end
+                audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
             end,
 
             ---@param prop table The unique_item prop instance
@@ -112,6 +120,7 @@ return {
         },
 
         collected = {
+            ---@param prop table The unique_item prop instance
             start = function(prop)
                 prop.marked_for_destruction = true
             end

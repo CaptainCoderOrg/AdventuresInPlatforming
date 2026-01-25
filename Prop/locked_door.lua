@@ -9,15 +9,23 @@ local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
 local world = require("world")
 
-local DOOR_ANIM_OPTIONS = {
-    ms_per_frame = 80,
-    width = 16,
-    height = 32,
-    loop = false
-}
+--- Create door animation definition with standard size settings
+---@param sprite string Sprite identifier
+---@param frames number Number of frames
+---@param ms_per_frame number Milliseconds per frame
+---@return table Animation definition
+local function create_door_anim(sprite, frames, ms_per_frame)
+    return Animation.create_definition(sprite, frames, {
+        ms_per_frame = ms_per_frame,
+        width = 16,
+        height = 32,
+        loop = false
+    })
+end
 
-local DOOR_LOCKED = Animation.create_definition(sprites.environment.locked_door, 1, DOOR_ANIM_OPTIONS)
-local DOOR_UNLOCK = Animation.create_definition(sprites.environment.locked_door, 13, DOOR_ANIM_OPTIONS)
+local DOOR_LOCKED = create_door_anim(sprites.environment.locked_door_idle, 6, 160)
+local DOOR_LOCKED_JIGGLE = create_door_anim(sprites.environment.locked_door_jiggle, 5, 80)
+local DOOR_UNLOCK = create_door_anim(sprites.environment.locked_door_open, 13, 80)
 
 return {
     box = { x = 0, y = 0, w = 1, h = 2 },
@@ -38,8 +46,8 @@ return {
         locked = {
             ---@param prop table The door prop instance
             start = function(prop)
+                prop._timer = 0
                 prop.animation = Animation.new(DOOR_LOCKED)
-                prop.animation:pause()
                 if not prop.collider_shape then
                     prop.collider_shape = world.add_collider(prop)
                 end
@@ -54,8 +62,8 @@ return {
                 if common.player_has_item(player, prop.required_key) then
                     Prop.set_state(prop, "unlock")
                 else
-                    Effects.create_locked_text(prop.x + 0.5, prop.y, player)
-                    audio.play_sfx(audio.locked_door)
+                    Effects.create_locked_text(player.x + 0.5, player.y - 1, player)
+                    Prop.set_state(prop, "jiggle")
                 end
                 return true
             end,
@@ -69,6 +77,14 @@ return {
                 if prop.text_display then
                     prop.text_display:update(dt, touching)
                 end
+
+                if prop.animation:is_finished() then
+                    prop._timer = prop._timer + dt
+                    if prop._timer > 1 then
+                        prop._timer = 0
+                        prop.animation:reset()
+                    end
+                end
             end,
 
             ---@param prop table The door prop instance
@@ -78,6 +94,25 @@ return {
                     prop.text_display:draw(prop.x, prop.y)
                 end
             end
+        },
+
+        jiggle = {
+            ---@param prop table The door prop instance
+            start = function(prop)
+                prop.animation = Animation.new(DOOR_LOCKED_JIGGLE)
+                audio.play_sfx(audio.locked_door)
+            end,
+
+            ---@param prop table The door prop instance
+            ---@param _dt number Delta time (unused)
+            ---@param _player table Player reference (unused)
+            update = function(prop, _dt, _player)
+                if prop.animation:is_finished() then
+                    Prop.set_state(prop, "locked")
+                end
+            end,
+
+            draw = common.draw
         },
 
         unlock = {
@@ -113,9 +148,8 @@ return {
             ---@param _player table Player reference (unused)
             update = function(_prop, _dt, _player) end,
 
-            -- Empty draw hides the door after unlock animation completes
             ---@param _prop table The door prop instance (unused)
-            draw = function(_prop) end
+            draw = function(_prop) end  -- Empty draw hides the door
         }
     }
 }

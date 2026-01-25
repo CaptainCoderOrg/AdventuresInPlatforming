@@ -226,10 +226,10 @@ animation:draw(x, y - lift)
   - Proximity audio within 16 tiles
   - Manages internal Spear projectile pool with combat integration
 - **Locked Door** - Blocks passage until unlocked
-  - States: locked, unlock, unlocked
+  - States: locked, jiggle, unlock, unlocked
   - Unlock methods: player has `required_key` item + up, or `group_action("unlock")`
   - Shows "Open" prompt when player has the required key
-  - "Locked" feedback with 5s debounce when player lacks key
+  - "Jiggle" feedback animation when player lacks required key
   - Removes world collider when unlocked (door becomes passable and invisible)
 - **Unique Item** - Permanent collectible that persists across saves
   - States: idle, collect, collected

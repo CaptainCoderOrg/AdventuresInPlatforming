@@ -21,6 +21,8 @@ audio.stone_slab_released = canvas.assets.load_sound("stone_slab_released", "sfx
 audio.spear_trap_fire = canvas.assets.load_sound("spear_trap_fire", "sfx/environment/spear_trap_fire.ogg")
 audio.locked_door = canvas.assets.load_sound("locked_door", "sfx/environment/locked_door.ogg")
 audio.unlock_door = canvas.assets.load_sound("unlock_door", "sfx/environment/unlock_door.ogg")
+audio.pick_up_key = canvas.assets.load_sound("pick_up_key", "sfx/environment/pick_up_key.ogg")
+audio.default_collect_sfx = canvas.assets.load_sound("default_collect_sfx", "sfx/environment/default_collect.ogg")
 
 local sfx_group = "sfx_group"
 local sfx_ch = { "sfx_1", "sfx_2", "sfx_3", "sfx_4" }

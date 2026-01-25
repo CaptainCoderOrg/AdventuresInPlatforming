@@ -144,6 +144,24 @@ states = {
 
 **Note:** Props may define a shared `draw` function at the definition level instead of per-state when all states share identical draw logic. The Prop system falls back to `definition.draw(prop)` if no state-level draw exists.
 
+### Manual Animation Control
+
+Props that require precise animation-to-logic synchronization (e.g., spawning a projectile on an exact visual frame) can manually advance their animation before frame checks:
+
+```lua
+update = function(prop, dt, player)
+    prop.animation:play(dt)
+    prop._skip_animation_this_frame = true  -- Prevents Prop.update from double-advancing
+
+    -- Now check animation.frame for exact timing
+    if prop.animation.frame >= 6 then
+        -- Spawn projectile on exact visual frame
+    end
+end
+```
+
+Without this pattern, `Prop.update()` advances animations *after* state updates, causing a 1-frame delay between the visual frame and logic that depends on it.
+
 ### Skip Callback Pattern
 
 The `skip_callback` parameter prevents callback recursion during group actions:

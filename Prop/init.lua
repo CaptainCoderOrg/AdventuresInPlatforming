@@ -14,6 +14,10 @@ Prop.types = state.types
 Prop.all = state.all
 Prop.groups = state.groups
 
+-- Track current frame for mid-frame animation synchronization
+local current_frame = 0
+local current_dt = 0
+
 --- Register a prop type definition
 ---@param key string Unique identifier for this prop type
 ---@param definition table Prop definition table
@@ -118,6 +122,12 @@ function Prop.set_state(prop, state_name, skip_callback)
     if prop.animation and prop.flipped then
         prop.animation.flipped = prop.flipped
     end
+
+    -- If this prop was already updated this frame, advance its new animation now.
+    -- This keeps props synchronized when group_action triggers state changes mid-frame.
+    if prop._last_update_frame == current_frame and prop.animation then
+        prop.animation:play(current_dt)
+    end
 end
 
 -- Module-level table to avoid allocation each frame
@@ -127,7 +137,11 @@ local props_to_remove = {}
 ---@param dt number Delta time in seconds
 ---@param player table|nil Player reference for interaction checks
 function Prop.update(dt, player)
-    -- Clear module-level table instead of allocating new one
+    -- Track frame number and dt for mid-frame state change synchronization
+    current_frame = current_frame + 1
+    current_dt = dt
+
+    -- Clear module-level table instead of allocating a new one
     for i = 1, #props_to_remove do props_to_remove[i] = nil end
 
     local prop = next(Prop.all)
@@ -152,9 +166,14 @@ function Prop.update(dt, player)
                 definition.update(prop, dt, player)
             end
 
-            if prop.animation then
+            -- Advance animation unless state update already did it manually
+            if prop.animation and not prop._skip_animation_this_frame then
                 prop.animation:play(dt)
             end
+            prop._skip_animation_this_frame = nil
+
+            -- Track update frame so set_state can sync animations for mid-frame transitions
+            prop._last_update_frame = current_frame
         end
         prop = next(Prop.all, prop)
     end

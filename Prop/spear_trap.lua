@@ -37,8 +37,8 @@ local SOUND_RADIUS = 16  -- tiles
 local Spear = {}
 Spear.all = {}
 
--- Dirty flags for once-per-frame updates/draws
--- Update pass sets needs_draw=true after running, draw pass sets needs_update=true
+-- Dirty flags ensure single-pass updates despite multiple spear_trap instances calling update/draw.
+-- Update sets needs_draw=true; draw sets needs_update=true for next frame.
 Spear.needs_update = true
 Spear.needs_draw = false
 
@@ -249,6 +249,12 @@ local definition = {
             update = function(prop, dt, player)
                 Spear.update_all(dt, player)
 
+                -- Advance animation before frame checks so spear spawns on the same
+                -- frame the trap visually shows the empty chamber (frame 6).
+                -- Set flag to prevent Prop.update from double-advancing.
+                prop.animation:play(dt)
+                prop._skip_animation_this_frame = true
+
                 -- Frame 5: mechanism releases, play sound slightly before visual spawn
                 if not prop.fire_sound_played and prop.animation.frame >= 5 then
                     prop.fire_sound_played = true
@@ -278,7 +284,7 @@ local definition = {
         cooldown = {
             start = function(prop)
                 prop.timer = 0
-                -- Keep showing frame 6 (empty chamber)
+                -- Keep showing final frame (empty chamber) - index 7 is frame 8 of 8
                 prop.animation = Animation.new(TRAP_ANIM, { start_frame = 7 })
                 prop.animation:pause()
             end,

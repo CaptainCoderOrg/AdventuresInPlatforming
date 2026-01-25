@@ -171,7 +171,8 @@ function Collectible.update(dt, player)
 		local dist_sq = dx * dx + dy * dy
 
 		-- Collection check (using squared distance)
-		if dist_sq < COLLECT_RANGE_SQ then
+		-- Only collect after homing phase starts, so explosion animation is always visible
+		if collectible.elapsed >= HOMING_DELAY and dist_sq < COLLECT_RANGE_SQ then
 			-- Award stats to player
 			if collectible.type == "xp" then
 				player.experience = (player.experience or 0) + collectible.value

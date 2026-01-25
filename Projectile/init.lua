@@ -5,6 +5,7 @@ local Animation = require('Animation')
 local config = require('config')
 local Effects = require("Effects")
 local audio = require('audio')
+local prop_common = require('Prop.common')
 
 local Projectile = {}
 
@@ -50,11 +51,30 @@ function Projectile.get_shuriken()
         name = "Shuriken",
         sprite = sprites.projectiles.shuriken,
         icon = sprites.projectiles.shuriken_icon,
-        damage = 1,
+        damage = 2,
         stamina_cost = 0,
         energy_cost = 1,
         create = Projectile.create_shuriken,
     }
+end
+
+--- Check if projectile hits a lever using combat spatial index
+---@param projectile table The projectile to check
+---@return boolean True if lever was hit
+local function check_lever_hit(projectile)
+    local hitbox = {
+        x = projectile.x + projectile.box.x,
+        y = projectile.y + projectile.box.y,
+        w = projectile.box.w,
+        h = projectile.box.h
+    }
+    if prop_common.check_lever_hit(hitbox) then
+        local direction = projectile.vx >= 0 and 1 or -1
+        projectile.create_effect(projectile.x, projectile.y, direction)
+        projectile.marked_for_destruction = true
+        return true
+    end
+    return false
 end
 
 --- Updates all active projectiles. Applies physics, checks collisions, and removes destroyed projectiles.
@@ -76,9 +96,16 @@ function Projectile.update(dt, level_info)
             projectile.marked_for_destruction = true
         end
 
-        local collision = world.move_trigger(projectile)
-        if collision then
-            projectile:on_collision(collision)
+        -- Check lever hit via combat system (triggers can't detect other triggers)
+        -- Then check world collision if projectile wasn't destroyed by lever
+        if not projectile.marked_for_destruction then
+            check_lever_hit(projectile)
+        end
+        if not projectile.marked_for_destruction then
+            local collision = world.move_trigger(projectile)
+            if collision then
+                projectile:on_collision(collision)
+            end
         end
 
         if projectile.marked_for_destruction then
@@ -145,9 +172,8 @@ end
 ---@param damage number|nil Damage dealt to enemies (defaults to 1)
 ---@return table Projectile instance
 function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage)
-    if effect_callback == nil then effect_callback = Effects.create_hit end
 	local self = setmetatable({}, Projectile)
-    self.create_effect = effect_callback
+    self.create_effect = effect_callback or Effects.create_hit
 	self.id = name .. "_" .. Projectile.next_id
 	Projectile.next_id = Projectile.next_id + 1
 	self.animation = Animation.new(animation_def, {
@@ -174,12 +200,8 @@ end
 ---@param direction number Throw direction (-1 left, 1 right)
 ---@return table The created projectile instance
 function Projectile.create_axe(x, y, direction)
-    local axe_vx = direction*16
-    local axe_vy = -3
-    local axe_gravity = 20
-    local damage = 1
     audio.play_axe_throw_sound()
-    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, axe_vx, axe_vy, axe_gravity, direction, nil, damage)
+    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, 1)
 end
 
 --- Creates and spawns a shuriken projectile with straight trajectory.
@@ -188,13 +210,8 @@ end
 ---@param direction number Throw direction (-1 left, 1 right)
 ---@return table The created projectile instance
 function Projectile.create_shuriken(x, y, direction)
-    local velocity_x = direction*24
-    local velocity_y = 0
-    local gravity = 0
-    local effect_callback = Effects.create_shuriken_hit
-    local damage = 2
     audio.play_shuriken_throw_sound()
-    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, velocity_x, velocity_y, gravity, direction, effect_callback, damage)
+    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, 2)
 end
 
 return Projectile

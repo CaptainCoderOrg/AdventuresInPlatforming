@@ -28,6 +28,8 @@ local environment = {
 	locked_door_jiggle = "locked_door_jiggle",
 	gold_key_spin = "gold_key_spin",
 	gold_key_collected = "gold_key_collected",
+	lever = "lever",
+	lever_switch = "lever_switch",
 	-- Tiling background images (240x160 native, scaled for display)
 	dungeon_bg = "dungeon_bg",
 	garden_bg = "garden_bg",
@@ -60,6 +62,8 @@ canvas.assets.load_image(environment.locked_door_open, "sprites/environment/lock
 canvas.assets.load_image(environment.locked_door_jiggle, "sprites/environment/locked_door_jiggle.png")
 canvas.assets.load_image(environment.gold_key_spin, "sprites/environment/gold_key_spin.png")
 canvas.assets.load_image(environment.gold_key_collected, "sprites/environment/key_collected.png")
+canvas.assets.load_image(environment.lever, "sprites/environment/lever.png")
+canvas.assets.load_image(environment.lever_switch, "sprites/environment/lever_switch.png")
 canvas.assets.load_image(environment.dungeon_bg, "sprites/environment/dungeon_bg.png")
 canvas.assets.load_image(environment.garden_bg, "sprites/environment/garden_bg.png")
 canvas.assets.load_image(environment.library_bg, "sprites/environment/library_bg.png")

@@ -78,6 +78,7 @@ return {
                     prop.text_display:update(dt, touching)
                 end
 
+                -- Restart idle animation every second to add visual life
                 if prop.animation:is_finished() then
                     prop._timer = prop._timer + dt
                     if prop._timer > 1 then
@@ -97,6 +98,7 @@ return {
         },
 
         jiggle = {
+            --- Initialize jiggle feedback animation when player lacks required key
             ---@param prop table The door prop instance
             start = function(prop)
                 prop.animation = Animation.new(DOOR_LOCKED_JIGGLE)
@@ -116,6 +118,7 @@ return {
         },
 
         unlock = {
+            --- Begin unlock animation and play unlock sound
             ---@param prop table The door prop instance
             start = function(prop)
                 prop.animation = Animation.new(DOOR_UNLOCK)
@@ -135,6 +138,7 @@ return {
         },
 
         unlocked = {
+            --- Remove door collision when unlocked
             ---@param prop table The door prop instance
             start = function(prop)
                 if prop.collider_shape then
@@ -143,13 +147,13 @@ return {
                 end
             end,
 
-            ---@param _prop table The door prop instance (unused)
-            ---@param _dt number Delta time (unused)
-            ---@param _player table Player reference (unused)
+            ---@param _prop table Unused (door is open)
+            ---@param _dt number Unused
+            ---@param _player table Unused
             update = function(_prop, _dt, _player) end,
 
-            ---@param _prop table The door prop instance (unused)
-            draw = function(_prop) end  -- Empty draw hides the door
+            ---@param _prop table Unused (door is invisible when unlocked)
+            draw = function(_prop) end
         }
     }
 }

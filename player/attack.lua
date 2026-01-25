@@ -3,6 +3,7 @@ local audio = require('audio')
 local combat = require('combat')
 local common = require('player.common')
 local controls = require('controls')
+local prop_common = require('Prop.common')
 local world = require('world')
 
 
@@ -40,12 +41,10 @@ end
 --- Checks for enemies overlapping the sword hitbox and applies damage.
 --- Tracks hit enemies to prevent multi-hit within a single swing.
 ---@param player table The player object
-local function check_attack_hits(player)
-	local sword = get_sword_hitbox(player)
-	if not sword then return end
-
+---@param hitbox table Hitbox with x, y, w, h in tile coordinates
+local function check_attack_hits(player, hitbox)
 	-- Query combat system for enemies overlapping sword hitbox
-	local hits = combat.query_rect(sword.x, sword.y, sword.w, sword.h, function(entity)
+	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
 		-- Only hit enemies we haven't already hit this swing
 		return entity.is_enemy
 			and entity.shape  -- Has physics shape (not dead/dying)
@@ -55,6 +54,17 @@ local function check_attack_hits(player)
 	for _, enemy in ipairs(hits) do
 		enemy:on_hit("weapon", { damage = player.weapon_damage, x = player.x })
 		player.attack_state.hit_enemies[enemy] = true
+	end
+end
+
+--- Checks for levers overlapping the sword hitbox and toggles them.
+--- Only allows one lever hit per swing.
+---@param player table The player object
+---@param hitbox table Hitbox with x, y, w, h in tile coordinates
+local function check_lever_hits(player, hitbox)
+	if player.attack_state.hit_lever then return end
+	if prop_common.check_lever_hit(hitbox) then
+		player.attack_state.hit_lever = true
 	end
 end
 
@@ -70,6 +80,7 @@ local function next_animation(player)
 	-- Clear existing table instead of allocating new one
 	local hit_enemies = player.attack_state.hit_enemies
 	for k in pairs(hit_enemies) do hit_enemies[k] = nil end
+	player.attack_state.hit_lever = false
 	player.attack_state.next_anim_ix = player.attack_state.next_anim_ix + 1
 	if player.attack_state.next_anim_ix > #attack_animations then
 		player.attack_state.next_anim_ix = 1
@@ -146,7 +157,12 @@ end
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function attack.update(player, dt)
-	check_attack_hits(player)
+	-- Compute hitbox once and pass to all check functions
+	local hitbox = get_sword_hitbox(player)
+	if hitbox then
+		check_attack_hits(player, hitbox)
+		check_lever_hits(player, hitbox)
+	end
 	-- Lock player in place during attack animation (no movement, no gravity)
 	player.vx = 0
 	player.vy = 0

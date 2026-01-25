@@ -72,6 +72,9 @@ return {
 
     states = {
         idle = {
+            ---@param _prop table The unique_item prop instance (unused)
+            start = function(_prop) end,
+
             --- Handle player interaction - collect the item
             ---@param prop table The unique_item prop instance
             ---@param player table The player instance
@@ -120,10 +123,19 @@ return {
         },
 
         collected = {
+            --- Mark item for destruction after collection animation
             ---@param prop table The unique_item prop instance
             start = function(prop)
                 prop.marked_for_destruction = true
-            end
+            end,
+
+            ---@param _prop table Unused (entity destroyed immediately)
+            ---@param _dt number Unused
+            ---@param _player table Unused
+            update = function(_prop, _dt, _player) end,
+
+            ---@param _prop table Unused (entity destroyed immediately)
+            draw = function(_prop) end
         }
     }
 }

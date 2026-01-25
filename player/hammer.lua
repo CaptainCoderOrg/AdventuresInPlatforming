@@ -2,6 +2,7 @@ local Animation = require('Animation')
 local audio = require('audio')
 local combat = require('combat')
 local common = require('player.common')
+local prop_common = require('Prop.common')
 local Prop = require('Prop')
 local world = require('world')
 
@@ -50,15 +51,24 @@ end
 ---@param player table The player object
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
 local function check_button_hits(player, hitbox)
-	-- Only check if we haven't already hit a button this swing
-	if not player.hammer_state.hit_button then
-		local button = Prop.check_hit("button", hitbox, function(prop)
-			return not prop.is_pressed
-		end)
-		if button then
-			button.definition.press(button)
-			player.hammer_state.hit_button = true
-		end
+	if player.hammer_state.hit_button then return end
+
+	local button = Prop.check_hit("button", hitbox, function(prop)
+		return not prop.is_pressed
+	end)
+	if button then
+		button.definition.press(button)
+		player.hammer_state.hit_button = true
+	end
+end
+
+--- Check for lever hits with the hammer
+---@param player table The player object
+---@param hitbox table Hitbox with x, y, w, h in tile coordinates
+local function check_lever_hits(player, hitbox)
+	if player.hammer_state.hit_lever then return end
+	if prop_common.check_lever_hit(hitbox) then
+		player.hammer_state.hit_lever = true
 	end
 end
 
@@ -71,6 +81,7 @@ function hammer.start(player)
 	player.animation = Animation.new(common.animations.HAMMER)
 	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
 	player.hammer_state.hit_button = false
+	player.hammer_state.hit_lever = false
 	-- Clear existing table instead of allocating new one
 	local hit_enemies = player.hammer_state.hit_enemies
 	for k in pairs(hit_enemies) do hit_enemies[k] = nil end
@@ -83,11 +94,12 @@ end
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function hammer.update(player, dt)
-	-- Compute hitbox once and pass to both check functions
+	-- Compute hitbox once and pass to all check functions
 	local hitbox = get_hammer_hitbox(player)
 	if hitbox then
 		check_hammer_hits(player, hitbox)
 		check_button_hits(player, hitbox)
+		check_lever_hits(player, hitbox)
 	end
 	player.vx = 0
 	player.vy = 0

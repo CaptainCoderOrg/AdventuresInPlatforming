@@ -13,8 +13,9 @@ Projectile.__index = Projectile
 Projectile.all = {}
 Projectile.next_id = 1
 
--- Module-level table to avoid allocation each frame
+-- Module-level tables to avoid allocation each frame
 local to_remove = {}
+local lever_hitbox = { x = 0, y = 0, w = 0, h = 0 }
 
 Projectile.animations = {
 	AXE = Animation.create_definition(sprites.projectiles.axe, 4, {
@@ -62,13 +63,11 @@ end
 ---@param projectile table The projectile to check
 ---@return boolean True if lever was hit
 local function check_lever_hit(projectile)
-    local hitbox = {
-        x = projectile.x + projectile.box.x,
-        y = projectile.y + projectile.box.y,
-        w = projectile.box.w,
-        h = projectile.box.h
-    }
-    if prop_common.check_lever_hit(hitbox) then
+    lever_hitbox.x = projectile.x + projectile.box.x
+    lever_hitbox.y = projectile.y + projectile.box.y
+    lever_hitbox.w = projectile.box.w
+    lever_hitbox.h = projectile.box.h
+    if prop_common.check_lever_hit(lever_hitbox) then
         local direction = projectile.vx >= 0 and 1 or -1
         projectile.create_effect(projectile.x, projectile.y, direction)
         projectile.marked_for_destruction = true

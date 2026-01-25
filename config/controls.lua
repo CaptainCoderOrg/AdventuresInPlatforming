@@ -20,7 +20,7 @@ controls_config.actions = {
     { id = "hammer",      label = "Hammer" },
     { id = "dash",        label = "Dash" },
     { id = "block",       label = "Block" },
-    { id = "switch_proj", label = "Switch Projectile" },
+    { id = "switch_proj", label = "Switch Ability" },
 }
 
 -- Default keyboard bindings (action_id -> canvas.keys.* constant)

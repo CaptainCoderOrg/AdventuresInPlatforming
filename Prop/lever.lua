@@ -51,12 +51,11 @@ end
 local function start_position(prop, flipped, callback)
     -- Handle initial state redirect (spawns always start in "left", redirect if needed)
     local requested = prop._requested_initial_state
+    prop._requested_initial_state = nil
     if requested and requested ~= prop.state_name then
-        prop._requested_initial_state = nil
         Prop.set_state(prop, requested)
         return
     end
-    prop._requested_initial_state = nil
 
     prop.animation = Animation.new(LEVER_IDLE)
     prop.animation:pause()
@@ -102,14 +101,16 @@ local definition = {
             draw = draw_with_text
         },
         toggling = {
+            --- Starts the toggling animation and plays sound
             ---@param prop table Lever prop instance
             start = function(prop)
                 prop.flipped = prop.target_state == "right" and 1 or -1
                 prop.animation = Animation.new(LEVER_TOGGLE)
                 audio.play_sfx(audio.stone_slab_pressed)
             end,
+            --- Checks if toggle animation finished and transitions to target position
             ---@param prop table Lever prop instance
-            update = function(prop)
+            update = function(prop, _dt, _player)
                 if prop.animation:is_finished() then
                     Prop.set_state(prop, prop.target_state)
                 end
@@ -125,20 +126,6 @@ function definition.toggle(prop)
     if prop.state_name == "toggling" then return end
     prop.target_state = prop.state_name == "left" and "right" or "left"
     Prop.set_state(prop, "toggling")
-end
-
---- Check if lever is in left position
----@param prop table Lever prop instance
----@return boolean
-function definition.is_left(prop)
-    return prop.state_name == "left"
-end
-
---- Check if lever is in right position
----@param prop table Lever prop instance
----@return boolean
-function definition.is_right(prop)
-    return prop.state_name == "right"
 end
 
 --- Reset lever to initial state (used by Prop.reset_all)

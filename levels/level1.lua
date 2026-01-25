@@ -10,8 +10,8 @@ return {
         [[######################################                                                               ###]],
         [[######################################                                                               ###]],
         [[#                                    D                                                             K ###]],
-        [[#                    L           l                                                               [######]],
-        [[######################           H########H                                                      [######]],
+        [[#  Z                 L            6 l                                                            [######]],
+        [[######################%%%%%%%%%%%H########H                                                      [######]],
         [[######################           H########H                  s                 bB    ! *    *    [######]],
         [[######################           H########H               T ###HT T T T T T T ##########################]],
         [[######################           H########H            T    ###H              ##########################]],
@@ -72,6 +72,7 @@ return {
         ["^"] = { type = "spike_trap", mode = "extended", group = "entrance_spikes", extend_time = 1, retract_time = 3 },
         ["|"] = { type = "spike_trap", mode = "extended", group = "offset_spikes", extend_time = 1, retract_time = 3, alternating_offset = 2 },
         ["$"] = { type = "spike_trap", mode = "extended", group = "drop_spikes" },
+        ["Z"] = { type = "sign", text = "Tutorial Complete!\nThanks for playing!" },
         ["1"] = { type = "sign", text = "Move\n{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}" },
         ["2"] = { type = "sign", text = "Jump\n{jump}" },
         ["3"] = { type = "sign", text = "Drop\n{move_down} + {jump}", offset = { x = 0.5 } },
@@ -83,15 +84,18 @@ return {
         ["9"] = { type = "sign", text = "Dash\n{dash}" },
         ["0"] = { type = "sign", text = "Wall Jump\n{move_right} + {jump}", offset = { x = -0.5 } },
         T = { type = "trap_door" },
+        l = { type = "sign", text = "Switch Ability\n{switch_proj}" },
         ["&"] = { type = "spike_trap", mode = "extended", group = "lever_spikes" },
+        ["%"] = { type = "appearing_bridge", group = "lever_bridge" },
         L = {
             type = "lever",
-            initial_state = "left",
             on_left = function()
                 Prop.group_action("lever_spikes", "extending")
+                Prop.group_action("lever_bridge", "disappear")
             end,
             on_right = function()
                 Prop.group_action("lever_spikes", "retracting")
+                Prop.group_action("lever_bridge", "appear")
             end
         },
         A = { type = "chest", gold = 20, flip = true },

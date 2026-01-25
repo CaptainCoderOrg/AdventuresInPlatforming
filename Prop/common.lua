@@ -4,6 +4,9 @@ local combat = require("combat")
 
 local common = {}
 
+-- Lazy-loaded to avoid circular dependency (Prop/init.lua requires this module)
+local Prop = nil
+
 --- Standard animation draw for props
 ---@param prop table Prop instance with animation
 function common.draw(prop)
@@ -63,15 +66,20 @@ function common.copy_array(arr)
     return copy
 end
 
+--- Filter for levers that are not currently toggling
+---@param prop table Lever prop instance
+---@return boolean True if lever can be toggled
+local function lever_not_toggling(prop)
+    return prop.state_name ~= "toggling"
+end
+
 --- Check if a hitbox overlaps a lever and toggle it if found
 --- Returns true if a lever was hit (caller should mark hit_lever = true)
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
 ---@return boolean True if lever was toggled
 function common.check_lever_hit(hitbox)
-    local Prop = require("Prop")
-    local lever = Prop.check_hit("lever", hitbox, function(prop)
-        return prop.state_name ~= "toggling"
-    end)
+    Prop = Prop or require("Prop")
+    local lever = Prop.check_hit("lever", hitbox, lever_not_toggling)
     if lever then
         lever.definition.toggle(lever)
         return true

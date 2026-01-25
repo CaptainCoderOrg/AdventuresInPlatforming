@@ -18,6 +18,21 @@ Prop.groups = state.groups
 local current_frame = 0
 local current_dt = 0
 
+-- Reusable state for check_hit to avoid per-call allocations
+local check_hit_type_key = nil
+local check_hit_filter = nil
+local check_hit_results = {}
+
+--- Filter function for check_hit (uses module-level state to avoid closure allocation)
+---@param entity table Entity to check
+---@return boolean True if entity matches criteria
+local function check_hit_filter_fn(entity)
+    if entity.type_key ~= check_hit_type_key then return false end
+    if entity.marked_for_destruction then return false end
+    if check_hit_filter and not check_hit_filter(entity) then return false end
+    return true
+end
+
 --- Register a prop type definition
 ---@param key string Unique identifier for this prop type
 ---@param definition table Prop definition table
@@ -329,16 +344,10 @@ end
 ---@param filter function|nil Optional filter function(prop) returning true to include
 ---@return table|nil prop The first matching prop or nil
 function Prop.check_hit(type_key, hitbox, filter)
-    local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
-        -- Only match props of the specified type
-        if entity.type_key ~= type_key then return false end
-        if entity.marked_for_destruction then return false end
-        -- Apply custom filter if provided
-        if filter and not filter(entity) then return false end
-        return true
-    end)
-
-    -- Return first match (or nil if empty)
+    -- Set module-level state for filter function (avoids closure allocation)
+    check_hit_type_key = type_key
+    check_hit_filter = filter
+    local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, check_hit_filter_fn, check_hit_results)
     return hits[1]
 end
 

@@ -138,9 +138,12 @@ states = {
         start = function(prop, def, skip_callback) end,
         update = function(prop, dt, player) end,
         draw = function(prop) end,
+        interact = function(prop) end,  -- Optional: called when player interacts
     }
 }
 ```
+
+The `interact` function is optional and used by interactive props (lever, locked_door, unique_item). Return `true` to indicate the interaction was consumed.
 
 **Note:** Props may define a shared `draw` function at the definition level instead of per-state when all states share identical draw logic. The Prop system falls back to `definition.draw(prop)` if no state-level draw exists.
 
@@ -237,14 +240,20 @@ animation:draw(x, y - lift)
   - `should_spawn` callback prevents respawning if player already has item
   - Collection via up input
   - Configurable: `item_id` (e.g., "gold_key")
+- **Lever** - Toggleable switch that fires callbacks on state changes
+  - States: left, right, toggling
+  - Configurable: `initial_state`, `on_left`, `on_right` callbacks, `text` prompt
+  - Can be toggled by: player interaction (up input), sword attack, hammer attack, projectile hit
+  - Shows text prompt when player is nearby
 
 ### Common Utilities (`Prop/common.lua`)
 
 Shared functions to reduce duplication across prop types:
 ```lua
-common.draw(prop)                    -- Standard animation rendering
-common.player_touching(prop, player) -- Uses combat spatial indexing for overlap
+common.draw(prop)                        -- Standard animation rendering
+common.player_touching(prop, player)     -- Uses combat spatial indexing for overlap
 common.damage_player(prop, player, damage)  -- Consolidated hazard damage
+common.check_lever_hit(hitbox)           -- Check if hitbox overlaps lever and toggle it
 ```
 
 `common.damage_player()` handles the full damage pattern: touch check, invincibility check, health check, and `player:take_damage()` call.
@@ -343,5 +352,6 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/pressure_plate.lua` - Pressure plate prop (entity-triggered with lift effect)
 - `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
+- `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

@@ -4,6 +4,7 @@ local canvas = require('canvas')
 local combat = require('combat')
 local config = require('config')
 local controls = require('controls')
+local Effects = require('Effects')
 local sprites = require('sprites')
 local world = require('world')
 local Prop = require('Prop')
@@ -104,7 +105,13 @@ end
 function common.handle_throw(player)
     if controls.throw_pressed() then
         -- Block throw entirely when insufficient energy (no cooldown queue needed)
-        if not has_throw_energy(player) then return end
+        if not has_throw_energy(player) then
+            -- Show visual feedback for insufficient energy
+            local current_energy = player.max_energy - player.energy_used
+            Effects.create_energy_text(player.x, player.y, current_energy)
+            player.energy_flash_requested = true
+            return
+        end
         if player.throw_cooldown <= 0 then
             if try_use_throw_stamina(player) then
                 player:set_state(player.states.throw)

@@ -72,6 +72,7 @@ function Player.new()
 	-- Consumed by thrown weapons (1 per throw), restored when resting at campfire
 	self.max_energy = 4
 	self.energy_used = 0
+	self.energy_flash_requested = false  -- Flag for UI to trigger energy bar flash
 
 	-- Progression / RPG Stats
 	self.level = 1              -- Player level, gates content and affects base stats

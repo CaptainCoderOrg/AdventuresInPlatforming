@@ -245,6 +245,13 @@ animation:draw(x, y - lift)
   - Configurable: `initial_state`, `on_left`, `on_right` callbacks, `text` prompt
   - Can be toggled by: player interaction (up input), sword attack, hammer attack, projectile hit
   - Shows text prompt when player is nearby
+- **Appearing Bridge** - One-way platform that fades in/out with sequenced animation
+  - States: hidden, appearing, visible, disappearing
+  - Triggered via `Prop.group_action()` with `appear` or `disappear` actions
+  - Per-tile delay creates cascading fade effect (left-to-right for appear, right-to-left for disappear)
+  - Configurable: `FADE_DURATION` (0.15s), `TILE_DELAY` (0.08s)
+  - Auto-detects sprite type (left/middle/right) based on adjacent group members
+  - Collider added immediately on appear (for walkability), removed immediately on disappear (for fall-through)
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -353,5 +360,6 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
+- `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

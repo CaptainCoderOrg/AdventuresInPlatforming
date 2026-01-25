@@ -11,6 +11,7 @@ local config = require("config")
 ---@field displayed_stamina number|nil Lerped stamina value for smooth animation
 ---@field displayed_energy number|nil Lerped energy value for smooth animation
 ---@field fatigue_pulse_timer number Timer for fatigue color pulsing (seconds)
+---@field energy_flash_timer number Timer for energy bar flash effect (seconds)
 
 local projectile_selector = {}
 projectile_selector.__index = projectile_selector
@@ -75,6 +76,15 @@ local function get_fatigue_color(timer)
     return string.format("#FF%02X00", green)
 end
 
+--- Returns a flickering opacity for energy flash overlay.
+---@param timer number Flash timer in seconds
+---@return number Opacity value (0-1)
+local function get_energy_flash_opacity(timer)
+    -- 8Hz flicker for rapid on/off effect
+    local t = (math.sin(timer * math.pi * 16) + 1) / 2
+    return t * 0.5  -- Max 50% opacity
+end
+
 --- Draws the stamina meter with fatigue support (debt shown as pulsing orange/red bar).
 ---@param alpha number Widget alpha for shine calculation
 ---@param y number Y position of the meter
@@ -119,7 +129,13 @@ function projectile_selector.create(opts)
     self.displayed_stamina = nil -- Initialized on first update
     self.displayed_energy = nil -- Initialized on first update
     self.fatigue_pulse_timer = 0 -- For fatigue color pulsing
+    self.energy_flash_timer = 0 -- For energy bar flash effect
     return self
+end
+
+--- Triggers energy bar flash effect for insufficient energy feedback.
+function projectile_selector:flash_energy()
+    self.energy_flash_timer = 0.5 -- Flash duration in seconds
 end
 
 ---@param dt number Delta time in seconds
@@ -134,6 +150,17 @@ function projectile_selector:update(dt, player)
     self.displayed_energy = lerp_toward(self.displayed_energy, target_energy, LERP_SPEED, dt)
 
     self.fatigue_pulse_timer = self.fatigue_pulse_timer + dt
+
+    -- Check for energy flash request from player
+    if player.energy_flash_requested then
+        self:flash_energy()
+        player.energy_flash_requested = false
+    end
+
+    -- Decrement energy flash timer
+    if self.energy_flash_timer > 0 then
+        self.energy_flash_timer = self.energy_flash_timer - dt
+    end
 end
 
 ---@param player table Player instance with projectile, health, stamina, and energy properties
@@ -150,6 +177,17 @@ function projectile_selector:draw(player)
     draw_meter(self.alpha, METER_Y, player.max_health, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
     draw_stamina_meter(self.alpha, METER_Y + METER_HEIGHT, player, self.displayed_stamina, self.fatigue_pulse_timer)
     draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
+
+    -- Energy flash overlay (flickering rectangle over the meter)
+    if self.energy_flash_timer > 0 then
+        local energy_y = METER_Y + METER_HEIGHT * 2
+        local meter_width = player.max_energy * PX_PER_UNIT
+        local flash_opacity = get_energy_flash_opacity(self.energy_flash_timer)
+        canvas.set_global_alpha(self.alpha * flash_opacity)
+        canvas.set_fill_style("#FFFFFF")
+        canvas.fill_rect(METER_X, energy_y + BAR_Y_OFFSET, meter_width, BAR_HEIGHT)
+        canvas.set_global_alpha(self.alpha)
+    end
 
     canvas.restore()
 end

@@ -1,7 +1,6 @@
 --- Appearing bridge prop - One-way platform that fades in/out with sequenced animation
 --- Triggered by lever group actions (appear/disappear)
 local canvas = require("canvas")
-local config = require("config")
 local Prop = require("Prop")
 local sprites = require("sprites")
 local world = require("world")
@@ -49,13 +48,6 @@ local SPRITE_MAP = {
     middle = sprites.environment.bridge_middle
 }
 
---- Get the appropriate sprite for this bridge tile
----@param prop table Bridge prop instance
----@return string sprite The sprite to draw
-local function get_sprite(prop)
-    return SPRITE_MAP[prop.sprite_type]
-end
-
 --- Calculate the fade delay for this tile based on direction and position
 ---@param prop table Bridge prop instance
 ---@param reverse boolean True for right-to-left (disappearing)
@@ -100,24 +92,13 @@ local function draw_with_alpha(prop)
     local py = prop.y * ts
 
     canvas.set_global_alpha(alpha)
-    sprites.draw_bridge(px, py, get_sprite(prop))
+    sprites.draw_bridge(px, py, SPRITE_MAP[prop.sprite_type])
     canvas.set_global_alpha(1)
-
-    -- Debug bounding box (cyan for bridge colliders)
-    if config.bounding_boxes and prop.collider_shape then
-        canvas.set_color("#00FFFF")
-        canvas.draw_rect(
-            (prop.x + prop.box.x) * ts,
-            (prop.y + prop.box.y) * ts,
-            prop.box.w * ts,
-            prop.box.h * ts
-        )
-    end
 end
 
 local definition = {
-    box = { x = 0, y = 0, w = 1, h = 0.2 },  -- Thin collider at top, same as platform bridges
-    debug_color = "#00FFFF",  -- Cyan
+    box = { x = 0, y = 0, w = 1, h = 0.2 },  -- Thin collider at top
+    debug_color = "#00FFFF",
     initial_state = "hidden",
 
     ---@param prop table The prop instance being spawned

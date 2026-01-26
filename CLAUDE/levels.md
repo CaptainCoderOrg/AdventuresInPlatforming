@@ -45,6 +45,28 @@ return {
 
 This allows levels to define custom symbols for entities without modifying the parser.
 
+### Waypoint-Based Enemies
+
+Some enemies use multiple markers to define patrol routes:
+
+**Bat Eye (`bat_eye`):** Place two `B` symbols on the same row to define patrol waypoints. The enemy spawns at the left position and patrols between them.
+
+```lua
+symbols = {
+    B = { type = "enemy", key = "bat_eye" },
+}
+```
+
+```
+-- Level map example:
+B          B    -- Bat patrols horizontally between these points
+#############
+```
+
+- Two markers on same row: Creates patrolling bat_eye
+- Single marker: Creates stationary bat_eye
+- 3+ markers on same row: Warning logged, markers ignored
+
 ## Sign System
 
 Interactive text displays triggered by player proximity.

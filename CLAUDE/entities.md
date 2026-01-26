@@ -64,6 +64,13 @@ states = {
   - Health: 3 HP, Contact damage: 1
   - Detection range: 6 tiles (triggers defense)
   - `is_defending` flag blocks all damage while in defend state
+- **Bat Eye** - Flying enemy that patrols between waypoints
+  - States: idle, patrol, hit, death
+  - Health: 3 HP, Contact damage: 1
+  - Flying (no gravity), damages shield on contact
+  - Patrol speed: 2 tiles/second
+  - Pauses at waypoints for 1 second before reversing
+  - Spawned via paired `B` symbols on same row in level map
 
 ### Damage System
 
@@ -103,7 +110,7 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye)
 
 ## Prop System
 
@@ -374,6 +381,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/ratto.lua` - Ratto enemy (patrol/chase AI)
 - `Enemies/worm.lua` - Worm enemy (simple patrol)
 - `Enemies/spike_slug.lua` - Spike slug enemy (defensive behavior)
+- `Enemies/bat_eye.lua` - Bat eye enemy (waypoint patrol, flying)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)

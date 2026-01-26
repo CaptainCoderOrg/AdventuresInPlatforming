@@ -39,6 +39,9 @@ function platforms.load_level(level_data)
 	local height = #level_data.map
 	local symbols = level_data.symbols or {}
 
+	-- Collect bat_eye waypoints by row for pairing
+	local bat_waypoints = {}  -- [row] = { x positions }
+
 	background_sprite = level_data.background
 
 	for y, row in ipairs(level_data.map) do
@@ -65,7 +68,13 @@ function platforms.load_level(level_data)
 				if def.type == "spawn" then
 					spawn = { x = ox, y = oy }
 				elseif def.type == "enemy" then
-					table.insert(enemies, { x = ox, y = oy, type = def.key })
+					-- Special handling for bat_eye waypoint pairing
+					if def.key == "bat_eye" then
+						bat_waypoints[ty] = bat_waypoints[ty] or {}
+						table.insert(bat_waypoints[ty], tx)
+					else
+						table.insert(enemies, { x = ox, y = oy, type = def.key })
+					end
 				else
 					-- Generic prop handling (includes signs) - copy all properties from def
 					local prop_data = { type = def.type, x = ox, y = oy }
@@ -77,6 +86,28 @@ function platforms.load_level(level_data)
 					table.insert(props, prop_data)
 				end
 			end
+		end
+	end
+
+	-- Create bat_eye enemies from paired waypoints
+	for row, positions in pairs(bat_waypoints) do
+		if #positions == 2 then
+			table.sort(positions)  -- Ensure left-to-right order
+			table.insert(enemies, {
+				x = positions[1],
+				y = row,
+				type = "bat_eye",
+				waypoints = { a = positions[1], b = positions[2] }
+			})
+		elseif #positions == 1 then
+			-- Single waypoint: spawn bat_eye without patrol (stationary)
+			table.insert(enemies, {
+				x = positions[1],
+				y = row,
+				type = "bat_eye"
+			})
+		elseif #positions > 2 then
+			print("[WARNING] Row " .. row .. " has " .. #positions .. " bat_eye markers (expected 1 or 2)")
 		end
 	end
 

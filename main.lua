@@ -33,6 +33,7 @@ local Enemy = require("Enemies")
 Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
+Enemy.register("bat_eye", require("Enemies/bat_eye"))
 
 -- Props
 local Prop = require("Prop")
@@ -357,7 +358,7 @@ init_level = function(level, spawn_override, player_data, options)
     platforms.build()
 
     for _, enemy_data in ipairs(level_info.enemies) do
-        Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y)
+        Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y, enemy_data)
     end
 
     Prop.clear()

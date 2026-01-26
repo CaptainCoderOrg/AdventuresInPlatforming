@@ -28,8 +28,9 @@ end
 --- @param type_key string Enemy type identifier
 --- @param x number X position in tiles
 --- @param y number Y position in tiles
+--- @param spawn_data table|nil Optional spawn data with waypoints or other properties
 --- @return table The created enemy instance
-function Enemy.spawn(type_key, x, y)
+function Enemy.spawn(type_key, x, y, spawn_data)
 	local definition = Enemy.types[type_key]
 	if not definition then
 		error("Unknown enemy type: " .. type_key)
@@ -54,6 +55,13 @@ function Enemy.spawn(type_key, x, y)
 	self.gravity = definition.gravity or 1.5
 	self.max_fall_speed = definition.max_fall_speed or 20
 	self.rotate_to_slope = definition.rotate_to_slope or false
+
+	-- Store waypoint data if provided (for patrolling enemies)
+	if spawn_data and spawn_data.waypoints then
+		self.waypoint_a = spawn_data.waypoints.a
+		self.waypoint_b = spawn_data.waypoints.b
+		self.target_waypoint = spawn_data.waypoints.b  -- Start moving toward second waypoint
+	end
 
 	-- State machine
 	self.states = definition.states
@@ -126,15 +134,30 @@ function Enemy.update(dt, player)
 		enemy.x = enemy.x + enemy.vx * dt
 		enemy.y = enemy.y + enemy.vy * dt
 
-		-- Resolve collisions
-		local cols = world.move(enemy, enemy._cols)
-		enemy:check_ground(cols)
-		enemy.wall_left = cols.wall_left
-		enemy.wall_right = cols.wall_right
+		-- Resolve collisions (skip full collision for flying enemies)
+		if enemy.gravity > 0 then
+			local cols = world.move(enemy, enemy._cols)
+			enemy:check_ground(cols)
+			enemy.wall_left = cols.wall_left
+			enemy.wall_right = cols.wall_right
 
-		local probe_y = enemy.y + enemy.box.y + enemy.box.h + 0.5  -- tiles below feet
-		enemy.edge_left = enemy.is_grounded and not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
-		enemy.edge_right = enemy.is_grounded and not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
+			if enemy.is_grounded then
+				local probe_y = enemy.y + enemy.box.y + enemy.box.h + 0.5  -- tiles below feet
+				enemy.edge_left = not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
+				enemy.edge_right = not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
+			else
+				enemy.edge_left = false
+				enemy.edge_right = false
+			end
+		else
+			-- Flying enemies: just sync collider position for combat detection
+			world.sync_position(enemy)
+			enemy.is_grounded = false
+			enemy.wall_left = false
+			enemy.wall_right = false
+			enemy.edge_left = false
+			enemy.edge_right = false
+		end
 
 		-- Update slope rotation (visual only)
 		common.update_slope_rotation(enemy, dt)

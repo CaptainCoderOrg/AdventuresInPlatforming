@@ -20,6 +20,10 @@ local enemies = {
 		stop_defend = "spikeslug_stop_defend",
 		death = "spikeslug_death",
 	},
+	bat_eye = {
+		idle = "bateye_idle",
+		hit = "bateye_hit",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -35,5 +39,8 @@ canvas.assets.load_image(enemies.spikeslug.hit, "sprites/enemies/spike_slug/spik
 canvas.assets.load_image(enemies.spikeslug.defense, "sprites/enemies/spike_slug/spikeslug_defense.png")
 canvas.assets.load_image(enemies.spikeslug.stop_defend, "sprites/enemies/spike_slug/spikeslug_stop_defend.png")
 canvas.assets.load_image(enemies.spikeslug.death, "sprites/enemies/spike_slug/spikeslug_death.png")
+
+canvas.assets.load_image(enemies.bat_eye.idle, "sprites/enemies/bat_eye/bateye_idle.png")
+canvas.assets.load_image(enemies.bat_eye.hit, "sprites/enemies/bat_eye/bateye_hit.png")
 
 return enemies

@@ -106,6 +106,27 @@ function Animation:reset()
 	self.playing = true
 end
 
+--- Reinitializes an existing animation instance with a new definition.
+--- Avoids allocation by reusing the existing table.
+--- @param definition table Animation definition
+--- @param options table|nil Options: flipped, reverse, start_frame
+--- @return table Self for chaining
+function Animation:reinit(definition, options)
+	options = options or {}
+	self.definition = definition
+	self.reverse = options.reverse or false
+	if options.start_frame then
+		self.frame = options.start_frame
+	else
+		self.frame = self.reverse and (definition.frame_count - 1) or 0
+	end
+	self.flipped = options.flipped or 1
+	self.elapsed = 0
+	self.playing = true
+	self.finished = false
+	return self
+end
+
 --- Pauses animation
 function Animation:pause()
 	self.playing = false

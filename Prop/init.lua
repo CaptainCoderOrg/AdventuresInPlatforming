@@ -212,10 +212,12 @@ function Prop.update_animations(dt)
 end
 
 --- Draw all props
-function Prop.draw()
+---@param camera table Camera instance for viewport culling
+function Prop.draw(camera)
+    local debug_mode = config.bounding_boxes
     local prop = next(Prop.all)
     while prop do
-        if not prop.marked_for_destruction then
+        if camera:is_visible(prop, sprites.tile_size) then
             local definition = prop.definition
 
             if prop.state and prop.state.draw then
@@ -227,7 +229,7 @@ function Prop.draw()
             end
 
             -- Debug bounding box
-            if config.bounding_boxes and prop.box then
+            if debug_mode and prop.box then
                 local bx = (prop.x + prop.box.x) * sprites.tile_size
                 local by = (prop.y + prop.box.y) * sprites.tile_size
                 local bw = prop.box.w * sprites.tile_size

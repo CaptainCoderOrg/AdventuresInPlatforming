@@ -292,10 +292,10 @@ local function draw()
         end
 
         platforms.draw(camera, culling_margin)
-        Prop.draw()
-        Enemy.draw()
+        Prop.draw(camera)
+        Enemy.draw(camera)
         player:draw()
-        Projectile.draw()
+        Projectile.draw(camera)
         Effects.draw()
         Collectible.draw()
         if config.bounding_boxes then

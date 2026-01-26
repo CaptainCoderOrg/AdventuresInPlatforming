@@ -17,6 +17,9 @@ Projectile.next_id = 1
 local to_remove = {}
 local lever_hitbox = { x = 0, y = 0, w = 0, h = 0 }
 
+-- Debug color constant (avoid string allocation each frame)
+local DEBUG_COLOR_YELLOW = "#FFFF00"
+
 Projectile.animations = {
 	AXE = Animation.create_definition(sprites.projectiles.axe, 4, {
 		width = 8,
@@ -121,25 +124,28 @@ function Projectile.update(dt, level_info)
 end
 
 --- Renders all active projectiles and their debug hitboxes if enabled.
-function Projectile.draw()
-    canvas.save()
+---@param camera table Camera instance for viewport culling
+function Projectile.draw(camera)
+    local debug_mode = config.bounding_boxes
     local projectile = next(Projectile.all)
     while projectile do
-        projectile.animation:draw(
-            sprites.px(projectile.x),
-            sprites.px(projectile.y))
+        -- Smaller margin (1 tile) since projectiles are small and fast-moving
+        if camera:is_visible(projectile, sprites.tile_size, 1) then
+            projectile.animation:draw(
+                sprites.px(projectile.x),
+                sprites.px(projectile.y))
 
-        if config.bounding_boxes == true then
-            canvas.set_color("#FFFF00")
-            canvas.draw_rect(
-                (projectile.x + projectile.box.x) * sprites.tile_size,
-                (projectile.y + projectile.box.y) * sprites.tile_size,
-                projectile.box.w * sprites.tile_size,
-                projectile.box.h * sprites.tile_size)
+            if debug_mode then
+                canvas.draw_rect(
+                    (projectile.x + projectile.box.x) * sprites.tile_size,
+                    (projectile.y + projectile.box.y) * sprites.tile_size,
+                    projectile.box.w * sprites.tile_size,
+                    projectile.box.h * sprites.tile_size,
+                    DEBUG_COLOR_YELLOW)
+            end
         end
         projectile = next(Projectile.all, projectile)
     end
-    canvas.restore()
 end
 
 --- Handles projectile collision. Damages enemies, spawns hit effect, and marks for destruction.

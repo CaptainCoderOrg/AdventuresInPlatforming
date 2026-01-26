@@ -395,6 +395,32 @@ function Camera:get_visible_bounds(tile_size, margin)
 	return min_x, min_y, max_x, max_y
 end
 
+--- Checks if an entity is within the visible viewport bounds.
+---@param entity table Entity with x, y (tiles) and optional box {x, y, w, h}
+---@param tile_size number Pixels per tile
+---@param margin number|nil Extra margin in tiles (default 2)
+---@return boolean True if entity is at least partially visible
+function Camera:is_visible(entity, tile_size, margin)
+	margin = margin or 2
+
+	local box = entity.box
+	local ex, ey, ew, eh
+	if box then
+		ex = entity.x + box.x
+		ey = entity.y + box.y
+		ew = box.w
+		eh = box.h
+	else
+		ex = entity.x
+		ey = entity.y
+		ew = entity.w or 1
+		eh = entity.h or 1
+	end
+
+	local min_x, min_y, max_x, max_y = self:get_visible_bounds(tile_size, margin)
+	return ex + ew > min_x and ex < max_x and ey + eh > min_y and ey < max_y
+end
+
 --- Applies camera transform to canvas (call before drawing world)
 --- @param tile_size number Pixels per tile
 function Camera:apply_transform(tile_size)

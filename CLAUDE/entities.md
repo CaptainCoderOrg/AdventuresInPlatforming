@@ -18,6 +18,7 @@ AI-controlled enemies with state machines and combat integration.
 - State machine identical to player (start, update, draw functions)
 - Registration system: `Enemy.register(key, definition)` in main.lua
 - Spawning from level data: `Enemy.spawn(type_key, x, y)`
+- Viewport culling: `Enemy.draw(camera)` skips off-screen entities
 
 ### Enemy Properties
 
@@ -133,6 +134,7 @@ Unified management for interactive objects (buttons, campfires, spike traps). Mi
 - Spawning: `Prop.spawn(type_key, x, y, options)`
 - State machine support with `skip_callback` for group actions
 - Group system for coordinated behavior
+- Viewport culling: `Prop.draw(camera)` skips off-screen entities
 
 ### Prop Definition
 
@@ -293,6 +295,7 @@ Physics-based throwable objects with collision detection.
 - Collision via sweeping trigger movement (`world.move_trigger`)
 - Auto-cleanup on collision or out-of-bounds
 - Custom hit effect callbacks per projectile type
+- Viewport culling: `Projectile.draw(camera)` skips off-screen entities (1 tile margin)
 
 ### Projectile Properties
 

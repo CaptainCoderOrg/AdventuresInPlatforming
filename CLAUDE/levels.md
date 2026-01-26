@@ -123,7 +123,8 @@ Camera.new(viewport_w, viewport_h, world_w, world_h)
 Camera:set_target(target)           -- Follow an entity
 Camera:update(tile_size, dt, lerp)  -- Call each frame
 Camera:apply_transform(tile_size)   -- Apply before drawing world
-Camera:get_visible_bounds(tile_size) -- For culling
+Camera:get_visible_bounds(tile_size, margin) -- Get visible tile bounds
+Camera:is_visible(entity, tile_size, margin) -- Check if entity is in viewport (default margin: 2 tiles)
 ```
 
 ### Features

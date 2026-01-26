@@ -2,11 +2,13 @@ local Animation = require('Animation')
 local sprites = require('sprites')
 local config = require('config')
 local Prop = require('Prop')
+local world = require('world')
 
 local common = {}
 
 local ROTATION_LERP_SPEED = 10  -- Rotation interpolation speed (higher = faster, ~0.1s to settle)
 local TARGET_FPS = 60  -- Base frame rate for physics calculations
+local death_anim_opts = { flipped = 1 }  -- Reused to avoid allocation
 
 --- Applies gravity acceleration to an enemy in a frame-rate independent way.
 ---@param enemy table The enemy object with vy, gravity, max_fall_speed
@@ -41,6 +43,77 @@ end
 function common.direction_to_player(enemy)
 	if not enemy.target_player then return enemy.direction end
 	return enemy.target_player.x < enemy.x and -1 or 1
+end
+
+--- Check if enemy has clear line of sight to player.
+--- Uses raycast from enemy center to player center, filtering out non-solid shapes.
+---@param enemy table The enemy with target_player reference
+---@return boolean True if line of sight is clear
+function common.has_line_of_sight(enemy)
+	if not enemy.target_player then return false end
+
+	local ts = sprites.tile_size
+	local player = enemy.target_player
+
+	-- Enemy center position (in pixels)
+	local enemy_cx = (enemy.x + enemy.box.x + enemy.box.w / 2) * ts
+	local enemy_cy = (enemy.y + enemy.box.y + enemy.box.h / 2) * ts
+
+	-- Player center position (in pixels)
+	local player_cx = (player.x + player.box.x + player.box.w / 2) * ts
+	local player_cy = (player.y + player.box.y + player.box.h / 2) * ts
+
+	-- Calculate ray direction and distance
+	local dx = player_cx - enemy_cx
+	local dy = player_cy - enemy_cy
+	local distance = math.sqrt(dx * dx + dy * dy)
+
+	if distance == 0 then return true end
+
+	-- Normalize direction
+	local dir_x = dx / distance
+	local dir_y = dy / distance
+
+	-- Cast ray from enemy to player
+	local intersections = world.hc:raycast(enemy_cx, enemy_cy, dir_x, dir_y, distance)
+
+	-- Get enemy's own shape and player's shape to filter them out
+	local enemy_shape = world.shape_map[enemy]
+	local player_shape = world.shape_map[player]
+
+	-- Pre-compute threshold (distance minus 1 tile buffer, squared for perf)
+	local threshold_sq = (distance - 1) * (distance - 1)
+
+	for shape, hits in pairs(intersections) do
+		-- Skip enemy's own shape
+		if shape == enemy_shape then goto continue end
+		-- Skip player's shape (we're checking if we can see them, not collide)
+		if shape == player_shape then goto continue end
+		-- Skip probes and triggers
+		if shape.is_probe or shape.is_trigger then goto continue end
+		-- Skip hitboxes (combat only, not physical barriers)
+		if shape.is_hitbox then goto continue end
+
+		local owner = shape.owner
+		if owner then
+			-- Skip other enemies
+			if owner.is_enemy then goto continue end
+			-- Skip player
+			if owner.is_player then goto continue end
+		end
+
+		-- Any other solid geometry blocks line of sight
+		for _, hit in pairs(hits) do
+			local hit_dist_sq = (hit.x - enemy_cx)^2 + (hit.y - enemy_cy)^2
+			if hit_dist_sq < threshold_sq then
+				return false
+			end
+		end
+
+		::continue::
+	end
+
+	return true
 end
 
 --- Standard enemy draw function
@@ -80,8 +153,9 @@ end
 function common.create_death_state(death_animation)
 	return {
 		name = "death",
-		start = function(enemy, definition)
-			enemy.animation = Animation.new(death_animation, { flipped = enemy.direction })
+		start = function(enemy, _definition)
+			death_anim_opts.flipped = enemy.direction
+			enemy.animation = Animation.new(death_animation, death_anim_opts)
 			enemy.vx = (enemy.hit_direction or -1) * 4
 			enemy.vy = 0
 			enemy.gravity = 0

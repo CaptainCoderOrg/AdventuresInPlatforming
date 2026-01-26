@@ -22,7 +22,12 @@ local enemies = {
 	},
 	bat_eye = {
 		idle = "bateye_idle",
+		alert = "bateye_alert",
+		attack_start = "bateye_attack_start",
+		attack = "bateye_attack",
+		attack_recovery = "bateye_attack_recovery",
 		hit = "bateye_hit",
+		death = "bateye_death",
 	},
 }
 
@@ -41,6 +46,11 @@ canvas.assets.load_image(enemies.spikeslug.stop_defend, "sprites/enemies/spike_s
 canvas.assets.load_image(enemies.spikeslug.death, "sprites/enemies/spike_slug/spikeslug_death.png")
 
 canvas.assets.load_image(enemies.bat_eye.idle, "sprites/enemies/bat_eye/bateye_idle.png")
+canvas.assets.load_image(enemies.bat_eye.alert, "sprites/enemies/bat_eye/bateye_alert.png")
+canvas.assets.load_image(enemies.bat_eye.attack_start, "sprites/enemies/bat_eye/bateye_attack_start.png")
+canvas.assets.load_image(enemies.bat_eye.attack, "sprites/enemies/bat_eye/bateye_attack.png")
+canvas.assets.load_image(enemies.bat_eye.attack_recovery, "sprites/enemies/bat_eye/bateye_attack_recovery.png")
 canvas.assets.load_image(enemies.bat_eye.hit, "sprites/enemies/bat_eye/bateye_hit.png")
+canvas.assets.load_image(enemies.bat_eye.death, "sprites/enemies/bat_eye/bateye_death.png")
 
 return enemies

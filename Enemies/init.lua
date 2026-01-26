@@ -22,18 +22,18 @@ local DEBUG_COLOR_CYAN = "#00FFFF"
 local DEBUG_COLOR_MAGENTA = "#FF00FF"
 
 --- Registers an enemy type definition.
---- @param key string Type identifier (e.g., "ratto")
---- @param definition table Enemy type definition from type module
+---@param key string Type identifier (e.g., "ratto")
+---@param definition table Enemy type definition from type module
 function Enemy.register(key, definition)
 	Enemy.types[key] = definition
 end
 
 --- Spawns an enemy of the given type at position.
---- @param type_key string Enemy type identifier
---- @param x number X position in tiles
---- @param y number Y position in tiles
---- @param spawn_data table|nil Optional spawn data with waypoints or other properties
---- @return table The created enemy instance
+---@param type_key string Enemy type identifier
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param spawn_data table|nil Optional spawn data with waypoints or other properties
+---@return table The created enemy instance
 function Enemy.spawn(type_key, x, y, spawn_data)
 	local definition = Enemy.types[type_key]
 	if not definition then
@@ -122,8 +122,8 @@ end
 local to_remove = {}
 
 --- Updates all enemies.
---- @param dt number Delta time in seconds
---- @param player table The player object (for overlap detection)
+---@param dt number Delta time in seconds
+---@param player table The player object (for overlap detection)
 function Enemy.update(dt, player)
 	-- Clear module-level table instead of allocating new one
 	for i = 1, #to_remove do to_remove[i] = nil end
@@ -133,7 +133,10 @@ function Enemy.update(dt, player)
 		enemy.pressure_plate_lift = 0  -- Clear before pressure plates set it
 		enemy.shield_hit_cooldown = math.max(0, enemy.shield_hit_cooldown - dt)
 
-		common.apply_gravity(enemy, dt)
+		-- Only apply gravity to non-flying enemies
+		if enemy.gravity > 0 then
+			common.apply_gravity(enemy, dt)
+		end
 
 		-- Apply velocity
 		enemy.x = enemy.x + enemy.vx * dt
@@ -272,7 +275,7 @@ function Enemy.clear()
 end
 
 --- Processes collision flags to update grounded state.
---- @param cols table Collision flags from world.move()
+---@param cols table Collision flags from world.move()
 function Enemy:check_ground(cols)
 	if cols.ground then
 		self.is_grounded = true
@@ -287,7 +290,7 @@ end
 --- Uses world hitbox system (not combat system) because contact damage needs
 --- the rotated hitbox for slope-following enemies, while combat.query_rect()
 --- uses axis-aligned boxes for weapon sweeps.
---- @param player table The player object
+---@param player table The player object
 function Enemy:check_player_overlap(player)
 	local player_shape = world.shape_map[player]
 	if not player_shape then return end
@@ -304,10 +307,12 @@ function Enemy:check_player_overlap(player)
 			if shield_collides then
 				player:take_damage(self.damage, self.x)
 				self.shield_hit_cooldown = SHIELD_HIT_COOLDOWN
+				self.hit_shield = true  -- Flag for states to react to shield collision
 				return  -- Don't also check body collision
 			end
 		end
 	end
+	self.hit_shield = false
 
 	local collides, _ = enemy_shape:collidesWith(player_shape)
 	if collides then
@@ -317,19 +322,16 @@ end
 
 --- Returns the enemy's current armor value.
 --- Can be overridden per-enemy for dynamic armor (e.g., spike_slug defending).
---- @return number armor value
+---@return number armor value
 function Enemy:get_armor()
 	return self.armor
 end
 
 --- Called when enemy is hit by something.
---- @param source_type string "player", "weapon", or "projectile"
---- @param source table Hit source with optional .damage (number), .x (number), .vx (number)
+---@param source_type string "player", "weapon", or "projectile"
+---@param source table Hit source with optional .damage (number), .x (number), .vx (number)
 function Enemy:on_hit(source_type, source)
-	local damage = 1
-	if source and source.damage then
-		damage = source.damage
-	end
+	local damage = (source and source.damage) or 1
 
 	-- Apply armor reduction (minimum 0 damage)
 	damage = math.max(0, damage - self:get_armor())
@@ -391,7 +393,7 @@ function Enemy:die()
 end
 
 --- Changes the enemy's state.
---- @param new_state table State object with start, update, draw functions
+---@param new_state table State object with start, update, draw functions
 function Enemy:set_state(new_state)
 	self.state = new_state
 	local definition = Enemy.types[self.type_key]

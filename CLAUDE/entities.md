@@ -64,11 +64,15 @@ states = {
   - Health: 3 HP, Contact damage: 1
   - Detection range: 6 tiles (triggers defense)
   - `is_defending` flag blocks all damage while in defend state
-- **Bat Eye** - Flying enemy that patrols between waypoints
-  - States: idle, patrol, hit, death
-  - Health: 3 HP, Contact damage: 1
+- **Bat Eye** - Flying enemy that patrols between waypoints and dive-attacks
+  - States: idle, patrol, alert, attack_start, attack, attack_recovery, hit, death
+  - Health: 2 HP, Contact damage: 2
   - Flying (no gravity), damages shield on contact
-  - Patrol speed: 2 tiles/second
+  - Patrol speed: 4 px/frame, attack speed: 12 px/frame
+  - Detection: 5 tiles horizontal, 12 tiles vertical (below only, facing direction)
+  - Attack behavior: Throttled LOS check (0.1s), locks target position, dives at player
+  - Returns to patrol height at 3x patrol speed after attack
+  - Shield collision stops attack and triggers recovery state
   - Pauses at waypoints for 1 second before reversing
   - Spawned via paired `B` symbols on same row in level map
 
@@ -91,12 +95,18 @@ enemy:on_hit("projectile", projectile)
 ### Common Utilities (`Enemies/common.lua`)
 
 Shared functions to reduce duplication across enemy types:
-- `common.player_in_range(enemy, range)` - Distance check in tiles
+- `common.apply_gravity(enemy, dt)` - Frame-rate independent gravity application
+- `common.apply_friction(velocity, friction, dt)` - Frame-rate independent velocity damping
+- `common.player_in_range(enemy, range)` - Distance check in tiles (squared distance for perf)
 - `common.direction_to_player(enemy)` - Returns -1 or 1 toward player
-- `common.draw(enemy)` - Standard sprite rendering
+- `common.has_line_of_sight(enemy)` - Raycast from enemy to player, filtering non-solid shapes
+- `common.draw(enemy)` - Standard sprite rendering with slope rotation support
 - `common.is_blocked(enemy)` - Checks wall or edge in current direction
 - `common.reverse_direction(enemy)` - Flip direction and animation
 - `common.create_death_state(animation)` - Factory for standard death state
+- `common.update_slope_rotation(enemy, dt)` - Smooth lerp toward ground normal rotation
+- `common.get_slope_rotation(enemy)` - Get current rotation angle for drawing
+- `common.get_slope_y_offset(enemy)` - Get Y offset to keep rotated sprite grounded
 
 ### Edge Detection
 

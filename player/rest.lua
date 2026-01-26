@@ -7,7 +7,6 @@ local Playtime = require('Playtime')
 local Prop = require('Prop')
 local prop_common = require('Prop/common')
 local SaveSlots = require('SaveSlots')
-local sprites = require('sprites')
 
 --- Y-offset to show sitting pose (sprite is drawn lower)
 local REST_Y_OFFSET = 0.25
@@ -109,8 +108,7 @@ end
 --- Renders the player in rest pose.
 ---@param player table The player object
 function rest.draw(player)
-	local lift = Prop.get_pressure_plate_lift(player)
-	player.animation:draw(player.x * sprites.tile_size, (player.y + REST_Y_OFFSET) * sprites.tile_size - lift)
+	common.draw(player, REST_Y_OFFSET)
 end
 
 return rest

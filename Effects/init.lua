@@ -105,8 +105,8 @@ function Effects.draw()
 	local effect = next(state.all)
 	while effect do
 		effect.animation:draw(
-			effect.x * sprites.tile_size,
-			effect.y * sprites.tile_size
+			sprites.px(effect.x),
+			sprites.px(effect.y)
 		)
 		effect = next(state.all, effect)
 	end

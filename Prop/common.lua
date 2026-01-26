@@ -9,11 +9,11 @@ local Prop = nil
 
 --- Standard animation draw for props
 ---@param prop table Prop instance with animation
-function common.draw(prop)
+---@param y_offset number|nil Optional Y offset in tiles
+function common.draw(prop, y_offset)
     if prop.animation then
-        local px = prop.x * sprites.tile_size
-        local py = prop.y * sprites.tile_size
-        prop.animation:draw(px, py)
+        local y = prop.y + (y_offset or 0)
+        prop.animation:draw(sprites.px(prop.x), sprites.px(y))
     end
 end
 

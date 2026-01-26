@@ -608,17 +608,18 @@ end
 --- Shared by block and block_move states.
 ---@param player table The player object
 function common.draw_blocking(player)
-	local lift = Prop.get_pressure_plate_lift(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size - lift)
+	common.draw(player)
 	draw_shield_debug(player)
 end
 
 --- Standard draw helper that applies pressure plate lift.
 --- Call this instead of player.animation:draw() in state draw functions.
 ---@param player table The player object
-function common.draw(player)
+---@param y_offset number|nil Optional Y offset in tiles (e.g., 0.25 for sitting pose)
+function common.draw(player, y_offset)
 	local lift = Prop.get_pressure_plate_lift(player)
-	player.animation:draw(player.x * sprites.tile_size, player.y * sprites.tile_size - lift)
+	local y = player.y + (y_offset or 0)
+	player.animation:draw(sprites.px(player.x), sprites.stable_y(player, y, -lift))
 end
 
 --- Draws a debug hitbox when bounding boxes are enabled.

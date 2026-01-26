@@ -89,6 +89,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `world.lua` - HC collision engine wrapper
 - `combat.lua` - Combat spatial indexing
 - `profiler.lua` - Per-system timing profiler
+- `sprites/init.lua` - Sprite loading and pixel-alignment helpers
 
 ### Player
 - `player/init.lua` - State registry and core logic
@@ -126,4 +127,6 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - Delta-time based animation (milliseconds per frame)
 - Object pool pattern for entities
 - Tile coordinates for game logic (converted to pixels for rendering)
+  - `sprites.px(tiles)` - Converts to pixel-aligned screen coordinate
+  - `sprites.stable_y(entity, tiles, offset)` - Pixel-aligned Y with hysteresis to prevent jitter (use for player/enemies)
 - Directional rendering via `flipped` property (1 = right, -1 = left)

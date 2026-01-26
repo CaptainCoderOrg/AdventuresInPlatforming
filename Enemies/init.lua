@@ -17,6 +17,10 @@ Enemy.types = {}
 -- Shield collision debounce: 3 frames between contact hits to prevent rapid stamina drain
 local SHIELD_HIT_COOLDOWN = 3 / 60
 
+-- Debug color constants (avoid string allocation each frame)
+local DEBUG_COLOR_CYAN = "#00FFFF"
+local DEBUG_COLOR_MAGENTA = "#FF00FF"
+
 --- Registers an enemy type definition.
 --- @param key string Type identifier (e.g., "ratto")
 --- @param definition table Enemy type definition from type module
@@ -128,6 +132,7 @@ function Enemy.update(dt, player)
 	while enemy do
 		enemy.pressure_plate_lift = 0  -- Clear before pressure plates set it
 		enemy.shield_hit_cooldown = math.max(0, enemy.shield_hit_cooldown - dt)
+
 		common.apply_gravity(enemy, dt)
 
 		-- Apply velocity
@@ -162,11 +167,11 @@ function Enemy.update(dt, player)
 		-- Update slope rotation (visual only)
 		common.update_slope_rotation(enemy, dt)
 
-		-- Update combat hitbox position and rotation
-		local y_offset = common.get_slope_y_offset(enemy)
-		combat.update(enemy, y_offset)
+		-- Update combat hitbox position and rotation (cache y_offset for draw)
+		enemy._cached_y_offset = common.get_slope_y_offset(enemy)
+		combat.update(enemy, enemy._cached_y_offset)
 		if enemy.hitbox then
-			world.update_hitbox(enemy, y_offset)
+			world.update_hitbox(enemy, enemy._cached_y_offset)
 		end
 
 		-- Store player reference for state logic
@@ -210,7 +215,7 @@ function Enemy.draw()
 		-- Draw debug shapes
 		if config.bounding_boxes then
 			-- Draw physics shape (cyan) - for world collision
-			canvas.set_color("#00FFFF")  -- Cyan
+			canvas.set_color(DEBUG_COLOR_CYAN)
 			if enemy.shape and enemy.shape.is_circle then
 				-- Circle collider
 				local cx = (enemy.x + enemy.box.x + enemy.box.w / 2) * sprites.tile_size
@@ -227,8 +232,8 @@ function Enemy.draw()
 
 			-- Draw combat hitbox (magenta) - rotates with sprite
 			if enemy.hitbox then
-				canvas.set_color("#FF00FF")  -- Magenta
-				local y_offset = common.get_slope_y_offset(enemy)
+				canvas.set_color(DEBUG_COLOR_MAGENTA)
+				local y_offset = enemy._cached_y_offset or 0
 				local box_x = (enemy.x + enemy.box.x) * sprites.tile_size
 				local box_y = (enemy.y + enemy.box.y) * sprites.tile_size + y_offset
 				local box_w = enemy.box.w * sprites.tile_size

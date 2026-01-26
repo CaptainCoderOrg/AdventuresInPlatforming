@@ -1,6 +1,7 @@
 --- Button prop definition - Binary state (unpressed/pressed) with callback
 local Animation = require("Animation")
 local audio = require("audio")
+local common = require("Prop/common")
 local Prop = require("Prop")
 local sprites = require("sprites")
 
@@ -11,12 +12,13 @@ local BUTTON_ANIM = Animation.create_definition(sprites.environment.button, 5, {
     loop = false
 })
 
+--- Button Y offset (sprite is 8px tall, positioned in bottom half of tile)
+local BUTTON_Y_OFFSET = 0.5
+
 --- Shared draw function for button states
 ---@param prop table Button prop instance
 local function draw_button(prop)
-    local px = prop.x * sprites.tile_size
-    local py = (prop.y + 0.5) * sprites.tile_size
-    prop.animation:draw(px, py)
+    common.draw(prop, BUTTON_Y_OFFSET)
 end
 
 local definition = {

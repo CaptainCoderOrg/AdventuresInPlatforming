@@ -126,8 +126,8 @@ function Projectile.draw()
     local projectile = next(Projectile.all)
     while projectile do
         projectile.animation:draw(
-            projectile.x * sprites.tile_size,
-            projectile.y * sprites.tile_size)
+            sprites.px(projectile.x),
+            sprites.px(projectile.y))
 
         if config.bounding_boxes == true then
             canvas.set_color("#FFFF00")

@@ -9,25 +9,25 @@ local ROTATION_LERP_SPEED = 10  -- Rotation interpolation speed (higher = faster
 local TARGET_FPS = 60  -- Base frame rate for physics calculations
 
 --- Applies gravity acceleration to an enemy in a frame-rate independent way.
---- @param enemy table The enemy object with vy, gravity, max_fall_speed
---- @param dt number Delta time in seconds
+---@param enemy table The enemy object with vy, gravity, max_fall_speed
+---@param dt number Delta time in seconds
 function common.apply_gravity(enemy, dt)
 	enemy.vy = math.min(enemy.max_fall_speed, enemy.vy + enemy.gravity * dt * TARGET_FPS)
 end
 
 --- Applies velocity friction/damping in a frame-rate independent way.
---- @param velocity number Current velocity
---- @param friction number Per-frame friction at 60fps (e.g., 0.9 = 10% reduction per frame)
---- @param dt number Delta time in seconds
---- @return number Damped velocity
+---@param velocity number Current velocity
+---@param friction number Per-frame friction at 60fps (e.g., 0.9 = 10% reduction per frame)
+---@param dt number Delta time in seconds
+---@return number Damped velocity
 function common.apply_friction(velocity, friction, dt)
 	return velocity * (friction ^ (dt * TARGET_FPS))
 end
 
 --- Check if player is within range of enemy
---- @param enemy table The enemy
---- @param range number Distance in tiles
---- @return boolean
+---@param enemy table The enemy
+---@param range number Distance in tiles
+---@return boolean
 function common.player_in_range(enemy, range)
 	if not enemy.target_player then return false end
 	local dx = enemy.target_player.x - enemy.x
@@ -36,47 +36,47 @@ function common.player_in_range(enemy, range)
 end
 
 --- Get direction toward player (-1 or 1)
---- @param enemy table The enemy
---- @return number Direction (-1 left, 1 right)
+---@param enemy table The enemy
+---@return number Direction (-1 left, 1 right)
 function common.direction_to_player(enemy)
 	if not enemy.target_player then return enemy.direction end
 	return enemy.target_player.x < enemy.x and -1 or 1
 end
 
 --- Standard enemy draw function
---- @param enemy table The enemy to draw
+---@param enemy table The enemy to draw
 function common.draw(enemy)
 	if enemy.animation then
 		local rotation = common.get_slope_rotation(enemy)
-		local y_offset = common.get_slope_y_offset(enemy)
+		local y_offset = enemy._cached_y_offset or 0
 		local lift = Prop.get_pressure_plate_lift(enemy)
 
 		enemy.animation:draw(
-			enemy.x * sprites.tile_size,
-			enemy.y * sprites.tile_size + y_offset - lift,
+			sprites.px(enemy.x),
+			sprites.stable_y(enemy, enemy.y, y_offset - lift),
 			rotation
 		)
 	end
 end
 
 --- Check if enemy is blocked by wall or edge in current direction
---- @param enemy table The enemy to check
---- @return boolean True if blocked
+---@param enemy table The enemy to check
+---@return boolean True if blocked
 function common.is_blocked(enemy)
 	return (enemy.direction == -1 and (enemy.wall_left or enemy.edge_left)) or
 	       (enemy.direction == 1 and (enemy.wall_right or enemy.edge_right))
 end
 
 --- Reverse enemy direction and flip animation
---- @param enemy table The enemy to reverse
+---@param enemy table The enemy to reverse
 function common.reverse_direction(enemy)
 	enemy.direction = -enemy.direction
 	enemy.animation.flipped = enemy.direction
 end
 
 --- Create standard death state
---- @param death_animation table Animation definition for death
---- @return table State object
+---@param death_animation table Animation definition for death
+---@return table State object
 function common.create_death_state(death_animation)
 	return {
 		name = "death",
@@ -97,8 +97,8 @@ function common.create_death_state(death_animation)
 end
 
 --- Update enemy's visual rotation with smooth lerp
---- @param enemy table The enemy with ground_normal
---- @param dt number Delta time in seconds
+---@param enemy table The enemy with ground_normal
+---@param dt number Delta time in seconds
 function common.update_slope_rotation(enemy, dt)
 	if not enemy.rotate_to_slope then return end
 
@@ -119,8 +119,8 @@ function common.update_slope_rotation(enemy, dt)
 end
 
 --- Get current slope rotation for drawing
---- @param enemy table The enemy
---- @return number Rotation angle in radians
+---@param enemy table The enemy
+---@return number Rotation angle in radians
 function common.get_slope_rotation(enemy)
 	if not enemy.rotate_to_slope then return 0 end
 	return enemy.slope_rotation or 0
@@ -128,8 +128,8 @@ end
 
 --- Get Y offset to keep sprite/hitbox grounded when rotated
 --- Only needed for rectangle physics colliders; circle colliders sit naturally on slopes
---- @param enemy table The enemy
---- @return number Y offset in pixels
+---@param enemy table The enemy
+---@return number Y offset in pixels
 function common.get_slope_y_offset(enemy)
 	if not enemy.rotate_to_slope or not enemy.animation then return 0 end
 	-- Circle colliders don't need Y offset - they naturally conform to slopes

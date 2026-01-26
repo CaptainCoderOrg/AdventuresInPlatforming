@@ -133,9 +133,7 @@ function Spear.draw_all()
     for i = 1, #Spear.all do
         local spear = Spear.all[i]
         if not spear.marked_for_destruction then
-            local px = spear.x * sprites.tile_size
-            local py = spear.y * sprites.tile_size
-            spear.animation:draw(px, py)
+            spear.animation:draw(sprites.px(spear.x), sprites.px(spear.y))
 
             -- Debug bounding box
             if config.bounding_boxes and spear.box then

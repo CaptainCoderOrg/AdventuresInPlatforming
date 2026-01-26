@@ -60,14 +60,6 @@ local function is_occupied(prop, player)
     return dominated
 end
 
---- Shared draw function for plate states
----@param prop table Pressure plate prop instance
-local function draw_plate(prop)
-    local px = prop.x * sprites.tile_size
-    local py = prop.y * sprites.tile_size
-    prop.animation:draw(px, py)
-end
-
 --- Updates the lift amount based on current animation frame.
 ---@param prop table Pressure plate prop instance
 local function update_lift_amount(prop)
@@ -107,7 +99,7 @@ local definition = {
                     Prop.set_state(prop, "pressed")
                 end
             end,
-            draw = draw_plate
+            draw = common.draw
         },
 
         pressed = {
@@ -139,7 +131,7 @@ local definition = {
                     end
                 end
             end,
-            draw = draw_plate
+            draw = common.draw
         },
 
         release = {
@@ -164,7 +156,7 @@ local definition = {
                     Prop.set_state(prop, "unpressed")
                 end
             end,
-            draw = draw_plate
+            draw = common.draw
         }
     }
 }

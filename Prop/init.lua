@@ -223,9 +223,7 @@ function Prop.draw()
             elseif definition.draw then
                 definition.draw(prop)
             elseif prop.animation then
-                local px = prop.x * sprites.tile_size
-                local py = prop.y * sprites.tile_size
-                prop.animation:draw(px, py)
+                prop.animation:draw(sprites.px(prop.x), sprites.px(prop.y))
             end
 
             -- Debug bounding box

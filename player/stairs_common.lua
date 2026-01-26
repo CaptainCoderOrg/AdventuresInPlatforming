@@ -51,8 +51,8 @@ function stairs_common.create_state(variant)
         if player.animation:is_finished() then return end
         if not player.stairs_target then return end
 
-        local x = player.stairs_target.stair_x * sprites.tile_size
-        local y = player.stairs_target.stair_y * sprites.tile_size
+        local x = sprites.px(player.stairs_target.stair_x)
+        local y = sprites.px(player.stairs_target.stair_y)
         player.animation:draw(x, y)
     end
 

@@ -7,6 +7,20 @@ local common = require('Enemies/common')
 --- Detection range: 5 tiles. Health: 5 HP. Contact damage: 1.
 local ratto = {}
 
+local anim_opts = { flipped = 1 }  -- Reused to avoid allocation
+
+--- Sets up enemy animation, reusing existing instance when possible.
+---@param enemy table The enemy instance
+---@param definition table Animation definition to use
+local function set_animation(enemy, definition)
+	anim_opts.flipped = enemy.direction
+	if enemy.animation then
+		enemy.animation:reinit(definition, anim_opts)
+	else
+		enemy.animation = Animation.new(definition, anim_opts)
+	end
+end
+
 ratto.animations = {
 	IDLE = Animation.create_definition(sprites.enemies.ratto.idle, 6, {
 		ms_per_frame = 200,
@@ -36,7 +50,7 @@ ratto.states = {}
 ratto.states.idle = {
 	name = "idle",
 	start = function(enemy, definition)
-		enemy.animation = Animation.new(ratto.animations.IDLE, { flipped = enemy.direction })
+		set_animation(enemy, ratto.animations.IDLE)
 		enemy.vx = 0
 		enemy.idle_timer = 2.0
 	end,
@@ -58,7 +72,7 @@ ratto.states.idle = {
 ratto.states.run = {
 	name = "run",
 	start = function(enemy, definition)
-		enemy.animation = Animation.new(ratto.animations.RUN, { flipped = enemy.direction })
+		set_animation(enemy, ratto.animations.RUN)
 		enemy.run_timer = 2.0
 		enemy.run_speed = 3
 	end,
@@ -85,7 +99,7 @@ ratto.states.run = {
 ratto.states.chase = {
 	name = "chase",
 	start = function(enemy, definition)
-		enemy.animation = Animation.new(ratto.animations.RUN, { flipped = enemy.direction })
+		set_animation(enemy, ratto.animations.RUN)
 		enemy.chase_speed = 6
 		enemy.overshoot_timer = nil
 		enemy.direction = common.direction_to_player(enemy)
@@ -126,7 +140,7 @@ ratto.states.chase = {
 ratto.states.hit = {
 	name = "hit",
 	start = function(enemy, definition)
-		enemy.animation = Animation.new(ratto.animations.HIT, { flipped = enemy.direction })
+		set_animation(enemy, ratto.animations.HIT)
 		local knockback_speed = 12
 		enemy.vx = (enemy.hit_direction or -1) * knockback_speed
 		enemy.vy = -5

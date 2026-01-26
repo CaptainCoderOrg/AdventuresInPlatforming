@@ -26,6 +26,7 @@ local hud = require("ui/hud")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local rest_screen = require("ui/rest_screen")
+local screen_fade = require("ui/screen_fade")
 
 -- Enemies
 local Enemy = require("Enemies")
@@ -48,6 +49,7 @@ Prop.register("locked_door", require("Prop/locked_door"))
 Prop.register("unique_item", require("Prop/unique_item"))
 Prop.register("lever", require("Prop/lever"))
 Prop.register("appearing_bridge", require("Prop/appearing_bridge"))
+Prop.register("stairs", require("Prop/stairs"))
 
 -- Levels
 local level1 = require("levels/level1")
@@ -65,6 +67,43 @@ local function get_level_by_id(id)
     return levels[id]
 end
 
+--- Find spawn position by symbol in a level
+---@param level table Level module with map and symbols
+---@param symbol string Symbol to search for
+---@return table|nil spawn Position {x, y} or nil if not found
+local function find_spawn_by_symbol(level, symbol)
+    if not level or not level.map or not level.symbols then return nil end
+    for row_idx, row in ipairs(level.map) do
+        for col_idx = 1, #row do
+            local char = row:sub(col_idx, col_idx)
+            if char == symbol then
+                return { x = col_idx - 1, y = row_idx - 1 }
+            end
+        end
+    end
+    return nil
+end
+
+--- Get player data for preservation during level transitions
+---@param p table Player instance
+---@return table data Player stats to preserve
+local function get_player_save_data(p)
+    return {
+        max_health = p.max_health,
+        damage = p.damage,
+        level = p.level,
+        experience = p.experience,
+        gold = p.gold,
+        defense = p.defense,
+        strength = p.strength,
+        critical_chance = p.critical_chance,
+        unique_items = prop_common.copy_array(p.unique_items),
+        energy_used = p.energy_used,
+        stamina_used = p.stamina_used,
+        projectile_ix = p.projectile_ix,
+    }
+end
+
 local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
@@ -72,6 +111,10 @@ local was_dead = false  -- Track death state for game over trigger
 local current_level = level1  -- Track current level module
 local active_slot = nil  -- Currently active save slot (1-3)
 local proximity_volumes = {}  -- Reused per-frame to avoid allocations
+
+-- Forward declarations for functions used before definition
+local cleanup_level
+local init_level
 
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
@@ -141,6 +184,28 @@ local function update(dt)
 
     profiler.start("player")
     player:update(dt)
+
+    -- Check for stairs level transition
+    if player.stairs_transition_ready and player.stairs_target and not screen_fade.is_active() then
+        local target = player.stairs_target
+        local target_level = get_level_by_id(target.level_id)
+        local spawn_pos = target_level and find_spawn_by_symbol(target_level, target.spawn_symbol)
+
+        -- Clear flags regardless of whether transition succeeds
+        player.stairs_transition_ready = false
+        player.stairs_target = nil
+
+        if spawn_pos then
+            local player_data = get_player_save_data(player)
+            screen_fade.start(function()
+                cleanup_level()
+                init_level(target_level, spawn_pos, player_data)
+                audio.play_music(audio.level1)
+            end)
+            profiler.stop("player")
+            return
+        end
+    end
 
     -- Damage and teleport player if too far outside world bounds
     if player.state ~= Player.states.death then
@@ -240,6 +305,9 @@ local function draw()
 
     -- Draw screen-space UI (not affected by camera)
     hud.draw(player)
+
+    -- Draw screen fade overlay (covers everything)
+    screen_fade.draw()
 end
 
 --- Initialize or reload a level with player and entities
@@ -248,7 +316,7 @@ end
 ---@param player_data table|nil Optional player stats to restore (max_health, level)
 ---@param options table|nil Optional settings { skip_camera_snap = bool }
 ---@return nil
-local function init_level(level, spawn_override, player_data, options)
+init_level = function(level, spawn_override, player_data, options)
     options = options or {}
     level = level or current_level
     current_level = level
@@ -264,6 +332,14 @@ local function init_level(level, spawn_override, player_data, options)
         -- Copy unique_items array to avoid sharing reference with save cache
         if player_data.unique_items then
             player.unique_items = prop_common.copy_array(player_data.unique_items)
+        end
+        -- Restore transient state (for stairs transitions)
+        if player_data.damage then player.damage = player_data.damage end
+        if player_data.energy_used then player.energy_used = player_data.energy_used end
+        if player_data.stamina_used then player.stamina_used = player_data.stamina_used end
+        if player_data.projectile_ix then
+            player.projectile_ix = player_data.projectile_ix
+            player.projectile = player.projectile_options[player.projectile_ix]
         end
     end
 
@@ -325,7 +401,7 @@ end
 --- Clean up all game entities and colliders before level reload
 --- Must be called before init_level to prevent orphaned colliders
 ---@return nil
-local function cleanup_level()
+cleanup_level = function()
     world.remove_collider(player)
     combat.remove(player)
     world.clear_probes()
@@ -482,6 +558,7 @@ local function game()
 
     profiler.start("hud")
     hud.update(dt, player)
+    screen_fade.update(dt)
     profiler.stop("hud")
 
     profiler.start("input")

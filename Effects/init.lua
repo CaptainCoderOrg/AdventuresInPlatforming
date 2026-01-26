@@ -111,15 +111,15 @@ function Effects.draw()
 		effect = next(state.all, effect)
 	end
 
+	-- Set font once for all text rendering
+	canvas.set_font_family("menu_font")
+	canvas.set_font_size(6*config.ui.SCALE)
+
 	local text = next(state.damage_texts)
 	while text do
 		local alpha = 1 - (text.elapsed / text.lifetime)
-
 		canvas.set_global_alpha(alpha)
 		canvas.set_color(text.color)
-		canvas.set_font_family("menu_font")
-		canvas.set_font_size(6*config.ui.SCALE)
-
 		local px = text.x * sprites.tile_size - text.cached_width / 2
 		local py = text.y * sprites.tile_size
 		canvas.draw_text(px, py, text.display)
@@ -129,12 +129,8 @@ function Effects.draw()
 	text = next(state.status_texts)
 	while text do
 		local alpha = 1 - (text.elapsed / text.lifetime)
-
 		canvas.set_global_alpha(alpha)
 		canvas.set_color(text.color)
-		canvas.set_font_family("menu_font")
-		canvas.set_font_size(6*config.ui.SCALE)
-
 		local px = text.x * sprites.tile_size - text.cached_width / 2
 		local py = text.y * sprites.tile_size
 		canvas.draw_text(px, py, text.message)

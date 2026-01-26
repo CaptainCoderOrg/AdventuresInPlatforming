@@ -132,6 +132,8 @@ player:get_speed()           -- Returns speed with fatigue penalty applied
 - `max_energy = 4` - Projectile ammunition pool
 - `energy_used` - Tracks projectile consumption
 - Currently used for throw ability resource tracking
+- **Visual Feedback**: "Low Energy" or "No Energy" text appears when throw attempted with insufficient energy
+- **UI Flash**: `energy_flash_requested` triggers energy bar flash on failed throw
 
 ## Player Properties Reference
 

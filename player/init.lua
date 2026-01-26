@@ -29,7 +29,9 @@ local states = {
 	throw = require('player.throw'),
 	hit = require('player.hit'),
 	death = require('player.death'),
-	rest = require('player.rest')
+	rest = require('player.rest'),
+	stairs_up = require('player.stairs_up'),
+	stairs_down = require('player.stairs_down'),
 }
 
 -- Expose states for direct reference

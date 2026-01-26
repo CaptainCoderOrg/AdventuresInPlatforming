@@ -315,25 +315,48 @@ Projectile.new(x, y, direction, spec, Effects.create_shuriken_hit)
 
 ## Effects System
 
-Visual feedback system for transient particle effects. Manages one-shot animations that auto-cleanup when finished.
+Visual feedback system for transient effects including animations, floating text, and particles. Manages one-shot effects that auto-cleanup when finished.
 
 ### Architecture
 
-- Object pool pattern with `Effects.all` table
-- Factory methods for specific effects (e.g., `Effects.create_hit()`)
+- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`
+- Factory methods for specific effects
 - Integrated into main loop via `Effects.update(dt)` and `Effects.draw()`
-- Uses Animation system for rendering
+- Text width cached at creation to avoid per-frame measurement
 
 ### Current Effects
 
+**Visual Effects:**
 - `HIT` - Impact effect (16x16px, 4 frames, 80ms/frame, non-looping)
 - `SHURIKEN_HIT` - Shuriken impact (8x8px, 6 frames, non-looping)
+
+**Floating Text:**
+- Damage text - Shows damage numbers above enemies (red, floats upward)
+- Status text - Shows player state messages (TIRED, Low Energy, No Energy, Locked)
+- Gold/XP text - Accumulating pickup feedback that follows player
+
+**Particles:**
+- Fatigue particles - Sweat droplets when stamina exhausted
 
 ### Usage
 
 ```lua
-Effects.create_hit(x, y, direction)          -- Generic hit effect
-Effects.create_shuriken_hit(x, y, direction) -- Shuriken-specific effect
+-- Visual effects
+Effects.create_hit(x, y, direction)           -- Generic hit effect
+Effects.create_shuriken_hit(x, y, direction)  -- Shuriken-specific effect
+
+-- Floating text
+Effects.create_damage_text(x, y, damage)      -- Floating damage number
+Effects.create_fatigue_text(x, y)             -- "TIRED" status
+Effects.create_energy_text(x, y, current)     -- "Low Energy" or "No Energy"
+Effects.create_locked_text(x, y, player)      -- "Locked" for doors
+
+-- Accumulating text (follows player)
+Effects.create_gold_text(x, y, amount, player)-- Accumulating gold pickup
+Effects.create_xp_text(x, y, amount, player)  -- Accumulating XP pickup
+
+-- Particles
+Effects.create_fatigue_particle(x, y)         -- Sweat particle
 ```
 
 Effects are positioned in tile coordinates and converted to screen pixels for rendering.
@@ -341,8 +364,8 @@ Effects are positioned in tile coordinates and converted to screen pixels for re
 ### Creating Custom Effects
 
 Effects use the object pool pattern. New effect types require:
-1. Animation definition in `Effects/init.lua`
-2. Factory method (e.g., `Effects.create_shuriken_hit`)
+1. Animation definition or text configuration in `Effects/init.lua`
+2. Factory method (e.g., `Effects.create_energy_text`)
 
 ## Key Files
 

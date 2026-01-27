@@ -476,7 +476,7 @@ local function start_new_game()
     end
     Playtime.reset()
     cleanup_level()
-    init_level()
+    init_level(level1)
     audio.play_music(audio.level1)
 end
 

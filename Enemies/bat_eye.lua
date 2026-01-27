@@ -17,8 +17,6 @@ local DETECTION_RANGE_Y = 12      -- vertical detection range (tiles)
 local ATTACK_ARRIVAL_THRESHOLD_SQ = 0.3 * 0.3  -- squared tiles for perf
 local LOS_CHECK_INTERVAL = 0.1  -- seconds between LOS checks
 
-local anim_opts = { flipped = 1 }  -- Reused to avoid allocation
-
 bat_eye.animations = {
 	IDLE = Animation.create_definition(sprites.enemies.bat_eye.idle, 6),
 	ALERT = Animation.create_definition(sprites.enemies.bat_eye.alert, 4, {
@@ -31,18 +29,6 @@ bat_eye.animations = {
 	HIT = Animation.create_definition(sprites.enemies.bat_eye.hit, 3, { loop = false }),
 	DEATH = Animation.create_definition(sprites.enemies.bat_eye.death, 6, { loop = false }),
 }
-
---- Sets up enemy animation, reusing existing instance when possible.
----@param enemy table The enemy instance
----@param definition table Animation definition to use
-local function set_animation(enemy, definition)
-	anim_opts.flipped = enemy.direction
-	if enemy.animation then
-		enemy.animation:reinit(definition, anim_opts)
-	else
-		enemy.animation = Animation.new(definition, anim_opts)
-	end
-end
 
 --- Check if player can be detected for attack.
 --- Player must be: in range, below the bat, in facing direction, and have clear LOS.
@@ -77,36 +63,33 @@ local function can_detect_player(enemy, dt)
 	return enemy.cached_los or false
 end
 
---- Debug draw: detection zone and raycast line to player.
+--- Draw debug detection zone and raycast line to player.
 ---@param enemy table The bat_eye enemy
-local function debug_draw(enemy)
-	if not config.bounding_boxes then return end
-
+local function draw_debug(enemy)
 	local ts = sprites.tile_size
-	local cx = (enemy.x + enemy.box.x + enemy.box.w / 2) * ts
-	local cy = (enemy.y + enemy.box.y + enemy.box.h / 2) * ts
+	local box_cx = enemy.box.x + enemy.box.w / 2
+	local box_cy = enemy.box.y + enemy.box.h / 2
+	local cx = (enemy.x + box_cx) * ts
+	local cy = (enemy.y + box_cy) * ts
 	local range_x = DETECTION_RANGE_X * ts
 	local range_y = DETECTION_RANGE_Y * ts
 
 	-- Draw detection rectangle (below + facing direction)
 	local rect_x = enemy.direction == 1 and cx or (cx - range_x)
-	local rect_y = cy
 
 	canvas.set_color("#FFFF0066")
-	canvas.draw_rect(rect_x, rect_y, range_x, range_y)
+	canvas.draw_rect(rect_x, cy, range_x, range_y)
 
 	-- Draw boundary lines from center
 	canvas.set_color("#FFFF00")
-	canvas.draw_line(cx, cy, cx, cy + range_y)  -- Down
-	canvas.draw_line(cx, cy, cx + enemy.direction * range_x, cy)  -- Horizontal
+	canvas.draw_line(cx, cy, cx, cy + range_y)
+	canvas.draw_line(cx, cy, cx + enemy.direction * range_x, cy)
 
 	-- Draw raycast line to player if in detection zone
 	if enemy.target_player then
 		local player = enemy.target_player
 		local dx = player.x - enemy.x
 		local dy = player.y - enemy.y
-
-		-- Check if player is in detection zone (below, in range, in facing direction)
 		local player_dir = dx > 0 and 1 or -1
 		local in_facing_dir = player_dir == enemy.direction
 		local in_range = math.abs(dx) <= DETECTION_RANGE_X and dy > 0 and dy <= DETECTION_RANGE_Y
@@ -114,25 +97,19 @@ local function debug_draw(enemy)
 		if in_range and in_facing_dir then
 			local px = (player.x + player.box.x + player.box.w / 2) * ts
 			local py = (player.y + player.box.y + player.box.h / 2) * ts
-			local has_los = enemy.cached_los or false
-
-			if has_los then
-				canvas.set_color("#00FF00")  -- Green: can attack
-			else
-				canvas.set_color("#FF0000")  -- Red: LOS blocked
-			end
+			canvas.set_color(enemy.cached_los and "#00FF00" or "#FF0000")
 			canvas.draw_line(cx, cy, px, py)
 		end
 	end
 
 	-- Draw attack target during attack states
 	if enemy.attack_target_x and enemy.attack_target_y then
-		if enemy.state.name == "attack" or enemy.state.name == "attack_start" then
+		local state_name = enemy.state.name
+		if state_name == "attack" or state_name == "attack_start" then
 			canvas.set_color("#FF0000")
-			local tx = (enemy.attack_target_x + enemy.box.x + enemy.box.w / 2) * ts
-			local ty = (enemy.attack_target_y + enemy.box.y + enemy.box.h / 2) * ts
+			local tx = (enemy.attack_target_x + box_cx) * ts
+			local ty = (enemy.attack_target_y + box_cy) * ts
 			canvas.draw_line(cx, cy, tx, ty)
-			-- Draw X at target
 			local size = 8
 			canvas.draw_line(tx - size, ty - size, tx + size, ty + size)
 			canvas.draw_line(tx - size, ty + size, tx + size, ty - size)
@@ -140,11 +117,13 @@ local function debug_draw(enemy)
 	end
 end
 
---- Draw with debug overlay
+--- Standard draw function with debug overlay when enabled.
 ---@param enemy table The bat_eye enemy
-local function draw_with_debug(enemy)
+local function draw(enemy)
 	common.draw(enemy)
-	debug_draw(enemy)
+	if config.bounding_boxes then
+		draw_debug(enemy)
+	end
 end
 
 --- Returns enemy to patrol height at 3x patrol speed.
@@ -163,14 +142,14 @@ bat_eye.states = {}
 
 bat_eye.states.idle = {
 	name = "idle",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.IDLE)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.IDLE)
 		enemy.vx = 0
 		enemy.idle_timer = IDLE_DURATION
 		-- Swap target waypoint for next patrol
-		if enemy.waypoint_a and enemy.waypoint_b then
-			enemy.target_waypoint = enemy.target_waypoint == enemy.waypoint_a
-				and enemy.waypoint_b or enemy.waypoint_a
+		local wp_a, wp_b = enemy.waypoint_a, enemy.waypoint_b
+		if wp_a and wp_b then
+			enemy.target_waypoint = enemy.target_waypoint == wp_a and wp_b or wp_a
 		end
 	end,
 	update = function(enemy, dt)
@@ -186,13 +165,13 @@ bat_eye.states.idle = {
 			enemy:set_state(bat_eye.states.patrol)
 		end
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.patrol = {
 	name = "patrol",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.IDLE)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.IDLE)
 		enemy.arrived_at_waypoint = false
 		enemy.last_anim_frame = 0
 		-- Store patrol height on first patrol (spawn height)
@@ -236,42 +215,39 @@ bat_eye.states.patrol = {
 		enemy.vx = enemy.direction * PATROL_SPEED
 		enemy.animation.flipped = enemy.direction
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.alert = {
 	name = "alert",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.ALERT)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.ALERT)
 		enemy.vx = 0
 		enemy.vy = 0
-		-- Save current waypoint to restore after attack
-		enemy.pre_attack_waypoint = enemy.target_waypoint
-		-- Face the player
 		enemy.direction = common.direction_to_player(enemy)
 		enemy.animation.flipped = enemy.direction
 	end,
 	update = function(enemy, _dt)
-		if enemy.animation:is_finished() then
-			-- Check if we still have line of sight
-			if common.has_line_of_sight(enemy) and enemy.target_player then
-				-- Save player position as attack target (doesn't track during attack)
-				enemy.attack_target_x = enemy.target_player.x
-				enemy.attack_target_y = enemy.target_player.y
-				enemy:set_state(bat_eye.states.attack_start)
-			else
-				-- Lost sight, return to patrol
-				enemy:set_state(bat_eye.states.patrol)
-			end
+		if not enemy.animation:is_finished() then return end
+
+		-- Lost sight: return to patrol
+		if not common.has_line_of_sight(enemy) or not enemy.target_player then
+			enemy:set_state(bat_eye.states.patrol)
+			return
 		end
+
+		-- Save player position as attack target (doesn't track during attack)
+		enemy.attack_target_x = enemy.target_player.x
+		enemy.attack_target_y = enemy.target_player.y
+		enemy:set_state(bat_eye.states.attack_start)
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.attack_start = {
 	name = "attack_start",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.ATTACK_START)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.ATTACK_START)
 		enemy.vx = 0
 		enemy.vy = 0
 	end,
@@ -280,86 +256,76 @@ bat_eye.states.attack_start = {
 			enemy:set_state(bat_eye.states.attack)
 		end
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.attack = {
 	name = "attack",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.ATTACK)
-		-- Calculate velocity toward saved target position
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.ATTACK)
 		local dx = enemy.attack_target_x - enemy.x
 		local dy = enemy.attack_target_y - enemy.y
 		local distance = math.sqrt(dx * dx + dy * dy)
 
 		if distance > 0 then
-			enemy.vx = (dx / distance) * ATTACK_SPEED
-			enemy.vy = (dy / distance) * ATTACK_SPEED
+			local speed_factor = ATTACK_SPEED / distance
+			enemy.vx = dx * speed_factor
+			enemy.vy = dy * speed_factor
 		else
 			enemy.vx = 0
 			enemy.vy = 0
 		end
 
-		-- Face attack direction
 		if dx ~= 0 then
 			enemy.direction = dx > 0 and 1 or -1
 			enemy.animation.flipped = enemy.direction
 		end
 	end,
 	update = function(enemy, _dt)
-		-- Stop attack if we hit a shield
 		if enemy.hit_shield then
 			enemy.hit_shield = false
 			enemy:set_state(bat_eye.states.attack_recovery)
 			return
 		end
 
-		-- Check if we've reached the target (squared distance for perf)
 		local dx = enemy.attack_target_x - enemy.x
 		local dy = enemy.attack_target_y - enemy.y
-		local dist_sq = dx * dx + dy * dy
-
-		if dist_sq < ATTACK_ARRIVAL_THRESHOLD_SQ then
+		if dx * dx + dy * dy < ATTACK_ARRIVAL_THRESHOLD_SQ then
 			enemy:set_state(bat_eye.states.attack_recovery)
 		end
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.attack_recovery = {
 	name = "attack_recovery",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.ATTACK_RECOVERY)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.ATTACK_RECOVERY)
 		enemy.vx = 0
 		enemy.vy = 0
 	end,
 	update = function(enemy, _dt)
-		if enemy.animation:is_finished() then
-			-- Face the player
-			enemy.direction = common.direction_to_player(enemy)
-			enemy.animation.flipped = enemy.direction
+		if not enemy.animation:is_finished() then return end
 
-			-- Set waypoint to the one in the direction we're now facing
-			if enemy.waypoint_a and enemy.waypoint_b then
-				if enemy.direction == 1 then
-					-- Facing right: go to rightmost waypoint
-					enemy.target_waypoint = math.max(enemy.waypoint_a, enemy.waypoint_b)
-				else
-					-- Facing left: go to leftmost waypoint
-					enemy.target_waypoint = math.min(enemy.waypoint_a, enemy.waypoint_b)
-				end
-			end
+		-- Face the player and select waypoint in that direction
+		enemy.direction = common.direction_to_player(enemy)
+		enemy.animation.flipped = enemy.direction
 
-			enemy:set_state(bat_eye.states.patrol)
+		local wp_a, wp_b = enemy.waypoint_a, enemy.waypoint_b
+		if wp_a and wp_b then
+			local selector = enemy.direction == 1 and math.max or math.min
+			enemy.target_waypoint = selector(wp_a, wp_b)
 		end
+
+		enemy:set_state(bat_eye.states.patrol)
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.hit = {
 	name = "hit",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.HIT)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.HIT)
 		enemy.vx = 0
 		enemy.vy = 0
 	end,
@@ -368,13 +334,13 @@ bat_eye.states.hit = {
 			enemy:set_state(bat_eye.states.patrol)
 		end
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
 bat_eye.states.death = {
 	name = "death",
-	start = function(enemy, _definition)
-		set_animation(enemy, bat_eye.animations.DEATH)
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.DEATH)
 		enemy.vx = 0
 		enemy.vy = 0
 	end,
@@ -383,10 +349,9 @@ bat_eye.states.death = {
 			enemy.marked_for_destruction = true
 		end
 	end,
-	draw = draw_with_debug,
+	draw = draw,
 }
 
----@return table Enemy definition with box, gravity, states, animations, etc.
 return {
 	box = { w = 0.5, h = 0.5, x = 0.25, y = 0.25 },  -- 8x8 centered hitbox
 	gravity = 0,  -- Flying enemy

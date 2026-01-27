@@ -137,10 +137,16 @@ local function update_ground_enemy(enemy, dt)
 	enemy.wall_left = cols.wall_left
 	enemy.wall_right = cols.wall_right
 
-	if enemy.is_grounded then
+	-- Only check edge in direction of movement (saves 1-2 collision queries per frame)
+	if enemy.is_grounded and enemy.vx ~= 0 then
 		local probe_y = enemy.y + enemy.box.y + enemy.box.h + 0.5
-		enemy.edge_left = not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
-		enemy.edge_right = not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
+		if enemy.vx < 0 then
+			enemy.edge_left = not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
+			enemy.edge_right = false
+		else
+			enemy.edge_left = false
+			enemy.edge_right = not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
+		end
 	else
 		enemy.edge_left = false
 		enemy.edge_right = false
@@ -229,49 +235,44 @@ end
 ---@param camera table Camera instance for viewport culling
 function Enemy.draw(camera)
 	local debug_mode = config.bounding_boxes
+	local ts = sprites.tile_size
 	-- Only save/restore canvas state when drawing debug visuals (avoid overhead in release)
 	if debug_mode then canvas.save() end
 
 	local enemy = next(Enemy.all)
 	while enemy do
-		if camera:is_visible(enemy, sprites.tile_size) then
+		if camera:is_visible(enemy, ts) then
 			enemy.state.draw(enemy)
 
 			if debug_mode then
+				local box = enemy.box
+				local box_x = (enemy.x + box.x) * ts
+				local box_y = (enemy.y + box.y) * ts
+				local box_w = box.w * ts
+				local box_h = box.h * ts
+
 				-- Draw physics shape (cyan) - for world collision
 				canvas.set_color(DEBUG_COLOR_CYAN)
 				if enemy.shape and enemy.shape.is_circle then
-					local cx = (enemy.x + enemy.box.x + enemy.box.w / 2) * sprites.tile_size
-					local cy = (enemy.y + enemy.box.y + enemy.box.h / 2) * sprites.tile_size
-					canvas.draw_circle(cx, cy, enemy.shape.radius)
+					canvas.draw_circle(box_x + box_w / 2, box_y + box_h / 2, enemy.shape.radius)
 				else
-					canvas.draw_rect(
-						(enemy.x + enemy.box.x) * sprites.tile_size,
-						(enemy.y + enemy.box.y) * sprites.tile_size,
-						enemy.box.w * sprites.tile_size,
-						enemy.box.h * sprites.tile_size)
+					canvas.draw_rect(box_x, box_y, box_w, box_h)
 				end
 
 				-- Draw combat hitbox (magenta) - rotates with sprite
 				if enemy.hitbox then
 					canvas.set_color(DEBUG_COLOR_MAGENTA)
 					local y_offset = enemy._cached_y_offset or 0
-					local box_x = (enemy.x + enemy.box.x) * sprites.tile_size
-					local box_y = (enemy.y + enemy.box.y) * sprites.tile_size + y_offset
-					local box_w = enemy.box.w * sprites.tile_size
-					local box_h = enemy.box.h * sprites.tile_size
 					local rotation = -(enemy.slope_rotation or 0)
 
 					if rotation ~= 0 then
 						canvas.save()
-						local cx = box_x + box_w / 2
-						local cy = box_y + box_h / 2
-						canvas.translate(cx, cy)
+						canvas.translate(box_x + box_w / 2, box_y + y_offset + box_h / 2)
 						canvas.rotate(rotation)
 						canvas.draw_rect(-box_w / 2, -box_h / 2, box_w, box_h)
 						canvas.restore()
 					else
-						canvas.draw_rect(box_x, box_y, box_w, box_h)
+						canvas.draw_rect(box_x, box_y + y_offset, box_w, box_h)
 					end
 				end
 			end

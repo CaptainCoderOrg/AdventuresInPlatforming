@@ -29,6 +29,13 @@ local enemies = {
 		hit = "bateye_hit",
 		death = "bateye_death",
 	},
+	zombie = {
+		idle = "zombie_idle",
+		run = "zombie_run",
+		attack = "zombie_attack",
+		hit = "zombie_hit",
+		death = "zombie_death",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -52,5 +59,11 @@ canvas.assets.load_image(enemies.bat_eye.attack, "sprites/enemies/bat_eye/bateye
 canvas.assets.load_image(enemies.bat_eye.attack_recovery, "sprites/enemies/bat_eye/bateye_attack_recovery.png")
 canvas.assets.load_image(enemies.bat_eye.hit, "sprites/enemies/bat_eye/bateye_hit.png")
 canvas.assets.load_image(enemies.bat_eye.death, "sprites/enemies/bat_eye/bateye_death.png")
+
+canvas.assets.load_image(enemies.zombie.idle, "sprites/enemies/zombie/zombie_idle.png")
+canvas.assets.load_image(enemies.zombie.run, "sprites/enemies/zombie/zombie_run.png")
+canvas.assets.load_image(enemies.zombie.attack, "sprites/enemies/zombie/zombie_attack.png")
+canvas.assets.load_image(enemies.zombie.hit, "sprites/enemies/zombie/zombie_hit.png")
+canvas.assets.load_image(enemies.zombie.death, "sprites/enemies/zombie/zombie_death.png")
 
 return enemies

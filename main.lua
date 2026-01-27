@@ -34,6 +34,7 @@ Enemy.register("ratto", require("Enemies/ratto"))
 Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
 Enemy.register("bat_eye", require("Enemies/bat_eye"))
+Enemy.register("zombie", require("Enemies/zombie"))
 
 -- Props
 local Prop = require("Prop")
@@ -326,20 +327,20 @@ init_level = function(level, spawn_override, player_data, options)
 
     -- Restore player stats if provided
     if player_data then
-        local stat_keys = { "max_health", "level", "experience", "gold", "defense", "strength", "critical_chance" }
-        for _, key in ipairs(stat_keys) do
+        -- Copy persistent stats and transient state (nil values are safely ignored)
+        local restore_keys = {
+            "max_health", "level", "experience", "gold", "defense", "strength", "critical_chance",
+            "damage", "energy_used", "stamina_used", "projectile_ix"
+        }
+        for _, key in ipairs(restore_keys) do
             if player_data[key] then player[key] = player_data[key] end
         end
         -- Copy unique_items array to avoid sharing reference with save cache
         if player_data.unique_items then
             player.unique_items = prop_common.copy_array(player_data.unique_items)
         end
-        -- Restore transient state (for stairs transitions)
-        if player_data.damage then player.damage = player_data.damage end
-        if player_data.energy_used then player.energy_used = player_data.energy_used end
-        if player_data.stamina_used then player.stamina_used = player_data.stamina_used end
+        -- Update active projectile reference if projectile_ix was restored
         if player_data.projectile_ix then
-            player.projectile_ix = player_data.projectile_ix
             player.projectile = player.projectile_options[player.projectile_ix]
         end
     end
@@ -439,21 +440,16 @@ local function continue_from_checkpoint(options)
 
     cleanup_level()
 
-    if data then
-        local level = get_level_by_id(data.level_id)
-        if level then
-            -- Pass data directly; init_level extracts only the stat keys it needs
-            init_level(level, { x = data.x, y = data.y }, data, options)
-            -- Apply direction after init_level since Player.new() defaults to facing right
-            if data.direction then
-                player.direction = data.direction
-                player.animation.flipped = data.direction
-            end
-            Playtime.set(data.playtime or 0)
-        else
-            init_level(nil, nil, nil, options)
-            Playtime.reset()
+    local level = data and get_level_by_id(data.level_id)
+    if level then
+        -- Pass data directly; init_level extracts only the stat keys it needs
+        init_level(level, { x = data.x, y = data.y }, data, options)
+        -- Apply direction after init_level since Player.new() defaults to facing right
+        if data.direction then
+            player.direction = data.direction
+            player.animation.flipped = data.direction
         end
+        Playtime.set(data.playtime or 0)
     else
         init_level(nil, nil, nil, options)
         Playtime.reset()

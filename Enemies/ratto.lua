@@ -4,22 +4,18 @@ local common = require('Enemies/common')
 
 --- Ratto enemy: A rat that patrols and chases the player.
 --- States: idle (wait), run (patrol), chase (pursue player), hit, death
---- Detection range: 5 tiles. Health: 5 HP. Contact damage: 1.
+--- Detection range: 5 tiles. Health: 3 HP. Contact damage: 1.
 local ratto = {}
 
-local anim_opts = { flipped = 1 }  -- Reused to avoid allocation
-
---- Sets up enemy animation, reusing existing instance when possible.
----@param enemy table The enemy instance
----@param definition table Animation definition to use
-local function set_animation(enemy, definition)
-	anim_opts.flipped = enemy.direction
-	if enemy.animation then
-		enemy.animation:reinit(definition, anim_opts)
-	else
-		enemy.animation = Animation.new(definition, anim_opts)
-	end
-end
+local DETECTION_RANGE = 5
+local IDLE_DURATION = 2.0
+local RUN_DURATION = 2.0
+local RUN_SPEED = 3
+local CHASE_SPEED = 6
+local RETREAT_DURATION = 1.0
+local OVERSHOOT_DURATION = 1.0
+local HIT_KNOCKBACK = 12
+local HIT_JUMP = -5
 
 ratto.animations = {
 	IDLE = Animation.create_definition(sprites.enemies.ratto.idle, 6, {
@@ -49,13 +45,13 @@ ratto.states = {}
 
 ratto.states.idle = {
 	name = "idle",
-	start = function(enemy, definition)
-		set_animation(enemy, ratto.animations.IDLE)
+	start = function(enemy, _)
+		common.set_animation(enemy, ratto.animations.IDLE)
 		enemy.vx = 0
-		enemy.idle_timer = 2.0
+		enemy.idle_timer = IDLE_DURATION
 	end,
 	update = function(enemy, dt)
-		if common.player_in_range(enemy, 5) then
+		if common.player_in_range(enemy, DETECTION_RANGE) then
 			enemy:set_state(ratto.states.chase)
 			return
 		end
@@ -71,18 +67,17 @@ ratto.states.idle = {
 
 ratto.states.run = {
 	name = "run",
-	start = function(enemy, definition)
-		set_animation(enemy, ratto.animations.RUN)
-		enemy.run_timer = 2.0
-		enemy.run_speed = 3
+	start = function(enemy, _)
+		common.set_animation(enemy, ratto.animations.RUN)
+		enemy.run_timer = RUN_DURATION
 	end,
 	update = function(enemy, dt)
-		if common.player_in_range(enemy, 5) then
+		if common.player_in_range(enemy, DETECTION_RANGE) then
 			enemy:set_state(ratto.states.chase)
 			return
 		end
 
-		enemy.vx = enemy.direction * enemy.run_speed
+		enemy.vx = enemy.direction * RUN_SPEED
 
 		if common.is_blocked(enemy) then
 			common.reverse_direction(enemy)
@@ -98,19 +93,19 @@ ratto.states.run = {
 
 ratto.states.chase = {
 	name = "chase",
-	start = function(enemy, definition)
-		set_animation(enemy, ratto.animations.RUN)
-		enemy.chase_speed = 6
+	start = function(enemy, _)
+		common.set_animation(enemy, ratto.animations.RUN)
 		enemy.overshoot_timer = nil
+		enemy.retreat_timer = nil
 		enemy.direction = common.direction_to_player(enemy)
 		enemy.animation.flipped = enemy.direction
 	end,
 	update = function(enemy, dt)
-		enemy.vx = enemy.direction * enemy.chase_speed
+		enemy.vx = enemy.direction * CHASE_SPEED
 
 		if common.is_blocked(enemy) then
 			common.reverse_direction(enemy)
-			enemy.retreat_timer = 1.0
+			enemy.retreat_timer = RETREAT_DURATION
 		end
 
 		if enemy.retreat_timer then
@@ -130,7 +125,7 @@ ratto.states.chase = {
 		else
 			local dir_to_player = common.direction_to_player(enemy)
 			if dir_to_player ~= enemy.direction then
-				enemy.overshoot_timer = 1.0
+				enemy.overshoot_timer = OVERSHOOT_DURATION
 			end
 		end
 	end,
@@ -139,11 +134,10 @@ ratto.states.chase = {
 
 ratto.states.hit = {
 	name = "hit",
-	start = function(enemy, definition)
-		set_animation(enemy, ratto.animations.HIT)
-		local knockback_speed = 12
-		enemy.vx = (enemy.hit_direction or -1) * knockback_speed
-		enemy.vy = -5
+	start = function(enemy, _)
+		common.set_animation(enemy, ratto.animations.HIT)
+		enemy.vx = (enemy.hit_direction or -1) * HIT_KNOCKBACK
+		enemy.vy = HIT_JUMP
 	end,
 	update = function(enemy, dt)
 		enemy.vx = common.apply_friction(enemy.vx, 0.9, dt)

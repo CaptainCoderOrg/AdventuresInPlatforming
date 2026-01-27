@@ -8,7 +8,19 @@ local common = {}
 
 local ROTATION_LERP_SPEED = 10  -- Rotation interpolation speed (higher = faster, ~0.1s to settle)
 local TARGET_FPS = 60  -- Base frame rate for physics calculations
-local death_anim_opts = { flipped = 1 }  -- Reused to avoid allocation
+local anim_opts = { flipped = 1 }  -- Reused to avoid allocation
+
+--- Sets up enemy animation, reusing existing instance when possible.
+---@param enemy table The enemy instance
+---@param definition table Animation definition to use
+function common.set_animation(enemy, definition)
+	anim_opts.flipped = enemy.direction
+	if enemy.animation then
+		enemy.animation:reinit(definition, anim_opts)
+	else
+		enemy.animation = Animation.new(definition, anim_opts)
+	end
+end
 
 --- Applies gravity acceleration to an enemy in a frame-rate independent way.
 ---@param enemy table The enemy object with vy, gravity, max_fall_speed
@@ -153,9 +165,9 @@ end
 function common.create_death_state(death_animation)
 	return {
 		name = "death",
-		start = function(enemy, _definition)
-			death_anim_opts.flipped = enemy.direction
-			enemy.animation = Animation.new(death_animation, death_anim_opts)
+		start = function(enemy, _)
+			anim_opts.flipped = enemy.direction
+			enemy.animation = Animation.new(death_animation, anim_opts)
 			enemy.vx = (enemy.hit_direction or -1) * 4
 			enemy.vy = 0
 			enemy.gravity = 0

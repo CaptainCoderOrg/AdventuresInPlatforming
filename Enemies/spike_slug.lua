@@ -8,20 +8,6 @@ local common = require('Enemies/common')
 --- Special: is_defending flag blocks all damage while in defend state.
 local spike_slug = {}
 
-local anim_opts = { flipped = 1 }  -- Reused to avoid allocation
-
---- Sets up enemy animation, reusing existing instance when possible.
----@param enemy table The enemy instance
----@param definition table Animation definition to use
-local function set_animation(enemy, definition)
-	anim_opts.flipped = enemy.direction
-	if enemy.animation then
-		enemy.animation:reinit(definition, anim_opts)
-	else
-		enemy.animation = Animation.new(definition, anim_opts)
-	end
-end
-
 spike_slug.animations = {
 	RUN = Animation.create_definition(sprites.enemies.spikeslug.run, 4, { ms_per_frame = 200, width = 16, height = 16, loop = true }),
 	HIT = Animation.create_definition(sprites.enemies.spikeslug.hit, 5, { ms_per_frame = 200, width = 16, height = 16, loop = false }),
@@ -34,12 +20,12 @@ spike_slug.states = {}
 
 spike_slug.states.run = {
 	name = "run",
-	start = function(enemy, def)
-		set_animation(enemy, spike_slug.animations.RUN)
+	start = function(enemy, _)
+		common.set_animation(enemy, spike_slug.animations.RUN)
 		enemy.run_speed = 1
 		enemy.is_defending = false
 	end,
-	update = function(enemy, dt)
+	update = function(enemy, _dt)
 		if common.player_in_range(enemy, 6) then
 			enemy:set_state(spike_slug.states.defend)
 			return
@@ -54,12 +40,12 @@ spike_slug.states.run = {
 
 spike_slug.states.defend = {
 	name = "defend",
-	start = function(enemy, def)
-		set_animation(enemy, spike_slug.animations.DEFENSE)
+	start = function(enemy, _)
+		common.set_animation(enemy, spike_slug.animations.DEFENSE)
 		enemy.vx = 0
 		enemy.is_defending = true
 	end,
-	update = function(enemy, dt)
+	update = function(enemy, _dt)
 		if not common.player_in_range(enemy, 6) then
 			enemy:set_state(spike_slug.states.stop_defend)
 		end
@@ -69,12 +55,12 @@ spike_slug.states.defend = {
 
 spike_slug.states.stop_defend = {
 	name = "stop_defend",
-	start = function(enemy, def)
-		set_animation(enemy, spike_slug.animations.STOP_DEFEND)
+	start = function(enemy, _)
+		common.set_animation(enemy, spike_slug.animations.STOP_DEFEND)
 		enemy.vx = 0
 		enemy.is_defending = false
 	end,
-	update = function(enemy, dt)
+	update = function(enemy, _dt)
 		if enemy.animation:is_finished() then
 			enemy:set_state(spike_slug.states.run)
 		end
@@ -84,8 +70,8 @@ spike_slug.states.stop_defend = {
 
 spike_slug.states.hit = {
 	name = "hit",
-	start = function(enemy, def)
-		set_animation(enemy, spike_slug.animations.HIT)
+	start = function(enemy, _)
+		common.set_animation(enemy, spike_slug.animations.HIT)
 		enemy.vx = (enemy.hit_direction or -1) * 8
 		enemy.vy = -3
 		enemy.is_defending = false

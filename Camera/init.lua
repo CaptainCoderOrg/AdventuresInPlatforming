@@ -329,17 +329,14 @@ function Camera:update(tile_size, dt, lerp_factor)
 		self._manual_x_target = self._manual_x_target +
 			(manual_offset_x - self._manual_x_target) * self._manual_look_speed
 		target_cam_x = target_cam_x + self._manual_x_target
-	else
+	elseif self._manual_x_target then
 		-- Fade back to no horizontal offset
-		if self._manual_x_target then
-			self._manual_x_target = self._manual_x_target +
-				(0 - self._manual_x_target) * self._manual_look_speed
+		self._manual_x_target = self._manual_x_target * (1 - self._manual_look_speed)
 
-			if math.abs(self._manual_x_target) < cfg.epsilon then
-				self._manual_x_target = nil
-			else
-				target_cam_x = target_cam_x + self._manual_x_target
-			end
+		if math.abs(self._manual_x_target) < cfg.epsilon then
+			self._manual_x_target = nil
+		else
+			target_cam_x = target_cam_x + self._manual_x_target
 		end
 	end
 

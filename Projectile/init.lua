@@ -89,21 +89,17 @@ function Projectile.update(dt, level_info)
     local projectile = next(Projectile.all)
     while projectile do
         projectile.x = projectile.x + projectile.vx * dt
-        projectile.vy = math.min(20, projectile.vy + projectile.gravity_scale*dt)
+        projectile.vy = math.min(20, projectile.vy + projectile.gravity_scale * dt)
         projectile.y = projectile.y + projectile.vy * dt
 
         projectile.animation:play(dt)
 
+        -- Skip collision checks for out-of-bounds projectiles
         if projectile.x < -2 or projectile.x > level_info.width + 2 or projectile.y > level_info.height + 2 then
             projectile.marked_for_destruction = true
-        end
-
-        -- Check lever hit via combat system (triggers can't detect other triggers)
-        -- Then check world collision if projectile wasn't destroyed by lever
-        if not projectile.marked_for_destruction then
-            check_lever_hit(projectile)
-        end
-        if not projectile.marked_for_destruction then
+        elseif not check_lever_hit(projectile) then
+            -- Check world collision only if lever wasn't hit
+            -- (triggers can't detect other triggers, so lever check uses combat system)
             local collision = world.move_trigger(projectile)
             if collision then
                 projectile:on_collision(collision)

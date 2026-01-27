@@ -77,6 +77,17 @@ states = {
   - Shield collision stops attack and triggers recovery state
   - Pauses at waypoints for 1 second before reversing
   - Spawned via paired `B` symbols on same row in level map
+- **Zombie** - Slow, shambling undead that patrols within bounded area
+  - States: idle, move, chase, attack, hit, death
+  - Health: 6 HP, Contact damage: 3
+  - Patrol speed: 1.5 px/frame, chase speed: 6 px/frame
+  - Detection: AABB check in facing direction within patrol bounds, 1.5 tiles vertical range
+  - Attack: Triggers at 1.5 tiles, damage on frames 5-6 (0-indexed), 0.3s cooldown
+  - Bounded patrol with waypoints (waypoint_a, waypoint_b)
+  - Overshoot detection: idles after 0.5s if player passes behind
+  - 70% bias toward patrol center when picking direction
+  - Damages shield on contact
+  - Spawned via paired `Z` symbols on same row in level map
 
 ### Damage System
 
@@ -122,7 +133,7 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie)
 
 ## Prop System
 
@@ -396,6 +407,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/worm.lua` - Worm enemy (simple patrol)
 - `Enemies/spike_slug.lua` - Spike slug enemy (defensive behavior)
 - `Enemies/bat_eye.lua` - Bat eye enemy (waypoint patrol, flying)
+- `Enemies/zombie.lua` - Zombie enemy (bounded patrol, chase, attack)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)

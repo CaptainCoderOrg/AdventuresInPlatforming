@@ -39,8 +39,9 @@ function platforms.load_level(level_data)
 	local height = #level_data.map
 	local symbols = level_data.symbols or {}
 
-	-- Collect bat_eye waypoints by row for pairing
-	local bat_waypoints = {}  -- [row] = { x positions }
+	-- Collect waypoints by row for enemies that patrol between markers
+	-- Format: [enemy_key][row] = { positions = {x...}, count = 1 }
+	local waypoint_enemies = {}
 
 	background_sprite = level_data.background
 
@@ -68,10 +69,15 @@ function platforms.load_level(level_data)
 				if def.type == "spawn" then
 					spawn = { x = ox, y = oy }
 				elseif def.type == "enemy" then
-					-- Special handling for bat_eye waypoint pairing
-					if def.key == "bat_eye" then
-						bat_waypoints[ty] = bat_waypoints[ty] or {}
-						table.insert(bat_waypoints[ty], tx)
+					-- Waypoint-based enemies (bat_eye, zombie) are collected for pairing
+					if def.key == "bat_eye" or def.key == "zombie" then
+						waypoint_enemies[def.key] = waypoint_enemies[def.key] or {}
+						local by_row = waypoint_enemies[def.key]
+						by_row[ty] = by_row[ty] or { positions = {}, count = 1 }
+						table.insert(by_row[ty].positions, tx)
+						if def.count and def.count > by_row[ty].count then
+							by_row[ty].count = def.count
+						end
 					else
 						table.insert(enemies, { x = ox, y = oy, type = def.key })
 					end
@@ -89,25 +95,40 @@ function platforms.load_level(level_data)
 		end
 	end
 
-	-- Create bat_eye enemies from paired waypoints
-	for row, positions in pairs(bat_waypoints) do
-		if #positions == 2 then
-			table.sort(positions)  -- Ensure left-to-right order
-			table.insert(enemies, {
-				x = positions[1],
-				y = row,
-				type = "bat_eye",
-				waypoints = { a = positions[1], b = positions[2] }
-			})
-		elseif #positions == 1 then
-			-- Single waypoint: spawn bat_eye without patrol (stationary)
-			table.insert(enemies, {
-				x = positions[1],
-				y = row,
-				type = "bat_eye"
-			})
-		elseif #positions > 2 then
-			print("[WARNING] Row " .. row .. " has " .. #positions .. " bat_eye markers (expected 1 or 2)")
+	-- Create enemies from paired waypoints
+	for enemy_key, rows in pairs(waypoint_enemies) do
+		for row, data in pairs(rows) do
+			local positions = data.positions
+			local count = data.count
+
+			if #positions >= 2 then
+				table.sort(positions)  -- Ensure left-to-right order
+				local left, right = positions[1], positions[2]
+
+				-- Spawn count enemies distributed across the patrol range
+				-- For count=1: center. For count>1: evenly distributed from left to right
+				local range = right - left
+				for i = 1, count do
+					local t = count == 1 and 0.5 or (i - 1) / (count - 1)
+					table.insert(enemies, {
+						x = left + t * range,
+						y = row,
+						type = enemy_key,
+						waypoints = { a = left, b = right }
+					})
+				end
+
+				if #positions > 2 then
+					print("[WARNING] Row " .. row .. " has " .. #positions .. " " .. enemy_key .. " markers (expected 1 or 2)")
+				end
+			else
+				-- Single marker: spawn without patrol
+				table.insert(enemies, {
+					x = positions[1],
+					y = row,
+					type = enemy_key
+				})
+			end
 		end
 	end
 

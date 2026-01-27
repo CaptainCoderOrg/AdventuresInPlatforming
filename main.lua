@@ -238,7 +238,7 @@ local function update(dt)
     profiler.stop("collectibles")
 
     profiler.start("enemies")
-    Enemy.update(dt, player)
+    Enemy.update(dt, player, camera)
     profiler.stop("enemies")
 
     profiler.start("props")
@@ -477,6 +477,7 @@ local function start_new_game()
     Playtime.reset()
     cleanup_level()
     init_level()
+    audio.play_music(audio.level1)
 end
 
 local started = false
@@ -498,8 +499,6 @@ local function load_slot(slot_index)
         -- Empty slot - start new game
         start_new_game()
     end
-
-    audio.play_music(audio.level1)
 end
 
 --- One-time initialization on first game tick (after init_level creates player/camera)
@@ -523,17 +522,9 @@ local function on_start()
     hud.set_rest_continue_callback(continue_from_rest)
 
     -- Title screen callbacks
-    hud.set_title_play_game_callback(function()
-        hud.show_slot_screen()
-    end)
-
-    hud.set_title_audio_callback(function()
-        audio_dialog.show()
-    end)
-
-    hud.set_title_controls_callback(function()
-        controls_dialog.show()
-    end)
+    hud.set_title_play_game_callback(hud.show_slot_screen)
+    hud.set_title_audio_callback(audio_dialog.show)
+    hud.set_title_controls_callback(controls_dialog.show)
 
     -- Slot screen callbacks (back navigates to title which is already shown beneath)
     hud.set_slot_callback(load_slot)

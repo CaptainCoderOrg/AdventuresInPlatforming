@@ -17,6 +17,9 @@ Enemy.types = {}
 -- Shield collision debounce: 3 frames between contact hits to prevent rapid stamina drain
 local SHIELD_HIT_COOLDOWN = 3 / 60
 
+-- Skip expensive updates beyond this many tiles off-screen
+local UPDATE_CULL_MARGIN = 8
+
 -- Debug color constants (avoid string allocation each frame)
 local DEBUG_COLOR_CYAN = "#00FFFF"
 local DEBUG_COLOR_MAGENTA = "#FF00FF"
@@ -121,79 +124,93 @@ end
 -- Module-level table to avoid allocation each frame
 local to_remove = {}
 
+--- Updates physics and collision for ground-based enemies.
+---@param enemy table The enemy instance
+---@param dt number Delta time in seconds
+local function update_ground_enemy(enemy, dt)
+	common.apply_gravity(enemy, dt)
+	enemy.x = enemy.x + enemy.vx * dt
+	enemy.y = enemy.y + enemy.vy * dt
+
+	local cols = world.move(enemy, enemy._cols)
+	enemy:check_ground(cols)
+	enemy.wall_left = cols.wall_left
+	enemy.wall_right = cols.wall_right
+
+	if enemy.is_grounded then
+		local probe_y = enemy.y + enemy.box.y + enemy.box.h + 0.5
+		enemy.edge_left = not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
+		enemy.edge_right = not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
+	else
+		enemy.edge_left = false
+		enemy.edge_right = false
+	end
+end
+
+--- Updates physics for flying enemies (no gravity or collision).
+---@param enemy table The enemy instance
+---@param dt number Delta time in seconds
+local function update_flying_enemy(enemy, dt)
+	enemy.x = enemy.x + enemy.vx * dt
+	enemy.y = enemy.y + enemy.vy * dt
+	world.sync_position(enemy)
+	enemy.is_grounded = false
+	enemy.wall_left = false
+	enemy.wall_right = false
+	enemy.edge_left = false
+	enemy.edge_right = false
+end
+
+--- Performs full update for enemies within camera range.
+---@param enemy table The enemy instance
+---@param dt number Delta time in seconds
+---@param player table The player object
+local function update_active_enemy(enemy, dt, player)
+	if enemy.gravity > 0 then
+		update_ground_enemy(enemy, dt)
+	else
+		update_flying_enemy(enemy, dt)
+	end
+
+	common.update_slope_rotation(enemy, dt)
+
+	enemy._cached_y_offset = common.get_slope_y_offset(enemy)
+	combat.update(enemy, enemy._cached_y_offset)
+	if enemy.hitbox then
+		world.update_hitbox(enemy, enemy._cached_y_offset)
+	end
+
+	enemy.target_player = player
+	if player then
+		enemy:check_player_overlap(player)
+	end
+
+	enemy.state.update(enemy, dt)
+end
+
 --- Updates all enemies.
 ---@param dt number Delta time in seconds
 ---@param player table The player object (for overlap detection)
-function Enemy.update(dt, player)
-	-- Clear module-level table instead of allocating new one
+---@param camera table Camera instance for update culling
+function Enemy.update(dt, player, camera)
 	for i = 1, #to_remove do to_remove[i] = nil end
 
 	local enemy = next(Enemy.all)
 	while enemy do
-		enemy.pressure_plate_lift = 0  -- Clear before pressure plates set it
+		enemy.pressure_plate_lift = 0
 		enemy.shield_hit_cooldown = math.max(0, enemy.shield_hit_cooldown - dt)
-
-		-- Only apply gravity to non-flying enemies
-		if enemy.gravity > 0 then
-			common.apply_gravity(enemy, dt)
-		end
-
-		-- Apply velocity
-		enemy.x = enemy.x + enemy.vx * dt
-		enemy.y = enemy.y + enemy.vy * dt
-
-		-- Resolve collisions (skip full collision for flying enemies)
-		if enemy.gravity > 0 then
-			local cols = world.move(enemy, enemy._cols)
-			enemy:check_ground(cols)
-			enemy.wall_left = cols.wall_left
-			enemy.wall_right = cols.wall_right
-
-			if enemy.is_grounded then
-				local probe_y = enemy.y + enemy.box.y + enemy.box.h + 0.5  -- tiles below feet
-				enemy.edge_left = not world.point_has_ground(enemy.x + enemy.box.x - 0.1, probe_y)
-				enemy.edge_right = not world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w + 0.1, probe_y)
-			else
-				enemy.edge_left = false
-				enemy.edge_right = false
-			end
-		else
-			-- Flying enemies: just sync collider position for combat detection
-			world.sync_position(enemy)
-			enemy.is_grounded = false
-			enemy.wall_left = false
-			enemy.wall_right = false
-			enemy.edge_left = false
-			enemy.edge_right = false
-		end
-
-		-- Update slope rotation (visual only)
-		common.update_slope_rotation(enemy, dt)
-
-		-- Update combat hitbox position and rotation (cache y_offset for draw)
-		enemy._cached_y_offset = common.get_slope_y_offset(enemy)
-		combat.update(enemy, enemy._cached_y_offset)
-		if enemy.hitbox then
-			world.update_hitbox(enemy, enemy._cached_y_offset)
-		end
-
-		-- Store player reference for state logic
-		enemy.target_player = player
-
-		-- Check for player overlap
-		if player then
-			enemy:check_player_overlap(player)
-		end
-
-		-- Update state
-		enemy.state.update(enemy, dt)
-
-		-- Update animation
 		if enemy.animation then
 			enemy.animation:play(dt)
 		end
 
-		-- Check for destruction
+		if camera:is_visible(enemy, sprites.tile_size, UPDATE_CULL_MARGIN) then
+			update_active_enemy(enemy, dt, player)
+		else
+			-- Keep combat hitbox synced for weapon queries (skip physics/state logic)
+			enemy._cached_y_offset = 0
+			combat.update(enemy, 0)
+		end
+
 		if enemy.marked_for_destruction then
 			to_remove[#to_remove + 1] = enemy
 		end

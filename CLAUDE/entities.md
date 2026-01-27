@@ -18,7 +18,8 @@ AI-controlled enemies with state machines and combat integration.
 - State machine identical to player (start, update, draw functions)
 - Registration system: `Enemy.register(key, definition)` in main.lua
 - Spawning from level data: `Enemy.spawn(type_key, x, y)`
-- Viewport culling: `Enemy.draw(camera)` skips off-screen entities
+- Update culling: `Enemy.update(dt, player, camera)` skips physics/AI for enemies 8+ tiles off-screen (animations still run)
+- Draw culling: `Enemy.draw(camera)` skips rendering for enemies 2+ tiles off-screen
 
 ### Enemy Properties
 

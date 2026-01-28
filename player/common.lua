@@ -143,11 +143,16 @@ end
 
 --- Checks for block input and transitions to block state if held.
 --- Requires positive stamina (cannot block while fatigued).
+--- Shows "TIRED" text on first press when fatigued.
 ---@param player table The player object
 function common.handle_block(player)
-    if controls.block_down() and not player:is_fatigued() then
+	local block_down = controls.block_down()
+    if block_down and not player:is_fatigued() then
 		player:set_state(player.states.block)
+	elseif block_down and player:is_fatigued() and not player.block_was_down then
+		Effects.create_fatigue_text(player.x, player.y)
 	end
+	player.block_was_down = block_down
 end
 
 --- Checks for interact input (up) and handles prop interactions.

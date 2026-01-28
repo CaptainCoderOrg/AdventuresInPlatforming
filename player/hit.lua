@@ -12,6 +12,7 @@ local INVINCIBLE_TIME = 1.2
 --- @param player table The player object
 function hit.start(player)
 	world.remove_shield(player)  -- Clean up shield if blocking when hit from behind
+	player.is_climbing = false
 	player.hit_state.knockback_speed = 2
 	player.animation = Animation.new(common.animations.HIT)
 	player.hit_state.remaining_time = (common.animations.HIT.frame_count * common.animations.HIT.ms_per_frame) / 1000

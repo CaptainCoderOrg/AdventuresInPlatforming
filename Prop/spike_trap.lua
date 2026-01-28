@@ -42,7 +42,7 @@ end
 ---@field start_retracted boolean|nil Whether to start in retracted state (default: false)
 
 local definition = {
-    box = { x = 0, y = 0.2, w = 1, h = 0.8 },
+    box = { x = 0.1, y = 0.2, w = 0.8, h = 0.8 },
     debug_color = "#FF00FF",  -- Magenta
     initial_state = "extended",
 

@@ -425,6 +425,10 @@ cleanup_level = function()
     -- Clear magician magic bolts
     magician_def.clear_bolts()
 
+    -- Clear spear trap projectiles (trigger colliders not cleared by Prop.clear)
+    local spear_trap_def = Prop.types["spear_trap"]
+    if spear_trap_def then spear_trap_def.clear_spears() end
+
     Effects.clear()
     Collectible.clear()
 

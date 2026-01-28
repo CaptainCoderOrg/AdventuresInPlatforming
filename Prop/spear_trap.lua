@@ -31,6 +31,10 @@ local SPEAR_SPEED = 12  -- tiles per second
 local SPEAR_DAMAGE = 1
 local SOUND_RADIUS = 16  -- tiles
 
+-- Hoisted reinit option tables (avoids per-transition allocation)
+local REINIT_FRAME_0 = { start_frame = 0 }
+local REINIT_FRAME_7 = { start_frame = 7 }
+
 --------------------------------------------------------------------------------
 -- Spear projectile pool (local to this module)
 --------------------------------------------------------------------------------
@@ -49,6 +53,7 @@ local spear_indices_to_remove = {}
 ---@param x number X position in tiles
 ---@param y number Y position in tiles
 ---@param direction number Direction to travel (-1 = left, 1 = right)
+---@return table spear The created spear instance
 function Spear.spawn(x, y, direction)
     -- Hitbox aligned to front of spear based on direction
     -- Spear sprite is 1x0.5 tiles, hitbox is 0.25x0.5 tiles
@@ -124,15 +129,16 @@ function Spear.update_all(dt, player)
     end
 end
 
---- Draw all spears (called once per frame via dirty flag)
-function Spear.draw_all()
+--- Draw all spears (called once per frame via global draw hook)
+---@param camera table Camera instance for viewport culling
+function Spear.draw_all(camera)
     if not Spear.needs_draw then return end
     Spear.needs_draw = false
     Spear.needs_update = true
 
     for i = 1, #Spear.all do
         local spear = Spear.all[i]
-        if not spear.marked_for_destruction then
+        if not spear.marked_for_destruction and camera:is_visible(spear, sprites.tile_size) then
             spear.animation:draw(sprites.px(spear.x), sprites.px(spear.y))
 
             -- Debug bounding box
@@ -153,8 +159,8 @@ function Spear.clear_all()
         local spear = Spear.all[i]
         world.remove_trigger_collider(spear)
         combat.remove(spear)
+        Spear.all[i] = nil
     end
-    Spear.all = {}
     -- Reset dirty flags for clean state
     Spear.needs_update = true
     Spear.needs_draw = false
@@ -177,18 +183,10 @@ local definition = {
     initial_state = "idle",
 
     on_spawn = function(prop, _, options)
-        -- Clear stale spears on first spear_trap spawn of level load
-        -- (Prop.all is empty after Prop.clear(), so no other spear_traps exist yet)
-        local is_first = true
-        for p, _ in pairs(Prop.all) do
-            if p.type_key == "spear_trap" then
-                is_first = false
-                break
-            end
-        end
-        if is_first then
-            Spear.clear_all()
-        end
+        -- Clear stale spears from previous level and register draw hook
+        -- (idempotent: safe to call from each spear_trap spawn)
+        Spear.clear_all()
+        Prop.register_global_draw(Spear.draw_all)
 
         prop.fire_delay = options.fire_delay or DEFAULT_FIRE_DELAY
         prop.cooldown_time = options.cooldown_time or DEFAULT_COOLDOWN_TIME
@@ -208,12 +206,9 @@ local definition = {
         })
     end,
 
-    --- Shared draw for all states - draws trap animation and spears
-    ---@param prop table Prop instance to draw
-    draw = function(prop)
-        common.draw(prop)
-        Spear.draw_all()
-    end,
+    --- Shared draw for all states - draws trap animation only.
+    --- Spear projectiles are drawn via Prop.global_draws (visibility-independent).
+    draw = common.draw,
 
     states = {
         idle = {
@@ -222,7 +217,7 @@ local definition = {
                 if prop.first_cycle_done then
                     prop.timer = 0
                 end
-                prop.animation = Animation.new(TRAP_ANIM, { start_frame = 0 })
+                prop.animation:reinit(TRAP_ANIM, REINIT_FRAME_0)
                 prop.animation:pause()
             end,
             update = function(prop, dt, player)
@@ -240,7 +235,7 @@ local definition = {
 
         firing = {
             start = function(prop)
-                prop.animation = Animation.new(TRAP_ANIM, { start_frame = 0 })
+                prop.animation:reinit(TRAP_ANIM, REINIT_FRAME_0)
                 prop.spear_spawned = false
                 prop.fire_sound_played = false
             end,
@@ -283,7 +278,7 @@ local definition = {
             start = function(prop)
                 prop.timer = 0
                 -- Keep showing final frame (empty chamber) - index 7 is frame 8 of 8
-                prop.animation = Animation.new(TRAP_ANIM, { start_frame = 7 })
+                prop.animation:reinit(TRAP_ANIM, REINIT_FRAME_7)
                 prop.animation:pause()
             end,
             update = function(prop, dt, player)
@@ -317,6 +312,9 @@ local definition = {
     disable = function(prop)
         prop.enabled = false
     end,
+
+    --- Clear spear projectile pool (called from cleanup_level to prevent orphaned trigger colliders)
+    clear_spears = Spear.clear_all,
 }
 
 return definition

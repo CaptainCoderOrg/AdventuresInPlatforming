@@ -19,7 +19,7 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Green boxes: World collision geometry
   - Cyan boxes: Enemy hitboxes / Bridge colliders
   - Magenta boxes: Rotated enemy combat hitboxes (slope-following enemies)
-  - Orange boxes: Sign hitboxes
+  - Orange boxes: Sign hitboxes / Spear projectile hitboxes
 - `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
 - `1`/`2` - Switch between level1/title music

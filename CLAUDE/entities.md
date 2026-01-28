@@ -172,6 +172,7 @@ Unified management for interactive objects (buttons, campfires, spike traps). Mi
 - State machine support with `skip_callback` for group actions
 - Group system for coordinated behavior
 - Viewport culling: `Prop.draw(camera)` skips off-screen entities
+- Global draw hooks: `Prop.register_global_draw(fn)` for sub-entity pools that manage their own visibility culling
 
 ### Prop Definition
 
@@ -248,6 +249,7 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 - `Prop.set_state(prop, state_name, skip_callback)` - State transition
 - `Prop.group_action(group_name, action)` - Trigger group-wide state change
 - `Prop.check_hit(type_key, hitbox, filter)` - Hitbox overlap detection
+- `Prop.register_global_draw(fn)` - Register a draw function called every frame regardless of prop visibility (receives camera)
 - `Prop.get_pressure_plate_lift(entity)` - Get cached lift amount for entity
 
 ### Pressure Plate Lift Pattern
@@ -441,6 +443,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
 - `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
+- `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
 - `Prop/campfire.lua` - Campfire prop (restore point)
@@ -451,5 +454,6 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)
+- `Prop/spear_trap.lua` - Spear trap prop (wall-mounted projectile trap with internal Spear pool)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

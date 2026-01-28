@@ -13,6 +13,7 @@ local Prop = {}
 Prop.types = state.types
 Prop.all = state.all
 Prop.groups = state.groups
+Prop.global_draws = state.global_draws
 
 -- Track current frame for mid-frame animation synchronization
 local current_frame = 0
@@ -38,6 +39,17 @@ end
 ---@param definition table Prop definition table
 function Prop.register(key, definition)
     Prop.types[key] = definition
+end
+
+--- Register a draw function that runs every frame regardless of prop visibility.
+--- Used for sub-entity pools (e.g. spear projectiles) that move independently of their spawner.
+--- Duplicate registrations of the same function are ignored.
+---@param fn function Draw function to call each frame, receives (camera)
+function Prop.register_global_draw(fn)
+    for i = 1, #Prop.global_draws do
+        if Prop.global_draws[i] == fn then return end
+    end
+    Prop.global_draws[#Prop.global_draws + 1] = fn
 end
 
 --- Spawn a new prop instance from a registered type
@@ -241,6 +253,11 @@ function Prop.draw(camera)
         end
         prop = next(Prop.all, prop)
     end
+
+    -- Draw sub-entity pools that move independently of their spawner prop
+    for i = 1, #Prop.global_draws do
+        Prop.global_draws[i](camera)
+    end
 end
 
 --- Clear all props (preserves table references for hot reload)
@@ -261,6 +278,8 @@ function Prop.clear()
         Prop.groups[k] = nil
         k = next(Prop.groups)
     end
+    -- Clear global draw hooks (re-registered on next spawn)
+    for i = 1, #Prop.global_draws do Prop.global_draws[i] = nil end
     -- Clear proximity audio emitters
     proximity_audio.clear()
     state.next_id = 1

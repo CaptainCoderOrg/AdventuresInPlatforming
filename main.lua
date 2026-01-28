@@ -107,6 +107,7 @@ local function get_player_save_data(p)
         energy_used = p.energy_used,
         stamina_used = p.stamina_used,
         projectile_ix = p.projectile_ix,
+        prop_states = Prop.get_persistent_states(),
     }
 end
 
@@ -484,6 +485,7 @@ local function start_new_game()
         SaveSlots.clear(active_slot)
     end
     Playtime.reset()
+    Prop.clear_persistent_states()
     cleanup_level()
     init_level(level1)
     audio.play_music(audio.level1)

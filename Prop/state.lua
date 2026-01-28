@@ -7,4 +7,5 @@ return {
     groups = {},          -- Group mappings preserved
     next_id = 1,          -- ID counter preserved
     global_draws = {},    -- Draw functions called every frame regardless of prop visibility
+    accumulated_states = {},  -- Prop states accumulated across level transitions
 }

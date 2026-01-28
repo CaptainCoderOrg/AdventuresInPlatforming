@@ -308,10 +308,10 @@ local function get_prop_key(prop)
 end
 
 --- Get save states for all persistent props (reset = false)
---- Returns a table keyed by prop identifier with state data
+--- Merges current level's props into the cross-level accumulator and returns it.
+--- This ensures prop states from previously visited levels are preserved.
 ---@return table states Map of prop_key -> state_data
 function Prop.get_persistent_states()
-    local states = {}
     local prop = next(Prop.all)
     while prop do
         if not prop.marked_for_destruction and not prop.should_reset then
@@ -320,21 +320,25 @@ function Prop.get_persistent_states()
 
             -- Use custom get_save_state if defined, otherwise save state_name
             if def.get_save_state then
-                states[key] = def.get_save_state(prop)
+                state.accumulated_states[key] = def.get_save_state(prop)
             elseif prop.state_name then
-                states[key] = { state_name = prop.state_name }
+                state.accumulated_states[key] = { state_name = prop.state_name }
             end
         end
         prop = next(Prop.all, prop)
     end
-    return states
+    return state.accumulated_states
 end
 
 --- Restore persistent prop states from saved data
---- Called after props are spawned during level load
+--- Called after props are spawned during level load.
+--- Initializes the cross-level accumulator from the provided states.
 ---@param states table Map of prop_key -> state_data from save file
 function Prop.restore_persistent_states(states)
     if not states then return end
+
+    -- Initialize accumulator from save data so states from other levels are preserved
+    state.accumulated_states = states
 
     local prop = next(Prop.all)
     while prop do
@@ -356,6 +360,11 @@ function Prop.restore_persistent_states(states)
         end
         prop = next(Prop.all, prop)
     end
+end
+
+--- Clear accumulated prop states (used when starting a new game)
+function Prop.clear_persistent_states()
+    state.accumulated_states = {}
 end
 
 --- Check if a hitbox overlaps with any prop of a given type

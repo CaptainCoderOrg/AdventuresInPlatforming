@@ -2,6 +2,7 @@ local Animation = require('Animation')
 local canvas = require('canvas')
 local common = require('player.common')
 local config = require('config')
+local world = require('world')
 
 --- Death state: Player has died.
 --- Plays death animation, then sets is_dead flag for game over handling.
@@ -10,6 +11,7 @@ local death = { name = "death" }
 --- Called when entering death state. Stops all movement and plays death animation.
 ---@param player table The player object
 function death.start(player)
+	world.remove_shield(player)
 	player.animation = Animation.new(common.animations.DEATH)
 	player.vx = 0
 	player.vy = 0

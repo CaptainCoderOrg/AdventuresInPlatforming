@@ -410,6 +410,7 @@ end
 ---@return nil
 cleanup_level = function()
     world.remove_collider(player)
+    world.remove_shield(player)
     combat.remove(player)
     world.clear_probes()
     platforms.clear()

@@ -251,6 +251,9 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 - `Prop.check_hit(type_key, hitbox, filter)` - Hitbox overlap detection
 - `Prop.register_global_draw(fn)` - Register a draw function called every frame regardless of prop visibility (receives camera)
 - `Prop.get_pressure_plate_lift(entity)` - Get cached lift amount for entity
+- `Prop.get_persistent_states()` - Merge current level's props into accumulator and return all persistent states
+- `Prop.restore_persistent_states(states)` - Initialize accumulator and restore prop states from save data
+- `Prop.clear_persistent_states()` - Reset accumulator (new game)
 
 ### Pressure Plate Lift Pattern
 
@@ -443,7 +446,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
 - `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
-- `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws)
+- `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
 - `Prop/campfire.lua` - Campfire prop (restore point)

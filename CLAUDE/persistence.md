@@ -41,6 +41,9 @@ Multi-slot save system using localStorage with 3 save slots.
     defense = 0,                     -- Reduces incoming damage
     strength = 5,                    -- Base damage multiplier
     critical_chance = 0,             -- Percent chance for critical hit
+
+    -- Prop persistence (cross-level)
+    prop_states = {},                -- Map of prop_key -> state_data
 }
 ```
 

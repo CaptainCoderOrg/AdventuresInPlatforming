@@ -147,7 +147,7 @@ end
 ---@param player table The player object
 function common.handle_block(player)
 	local block_down = controls.block_down()
-    if block_down and not player:is_fatigued() then
+	if block_down and not player:is_fatigued() then
 		player:set_state(player.states.block)
 	elseif block_down and player:is_fatigued() and not player.block_was_down then
 		Effects.create_fatigue_text(player.x, player.y)

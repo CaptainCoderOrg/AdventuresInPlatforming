@@ -247,6 +247,8 @@ end
 ---@field is_ladder_top boolean|nil Whether standing on ladder top
 ---@field ladder_from_top table|nil Ladder object when standing on top
 ---@field is_bridge boolean|nil Whether standing on bridge
+---@field shield boolean Whether entity contacted a shield during movement
+---@field shield_owner table|nil The player who owns the contacted shield
 ---@field triggers table[] Array of trigger shapes overlapping
 
 --- Resets a cols table to default values (avoids allocation when reusing)

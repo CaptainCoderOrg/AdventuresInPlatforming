@@ -346,16 +346,10 @@ function Enemy:check_player_overlap(player)
 				shield_hit = enemy_on_left == player_facing_left
 			end
 		else
-			-- Physics flag: recorded during world.move before enemy was pushed away
-			if self._cols.shield and self._cols.shield_owner == player then
-				shield_hit = true
-			else
-				-- Shape overlap fallback (flying enemies skip world.move)
-				local shield_shape = world.shield_map[player]
-				if shield_shape then
-					shield_hit = enemy_shape:collidesWith(shield_shape)
-				end
-			end
+			-- Non-phasing enemies: physics flag + shape overlap fallback
+			local shield_shape = world.shield_map[player]
+			shield_hit = (self._cols.shield and self._cols.shield_owner == player)
+				or (shield_shape and enemy_shape:collidesWith(shield_shape))
 		end
 
 		if shield_hit then
@@ -367,7 +361,7 @@ function Enemy:check_player_overlap(player)
 	end
 	self.hit_shield = false
 
-	-- Check if enemy is colliding with player body
+	-- Body collision (only reached if shield didn't absorb the hit)
 	local collides, _ = enemy_shape:collidesWith(player_shape)
 	if not collides then return end
 

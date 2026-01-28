@@ -268,6 +268,8 @@ local function reset_cols(cols)
 	cols.is_ladder_top = nil
 	cols.ladder_from_top = nil
 	cols.is_bridge = nil
+	cols.shield = false
+	cols.shield_owner = nil
 	-- Clear triggers array if present
 	if cols.triggers then
 		for i = 1, #cols.triggers do cols.triggers[i] = nil end
@@ -282,6 +284,7 @@ local function new_cols()
 		ground_normal = { x = 0, y = -1 },
 		ceiling_normal = { x = 0, y = 1 },
 		has_ceiling_normal = false,
+		shield = false, shield_owner = nil,
 		triggers = {}
 	}
 end
@@ -324,6 +327,10 @@ function world.move(obj, cols)
 			for other, sep in pairs(collisions) do
 				if is_non_solid(other, cols) then goto skip_x_collision end
 				if should_skip_collision(obj, other) then goto skip_x_collision end
+				if other.is_shield then
+					cols.shield = true
+					cols.shield_owner = other.owner
+				end
 				if other ~= shape and sep.x ~= 0 then
 					-- Only treat as wall if more horizontal than vertical (steeper than 45°)
 					-- Slopes (<=45°) should be handled by Y pass, not blocked by X pass
@@ -360,6 +367,10 @@ function world.move(obj, cols)
 		for other, sep in pairs(collisions) do
 			if is_non_solid(other, cols) then goto skip_y_collision end
 			if should_skip_collision(obj, other) then goto skip_y_collision end
+			if other.is_shield then
+				cols.shield = true
+				cols.shield_owner = other.owner
+			end
 			-- Detect ladder top collision before one-way platform check
 			-- This ensures standing_on_ladder_top works even when pressing down
 			if other.owner and other.owner.is_ladder_top then

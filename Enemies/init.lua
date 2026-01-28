@@ -104,7 +104,8 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	-- Persistent collision result table (avoids per-frame allocation)
 	self._cols = {
 		ground = false, ceiling = false, wall_left = false, wall_right = false,
-		ground_normal = { x = 0, y = -1 }, triggers = {}
+		ground_normal = { x = 0, y = -1 }, shield = false, shield_owner = nil,
+		triggers = {}
 	}
 
 	-- Create physical collider (for ground/wall detection)
@@ -329,14 +330,10 @@ function Enemy:check_player_overlap(player)
 	local enemy_shape = self.hitbox or self.shape
 	if not enemy_shape then return end
 
-	-- Check if enemy is colliding with player
-	local collides, _ = enemy_shape:collidesWith(player_shape)
-	if not collides then
-		self.hit_shield = false
-		return
-	end
-
-	-- Check shield collision first (for enemies that damage shields)
+	-- Check shield collision first (independent of body overlap).
+	-- Ground enemies get pushed away by physics before this runs, so their
+	-- shape no longer overlaps the shield. Use the physics flag from world.move
+	-- to detect the contact, with shape-overlap fallback for flying enemies.
 	if self.damages_shield and self.shield_hit_cooldown <= 0 then
 		local shield_hit = false
 
@@ -349,10 +346,15 @@ function Enemy:check_player_overlap(player)
 				shield_hit = enemy_on_left == player_facing_left
 			end
 		else
-			-- Normal enemies use shape collision
-			local shield_shape = world.shield_map[player]
-			if shield_shape then
-				shield_hit = enemy_shape:collidesWith(shield_shape)
+			-- Physics flag: recorded during world.move before enemy was pushed away
+			if self._cols.shield and self._cols.shield_owner == player then
+				shield_hit = true
+			else
+				-- Shape overlap fallback (flying enemies skip world.move)
+				local shield_shape = world.shield_map[player]
+				if shield_shape then
+					shield_hit = enemy_shape:collidesWith(shield_shape)
+				end
 			end
 		end
 
@@ -364,6 +366,10 @@ function Enemy:check_player_overlap(player)
 		end
 	end
 	self.hit_shield = false
+
+	-- Check if enemy is colliding with player body
+	local collides, _ = enemy_shape:collidesWith(player_shape)
+	if not collides then return end
 
 	-- No shield block - take damage
 	player:take_damage(self.damage, self.x)

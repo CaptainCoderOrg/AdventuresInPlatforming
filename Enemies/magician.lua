@@ -590,13 +590,14 @@ local function begin_state(enemy, anim)
 	common.set_animation(enemy, anim)
 	enemy.vx = 0
 	enemy.vy = 0
-	enemy.damage = 0
+	enemy.damage = 0.5
 end
 
 --- Common setup for states that fade out, reposition, and fade back in
 ---@param enemy table The magician enemy
 local function begin_fade_state(enemy)
 	begin_state(enemy, magician.animations.FLY)
+	enemy.damage = 0
 	enemy.invulnerable = true
 	enemy.fade_timer = 0
 	enemy.phase = "fade_out"
@@ -1164,6 +1165,7 @@ magician.states.death = {
 	name = "death",
 	start = function(enemy, _)
 		begin_state(enemy, magician.animations.DEATH)
+		enemy.damage = 0
 		enemy.alpha = 1
 	end,
 	update = function(enemy, dt)
@@ -1213,12 +1215,13 @@ end
 --------------------------------------------------------------------------------
 
 return {
-	box = { w = 13/16, h = 13/16, x = 1.5/16, y = 1.5/16 },
+	box = { w = 0.7, h = 0.9, x = 0.15, y = 0.05 },
 	gravity = 0,
 	max_fall_speed = 0,
 	max_health = 6,
 	armor = 0,
-	damage = 0,  -- No contact damage
+	damage = 0.5,
+	damages_shield = true,
 	death_sound = "ratto",
 	loot = { xp = 15, gold = { min = 5, max = 15 } },
 	states = magician.states,

@@ -94,6 +94,11 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 		self.get_armor = definition.get_armor
 	end
 
+	-- Copy custom on_hit function if defined
+	if definition.on_hit then
+		self.on_hit = definition.on_hit
+	end
+
 	-- Mark as enemy (for collision filtering)
 	self.is_enemy = true
 	-- Persistent collision result table (avoids per-frame allocation)

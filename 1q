@@ -1,0 +1,27 @@
+feat: Add magician enemy
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# Date:      Wed Jan 28 08:59:36 2026 -0700
+#
+# On branch main
+# Your branch is ahead of 'origin/main' by 1 commit.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	modified:   .claude/settings.local.json
+#	modified:   Enemies/init.lua
+#	new file:   Enemies/magician.lua
+#	new file:   aseprite/magician_hit.aseprite
+#	new file:   assets/sprites/enemies/magician/magician_attack.png
+#	new file:   assets/sprites/enemies/magician/magician_death.png
+#	new file:   assets/sprites/enemies/magician/magician_fly.png
+#	new file:   assets/sprites/enemies/magician/magician_hit.png
+#	new file:   assets/sprites/enemies/magician/magician_idle.png
+#	new file:   assets/sprites/enemies/magician/magician_projectile.png
+#	new file:   assets/sprites/enemies/magician/magician_projectile_hit.png
+#	modified:   levels/level2.lua
+#	modified:   main.lua
+#	modified:   sprites/enemies.lua
+#

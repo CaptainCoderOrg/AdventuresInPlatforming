@@ -99,6 +99,19 @@ states = {
   - Fade out: Triggered by player hit or shield block, fades over 0.75s then reappears
   - Directional shield check (phases through collision shapes)
   - Spawned via `P` symbol in level map
+- **Magician** - Flying mage that casts homing projectiles and teleports to dodge
+  - States: idle, attack, fly, disappear, unstuck, hit, return, death
+  - Health: 6 HP, Armor: 0, No contact damage
+  - Flying (no gravity), custom on_hit (no knockback)
+  - Detection: 10 tiles (face player), 8 tiles + LOS (attack)
+  - Attack: Casts homing MagicBolt (2 damage, 10 tiles/sec, 1.5 rad/sec homing)
+  - Fly: Repositions 6-8 tiles from player at 4 tiles/sec
+  - Disappear: Dodges player projectiles via fade-out teleport to opposite side
+  - Return: Teleports to spawn when player out of range or LOS lost
+  - Unstuck: Emergency teleport when stuck in wall geometry
+  - Manages own projectile pool (MagicBolt) with trail and puff particle effects
+  - Throttled expensive checks (dodge: 0.05s, wall: 0.15s, LOS: 0.12s, path: 0.08s)
+  - Spawned via `M` symbol in level map
 
 ### Damage System
 
@@ -144,7 +157,8 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician)
+5. If the enemy manages its own projectile pool, expose a cleanup function in the definition export and call it from `cleanup_level()` in main.lua to prevent orphaned colliders (see magician's `clear_bolts`)
 
 ## Prop System
 
@@ -425,6 +439,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/bat_eye.lua` - Bat eye enemy (waypoint patrol, flying)
 - `Enemies/zombie.lua` - Zombie enemy (bounded patrol, chase, attack)
 - `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
+- `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)

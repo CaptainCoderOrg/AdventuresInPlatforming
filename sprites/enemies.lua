@@ -42,6 +42,15 @@ local enemies = {
 		hit = "ghost_painting_hit",
 		death = "ghost_painting_death",
 	},
+	magician = {
+		idle = "magician_idle",
+		fly = "magician_fly",
+		attack = "magician_attack",
+		hit = "magician_hit",
+		death = "magician_death",
+		projectile = "magician_projectile",
+		projectile_hit = "magician_projectile_hit",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -76,5 +85,13 @@ canvas.assets.load_image(enemies.ghost_painting.static, "sprites/enemies/ghost_p
 canvas.assets.load_image(enemies.ghost_painting.fly, "sprites/enemies/ghost_painting/ghost_painting_fly.png")
 canvas.assets.load_image(enemies.ghost_painting.hit, "sprites/enemies/ghost_painting/ghost_painting_hit.png")
 canvas.assets.load_image(enemies.ghost_painting.death, "sprites/enemies/ghost_painting/ghost_painting_death.png")
+
+canvas.assets.load_image(enemies.magician.idle, "sprites/enemies/magician/magician_idle.png")
+canvas.assets.load_image(enemies.magician.fly, "sprites/enemies/magician/magician_fly.png")
+canvas.assets.load_image(enemies.magician.attack, "sprites/enemies/magician/magician_attack.png")
+canvas.assets.load_image(enemies.magician.hit, "sprites/enemies/magician/magician_hit.png")
+canvas.assets.load_image(enemies.magician.death, "sprites/enemies/magician/magician_death.png")
+canvas.assets.load_image(enemies.magician.projectile, "sprites/enemies/magician/magician_projectile.png")
+canvas.assets.load_image(enemies.magician.projectile_hit, "sprites/enemies/magician/magician_projectile_hit.png")
 
 return enemies

@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 2D platformer game with combat mechanics built with Lua for the Canvas framework (web/HTML5 deployment). Entry point is `main.lua`. Game renders at variable resolution with 16px base tiles scaled 3x (48px tiles on screen).
 
+## Environment
+
+There is no `lua` or `luac` interpreter installed locally. Code cannot be executed or syntax-checked via the command line.
+
 ## Running the Game
 
 The game runs via the Canvas framework runtime. Debug controls:

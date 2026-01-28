@@ -36,6 +36,8 @@ Enemy.register("spike_slug", require("Enemies/spike_slug"))
 Enemy.register("bat_eye", require("Enemies/bat_eye"))
 Enemy.register("zombie", require("Enemies/zombie"))
 Enemy.register("ghost_painting", require("Enemies/ghost_painting"))
+local magician_def = require("Enemies/magician")
+Enemy.register("magician", magician_def)
 
 -- Props
 local Prop = require("Prop")
@@ -419,6 +421,9 @@ cleanup_level = function()
         world.remove_collider(projectile)
     end
     Projectile.all = {}
+
+    -- Clear magician magic bolts
+    magician_def.clear_bolts()
 
     Effects.clear()
     Collectible.clear()

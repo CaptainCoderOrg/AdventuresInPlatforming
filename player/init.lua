@@ -322,7 +322,7 @@ function Player:take_damage(amount, source_x)
 		end
 	end
 
-	self.damage = self.damage + amount
+	self.damage = math.min(self.damage + amount, self.max_health)
 	audio.play_squish_sound()
 	if self:health() > 0 then
 		self:set_state(self.states.hit)

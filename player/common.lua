@@ -150,31 +150,8 @@ function common.handle_block(player)
 	end
 end
 
---- Finds the first interactable prop overlapping the player.
---- Returns both the prop and its interact function (state-level takes precedence).
----@param player table The player object
----@return table|nil prop The first interactable prop found, or nil
----@return function|nil interact_fn The interact function, or nil
-function common.find_interactable(player)
-	local hit = combat.query_rect(
-		player.x + player.box.x,
-		player.y + player.box.y,
-		player.box.w,
-		player.box.h
-	)
-	for i = 1, #hit do
-		local prop = hit[i]
-		local state = prop.states and prop.states[prop.state_name]
-		local interact_fn = (state and state.interact) or (prop.definition and prop.definition.interact)
-		if interact_fn then
-			return prop, interact_fn
-		end
-	end
-	return nil, nil
-end
-
 --- Checks for interact input (up) and handles prop interactions.
---- Calls prop's interact() method and handles the result.
+--- Tries all overlapping interactable entities until one succeeds.
 ---@param player table The player object
 ---@return boolean True if interaction occurred (prevents attack)
 function common.handle_interact(player)
@@ -182,17 +159,27 @@ function common.handle_interact(player)
 		return false
 	end
 
-	local prop, interact_fn = common.find_interactable(player)
-	if not interact_fn then return false end
-
-	local result = interact_fn(prop, player)
-	if not result then return false end
-
-	if type(result) == "table" and result.player_state then
-		player:set_state(player.states[result.player_state])
+	local hit = combat.query_rect(
+		player.x + player.box.x,
+		player.y + player.box.y,
+		player.box.w,
+		player.box.h
+	)
+	for i = 1, #hit do
+		local entity = hit[i]
+		local state = entity.states and entity.states[entity.state_name]
+		local interact_fn = (state and state.interact) or (entity.definition and entity.definition.interact)
+		if interact_fn then
+			local result = interact_fn(entity, player)
+			if result then
+				if type(result) == "table" and result.player_state then
+					player:set_state(player.states[result.player_state])
+				end
+				return true
+			end
+		end
 	end
-
-	return true
+	return false
 end
 
 --- Applies gravity acceleration to the player without state transitions.

@@ -26,6 +26,9 @@ end
 function run.input(player)
 	if common.check_cooldown_queues(player) then return end
 
+	-- Check interactions first (before direction check may transition to idle)
+	if common.handle_interact(player) then return end
+
 	local new_direction = nil
 	if controls.left_down() then
 		new_direction = -1
@@ -46,9 +49,6 @@ function run.input(player)
 
 	player.direction = new_direction
 	player.run_state.previous_direction = new_direction
-
-	-- Check interactions before attack (down+attack combo for campfire/chest)
-	if common.handle_interact(player) then return end
 
 	common.handle_throw(player)
 	common.handle_hammer(player)

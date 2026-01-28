@@ -47,9 +47,10 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.id = type_key .. "_" .. Enemy.next_id
 	Enemy.next_id = Enemy.next_id + 1
 
-	-- Position and physics
-	self.x = x
-	self.y = y
+	-- Position and physics (apply spawn offset if defined)
+	local offset = definition.spawn_offset
+	self.x = x + (offset and offset.x or 0)
+	self.y = y + (offset and offset.y or 0)
 	self.vx = 0
 	self.vy = 0
 	self.direction = -1  -- Face left by default
@@ -84,6 +85,7 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.damage = definition.damage or 1
 	self.armor = definition.armor or 0
 	self.damages_shield = definition.damages_shield or false
+	self.directional_shield = definition.directional_shield or false  -- Phasing enemies use direction-based shield check
 	self.shield_hit_cooldown = 0  -- Debounce timer for shield contact damage
 	self.marked_for_destruction = false
 
@@ -205,6 +207,7 @@ function Enemy.update(dt, player, camera)
 	while enemy do
 		enemy.pressure_plate_lift = 0
 		enemy.shield_hit_cooldown = math.max(0, enemy.shield_hit_cooldown - dt)
+		enemy.camera = camera
 		if enemy.animation then
 			enemy.animation:play(dt)
 		end
@@ -321,25 +324,44 @@ function Enemy:check_player_overlap(player)
 	local enemy_shape = self.hitbox or self.shape
 	if not enemy_shape then return end
 
+	-- Check if enemy is colliding with player
+	local collides, _ = enemy_shape:collidesWith(player_shape)
+	if not collides then
+		self.hit_shield = false
+		return
+	end
+
 	-- Check shield collision first (for enemies that damage shields)
 	if self.damages_shield and self.shield_hit_cooldown <= 0 then
-		local shield_shape = world.shield_map[player]
-		if shield_shape then
-			local shield_collides, _ = enemy_shape:collidesWith(shield_shape)
-			if shield_collides then
-				player:take_damage(self.damage, self.x)
-				self.shield_hit_cooldown = SHIELD_HIT_COOLDOWN
-				self.hit_shield = true  -- Flag for states to react to shield collision
-				return  -- Don't also check body collision
+		local shield_hit = false
+
+		-- Phasing enemies (ghosts) use directional check since they ignore collision shapes
+		if self.directional_shield then
+			local is_blocking = player.state == player.states.block or player.state == player.states.block_move
+			if is_blocking then
+				local enemy_on_left = self.x < player.x
+				local player_facing_left = player.direction == -1
+				shield_hit = enemy_on_left == player_facing_left
 			end
+		else
+			-- Normal enemies use shape collision
+			local shield_shape = world.shield_map[player]
+			if shield_shape then
+				shield_hit = enemy_shape:collidesWith(shield_shape)
+			end
+		end
+
+		if shield_hit then
+			player:take_damage(self.damage, self.x)
+			self.shield_hit_cooldown = SHIELD_HIT_COOLDOWN
+			self.hit_shield = true  -- Flag for states to react to shield collision
+			return  -- Don't also check body collision
 		end
 	end
 	self.hit_shield = false
 
-	local collides, _ = enemy_shape:collidesWith(player_shape)
-	if collides then
-		player:take_damage(self.damage, self.x)  -- Pass enemy X for shield check
-	end
+	-- No shield block - take damage
+	player:take_damage(self.damage, self.x)
 end
 
 --- Returns the enemy's current armor value.
@@ -353,6 +375,8 @@ end
 ---@param source_type string "player", "weapon", or "projectile"
 ---@param source table Hit source with optional .damage (number), .x (number), .vx (number)
 function Enemy:on_hit(source_type, source)
+	if self.invulnerable then return end
+
 	local damage = (source and source.damage) or 1
 
 	-- Apply armor reduction (minimum 0 damage)

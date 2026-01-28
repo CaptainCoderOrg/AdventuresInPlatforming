@@ -108,8 +108,10 @@ function Prop.spawn(type_key, x, y, options)
 
     Prop.all[prop] = true
 
-    -- Add to combat hitbox system
-    combat.add(prop)
+    -- Add to combat hitbox system (skip for props with no hitbox)
+    if prop.box.w > 0 and prop.box.h > 0 then
+        combat.add(prop)
+    end
 
     return prop
 end

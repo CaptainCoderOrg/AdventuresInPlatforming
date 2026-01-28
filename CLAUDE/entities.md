@@ -88,6 +88,17 @@ states = {
   - 70% bias toward patrol center when picking direction
   - Damages shield on contact
   - Spawned via paired `Z` symbols on same row in level map
+- **Ghost Painting** - Haunted painting that attacks when player looks away
+  - States: idle, wait, prep_attack, attack, reappear, fade_out, hit, death
+  - Health: 4 HP, Armor: 1, Contact damage: 2 (only during prep_attack/attack)
+  - Flying (no gravity), phases through walls
+  - Detection range: 3 tiles, attack triggers when player leaves range while not facing ghost
+  - Prep attack: Floats upward with shake effect for 1 second
+  - Attack: Accelerates toward player (max 25 tiles/sec), continues until off-screen
+  - Reappear: Teleports to random position 6 tiles from player, fades in over 1.5s
+  - Fade out: Triggered by player hit or shield block, fades over 0.75s then reappears
+  - Directional shield check (phases through collision shapes)
+  - Spawned via `P` symbol in level map
 
 ### Damage System
 
@@ -133,7 +144,7 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting)
 
 ## Prop System
 
@@ -283,6 +294,11 @@ animation:draw(x, y - lift)
   - Configurable: `FADE_DURATION` (0.15s), `TILE_DELAY` (0.08s)
   - Auto-detects sprite type (left/middle/right) based on adjacent group members
   - Collider added immediately on appear (for walkability), removed immediately on disappear (for fall-through)
+- **Decoy Painting** - Decorative painting that visually matches ghost_painting enemy
+  - No collision (box is 0x0), purely visual
+  - Uses ghost_painting static sprite with -0.5 tile Y offset
+  - Used to disguise real ghost_painting enemies or as decoration
+  - Spawned via `p` symbol in level map
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -408,6 +424,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/spike_slug.lua` - Spike slug enemy (defensive behavior)
 - `Enemies/bat_eye.lua` - Bat eye enemy (waypoint patrol, flying)
 - `Enemies/zombie.lua` - Zombie enemy (bounded patrol, chase, attack)
+- `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
 - `Prop/button.lua` - Button prop (unpressed/pressed states)
@@ -418,5 +435,6 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
+- `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

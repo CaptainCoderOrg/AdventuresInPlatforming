@@ -35,6 +35,7 @@ Enemy.register("worm", require("Enemies/worm"))
 Enemy.register("spike_slug", require("Enemies/spike_slug"))
 Enemy.register("bat_eye", require("Enemies/bat_eye"))
 Enemy.register("zombie", require("Enemies/zombie"))
+Enemy.register("ghost_painting", require("Enemies/ghost_painting"))
 
 -- Props
 local Prop = require("Prop")
@@ -52,6 +53,7 @@ Prop.register("unique_item", require("Prop/unique_item"))
 Prop.register("lever", require("Prop/lever"))
 Prop.register("appearing_bridge", require("Prop/appearing_bridge"))
 Prop.register("stairs", require("Prop/stairs"))
+Prop.register("decoy_painting", require("Prop/decoy_painting"))
 
 -- Levels
 local level1 = require("levels/level1")
@@ -70,11 +72,11 @@ local function get_level_by_id(id)
 end
 
 --- Find spawn position by symbol in a level
----@param level table Level module with map and symbols
+---@param level table Level module with map
 ---@param symbol string Symbol to search for
 ---@return table|nil spawn Position {x, y} or nil if not found
 local function find_spawn_by_symbol(level, symbol)
-    if not level or not level.map or not level.symbols then return nil end
+    if not level or not level.map then return nil end
     for row_idx, row in ipairs(level.map) do
         for col_idx = 1, #row do
             local char = row:sub(col_idx, col_idx)
@@ -327,13 +329,14 @@ init_level = function(level, spawn_override, player_data, options)
 
     -- Restore player stats if provided
     if player_data then
-        -- Copy persistent stats and transient state (nil values are safely ignored)
+        -- Copy persistent stats and transient state
+        -- Use ~= nil check to preserve falsy values like 0 for experience, gold, energy_used, etc.
         local restore_keys = {
             "max_health", "level", "experience", "gold", "defense", "strength", "critical_chance",
             "damage", "energy_used", "stamina_used", "projectile_ix"
         }
         for _, key in ipairs(restore_keys) do
-            if player_data[key] then player[key] = player_data[key] end
+            if player_data[key] ~= nil then player[key] = player_data[key] end
         end
         -- Copy unique_items array to avoid sharing reference with save cache
         if player_data.unique_items then

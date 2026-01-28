@@ -17,9 +17,29 @@ local HAMMER_Y_OFFSET = -0.1  -- Center vertically relative to player box
 
 -- Active frames for hammer hitbox (impact frames)
 -- Hammer has 7 frames (0-6) at 150ms each
--- Frames 2-5 = swing through impact (600ms active window)
-local MIN_ACTIVE_FRAME = 2
-local MAX_ACTIVE_FRAME = 5
+-- Frames 3-4 = impact window (300ms active window)
+local MIN_ACTIVE_FRAME = 3
+local MAX_ACTIVE_FRAME = 4
+
+-- Reusable state for filters (avoids closure allocation per frame)
+local filter_player = nil
+local hammer_hit_source = { damage = 5, x = 0 }
+
+--- Filter function for enemy hits (uses module-level state to avoid closure allocation)
+---@param entity table Entity to check
+---@return boolean True if entity is a valid target
+local function enemy_filter(entity)
+	return entity.is_enemy
+		and entity.shape
+		and not filter_player.hammer_state.hit_enemies[entity]
+end
+
+--- Filter function for button hits (avoids closure allocation)
+---@param prop table Prop to check
+---@return boolean True if button is not pressed
+local function button_filter(prop)
+	return not prop.is_pressed
+end
 
 --- Get the hammer hitbox if on active frames, nil otherwise
 ---@param player table The player object
@@ -35,14 +55,13 @@ end
 ---@param player table The player object
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
 local function check_hammer_hits(player, hitbox)
-	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
-		return entity.is_enemy
-			and entity.shape
-			and not player.hammer_state.hit_enemies[entity]
-	end)
+	filter_player = player
+	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
 
-	for _, enemy in ipairs(hits) do
-		enemy:on_hit("weapon", { damage = 5, x = player.x })
+	for i = 1, #hits do
+		local enemy = hits[i]
+		hammer_hit_source.x = player.x
+		enemy:on_hit("weapon", hammer_hit_source)
 		player.hammer_state.hit_enemies[enemy] = true
 	end
 end
@@ -53,9 +72,7 @@ end
 local function check_button_hits(player, hitbox)
 	if player.hammer_state.hit_button then return end
 
-	local button = Prop.check_hit("button", hitbox, function(prop)
-		return not prop.is_pressed
-	end)
+	local button = Prop.check_hit("button", hitbox, button_filter)
 	if button then
 		button.definition.press(button)
 		player.hammer_state.hit_button = true
@@ -71,7 +88,6 @@ local function check_lever_hits(player, hitbox)
 		player.hammer_state.hit_lever = true
 	end
 end
-
 
 --- Initializes hammer attack state. Sets animation, timing, and clears input queue.
 --- Removes shield if transitioning from block/block_move state.

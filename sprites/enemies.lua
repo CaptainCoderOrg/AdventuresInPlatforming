@@ -36,6 +36,12 @@ local enemies = {
 		hit = "zombie_hit",
 		death = "zombie_death",
 	},
+	ghost_painting = {
+		static = "ghost_painting_static",
+		fly = "ghost_painting_fly",
+		hit = "ghost_painting_hit",
+		death = "ghost_painting_death",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -65,5 +71,10 @@ canvas.assets.load_image(enemies.zombie.run, "sprites/enemies/zombie/zombie_run.
 canvas.assets.load_image(enemies.zombie.attack, "sprites/enemies/zombie/zombie_attack.png")
 canvas.assets.load_image(enemies.zombie.hit, "sprites/enemies/zombie/zombie_hit.png")
 canvas.assets.load_image(enemies.zombie.death, "sprites/enemies/zombie/zombie_death.png")
+
+canvas.assets.load_image(enemies.ghost_painting.static, "sprites/enemies/ghost_painting/ghost_painting.png")
+canvas.assets.load_image(enemies.ghost_painting.fly, "sprites/enemies/ghost_painting/ghost_painting_fly.png")
+canvas.assets.load_image(enemies.ghost_painting.hit, "sprites/enemies/ghost_painting/ghost_painting_hit.png")
+canvas.assets.load_image(enemies.ghost_painting.death, "sprites/enemies/ghost_painting/ghost_painting_death.png")
 
 return enemies

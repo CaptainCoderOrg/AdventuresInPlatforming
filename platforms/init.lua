@@ -79,7 +79,14 @@ function platforms.load_level(level_data)
 							by_row[ty].count = def.count
 						end
 					else
-						table.insert(enemies, { x = ox, y = oy, type = def.key })
+						local enemy_data = { x = ox, y = oy, type = def.key }
+						-- Copy extra properties (flip, etc.)
+						for k, v in pairs(def) do
+							if k ~= "type" and k ~= "key" and k ~= "offset" then
+								enemy_data[k] = v
+							end
+						end
+						table.insert(enemies, enemy_data)
 					end
 				else
 					-- Generic prop handling (includes signs) - copy all properties from def

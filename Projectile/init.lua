@@ -149,7 +149,10 @@ end
 function Projectile:on_collision(collision)
     local direction = self.vx >= 0 and 1 or -1
 
-    if collision.other and collision.other.owner and collision.other.owner.is_enemy then
+    if collision.other and collision.other.is_projectile_collider then
+        -- Hit a projectile blocker (e.g., club, shield) - break but no damage
+        audio.play_solid_sound()
+    elseif collision.other and collision.other.owner and collision.other.owner.is_enemy then
         local enemy = collision.other.owner
         enemy:on_hit("projectile", self)
     else

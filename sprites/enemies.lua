@@ -51,6 +51,16 @@ local enemies = {
 		projectile = "magician_projectile",
 		projectile_hit = "magician_projectile_hit",
 	},
+	guardian = {
+		idle = "guardian_idle",
+		alert = "guardian_alert",
+		attack = "guardian_attack",
+		hit = "guardian_hit",
+		death = "guardian_death",
+		jump = "guardian_jump",
+		land = "guardian_land",
+		run = "guardian_run",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -93,5 +103,14 @@ canvas.assets.load_image(enemies.magician.hit, "sprites/enemies/magician/magicia
 canvas.assets.load_image(enemies.magician.death, "sprites/enemies/magician/magician_death.png")
 canvas.assets.load_image(enemies.magician.projectile, "sprites/enemies/magician/magician_projectile.png")
 canvas.assets.load_image(enemies.magician.projectile_hit, "sprites/enemies/magician/magician_projectile_hit.png")
+
+canvas.assets.load_image(enemies.guardian.idle, "sprites/enemies/guardian/guardian_idle.png")
+canvas.assets.load_image(enemies.guardian.alert, "sprites/enemies/guardian/guardian_alerted.png")
+canvas.assets.load_image(enemies.guardian.attack, "sprites/enemies/guardian/guardian_attack.png")
+canvas.assets.load_image(enemies.guardian.hit, "sprites/enemies/guardian/guardian_hit.png")
+canvas.assets.load_image(enemies.guardian.death, "sprites/enemies/guardian/guardian_death.png")
+canvas.assets.load_image(enemies.guardian.jump, "sprites/enemies/guardian/guardian_jump.png")
+canvas.assets.load_image(enemies.guardian.land, "sprites/enemies/guardian/guardian_land.png")
+canvas.assets.load_image(enemies.guardian.run, "sprites/enemies/guardian/guardian_run.png")
 
 return enemies

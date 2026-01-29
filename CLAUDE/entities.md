@@ -112,6 +112,16 @@ states = {
   - Manages own projectile pool (MagicBolt) with trail and puff particle effects
   - Throttled expensive checks (dodge: 0.05s, wall: 0.15s, LOS: 0.12s, path: 0.08s)
   - Spawned via `M` symbol in level map
+- **Guardian** - Heavy enemy with spiked club that jumps to engage
+  - States: idle, alert, attack, back_away, reassess, hit, jump_away, jump_toward, land, charge, charge_and_jump, assess_charge, death
+  - Health: 6 HP, Armor: 1, Body damage: 1, Club damage: 3
+  - Detection: 12 tiles horizontal, 1.5 tiles vertical (facing direction only)
+  - Two damage zones: body (hittable) and club (high damage)
+  - Attack behavior: Alert animation, then jump toward or charge based on distance
+  - Post-hit recovery: Jumps away from player after stun
+  - Custom on_hit: No knockback (heavy enemy)
+  - Frame-based club hitboxes during attack swing animation
+  - Spawned via `F` symbol in level map (`f` for flipped/facing right)
 
 ### Damage System
 
@@ -157,7 +167,7 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician, F=guardian)
 5. If the enemy manages its own projectile pool, expose a cleanup function in the definition export and call it from `cleanup_level()` in main.lua to prevent orphaned colliders (see magician's `clear_bolts`)
 
 ## Prop System
@@ -445,6 +455,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/zombie.lua` - Zombie enemy (bounded patrol, chase, attack)
 - `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
 - `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
+- `Enemies/guardian.lua` - Guardian enemy (heavy club wielder, jump attacks, no knockback)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

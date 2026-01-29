@@ -128,6 +128,7 @@ world.hc = state.hc
 world.shape_map = state.shape_map
 world.trigger_map = state.trigger_map
 world.hitbox_map = state.hitbox_map
+world.projectile_collider_map = state.projectile_collider_map
 world.shield_map = state.shield_map
 
 --- Adds a rectangular collider for an object.
@@ -233,6 +234,67 @@ function world.update_hitbox(obj, y_offset)
 		local cx = px + (obj.box.w * ts / 2)
 		local cy = py + (obj.box.h * ts / 2)
 		shape:setRotation(-obj.slope_rotation, cx, cy)
+	end
+end
+
+--- Adds a projectile collider for an object (blocks projectiles without taking damage).
+---@param owner table The owning object
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param w number Width in tiles
+---@param h number Height in tiles
+---@return table The created HC shape
+function world.add_projectile_collider(owner, x, y, w, h)
+	local ts = sprites.tile_size
+	local px, py = x * ts, y * ts
+	local pw, ph = w * ts, h * ts
+
+	local shape = world.hc:rectangle(px, py, pw, ph)
+	shape.is_projectile_collider = true
+	shape.owner = owner
+	world.projectile_collider_map[owner] = shape
+	return shape
+end
+
+--- Updates a projectile collider position and size.
+--- Moves existing shape when only position changes, recreates only when size changes.
+---@param owner table The owning object
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param w number Width in tiles
+---@param h number Height in tiles
+function world.update_projectile_collider(owner, x, y, w, h)
+	local shape = world.projectile_collider_map[owner]
+	if not shape then return end
+
+	local ts = sprites.tile_size
+	local px, py = x * ts, y * ts
+	local pw, ph = w * ts, h * ts
+
+	-- Check if size changed (requires recreate) vs just position change
+	local x1, y1, x2, y2 = shape:bbox()
+	local old_w, old_h = x2 - x1, y2 - y1
+
+	if math.abs(old_w - pw) > 0.001 or math.abs(old_h - ph) > 0.001 then
+		-- Size changed: must recreate shape
+		world.hc:remove(shape)
+		local new_shape = world.hc:rectangle(px, py, pw, ph)
+		new_shape.is_projectile_collider = true
+		new_shape.owner = owner
+		world.projectile_collider_map[owner] = new_shape
+	else
+		-- Position only: move existing shape (much cheaper)
+		shape:moveTo(px + pw / 2, py + ph / 2)
+	end
+end
+
+--- Removes a projectile collider for an object.
+---@param owner table The owning object
+function world.remove_projectile_collider(owner)
+	local shape = world.projectile_collider_map[owner]
+	if shape then
+		world.hc:remove(shape)
+		world.projectile_collider_map[owner] = nil
 	end
 end
 
@@ -482,13 +544,20 @@ function world.move_trigger(obj)
 
 	local collisions = world.hc:collisions(shape)
 
-	-- First pass: prioritize enemy collisions
+	-- Prioritize: projectile_collider > enemy > solid
+	local projectile_collider_hit = nil
 	local enemy_hit = nil
 	local solid_hit = nil
 
 	for other, sep in pairs(collisions) do
 		-- Skip probe and trigger shapes
 		if other.is_probe or other.is_trigger then goto continue end
+
+		-- Check for projectile collider (blocks projectiles without damage)
+		if other.is_projectile_collider then
+			projectile_collider_hit = { shape = other, sep = sep }
+			goto continue
+		end
 
 		local owner = other.owner
 		local is_player = owner and owner.is_player
@@ -518,8 +587,8 @@ function world.move_trigger(obj)
 		::continue::
 	end
 
-	-- Return enemy hit if found, otherwise solid hit
-	local hit = enemy_hit or solid_hit
+	-- Priority: projectile_collider > enemy > solid
+	local hit = projectile_collider_hit or enemy_hit or solid_hit
 	if hit then
 		shape:move(hit.sep.x, hit.sep.y)
 

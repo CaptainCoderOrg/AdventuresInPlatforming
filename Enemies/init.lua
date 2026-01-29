@@ -53,7 +53,7 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.y = y + (offset and offset.y or 0)
 	self.vx = 0
 	self.vy = 0
-	self.direction = -1  -- Face left by default
+	self.direction = (spawn_data and spawn_data.flip) and 1 or -1  -- Face left by default, right if flip=true
 	self.is_grounded = false
 	self.ground_normal = { x = 0, y = -1 }
 

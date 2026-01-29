@@ -135,6 +135,54 @@ player:get_speed()           -- Returns speed with fatigue penalty applied
 - **Visual Feedback**: "Low Energy" or "No Energy" text appears when throw attempted with insufficient energy
 - **UI Flash**: `energy_flash_requested` triggers energy bar flash on failed throw
 
+## Level Progression System
+
+Player leveling at campfire rest screen via stat upgrades.
+
+### Experience Requirements
+
+Fibonacci-like sequence: each level requires the sum of the previous two levels' XP.
+
+| Level | XP Required |
+|-------|-------------|
+| 1     | 10          |
+| 2     | 20          |
+| 3     | 30          |
+| 4     | 50          |
+| 5     | 80          |
+| 6     | 130         |
+| ...   | (continues to level 100) |
+
+### Levelable Stats
+
+Each stat upgrade costs XP equal to the "Next Level" requirement and increases player level by 1:
+
+| Stat     | Property Affected   | Per-Point Bonus |
+|----------|---------------------|-----------------|
+| Health   | `max_health`        | +1 HP           |
+| Stamina  | `max_stamina`       | +1 SP           |
+| Energy   | `max_energy`        | +1 EP           |
+| Defence  | `defense`           | +1 damage reduction |
+| Recovery | `recovery`          | +1 regen rate   |
+| Critical | `critical_chance`   | +1% crit chance |
+
+### Upgrade Flow
+
+1. Open rest screen at campfire
+2. Navigate to Status panel
+3. Highlight a stat and click/press to queue upgrade (if XP available)
+4. Confirm to apply all pending upgrades, or cancel to discard
+5. Player level increases by total upgrades applied
+
+**Key Methods (`ui/status_panel.lua`):**
+```lua
+panel:can_level_up()           -- True if player has enough XP for next level
+panel:add_pending_upgrade()    -- Queue upgrade for highlighted stat
+panel:remove_pending_upgrade() -- Remove queued upgrade
+panel:confirm_upgrades()       -- Apply all pending upgrades
+panel:cancel_upgrades()        -- Discard pending upgrades
+```
+
 ## Player Properties Reference
 
 ```lua
@@ -151,6 +199,8 @@ self.gold = 0                   -- Currency for purchases
 self.defense = 0                -- Reduces incoming damage
 self.strength = 5               -- Base damage multiplier
 self.critical_chance = 0        -- Percent chance for critical hit
+self.recovery = 0               -- Bonus regeneration rate
+self.stat_upgrades = {}         -- Tracks upgrade counts per stat {Health=2, Stamina=1, ...}
 self.attack_state = {           -- Combo tracking
     count, next_anim_ix, remaining_time, queued, hit_enemies
 }

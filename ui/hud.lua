@@ -136,8 +136,11 @@ end
 ---@param world_y number Campfire center Y in tile coordinates
 ---@param camera table Camera instance for position calculation
 ---@param player table|nil Player instance for stats display
-function hud.show_rest_screen(world_x, world_y, camera, player)
-    rest_screen.show(world_x, world_y, camera, player)
+---@param save_slot number|nil Active save slot index
+---@param level_id string|nil Current level identifier
+---@param campfire_name string|nil Campfire display name
+function hud.show_rest_screen(world_x, world_y, camera, player, save_slot, level_id, campfire_name)
+    rest_screen.show(world_x, world_y, camera, player, save_slot, level_id, campfire_name)
 end
 
 --- Check if rest screen is blocking game input

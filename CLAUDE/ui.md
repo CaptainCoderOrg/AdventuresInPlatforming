@@ -114,14 +114,18 @@ widget:draw(player)        -- Render widget
 
 ## Status Panel (`ui/status_panel.lua`)
 
-- Abstracted stats display for rest screen
-- Shows: Level, Exp, Gold, HP/SP/EP, DEF, STR, CRIT, Playtime
-- Used in rest screen's Status sub-panel
+- Stats display with level-up functionality for rest screen
+- Shows: Level, Exp, Next Level, Gold, HP/SP/EP, DEF, Recovery, CRIT, Playtime
+- Supports stat upgrades at campfires (see [Level Progression](player.md#level-progression-system))
 
 ```lua
 local panel = status_panel.create({ x, y, width, height, player })
-panel:set_player(player)   -- Update player reference
-panel:draw()               -- Render stats text
+panel:set_player(player)        -- Update player reference
+panel:can_level_up()            -- Check if XP available for upgrade
+panel:add_pending_upgrade()     -- Queue upgrade for highlighted stat
+panel:confirm_upgrades()        -- Apply pending upgrades
+panel:cancel_upgrades()         -- Discard pending upgrades
+panel:draw()                    -- Render stats text
 ```
 
 ## Key Files

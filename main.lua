@@ -41,7 +41,6 @@ Enemy.register("magician", magician_def)
 
 -- Props
 local Prop = require("Prop")
-local prop_common = require("Prop/common")
 Prop.register("campfire", require("Prop/campfire"))
 Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
@@ -91,24 +90,17 @@ local function find_spawn_by_symbol(level, symbol)
 end
 
 --- Get player data for preservation during level transitions
+--- Combines core stats and transient state for mid-level preservation
 ---@param p table Player instance
 ---@return table data Player stats to preserve
 local function get_player_save_data(p)
-    return {
-        max_health = p.max_health,
-        damage = p.damage,
-        level = p.level,
-        experience = p.experience,
-        gold = p.gold,
-        defense = p.defense,
-        strength = p.strength,
-        critical_chance = p.critical_chance,
-        unique_items = prop_common.copy_array(p.unique_items),
-        energy_used = p.energy_used,
-        stamina_used = p.stamina_used,
-        projectile_ix = p.projectile_ix,
-        prop_states = Prop.get_persistent_states(),
-    }
+    local data = SaveSlots.get_player_stats(p)
+    local transient = SaveSlots.get_transient_state(p)
+    for key, value in pairs(transient) do
+        data[key] = value
+    end
+    data.prop_states = Prop.get_persistent_states()
+    return data
 end
 
 local player  -- Instance created in init_level
@@ -332,19 +324,8 @@ init_level = function(level, spawn_override, player_data, options)
 
     -- Restore player stats if provided
     if player_data then
-        -- Copy persistent stats and transient state
-        -- Use ~= nil check to preserve falsy values like 0 for experience, gold, energy_used, etc.
-        local restore_keys = {
-            "max_health", "level", "experience", "gold", "defense", "strength", "critical_chance",
-            "damage", "energy_used", "stamina_used", "projectile_ix"
-        }
-        for _, key in ipairs(restore_keys) do
-            if player_data[key] ~= nil then player[key] = player_data[key] end
-        end
-        -- Copy unique_items array to avoid sharing reference with save cache
-        if player_data.unique_items then
-            player.unique_items = prop_common.copy_array(player_data.unique_items)
-        end
+        SaveSlots.restore_player_stats(player, player_data)
+        SaveSlots.restore_transient_state(player, player_data)
         -- Update active projectile reference if projectile_ix was restored
         if player_data.projectile_ix then
             player.projectile = player.projectile_options[player.projectile_ix]

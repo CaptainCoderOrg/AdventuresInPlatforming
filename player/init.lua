@@ -80,9 +80,17 @@ function Player.new()
 	self.level = 1              -- Player level, gates content and affects base stats
 	self.experience = 0         -- XP toward next level
 	self.gold = 0               -- Currency for purchases
-	self.defense = 0            -- Reduces incoming damage
-	self.strength = 5           -- Base damage multiplier for attacks
-	self.critical_chance = 0    -- Percent chance for critical hit damage
+	self.defense = 0            -- Reduces incoming damage (points, each = 2.5%)
+	self.recovery = 0           -- Increases stamina recovery rate (points, each = 2.5%)
+	self.critical_chance = 0    -- Percent chance for critical hit damage (points, each = 2.5%)
+	self.stat_upgrades = {      -- Track how many times each stat was upgraded (for refunds)
+		Health = 0,
+		Stamina = 0,
+		Energy = 0,
+		Defence = 0,
+		Recovery = 0,
+		Critical = 0,
+	}
 	self.unique_items = {}      -- Permanently collected key items (for locked doors, etc.)
 
 	-- Position and velocity
@@ -286,6 +294,24 @@ end
 ---@return number Current health value
 function Player:health()
 	return math.max(0, self.max_health - self.damage)
+end
+
+--- Returns defence as a percentage (each point = 2.5%).
+---@return number Defence percentage
+function Player:defense_percent()
+	return self.defense * 2.5
+end
+
+--- Returns recovery bonus as a percentage (each point = 2.5%).
+---@return number Recovery percentage bonus
+function Player:recovery_percent()
+	return self.recovery * 2.5
+end
+
+--- Returns critical chance as a percentage (each point = 2.5%).
+---@return number Critical chance percentage
+function Player:critical_percent()
+	return self.critical_chance * 2.5
 end
 
 --- Applies damage to player, transitioning to hit or death state.

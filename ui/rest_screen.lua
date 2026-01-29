@@ -3,6 +3,7 @@
 --- Supports menu navigation, settings editing, and confirmation dialogs.
 local canvas = require("canvas")
 local controls = require("controls")
+local controls_config = require("config/controls")
 local button = require("ui/button")
 local config = require("config")
 local simple_dialogue = require("ui/simple_dialogue")
@@ -13,6 +14,7 @@ local audio = require("audio")
 local settings_storage = require("settings_storage")
 local utils = require("ui/utils")
 local sprites = require("sprites")
+local SaveSlots = require("SaveSlots")
 
 local rest_screen = {}
 
@@ -69,6 +71,26 @@ local VOLUME_STEP = 0.05
 -- Menu configuration
 local MENU_ITEM_COUNT = 5
 
+-- Submenu arrow configuration
+local ARROW_WIDTH = 4
+local ARROW_HEIGHT = 6
+local ARROW_INSET = 7  -- Inset from button right edge (accounts for text-only button centering)
+
+-- Menu item descriptions (index 4 is set dynamically when mode changes)
+local REST_CONTINUE_DESC = "Resting restores your hit points, energy, and saves your progress. Enemies also respawn when you rest."
+local PAUSE_CONTINUE_DESC = "Resume gameplay."
+local MENU_DESCRIPTIONS = {
+    "View your current stats and progression. You can spend experience at campfires to increase your stats.",
+    "Adjust master volume, music, and sound effects.",
+    "View and customize keyboard and gamepad controls.",
+    REST_CONTINUE_DESC,
+    "Save and quit to the title screen.",
+}
+
+-- Level up icon configuration
+local LEVEL_UP_ICON_SIZE = 10
+local LEVEL_UP_ICON_INSET = 6  -- Inset from button left edge (accounts for text-only button centering)
+
 -- Screen state
 local state = STATE.HIDDEN
 local fade_progress = 0
@@ -81,6 +103,7 @@ local focused_index = 1
 local hovered_index = nil
 local active_panel_index = 1
 local audio_focus_index = 1
+local upgrade_button_focus = nil  -- nil = stats focused, "confirm" or "cancel" for button focus
 
 -- Hold-to-repeat state
 local hold_direction = 0
@@ -94,11 +117,16 @@ local last_mouse_y = 0
 -- Campfire and camera state
 local campfire_x = 0
 local campfire_y = 0
+local campfire_name = "Campfire"
 local camera_ref = nil
 local original_camera_x = 0
 local original_camera_y = 0
 local last_camera_x = 0
 local last_camera_y = 0
+
+-- Save state (set when rest screen opens)
+local active_save_slot = nil
+local current_level_id = nil
 
 -- Circle lerp state (screen pixels)
 local circle_start_x = 0
@@ -153,15 +181,36 @@ local function save_settings()
     settings_dirty = false
 end
 
+--- Save player stats to the active save slot
+---@return nil
+local function save_player_stats()
+    if not player_ref or not active_save_slot or not current_level_id then
+        return
+    end
+    local save_data = SaveSlots.build_player_data(player_ref, current_level_id, campfire_name)
+    SaveSlots.set(active_save_slot, save_data)
+end
+
 --- Return to menu mode showing the status panel
 --- Saves settings when exiting Audio or Controls panels
 ---@return nil
 local function return_to_status()
-    if active_panel_index == 2 or active_panel_index == 3 then
+    if active_panel_index >= 2 then
         save_settings()
     end
     nav_mode = NAV_MODE.MENU
     active_panel_index = 1
+
+    -- Ensure status panel is not in active navigation mode
+    if player_status_panel then
+        player_status_panel.active = false
+    end
+
+    -- Reset upgrade button focus
+    upgrade_button_focus = nil
+
+    -- Restore default rest dialogue text (already set in init_screen_state)
+    rest_dialogue.text = MENU_DESCRIPTIONS[4]
 end
 
 --- Create a text-only menu button with standard dimensions
@@ -183,10 +232,7 @@ end
 ---@param max number Maximum value
 ---@return number Wrapped index
 local function wrap_index(index, delta, max)
-    index = index + delta
-    if index < 1 then return max end
-    if index > max then return 1 end
-    return index
+    return ((index - 1 + delta) % max) + 1
 end
 
 --- Calculate layout dimensions for all UI panels
@@ -272,6 +318,13 @@ end
 -- Volume slider configuration
 local SLIDER_WIDTH = 80
 local SLIDER_HEIGHT = 14
+local SLIDER_LABELS = { "Master Volume", "Music", "SFX" }
+local SLIDER_KEYS = { "master", "music", "sfx" }
+local VOLUME_SETTERS = {
+    canvas.set_master_volume,
+    audio.set_music_volume,
+    audio.set_sfx_volume,
+}
 
 --- Initialize rest screen components (creates menu buttons)
 ---@return nil
@@ -321,7 +374,7 @@ function rest_screen.init()
         y = 0,
         width = 100,
         height = DIALOGUE_HEIGHT,
-        text = "Resting restores your hit points and saves your progress. Enemies also respawn when you rest."
+        text = ""
     })
 
     player_status_panel = status_panel.create({
@@ -347,12 +400,19 @@ end
 function rest_screen.hide()
     state = STATE.HIDDEN
     fade_progress = 0
+    if player_status_panel then
+        player_status_panel:cancel_upgrades()
+    end
     return_to_status()
 end
 
 --- Trigger the fade out and continue sequence
 ---@return nil
 function rest_screen.trigger_continue()
+    -- Cancel any pending upgrades when leaving
+    if player_status_panel then
+        player_status_panel:cancel_upgrades()
+    end
     state = STATE.FADING_OUT
     fade_progress = 0
 end
@@ -402,31 +462,78 @@ local function init_circle_lerp(center_x, center_y, camera)
     circle_lerp_t = 0
 end
 
+--- Initialize component layout and player data for first frame
+--- Called when screen opens to ensure correct positioning before first draw
+---@return nil
+local function init_component_layout()
+    local layout = calculate_layout(config.ui.SCALE)
+    local menu = layout.menu
+    local info = layout.info
+
+    menu_dialogue.x = menu.x
+    menu_dialogue.y = menu.y
+    menu_dialogue.width = menu.width
+    menu_dialogue.height = menu.height
+
+    rest_dialogue.x = layout.rest.x
+    rest_dialogue.y = layout.rest.y
+    rest_dialogue.width = layout.rest.width
+
+    player_status_panel.x = info.x
+    player_status_panel.y = info.y
+    player_status_panel.width = info.width
+    player_status_panel.height = info.height
+    player_status_panel:set_player(player_ref)
+
+    position_buttons(menu.x, menu.y, menu.width, menu.height)
+end
+
+--- Initialize common state for rest/pause screen opening
+---@param mode string MODE.REST or MODE.PAUSE
+---@param player table Player instance for stats display
+---@param camera table Camera instance for position calculation
+---@param description string Description text for the continue action
+---@param button_label string Label for the continue button
+---@return nil
+local function init_screen_state(mode, player, camera, description, button_label)
+    current_mode = mode
+    player_ref = player
+    camera_ref = camera
+    state = STATE.FADING_IN
+    fade_progress = 0
+    elapsed_time = 0
+
+    campfire_x = player.x + 0.5
+    campfire_y = player.y + 0.5
+
+    original_camera_x = last_camera_x
+    original_camera_y = last_camera_y
+
+    init_circle_lerp(campfire_x, campfire_y, camera)
+
+    rest_dialogue.text = description
+    continue_button.label = button_label
+    MENU_DESCRIPTIONS[4] = description
+
+    -- Initialize layout immediately for correct first-frame rendering
+    init_component_layout()
+end
+
 --- Show the rest screen centered on a campfire
----@param world_x number Campfire center X in tile coordinates
----@param world_y number Campfire center Y in tile coordinates
+---@param world_x number Campfire center X in tile coordinates (unused, kept for API compatibility)
+---@param world_y number Campfire center Y in tile coordinates (unused, kept for API compatibility)
 ---@param camera table Camera instance for position calculation
 ---@param player table|nil Player instance for stats display
+---@param save_slot number|nil Active save slot index
+---@param level_id string|nil Current level identifier
+---@param fire_name string|nil Campfire display name
 ---@return nil
-function rest_screen.show(world_x, world_y, camera, player)
+function rest_screen.show(world_x, world_y, camera, player, save_slot, level_id, fire_name)
     if state == STATE.HIDDEN then
-        current_mode = MODE.REST
-        -- Use player position for circle center (matching pause mode behavior)
-        campfire_x = player.x + 0.5
-        campfire_y = player.y + 0.5
-        camera_ref = camera
-        player_ref = player
-        state = STATE.FADING_IN
-        fade_progress = 0
-        elapsed_time = 0
-
-        -- Use the last known good camera position (saved in main.lua before player:update)
-        original_camera_x = last_camera_x
-        original_camera_y = last_camera_y
-
-        init_circle_lerp(campfire_x, campfire_y, camera)
-
-        rest_dialogue.text = "Resting restores your hit points and saves your progress. Enemies also respawn when you rest."
+        init_screen_state(MODE.REST, player, camera, REST_CONTINUE_DESC, "Rest & Continue")
+        campfire_name = fire_name or "Campfire"
+        active_save_slot = save_slot
+        current_level_id = level_id
     end
 
     reset_navigation_state()
@@ -438,23 +545,7 @@ end
 ---@return nil
 function rest_screen.show_pause(player, camera)
     if state == STATE.HIDDEN then
-        current_mode = MODE.PAUSE
-        player_ref = player
-        camera_ref = camera
-        state = STATE.FADING_IN
-        fade_progress = 0
-        elapsed_time = 0
-
-        -- Use player position for circle center
-        campfire_x = player.x + 0.5
-        campfire_y = player.y + 0.5
-
-        original_camera_x = last_camera_x
-        original_camera_y = last_camera_y
-
-        init_circle_lerp(campfire_x, campfire_y, camera)
-
-        rest_dialogue.text = "Game paused."
+        init_screen_state(MODE.PAUSE, player, camera, PAUSE_CONTINUE_DESC, "Continue")
     end
 
     reset_navigation_state()
@@ -532,24 +623,20 @@ end
 ---@return nil
 local function trigger_focused_action()
     if focused_index == 1 then
-        -- Show Status (player stats)
         return_to_status()
-    elseif focused_index == 2 then
-        -- Enter Audio settings
+    elseif focused_index == 2 or focused_index == 3 then
         nav_mode = NAV_MODE.SETTINGS
-        active_panel_index = 2
-        audio_focus_index = 1
-    elseif focused_index == 3 then
-        -- Enter Controls settings
-        nav_mode = NAV_MODE.SETTINGS
-        active_panel_index = 3
-        controls_panel:reset_focus()
+        active_panel_index = focused_index
+        if focused_index == 2 then
+            audio_focus_index = 1
+        else
+            controls_panel:reset_focus()
+        end
     elseif focused_index == 4 then
         rest_screen.trigger_continue()
     elseif focused_index == 5 then
-        -- Show confirmation dialog
         nav_mode = NAV_MODE.CONFIRM
-        confirm_selection = 2  -- Default to No
+        confirm_selection = 2
     end
 end
 
@@ -557,20 +644,14 @@ end
 ---@param index number Focus index (1-3)
 ---@return table|nil slider
 local function get_focused_slider(index)
-    local slider_keys = { "master", "music", "sfx" }
-    return volume_sliders[slider_keys[index]]
+    return volume_sliders[SLIDER_KEYS[index]]
 end
 
 --- Get the volume setter function for a given focus index
 ---@param index number Focus index (1-3)
 ---@return function|nil setter
 local function get_volume_setter(index)
-    local setters = {
-        canvas.set_master_volume,
-        audio.set_music_volume,
-        audio.set_sfx_volume,
-    }
-    return setters[index]
+    return VOLUME_SETTERS[index]
 end
 
 --- Handle input when in Audio settings mode
@@ -600,10 +681,13 @@ local function handle_audio_settings_input()
         local left_pressed = controls.menu_left_pressed()
         local right_pressed = controls.menu_right_pressed()
 
-        -- Determine current direction
+        -- Determine current direction (-1 left, 0 none, 1 right)
         local current_dir = 0
-        if left_down then current_dir = -1
-        elseif right_down then current_dir = 1 end
+        if left_down then
+            current_dir = -1
+        elseif right_down then
+            current_dir = 1
+        end
 
         -- Reset hold time if direction changed or released
         if current_dir ~= hold_direction then
@@ -640,6 +724,107 @@ local function handle_audio_settings_input()
     else
         hold_direction = 0
         hold_time = 0
+    end
+end
+
+--- Handle input when in Status panel navigation mode
+---@return nil
+local function handle_status_settings_input()
+    local has_pending = player_status_panel:has_pending_upgrades()
+
+    -- Handle back/cancel button
+    if controls.menu_back_pressed() then
+        if upgrade_button_focus == "cancel" then
+            -- On Cancel button: cancel all and exit
+            player_status_panel:cancel_upgrades()
+            return_to_status()
+            return
+        elseif upgrade_button_focus == "confirm" then
+            -- On Confirm button: move to Cancel button
+            upgrade_button_focus = "cancel"
+            return
+        elseif has_pending then
+            -- Try to remove upgrade from highlighted stat
+            local stat = player_status_panel:get_highlighted_stat()
+            local pending_on_stat = stat and player_status_panel:get_pending_count(stat) or 0
+            if pending_on_stat > 0 then
+                player_status_panel:remove_pending_upgrade()
+            else
+                -- No pending on this stat, jump to Cancel button
+                upgrade_button_focus = "cancel"
+            end
+            return
+        else
+            -- No pending upgrades, exit
+            return_to_status()
+            return
+        end
+    end
+
+    -- Left also exits when no pending and not on buttons
+    if controls.menu_left_pressed() then
+        if upgrade_button_focus then
+            -- Move from buttons back to stats
+            upgrade_button_focus = nil
+            return
+        elseif not has_pending then
+            return_to_status()
+            return
+        end
+    end
+
+    -- Confirm button behavior
+    if controls.menu_confirm_pressed() then
+        if upgrade_button_focus == "confirm" then
+            -- Confirm all upgrades and save
+            player_status_panel:confirm_upgrades()
+            save_player_stats()
+            upgrade_button_focus = nil
+            return
+        elseif upgrade_button_focus == "cancel" then
+            -- Cancel all upgrades and exit
+            player_status_panel:cancel_upgrades()
+            return_to_status()
+            return
+        elseif current_mode == MODE.REST and player_status_panel:is_highlighted_levelable() then
+            player_status_panel:add_pending_upgrade()
+            return
+        end
+    end
+
+    -- Navigation
+    if controls.menu_up_pressed() or controls.menu_down_pressed() then
+        mouse_active = false
+
+        if upgrade_button_focus then
+            -- Move between Confirm/Cancel or back to stats
+            if controls.menu_up_pressed() then
+                upgrade_button_focus = nil  -- Go back to stats
+            elseif controls.menu_down_pressed() then
+                -- Toggle between confirm and cancel
+                upgrade_button_focus = upgrade_button_focus == "confirm" and "cancel" or "confirm"
+            end
+        else
+            -- Navigate stats, but check if we should move to buttons
+            local old_index = player_status_panel.selected_index
+            player_status_panel:input()
+
+            -- If pressing down at the bottom of stats and there are pending upgrades, go to buttons
+            if controls.menu_down_pressed() and has_pending and
+               old_index == #player_status_panel.selectable_rows and
+               player_status_panel.selected_index == 1 then
+                -- Wrapped around, go to Confirm button instead
+                player_status_panel.selected_index = old_index
+                upgrade_button_focus = "confirm"
+            end
+        end
+        return
+    end
+
+    -- Right arrow to move to buttons when pending
+    if controls.menu_right_pressed() and has_pending and not upgrade_button_focus then
+        upgrade_button_focus = "confirm"
+        return
     end
 end
 
@@ -703,6 +888,117 @@ local function handle_confirm_input()
     end
 end
 
+-- Upgrade confirmation button state (hover only, focus is in Navigation state)
+local upgrade_confirm_hovered = false
+local upgrade_cancel_hovered = false
+
+--- Draw the upgrade confirm/cancel buttons at the bottom of the status panel
+--- Only visible in REST mode when there are pending upgrades
+---@param info table Layout info with x, y, width, height
+---@param local_mx number Local mouse X coordinate
+---@param local_my number Local mouse Y coordinate
+---@param mouse_active boolean Whether mouse input is active
+---@return nil
+local function draw_upgrade_buttons(info, local_mx, local_my, mouse_active)
+    -- Only show upgrade buttons in REST mode with pending upgrades
+    if current_mode ~= MODE.REST or not player_status_panel:has_pending_upgrades() then
+        upgrade_confirm_hovered = false
+        upgrade_cancel_hovered = false
+        upgrade_button_focus = nil
+        return
+    end
+
+    canvas.save()
+
+    local button_y = info.y + info.height - 16
+    local center_x = info.x + info.width / 2
+    local button_spacing = 8
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(7)
+    canvas.set_text_baseline("middle")
+
+    local confirm_text = "Confirm"
+    local cancel_text = "Cancel"
+    local confirm_metrics = canvas.get_text_metrics(confirm_text)
+    local cancel_metrics = canvas.get_text_metrics(cancel_text)
+
+    local total_width = confirm_metrics.width + button_spacing + cancel_metrics.width
+    local confirm_x = center_x - total_width / 2
+    local cancel_x = confirm_x + confirm_metrics.width + button_spacing
+
+    -- Check hover state (mouse)
+    upgrade_confirm_hovered = false
+    upgrade_cancel_hovered = false
+
+    if mouse_active then
+        local btn_height = 10
+        local btn_y = button_y - btn_height / 2
+
+        if local_my >= btn_y and local_my <= btn_y + btn_height then
+            if local_mx >= confirm_x and local_mx <= confirm_x + confirm_metrics.width then
+                upgrade_confirm_hovered = true
+                upgrade_button_focus = "confirm"  -- Sync mouse hover with focus
+            elseif local_mx >= cancel_x and local_mx <= cancel_x + cancel_metrics.width then
+                upgrade_cancel_hovered = true
+                upgrade_button_focus = "cancel"  -- Sync mouse hover with focus
+            end
+        end
+    end
+
+    -- Determine highlight based on focus or hover
+    local confirm_focused = upgrade_button_focus == "confirm" or upgrade_confirm_hovered
+    local cancel_focused = upgrade_button_focus == "cancel" or upgrade_cancel_hovered
+
+    -- Draw confirm button
+    local confirm_color = confirm_focused and "#88FF88" or "#FFFFFF"
+    canvas.set_color(confirm_color)
+    canvas.set_text_align("left")
+    canvas.draw_text(confirm_x, button_y, confirm_text)
+
+    -- Draw cancel button
+    local cancel_color = cancel_focused and "#FF8888" or "#AAAAAA"
+    canvas.set_color(cancel_color)
+    canvas.draw_text(cancel_x, button_y, cancel_text)
+
+    canvas.restore()
+end
+
+--- Handle upgrade button clicks
+---@return boolean handled True if a button was clicked
+local function handle_upgrade_button_clicks()
+    if not player_status_panel:has_pending_upgrades() then
+        return false
+    end
+
+    if canvas.is_mouse_pressed(0) then
+        if upgrade_confirm_hovered then
+            player_status_panel:confirm_upgrades()
+            save_player_stats()
+            return true
+        elseif upgrade_cancel_hovered then
+            player_status_panel:cancel_upgrades()
+            return true
+        end
+    end
+
+    return false
+end
+
+--- Enter settings mode for the currently focused submenu panel
+---@return nil
+local function enter_settings_mode()
+    nav_mode = NAV_MODE.SETTINGS
+    if focused_index == 1 then
+        player_status_panel.active = true
+        player_status_panel:reset_selection()
+    elseif focused_index == 2 then
+        audio_focus_index = 1
+    else
+        controls_panel:reset_focus()
+    end
+end
+
 --- Handle input when in menu mode (navigating between menu items)
 ---@return nil
 local function handle_menu_input()
@@ -720,19 +1016,24 @@ local function handle_menu_input()
         focused_index = wrap_index(focused_index, 1, MENU_ITEM_COUNT)
     end
 
-    if controls.menu_right_pressed() then
-        if focused_index == 2 and active_panel_index == 2 then
-            nav_mode = NAV_MODE.SETTINGS
-            audio_focus_index = 1
-            return
-        elseif focused_index == 3 and active_panel_index == 3 then
-            nav_mode = NAV_MODE.SETTINGS
-            controls_panel:reset_focus()
-            return
-        end
+    local right_pressed = controls.menu_right_pressed()
+    local confirm_pressed = controls.menu_confirm_pressed()
+    local is_submenu_item = focused_index <= 3
+
+    -- Enter settings mode when pressing right/confirm on the active submenu panel
+    if (right_pressed or confirm_pressed) and is_submenu_item and focused_index == active_panel_index then
+        enter_settings_mode()
+        return
     end
 
-    if controls.menu_confirm_pressed() then
+    -- Right arrow on submenu items switches to that panel
+    if right_pressed and is_submenu_item then
+        trigger_focused_action()
+        return
+    end
+
+    -- Confirm triggers the focused action (submenu switch, continue, or return to title)
+    if confirm_pressed then
         trigger_focused_action()
     end
 end
@@ -750,7 +1051,9 @@ function rest_screen.input()
     if nav_mode == NAV_MODE.CONFIRM then
         handle_confirm_input()
     elseif nav_mode == NAV_MODE.SETTINGS then
-        if active_panel_index == 2 then
+        if active_panel_index == 1 then
+            handle_status_settings_input()
+        elseif active_panel_index == 2 then
             handle_audio_settings_input()
         elseif active_panel_index == 3 then
             handle_controls_settings_input()
@@ -830,24 +1133,22 @@ function rest_screen.update(dt, block_mouse)
 
             -- Block menu/confirm interactions when controls panel is capturing input
             if not is_capturing then
+                hovered_index = nil
                 if mouse_active then
-                    hovered_index = nil
                     for i, btn in ipairs(buttons) do
                         if local_mx >= btn.x and local_mx <= btn.x + btn.width and
                            local_my >= btn.y and local_my <= btn.y + btn.height then
                             hovered_index = i
-                            if nav_mode == NAV_MODE.MENU then
+                            -- Set focus on hover (menu mode) or click (any mode)
+                            if nav_mode == NAV_MODE.MENU or canvas.is_mouse_pressed(0) then
                                 focused_index = i
                             end
                             if canvas.is_mouse_pressed(0) then
-                                focused_index = i
                                 trigger_focused_action()
                             end
                             break
                         end
                     end
-                else
-                    hovered_index = nil
                 end
 
                 if nav_mode == NAV_MODE.CONFIRM and mouse_active then
@@ -893,13 +1194,33 @@ function rest_screen.update(dt, block_mouse)
                 player_status_panel.height = info.height
                 player_status_panel:set_player(player_ref)
                 player_status_panel:update(dt, local_mx - info.x, local_my - info.y, mouse_active)
+
+                -- Handle mouse clicks for stat upgrades (only in rest mode at campfires)
+                if current_mode == MODE.REST and mouse_active then
+                    -- First check if clicking confirm/cancel buttons
+                    if not handle_upgrade_button_clicks() then
+                        if canvas.is_mouse_pressed(0) then  -- Left click to add upgrade
+                            if player_status_panel:is_highlighted_levelable() then
+                                player_status_panel:add_pending_upgrade()
+                            end
+                        elseif canvas.is_mouse_pressed(2) then  -- Right click to remove upgrade
+                            player_status_panel:remove_pending_upgrade()
+                        end
+                    end
+                end
+
+                -- Update rest dialogue with stat description when hovering or navigating
+                local description = player_status_panel:get_description()
+                if description then
+                    rest_dialogue.text = description
+                end
             elseif active_panel_index == 2 then
-                local slider_width = 80
-                local slider_x = info.x + (info.width - slider_width) / 2
+                local slider_x = info.x + (info.width - SLIDER_WIDTH) / 2
                 local slider_start_y = info.y + 20
                 local slider_spacing = 22
 
-                for i, s in ipairs({ volume_sliders.master, volume_sliders.music, volume_sliders.sfx }) do
+                for i, key in ipairs(SLIDER_KEYS) do
+                    local s = volume_sliders[key]
                     local offset_y = slider_start_y + slider_spacing * (i - 1)
                     s.x = slider_x
                     s.y = offset_y
@@ -910,6 +1231,17 @@ function rest_screen.update(dt, block_mouse)
                 local panel_y = info.y + 8
 
                 controls_panel:update(dt, local_mx - panel_x, local_my - panel_y, mouse_active and nav_mode == NAV_MODE.SETTINGS)
+            end
+        end
+
+        -- Update rest dialogue based on context
+        if nav_mode == NAV_MODE.MENU then
+            -- Check if status panel has a hovered stat
+            local stat_desc = player_status_panel:get_description()
+            if stat_desc then
+                rest_dialogue.text = stat_desc
+            elseif MENU_DESCRIPTIONS[hovered_index or focused_index] then
+                rest_dialogue.text = MENU_DESCRIPTIONS[hovered_index or focused_index]
             end
         end
     end
@@ -923,35 +1255,26 @@ end
 local function draw_audio_panel(x, y, width, height)
     simple_dialogue.draw({ x = x, y = y, width = width, height = height, text = "" })
 
-    local slider_width = 80
     local slider_start_y = y + 20
     local slider_spacing = 22
-    local slider_x = x + (width - slider_width) / 2
     local label_center_x = x + width / 2
 
     canvas.set_font_family("menu_font")
     canvas.set_font_size(7)
     canvas.set_text_baseline("bottom")
 
-    local slider_labels = {
-        { label = "Master Volume", slider = volume_sliders.master },
-        { label = "Music",         slider = volume_sliders.music },
-        { label = "SFX",           slider = volume_sliders.sfx },
-    }
-
     local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 2
 
-    for i, item in ipairs(slider_labels) do
+    for i, label in ipairs(SLIDER_LABELS) do
         local offset_y = slider_start_y + slider_spacing * (i - 1)
         local is_focused = in_settings and audio_focus_index == i
         local label_color = is_focused and "#FFFF00" or nil
 
-        local metrics = canvas.get_text_metrics(item.label)
-        utils.draw_outlined_text(item.label, label_center_x - metrics.width / 2, offset_y + 1, label_color)
+        local metrics = canvas.get_text_metrics(label)
+        utils.draw_outlined_text(label, label_center_x - metrics.width / 2, offset_y + 1, label_color)
 
-        item.slider.x = slider_x
-        item.slider.y = offset_y
-        item.slider:draw(is_focused)
+        -- Slider positions are set in update(), just draw here
+        volume_sliders[SLIDER_KEYS[i]]:draw(is_focused)
     end
 end
 
@@ -1003,6 +1326,142 @@ local function draw_confirm_panel(x, y, width, height)
     utils.draw_outlined_text("Yes", start_x, center_y + 10, yes_color)
     utils.draw_outlined_text("   /   ", start_x + yes_metrics.width, center_y + 10, "#888888")
     utils.draw_outlined_text("No", start_x + yes_metrics.width + sep_metrics.width, center_y + 10, no_color)
+end
+
+-- Icon scales for prompt icons
+local PROMPT_KEY_SCALE = 0.125       -- 64 * 0.125 = 8px for keyboard
+local PROMPT_BUTTON_SCALE = 0.5     -- 16 * 0.5 = 8px for gamepad
+local PROMPT_ICON_SIZE = 8
+local PROMPT_PADDING = 6
+local PROMPT_ICON_SPACING = 4
+
+--- Draw an input icon (mouse, keyboard, or gamepad) at the given position
+---@param x number Icon X position
+---@param y number Icon Y position
+---@param use_mouse boolean Whether to show mouse icon instead of keyboard/gamepad
+---@return nil
+local function draw_input_icon(x, y, use_mouse)
+    if use_mouse then
+        sprites.controls.draw_key(controls_config.MOUSE_LEFT, x, y, PROMPT_KEY_SCALE)
+        return
+    end
+
+    local scheme = controls.get_last_input_device()
+    if scheme == "gamepad" then
+        sprites.controls.draw_button(canvas.buttons.SOUTH, x, y, PROMPT_BUTTON_SCALE)
+    else
+        sprites.controls.draw_key(canvas.keys.SPACE, x, y, PROMPT_KEY_SCALE)
+    end
+end
+
+--- Check if the level-up prompt should be visible
+--- Only true in REST mode on Status panel when a levelable stat is highlighted
+---@return boolean
+local function is_level_up_prompt_visible()
+    return active_panel_index == 1
+        and current_mode == MODE.REST
+        and player_status_panel:is_highlighted_levelable()
+end
+
+--- Draw the level-up prompt in the bottom right of the rest dialogue
+---@param dialogue table The rest dialogue with x, y, width, height
+---@return nil
+local function draw_level_up_prompt(dialogue)
+    if not is_level_up_prompt_visible() then
+        return
+    end
+
+    local cost = player_status_panel:get_level_cost()
+    if not cost then return end
+
+    local stat = player_status_panel:get_highlighted_stat()
+    local can_afford = player_status_panel:can_afford_upgrade(stat)
+
+    local text
+    if can_afford then
+        text = "Spend " .. cost .. " XP to increase"
+    else
+        text = "Not enough XP (" .. cost .. " required)"
+    end
+    local text_color = can_afford and "#FFFFFF" or "#888888"
+
+    canvas.save()
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(7)
+    canvas.set_text_baseline("middle")
+    canvas.set_text_align("right")
+
+    local text_x = dialogue.x + dialogue.width - PROMPT_PADDING
+    local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
+
+    canvas.set_color(text_color)
+    canvas.draw_text(text_x, text_y, text)
+
+    if can_afford then
+        local text_metrics = canvas.get_text_metrics(text)
+        local icon_x = text_x - text_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
+        local icon_y = text_y - PROMPT_ICON_SIZE / 2
+        draw_input_icon(icon_x, icon_y, player_status_panel:is_mouse_hover())
+    end
+
+    canvas.restore()
+end
+
+--- Draw the submenu entry prompt in the bottom right of the info panel
+---@param dialogue table The rest dialogue with x, y, width, height
+---@return nil
+local function draw_submenu_prompt(dialogue)
+    -- Only show in menu mode for submenu items (Status, Audio, Controls) when level-up prompt is hidden
+    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 3 or is_level_up_prompt_visible() then
+        return
+    end
+
+    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 3
+
+    -- Don't show if mouse is hovering over status panel stats
+    if not mouse_on_submenu and player_status_panel:is_mouse_hover() then
+        return
+    end
+
+    local text = "Enter"
+
+    canvas.save()
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(7)
+    canvas.set_text_baseline("middle")
+    canvas.set_text_align("right")
+
+    local text_metrics = canvas.get_text_metrics(text)
+    local text_x = dialogue.x + dialogue.width - PROMPT_PADDING
+    local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
+
+    canvas.set_color("#FFFFFF")
+    canvas.draw_text(text_x, text_y, text)
+
+    local icon_x = text_x - text_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
+    local icon_y = text_y - PROMPT_ICON_SIZE / 2
+    draw_input_icon(icon_x, icon_y, mouse_on_submenu)
+
+    canvas.restore()
+end
+
+--- Draw a right-pointing arrow triangle for submenu items
+---@param x number Arrow tip X position
+---@param y number Arrow center Y position
+---@param focused boolean Whether the menu item is focused/hovered
+---@return nil
+local function draw_submenu_arrow(x, y, focused)
+    local color = focused and "#FFFF00" or "#FFFFFF"
+    canvas.set_color(color)
+
+    canvas.begin_path()
+    canvas.move_to(x, y)  -- Tip (right point)
+    canvas.line_to(x - ARROW_WIDTH, y - ARROW_HEIGHT / 2)  -- Top left
+    canvas.line_to(x - ARROW_WIDTH, y + ARROW_HEIGHT / 2)  -- Bottom left
+    canvas.close_path()
+    canvas.fill()
 end
 
 --- Draw circular viewport mask (fills area outside the circle with black)
@@ -1071,21 +1530,16 @@ function rest_screen.draw()
     local screen_w = canvas.get_width()
     local screen_h = canvas.get_height()
 
-    local overlay_alpha = 0
-    local content_alpha = 0
-
+    local alpha = 0
     if state == STATE.FADING_IN then
-        overlay_alpha = fade_progress
-        content_alpha = fade_progress
+        alpha = fade_progress
     elseif state == STATE.OPEN then
-        overlay_alpha = 1
-        content_alpha = 1
+        alpha = 1
     elseif state == STATE.FADING_OUT then
-        overlay_alpha = 1 - fade_progress
-        content_alpha = 1 - fade_progress
+        alpha = 1 - fade_progress
     end
 
-    canvas.set_global_alpha(overlay_alpha)
+    canvas.set_global_alpha(alpha)
 
     -- Calculate circle position
     local t = ease_out(circle_lerp_t)
@@ -1093,48 +1547,48 @@ function rest_screen.draw()
     local screen_y = circle_start_y + (circle_target_y - circle_start_y) * t
     local hole_radius = CIRCLE_RADIUS * scale
 
-    -- Draw circular viewport (rest mode adds pulse and glow effects)
+    -- Rest mode adds pulse and glow effects to the circular viewport
+    local pulse = 0
     if current_mode == MODE.REST then
-        local pulse = math.sin(elapsed_time * PULSE_SPEED * math.pi * 2) * PULSE_AMOUNT
+        pulse = math.sin(elapsed_time * PULSE_SPEED * math.pi * 2) * PULSE_AMOUNT
         hole_radius = hole_radius * (1 + pulse)
-        draw_circular_viewport(screen_x, screen_y, hole_radius, screen_w, screen_h)
-        if hole_radius > 1 then
-            draw_campfire_glow(screen_x, screen_y, hole_radius, pulse)
-        end
-    else
-        draw_circular_viewport(screen_x, screen_y, hole_radius, screen_w, screen_h)
     end
 
-    if content_alpha > 0 then
-        canvas.set_global_alpha(content_alpha)
+    draw_circular_viewport(screen_x, screen_y, hole_radius, screen_w, screen_h)
 
+    if current_mode == MODE.REST and hole_radius > 1 then
+        draw_campfire_glow(screen_x, screen_y, hole_radius, pulse)
+    end
+
+    if alpha > 0 then
         canvas.save()
         canvas.scale(scale, scale)
 
         local layout = calculate_layout(scale)
+        local menu = layout.menu
 
-        menu_dialogue.x = layout.menu.x
-        menu_dialogue.y = layout.menu.y
-        menu_dialogue.width = layout.menu.width
-        menu_dialogue.height = layout.menu.height
+        menu_dialogue.x = menu.x
+        menu_dialogue.y = menu.y
+        menu_dialogue.width = menu.width
+        menu_dialogue.height = menu.height
 
         rest_dialogue.x = layout.rest.x
         rest_dialogue.y = layout.rest.y
         rest_dialogue.width = layout.rest.width
 
-        position_buttons(layout.menu.x, layout.menu.y, layout.menu.width, layout.menu.height)
+        position_buttons(menu.x, menu.y, menu.width, menu.height)
         simple_dialogue.draw(menu_dialogue)
 
         local info = layout.info
         if nav_mode == NAV_MODE.CONFIRM then
             draw_confirm_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 1 then
-            player_status_panel.x = info.x
-            player_status_panel.y = info.y
-            player_status_panel.width = info.width
-            player_status_panel.height = info.height
-            player_status_panel:set_player(player_ref)
             player_status_panel:draw()
+
+            -- Draw confirm/cancel buttons if there are pending upgrades (scaled mouse coordinates)
+            local local_mx = canvas.get_mouse_x() / scale
+            local local_my = canvas.get_mouse_y() / scale
+            draw_upgrade_buttons(info, local_mx, local_my, mouse_active)
         elseif active_panel_index == 2 then
             draw_audio_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 3 then
@@ -1142,9 +1596,26 @@ function rest_screen.draw()
         end
 
         simple_dialogue.draw(rest_dialogue)
+        draw_level_up_prompt(rest_dialogue)
+        draw_submenu_prompt(rest_dialogue)
 
         for i, btn in ipairs(buttons) do
-            btn:draw(focused_index == i or hovered_index == i)
+            local is_focused = focused_index == i or hovered_index == i
+            btn:draw(is_focused)
+
+            -- Draw level up icon to the left of Status button when player can level up (rest mode only)
+            if i == 1 and current_mode == MODE.REST and player_status_panel:can_level_up() then
+                local icon_x = btn.x + LEVEL_UP_ICON_INSET
+                local icon_y = btn.y + (btn.height - LEVEL_UP_ICON_SIZE) / 2
+                canvas.draw_image(sprites.ui.level_up_icon, icon_x, icon_y, LEVEL_UP_ICON_SIZE, LEVEL_UP_ICON_SIZE)
+            end
+
+            -- Draw arrow for submenu items (Status, Audio, Controls)
+            if i <= 3 then
+                local arrow_x = btn.x + btn.width - ARROW_INSET
+                local arrow_y = btn.y + btn.height / 2
+                draw_submenu_arrow(arrow_x, arrow_y, is_focused)
+            end
         end
 
         canvas.restore()

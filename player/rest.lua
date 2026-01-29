@@ -3,7 +3,6 @@ local audio = require('audio')
 local common = require('player.common')
 local Enemy = require('Enemies')
 local hud = require('ui/hud')
-local Playtime = require('Playtime')
 local Prop = require('Prop')
 local prop_common = require('Prop/common')
 local SaveSlots = require('SaveSlots')
@@ -56,23 +55,8 @@ function rest.start(player)
 
 	-- Save to active slot with full data
 	if rest.active_slot and rest.current_level and rest.current_level.id then
-		SaveSlots.set(rest.active_slot, {
-			x = player.x,
-			y = player.y,
-			level_id = rest.current_level.id,
-			direction = player.direction,
-			campfire_name = campfire_name,
-			playtime = Playtime.get(),
-			max_health = player.max_health,
-			level = player.level,
-			experience = player.experience,
-			gold = player.gold,
-			defense = player.defense,
-			strength = player.strength,
-			critical_chance = player.critical_chance,
-			unique_items = prop_common.copy_array(player.unique_items),
-			prop_states = Prop.get_persistent_states(),
-		})
+		local save_data = SaveSlots.build_player_data(player, rest.current_level.id, campfire_name)
+		SaveSlots.set(rest.active_slot, save_data)
 	end
 
 	if rest.level_info then
@@ -85,7 +69,9 @@ function rest.start(player)
 	-- Show rest screen centered on campfire
 	if campfire and rest.camera then
 		-- Center on campfire (add 0.5 to center on tile)
-		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera, player)
+		local level_id = rest.current_level and rest.current_level.id or nil
+		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera, player,
+			rest.active_slot, level_id, campfire_name)
 	end
 
 	-- Fade to rest music

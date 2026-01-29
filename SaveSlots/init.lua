@@ -126,6 +126,107 @@ function SaveSlots.clear(slot_index)
     localstorage.remove_item(get_key(slot_index))
 end
 
+--- Core player stats that must be preserved across saves and level transitions
+--- This is the single source of truth for persistent player data
+---@type string[]
+SaveSlots.PLAYER_STAT_KEYS = {
+    "max_health", "max_stamina", "max_energy",
+    "level", "experience", "gold",
+    "defense", "recovery", "critical_chance",
+    "stat_upgrades", "unique_items",
+}
+
+--- Transient state preserved during level transitions but reset at campfires
+---@type string[]
+SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "projectile_ix" }
+
+--- Copy a value, creating deep copies for tables (stat_upgrades) and arrays (unique_items)
+---@param key string The stat key being copied
+---@param value any The value to copy
+---@return any copy Deep copy for tables/arrays, direct value otherwise
+local function copy_stat_value(key, value)
+    if value == nil then return nil end
+    if key == "unique_items" then
+        local prop_common = require("Prop/common")
+        return prop_common.copy_array(value)
+    elseif key == "stat_upgrades" then
+        local copy = {}
+        for stat, count in pairs(value) do
+            copy[stat] = count
+        end
+        return copy
+    end
+    return value
+end
+
+--- Get core player stats for preservation
+--- Use this for level transitions; add transient state (damage, energy_used, etc.) separately
+---@param player table Player instance
+---@return table stats Core player stats
+function SaveSlots.get_player_stats(player)
+    local stats = {}
+    for _, key in ipairs(SaveSlots.PLAYER_STAT_KEYS) do
+        stats[key] = copy_stat_value(key, player[key])
+    end
+    return stats
+end
+
+--- Restore core player stats from saved data
+--- Inverse of get_player_stats; handles deep copies for tables/arrays
+---@param player table Player instance to restore stats to
+---@param stats table Saved stats data
+function SaveSlots.restore_player_stats(player, stats)
+    for _, key in ipairs(SaveSlots.PLAYER_STAT_KEYS) do
+        if stats[key] ~= nil then
+            player[key] = copy_stat_value(key, stats[key])
+        end
+    end
+end
+
+--- Get transient state for level transitions (not saved at campfires)
+---@param player table Player instance
+---@return table state Transient state values
+function SaveSlots.get_transient_state(player)
+    local state = {}
+    for _, key in ipairs(SaveSlots.TRANSIENT_KEYS) do
+        state[key] = player[key]
+    end
+    return state
+end
+
+--- Restore transient state from saved data
+--- Inverse of get_transient_state
+---@param player table Player instance to restore state to
+---@param state table Saved transient state
+function SaveSlots.restore_transient_state(player, state)
+    for _, key in ipairs(SaveSlots.TRANSIENT_KEYS) do
+        if state[key] ~= nil then
+            player[key] = state[key]
+        end
+    end
+end
+
+--- Build complete player save data structure for campfire saves
+--- Includes position, level info, and playtime in addition to core stats
+---@param player table Player instance
+---@param level_id string Current level ID
+---@param campfire_name string Name of the campfire
+---@return table data Complete save data structure
+function SaveSlots.build_player_data(player, level_id, campfire_name)
+    local Playtime = require("Playtime")
+    local Prop = require("Prop")
+
+    local data = SaveSlots.get_player_stats(player)
+    data.x = player.x
+    data.y = player.y
+    data.level_id = level_id
+    data.direction = player.direction
+    data.campfire_name = campfire_name or "Campfire"
+    data.playtime = Playtime.get()
+    data.prop_states = Prop.get_persistent_states()
+    return data
+end
+
 --- Format playtime as HH:MM:SS
 ---@param seconds number Total seconds played
 ---@return string formatted Formatted time string

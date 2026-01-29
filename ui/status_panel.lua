@@ -1,10 +1,66 @@
 --- Status panel for displaying player stats in rest/pause screen
-local simple_dialogue = require("ui/simple_dialogue")
+local canvas = require("canvas")
+local nine_slice = require("ui/nine_slice")
+local sprites = require("sprites")
+local controls = require("controls")
 local Playtime = require("Playtime")
 local SaveSlots = require("SaveSlots")
 
 local status_panel = {}
 status_panel.__index = status_panel
+
+-- 9-slice definition (same as simple_dialogue)
+local slice = nine_slice.create(sprites.ui.simple_dialogue, 76, 37, 10, 7, 9, 7)
+
+-- Text configuration
+local TEXT_PADDING_TOP = 7
+local TEXT_PADDING_LEFT = 10
+local TEXT_PADDING_RIGHT = 9
+local LINE_HEIGHT = 8
+
+-- Experience required for each level (Fibonacci-like: level 1 = 10, level 2 = 20, level N = level(N-1) + level(N-2))
+-- Precomputed table for levels 1-100 (max level)
+local MAX_LEVEL = 100
+local EXP_TABLE = { [1] = 10, [2] = 20 }
+for i = 3, MAX_LEVEL do
+    EXP_TABLE[i] = EXP_TABLE[i - 1] + EXP_TABLE[i - 2]
+end
+
+local function exp_for_next_level(level)
+    local clamped_level = math.max(1, math.min(level, MAX_LEVEL))
+    return EXP_TABLE[clamped_level]
+end
+
+-- Stats that can be leveled up and their costs
+local LEVELABLE_STATS = {
+    Health = true,
+    Stamina = true,
+    Energy = true,
+    Defence = true,
+    Recovery = true,
+    Critical = true,
+}
+
+-- Cost to level up a stat is the "Next Level" experience requirement
+-- based on player level + total pending upgrades
+local function stat_level_cost(player_level, total_pending_upgrades)
+    return exp_for_next_level(player_level + total_pending_upgrades)
+end
+
+-- Stat descriptions for the info panel
+local STAT_DESCRIPTIONS = {
+    Level = "Your current level. Gain experience to level up and increase your stats.",
+    Experience = "Points earned by defeating enemies. Accumulate enough to reach the next level.",
+    ["Next Level"] = "Experience needed to reach the next level.",
+    Gold = "Currency used to purchase items and equipment from merchants.",
+    Health = "Your maximum hit points. When health reaches zero, you are defeated.",
+    Stamina = "Used for blocking attacks. Regenerates over time when not blocking.",
+    Energy = "Consumed when using special attacks like throwing weapons and hammer strikes.",
+    Defence = "Reduces damage taken from enemy attacks.",
+    Recovery = "Increases the rate at which stamina regenerates.",
+    Critical = "Chance to deal extra damage with each attack.",
+    Time = "Total time spent playing this save file.",
+}
 
 --- Create a new status panel
 ---@param opts {x: number, y: number, width: number, height: number, player: table|nil}
@@ -16,6 +72,12 @@ function status_panel.create(opts)
     self.width = opts.width or 100
     self.height = opts.height or 100
     self.player = opts.player
+    self.selected_index = 1
+    self.selectable_rows = {}  -- Maps visual index to selectable row data
+    self.active = false        -- Whether panel is in active navigation mode
+    self.hovered_index = nil   -- Mouse hover index (separate from keyboard selection)
+    self.pending_upgrades = {} -- Track pending stat upgrades: {stat_name = count}
+    self.pending_costs = {}    -- Track cost per upgrade: {stat_name = {cost1, cost2, ...}}
     return self
 end
 
@@ -26,53 +88,417 @@ function status_panel:set_player(player)
     self.player = player
 end
 
---- Build the stats text for display
----@return string Stats text with newlines
-function status_panel:build_stats_text()
-    if not self.player then return "" end
+--- Check if player has enough experience to level up
+---@return boolean can_level True if player can afford at least one level up
+function status_panel:can_level_up()
+    if not self.player then return false end
+    local pending_level_ups = self:get_total_pending_upgrades()
+    local exp_needed = exp_for_next_level(self.player.level + pending_level_ups)
+    return self.player.experience >= exp_needed
+end
+
+--- Get the total pending XP cost
+---@return number total Total XP cost of all pending upgrades
+function status_panel:get_total_pending_cost()
+    local total = 0
+    for stat_name, costs in pairs(self.pending_costs) do
+        for _, cost in ipairs(costs) do
+            total = total + cost
+        end
+    end
+    return total
+end
+
+--- Check if there are any pending upgrades
+---@return boolean has_pending True if there are pending upgrades
+function status_panel:has_pending_upgrades()
+    return self:get_total_pending_cost() > 0
+end
+
+--- Get pending upgrade count for a stat
+---@param stat_name string The stat label
+---@return number count Number of pending upgrades
+function status_panel:get_pending_count(stat_name)
+    return self.pending_upgrades[stat_name] or 0
+end
+
+--- Get total number of pending upgrades across all stats
+---@return number total Total number of pending upgrades
+function status_panel:get_total_pending_upgrades()
+    local total = 0
+    for _, count in pairs(self.pending_upgrades) do
+        total = total + count
+    end
+    return total
+end
+
+--- Get cost for next upgrade of a stat
+---@param stat_name string The stat label
+---@return number cost XP cost for next upgrade
+function status_panel:get_next_upgrade_cost(stat_name)
+    if not self.player then return 0 end
+    local total_pending = self:get_total_pending_upgrades()
+    return stat_level_cost(self.player.level, total_pending)
+end
+
+--- Check if player can afford to upgrade a stat
+---@param stat_name string The stat label
+---@return boolean can_afford True if player has enough XP
+function status_panel:can_afford_upgrade(stat_name)
+    if not self.player then return false end
+    local cost = self:get_next_upgrade_cost(stat_name)
+    local available_exp = self.player.experience - self:get_total_pending_cost()
+    return available_exp >= cost
+end
+
+--- Add a pending upgrade for the highlighted stat
+---@return boolean success True if upgrade was added
+function status_panel:add_pending_upgrade()
+    local stat = self:get_highlighted_stat()
+    if not stat or not LEVELABLE_STATS[stat] then
+        return false
+    end
+
+    if not self:can_afford_upgrade(stat) then
+        return false
+    end
+
+    local cost = self:get_next_upgrade_cost(stat)
+
+    self.pending_upgrades[stat] = (self.pending_upgrades[stat] or 0) + 1
+    self.pending_costs[stat] = self.pending_costs[stat] or {}
+    table.insert(self.pending_costs[stat], cost)
+
+    return true
+end
+
+--- Remove a pending upgrade for the highlighted stat
+---@return boolean success True if upgrade was removed
+function status_panel:remove_pending_upgrade()
+    local stat = self:get_highlighted_stat()
+    if not stat then return false end
+
+    local count = self.pending_upgrades[stat] or 0
+    if count <= 0 then return false end
+
+    self.pending_upgrades[stat] = count - 1
+    if self.pending_upgrades[stat] == 0 then
+        self.pending_upgrades[stat] = nil
+    end
+
+    -- Remove the last cost
+    if self.pending_costs[stat] and #self.pending_costs[stat] > 0 then
+        table.remove(self.pending_costs[stat])
+        if #self.pending_costs[stat] == 0 then
+            self.pending_costs[stat] = nil
+        end
+    end
+
+    return true
+end
+
+--- Confirm all pending upgrades - apply them to the player
+---@return boolean success True if upgrades were applied
+function status_panel:confirm_upgrades()
+    if not self.player or not self:has_pending_upgrades() then
+        return false
+    end
+
+    local total_cost = self:get_total_pending_cost()
+    if self.player.experience < total_cost then
+        return false
+    end
+
+    -- Deduct experience
+    self.player.experience = self.player.experience - total_cost
+
+    -- Increase player level (each stat upgrade = 1 level)
+    local total_upgrades = self:get_total_pending_upgrades()
+    self.player.level = self.player.level + total_upgrades
+
+    -- Apply stat increases and track upgrades
+    for stat_name, count in pairs(self.pending_upgrades) do
+        -- Update the actual stat
+        if stat_name == "Health" then
+            self.player.max_health = self.player.max_health + count
+        elseif stat_name == "Stamina" then
+            self.player.max_stamina = self.player.max_stamina + count
+        elseif stat_name == "Energy" then
+            self.player.max_energy = self.player.max_energy + count
+        elseif stat_name == "Defence" then
+            self.player.defense = self.player.defense + count
+        elseif stat_name == "Recovery" then
+            self.player.recovery = self.player.recovery + count
+        elseif stat_name == "Critical" then
+            self.player.critical_chance = self.player.critical_chance + count
+        end
+
+        -- Track the upgrade count for potential refunds
+        self.player.stat_upgrades[stat_name] = (self.player.stat_upgrades[stat_name] or 0) + count
+    end
+
+    -- Clear pending
+    self:cancel_upgrades()
+    return true
+end
+
+--- Cancel all pending upgrades
+---@return nil
+function status_panel:cancel_upgrades()
+    self.pending_upgrades = {}
+    self.pending_costs = {}
+end
+
+--- Build the stats rows for display
+---@return table[] Array of {label, value, suffix, extra} pairs (value is nil for blank lines)
+function status_panel:build_stats_rows()
+    if not self.player then return {} end
 
     local player = self.player
-    local lines = {
-        "Level: " .. player.level,
-        "Exp: " .. player.experience,
-        "Gold: " .. player.gold,
-        "",
-        "HP: " .. player:health() .. "/" .. player.max_health,
-        "SP: " .. (player.max_stamina - player.stamina_used) .. "/" .. player.max_stamina,
-        "EP: " .. (player.max_energy - player.energy_used) .. "/" .. player.max_energy,
-        "DEF: " .. player.defense,
-        "STR: " .. player.strength,
-        "CRIT: " .. player.critical_chance .. "%",
-        "",
-        "Time: " .. SaveSlots.format_playtime(Playtime.get())
+    local total_pending_cost = self:get_total_pending_cost()
+    local pending_level_ups = self:get_total_pending_upgrades()
+
+    local exp_needed = exp_for_next_level(player.level + pending_level_ups)
+    local can_level_up = player.experience >= exp_needed
+
+    local exp_suffix = total_pending_cost > 0 and "(-" .. total_pending_cost .. ")" or nil
+    local level_suffix = pending_level_ups > 0 and "(+" .. pending_level_ups .. ")" or nil
+
+    -- Helper to get suffix for levelable stats (shows point increase)
+    local function get_stat_suffix(stat_name)
+        local count = self:get_pending_count(stat_name)
+        if count > 0 then
+            return "(+" .. count .. ")"
+        end
+        return nil
+    end
+
+    -- Helper to get suffix for percentage stats (shows percentage increase)
+    local function get_percent_suffix(stat_name)
+        local count = self:get_pending_count(stat_name)
+        if count > 0 then
+            return string.format("(+%.1f%%)", count * 2.5)
+        end
+        return nil
+    end
+
+    return {
+        { label = "Level",      value = tostring(player.level), suffix = level_suffix, suffix_color = "#88FF88" },
+        { label = "Experience", value = tostring(player.experience), suffix = exp_suffix, suffix_color = "#FF8888", value_color = can_level_up and "#88FF88" or nil },
+        { label = "Next Level", value = tostring(exp_needed) },
+        { label = "Gold",       value = tostring(player.gold) },
+        {},
+        { label = "Health",     value = tostring(player.max_health),    suffix = get_stat_suffix("Health"),   suffix_color = "#88FF88" },
+        { label = "Stamina",    value = tostring(player.max_stamina),   suffix = get_stat_suffix("Stamina"),  suffix_color = "#88FF88" },
+        { label = "Energy",     value = tostring(player.max_energy),    suffix = get_stat_suffix("Energy"),   suffix_color = "#88FF88" },
+        { label = "Defence",    value = string.format("%.1f%%", player:defense_percent()), suffix = get_percent_suffix("Defence"),  suffix_color = "#88FF88" },
+        { label = "Recovery",   value = string.format("%.1f%%", player:recovery_percent()), suffix = get_percent_suffix("Recovery"), suffix_color = "#88FF88" },
+        { label = "Critical",   value = string.format("%.1f%%", player:critical_percent()), suffix = get_percent_suffix("Critical"), suffix_color = "#88FF88" },
+        {},
+        { label = "Time",       value = SaveSlots.format_playtime(Playtime.get()), monospace = true },
     }
-    return table.concat(lines, "\n")
 end
 
---- Update the status panel (for future: hover detection for tooltips)
+--- Get the effective selection index (prefers hover, falls back to keyboard selection when active)
+---@return number|nil index The effective row index, or nil if nothing selected
+function status_panel:get_effective_index()
+    return self.hovered_index or (self.active and self.selected_index)
+end
+
+--- Get the description for the currently selected or hovered stat
+---@return string|nil Description text for the info panel, or nil if nothing selected/hovered
+function status_panel:get_description()
+    local index = self:get_effective_index()
+    local selectable = index and self.selectable_rows[index]
+    if selectable and selectable.label then
+        return STAT_DESCRIPTIONS[selectable.label]
+    end
+    return nil
+end
+
+--- Get the currently highlighted stat label (hovered or selected)
+---@return string|nil label The stat label, or nil if nothing highlighted
+function status_panel:get_highlighted_stat()
+    local index = self:get_effective_index()
+    local selectable = index and self.selectable_rows[index]
+    return selectable and selectable.label
+end
+
+--- Check if the currently highlighted stat can be leveled up
+---@return boolean is_levelable True if the stat can be leveled up
+function status_panel:is_highlighted_levelable()
+    local stat = self:get_highlighted_stat()
+    return stat and LEVELABLE_STATS[stat] == true
+end
+
+--- Get the cost to level up the currently highlighted stat
+---@return number|nil cost The XP cost, or nil if not levelable
+function status_panel:get_level_cost()
+    if not self:is_highlighted_levelable() then
+        return nil
+    end
+    local stat = self:get_highlighted_stat()
+    return self:get_next_upgrade_cost(stat)
+end
+
+--- Check if selection is from mouse hover (vs keyboard/gamepad)
+---@return boolean is_mouse True if currently hovering with mouse
+function status_panel:is_mouse_hover()
+    return self.hovered_index ~= nil
+end
+
+--- Reset selection to first item
+---@return nil
+function status_panel:reset_selection()
+    self.selected_index = 1
+end
+
+--- Update the status panel with mouse hover detection
 ---@param dt number Delta time in seconds
----@param local_mx number Local mouse X coordinate
----@param local_my number Local mouse Y coordinate
+---@param local_mx number Local mouse X coordinate (relative to panel)
+---@param local_my number Local mouse Y coordinate (relative to panel)
 ---@param mouse_active boolean Whether mouse input is active
 function status_panel:update(dt, local_mx, local_my, mouse_active)
-    -- For future: hover detection for tooltips
+    self.hovered_index = nil
+
+    if not mouse_active then return end
+
+    -- Check if mouse is over a selectable row
+    local y_start = TEXT_PADDING_TOP
+    for i, row_data in ipairs(self.selectable_rows) do
+        local row_y = y_start + (row_data.visual_index - 1) * LINE_HEIGHT
+        if local_my >= row_y and local_my < row_y + LINE_HEIGHT then
+            if local_mx >= TEXT_PADDING_LEFT and local_mx <= self.width - TEXT_PADDING_RIGHT then
+                self.hovered_index = i
+                if self.active then
+                    self.selected_index = i
+                end
+                break
+            end
+        end
+    end
 end
 
---- Handle input (for future: keyboard/gamepad navigation)
+--- Handle keyboard/gamepad input for navigation
 ---@return nil
 function status_panel:input()
+    if controls.menu_up_pressed() then
+        self.selected_index = self.selected_index - 1
+        if self.selected_index < 1 then
+            self.selected_index = #self.selectable_rows
+        end
+    elseif controls.menu_down_pressed() then
+        self.selected_index = self.selected_index + 1
+        if self.selected_index > #self.selectable_rows then
+            self.selected_index = 1
+        end
+    end
 end
 
 --- Draw the status panel
 ---@return nil
 function status_panel:draw()
-    simple_dialogue.draw({
-        x = self.x,
-        y = self.y,
-        width = self.width,
-        height = self.height,
-        text = self:build_stats_text()
-    })
+    nine_slice.draw(slice, self.x, self.y, self.width, self.height)
+
+    canvas.save()
+
+    local text_x = self.x + TEXT_PADDING_LEFT
+    local text_y = self.y + TEXT_PADDING_TOP
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(8)
+    canvas.set_text_baseline("top")
+
+    local rows = self:build_stats_rows()
+
+    -- Build selectable rows mapping (only rows with labels are selectable)
+    self.selectable_rows = {}
+    for visual_index, row in ipairs(rows) do
+        if row.label then
+            table.insert(self.selectable_rows, {
+                label = row.label,
+                visual_index = visual_index,
+            })
+        end
+    end
+
+    -- Clamp selected index to valid range
+    local row_count = #self.selectable_rows
+    self.selected_index = math.max(1, math.min(self.selected_index, row_count))
+
+    -- Get the visual index of the highlighted row (selected if active, or hovered)
+    local highlighted_visual_index = nil
+    if self.active and self.selectable_rows[self.selected_index] then
+        highlighted_visual_index = self.selectable_rows[self.selected_index].visual_index
+    elseif self.hovered_index and self.selectable_rows[self.hovered_index] then
+        highlighted_visual_index = self.selectable_rows[self.hovered_index].visual_index
+    end
+
+    -- Find widest label to position columns
+    local max_label_width = 0
+    for _, row in ipairs(rows) do
+        if row.label then
+            local label_width = canvas.get_text_width(row.label)
+            if label_width > max_label_width then
+                max_label_width = label_width
+            end
+        end
+    end
+
+    -- Use fixed reference width for value column to prevent layout shift from time
+    local char_width = canvas.get_text_width("0")
+    local max_value_width = char_width * 8  -- "00:00:00" = 8 characters
+
+    -- Value column right edge: 20px gap after widest label, plus widest value
+    local value_right_x = text_x + max_label_width + 20 + max_value_width
+
+    -- Suffix column: to the right of values with small gap
+    local suffix_gap = 4
+    local suffix_x = value_right_x + suffix_gap
+
+    local y_offset = 0
+
+    for visual_index, row in ipairs(rows) do
+        if row.label then
+            local is_highlighted = (visual_index == highlighted_visual_index)
+            local text_color = is_highlighted and "#FFFF00" or "#FFFFFF"
+
+            canvas.set_color(text_color)
+
+            -- Draw label left-aligned
+            canvas.set_text_align("left")
+            canvas.draw_text(text_x, text_y + y_offset, row.label)
+
+            -- Use value_color if present and not highlighted
+            local value_color = (not is_highlighted and row.value_color) or text_color
+            canvas.set_color(value_color)
+
+            if row.monospace then
+                -- Draw each character individually with fixed spacing
+                canvas.set_text_align("center")
+                local str = row.value
+                local start_x = value_right_x - (char_width * #str) + (char_width / 2)
+                for i = 1, #str do
+                    local char = str:sub(i, i)
+                    canvas.draw_text(start_x + (i - 1) * char_width, text_y + y_offset, char)
+                end
+            else
+                -- Draw value right-aligned within value column
+                canvas.set_text_align("right")
+                canvas.draw_text(value_right_x, text_y + y_offset, row.value)
+            end
+
+            -- Draw suffix if present (e.g., "(+1)" or "(-50)")
+            if row.suffix then
+                canvas.set_text_align("left")
+                canvas.set_color(row.suffix_color or "#FFFFFF")
+                canvas.draw_text(suffix_x, text_y + y_offset, row.suffix)
+            end
+        end
+        y_offset = y_offset + LINE_HEIGHT
+    end
+
+    canvas.restore()
 end
 
 return status_panel

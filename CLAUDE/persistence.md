@@ -33,18 +33,27 @@ Multi-slot save system using localStorage with 3 save slots.
     campfire_name = "Campfire",      -- Display name for UI
     playtime = 3600.5,               -- Total seconds played
 
-    -- Player stats (restored via stat_keys in main.lua)
+    -- Player stats (PLAYER_STAT_KEYS in SaveSlots/init.lua)
     max_health = 3,                  -- Current max HP
+    max_stamina = 5,                 -- Current max SP
+    max_energy = 4,                  -- Current max EP
     level = 1,                       -- Player level (progression)
     experience = 0,                  -- XP toward next level
     gold = 0,                        -- Currency for purchases
     defense = 0,                     -- Reduces incoming damage
-    strength = 5,                    -- Base damage multiplier
+    recovery = 0,                    -- Bonus regeneration rate
     critical_chance = 0,             -- Percent chance for critical hit
+    stat_upgrades = {},              -- Track upgrade counts {Health=2, Stamina=1, ...}
+    unique_items = {},               -- Collected unique items
 
     -- Prop persistence (cross-level)
     prop_states = {},                -- Map of prop_key -> state_data
 }
+```
+
+**Transient State** (preserved during level transitions, reset at campfires):
+```lua
+SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "projectile_ix" }
 ```
 
 ### Key Methods

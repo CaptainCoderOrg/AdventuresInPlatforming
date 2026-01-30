@@ -3,6 +3,7 @@ local audio = require('audio')
 local combat = require('combat')
 local common = require('player.common')
 local controls = require('controls')
+local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local world = require('world')
 
@@ -13,6 +14,7 @@ local attack = { name = "attack" }
 
 local ATTACK_COOLDOWN = 0.2
 local HOLD_TIME = 0.16
+local SHIELD_KNOCKBACK = 3  -- Slight knockback when hitting enemy shield
 
 local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
 
@@ -20,6 +22,18 @@ local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK
 local SWORD_WIDTH = 1.15
 local SWORD_HEIGHT = 1.1
 local SWORD_Y_OFFSET = -0.1  -- Center vertically relative to player box
+
+-- Reusable state for filters (avoids closure allocation per frame)
+local filter_player = nil
+
+--- Filter function for enemy hits (uses module-level state to avoid closure allocation)
+---@param entity table Entity to check
+---@return boolean True if entity is a valid target
+local function enemy_filter(entity)
+	return entity.is_enemy
+		and entity.shape
+		and not filter_player.attack_state.hit_enemies[entity]
+end
 
 --- Returns the sword hitbox for the current attack frame, or nil if not active.
 --- Hitbox is only active during specific animation frames to match visual sword position.
@@ -40,16 +54,26 @@ end
 
 --- Checks for enemies overlapping the sword hitbox and applies damage.
 --- Tracks hit enemies to prevent multi-hit within a single swing.
+--- Blocked by enemy shields (plays solid sound, no damage, slight knockback).
 ---@param player table The player object
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
 local function check_attack_hits(player, hitbox)
+	-- Check if blocked by enemy shield
+	local blocked_by, shield_x, shield_y = combat.check_shield_block(hitbox.x, hitbox.y, hitbox.w, hitbox.h)
+	if blocked_by then
+		if not player.attack_state.hit_shield then
+			audio.play_solid_sound()
+			Effects.create_hit(shield_x - 0.5, shield_y - 0.5, player.direction)
+			-- Slight knockback away from player
+			blocked_by.vx = player.direction * SHIELD_KNOCKBACK
+			player.attack_state.hit_shield = true
+		end
+		return  -- Always return when blocked
+	end
+
 	-- Query combat system for enemies overlapping sword hitbox
-	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, function(entity)
-		-- Only hit enemies we haven't already hit this swing
-		return entity.is_enemy
-			and entity.shape  -- Has physics shape (not dead/dying)
-			and not player.attack_state.hit_enemies[entity]
-	end)
+	filter_player = player
+	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
 
 	for _, enemy in ipairs(hits) do
 		enemy:on_hit("weapon", { damage = player.weapon_damage, x = player.x })
@@ -81,6 +105,7 @@ local function next_animation(player)
 	local hit_enemies = player.attack_state.hit_enemies
 	for k in pairs(hit_enemies) do hit_enemies[k] = nil end
 	player.attack_state.hit_lever = false
+	player.attack_state.hit_shield = false
 	player.attack_state.next_anim_ix = player.attack_state.next_anim_ix + 1
 	if player.attack_state.next_anim_ix > #attack_animations then
 		player.attack_state.next_anim_ix = 1

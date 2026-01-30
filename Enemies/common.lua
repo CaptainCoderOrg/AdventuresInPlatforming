@@ -13,8 +13,10 @@ local anim_opts = { flipped = 1 }  -- Reused to avoid allocation
 --- Sets up enemy animation, reusing existing instance when possible.
 ---@param enemy table The enemy instance
 ---@param definition table Animation definition to use
-function common.set_animation(enemy, definition)
+---@param options table|nil Optional extra options (reverse, start_frame)
+function common.set_animation(enemy, definition, options)
 	anim_opts.flipped = enemy.direction
+	anim_opts.reverse = options and options.reverse or false
 	if enemy.animation then
 		enemy.animation:reinit(definition, anim_opts)
 	else

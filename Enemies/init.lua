@@ -300,6 +300,11 @@ function Enemy.clear()
 		world.remove_collider(enemy)
 		world.remove_hitbox(enemy)
 		combat.remove(enemy)
+		-- Clean up shield colliders if present
+		if enemy.combat_shield then
+			combat.remove_shield(enemy)
+			world.remove_projectile_collider(enemy)
+		end
 		enemy = next(Enemy.all, enemy)
 	end
 	Enemy.all = {}

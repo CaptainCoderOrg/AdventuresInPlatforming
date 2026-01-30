@@ -2,6 +2,7 @@ local Animation = require('Animation')
 local audio = require('audio')
 local combat = require('combat')
 local common = require('player.common')
+local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local Prop = require('Prop')
 local world = require('world')
@@ -20,6 +21,8 @@ local HAMMER_Y_OFFSET = -0.1  -- Center vertically relative to player box
 -- Frames 3-4 = impact window (300ms active window)
 local MIN_ACTIVE_FRAME = 3
 local MAX_ACTIVE_FRAME = 4
+
+local SHIELD_KNOCKBACK = 5  -- Stronger knockback for hammer hitting shield
 
 -- Reusable state for filters (avoids closure allocation per frame)
 local filter_player = nil
@@ -52,9 +55,23 @@ local function get_hammer_hitbox(player)
 end
 
 --- Check for enemy hits with the hammer
+--- Blocked by enemy shields (plays solid sound, no damage, knockback).
 ---@param player table The player object
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
 local function check_hammer_hits(player, hitbox)
+	-- Check if blocked by enemy shield
+	local blocked_by, shield_x, shield_y = combat.check_shield_block(hitbox.x, hitbox.y, hitbox.w, hitbox.h)
+	if blocked_by then
+		if not player.hammer_state.hit_shield then
+			audio.play_solid_sound()
+			Effects.create_hit(shield_x - 0.5, shield_y - 0.5, player.direction)
+			-- Knockback away from player (stronger than sword)
+			blocked_by.vx = player.direction * SHIELD_KNOCKBACK
+			player.hammer_state.hit_shield = true
+		end
+		return  -- Always return when blocked
+	end
+
 	filter_player = player
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
 
@@ -98,6 +115,7 @@ function hammer.start(player)
 	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
 	player.hammer_state.hit_button = false
 	player.hammer_state.hit_lever = false
+	player.hammer_state.hit_shield = false
 	-- Clear existing table instead of allocating new one
 	local hit_enemies = player.hammer_state.hit_enemies
 	for k in pairs(hit_enemies) do hit_enemies[k] = nil end

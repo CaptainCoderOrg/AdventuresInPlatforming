@@ -6,6 +6,8 @@ local combat = require('combat')
 local common = require('Enemies/common')
 local Effects = require('Effects')
 local audio = require('audio')
+local Projectile = require('Projectile')
+local world = require('world')
 
 --- Guardian enemy: Stationary enemy with spiked club.
 --- Two damage zones: body (1 damage, hittable) and club (3 damage, not hittable).
@@ -14,7 +16,11 @@ local audio = require('audio')
 --- States: idle, alert, attack, hit, death
 local guardian = {}
 
--- Club hitbox constants (in tiles)
+---------------------------------------------------------------------------
+-- Constants
+---------------------------------------------------------------------------
+
+-- Club hitbox (in tiles)
 local CLUB_WIDTH = 0.9375     -- 15px / 16 (reduced 25% from 20px)
 local CLUB_HEIGHT = 0.75      -- 12px / 16
 local CLUB_Y_OFFSET = 0.0625  -- 1px / 16
@@ -23,20 +29,112 @@ local CLUB_DAMAGE = 3
 -- Body hitbox edges (for club adjacency calculation)
 local BODY_LEFT = 0.125       -- box.x
 local BODY_RIGHT = 0.75       -- box.x + box.w
+local CHARACTER_WIDTH = 1     -- Width in tiles for hitbox mirroring
 
-local DETECTION_RANGE = 12    -- Tiles
+-- Detection
+local DETECTION_RANGE = 12    -- Horizontal range in tiles
 local DETECTION_HEIGHT = 1.5  -- Vertical range in tiles
 
+-- Jump physics
 local JUMP_VELOCITY = -18
 local JUMP_GRAVITY = 1.5
 
--- Cached sprite dimensions (avoid per-frame multiplication)
-local SPRITE_WIDTH = 48 * config.ui.SCALE   -- 144
-local SPRITE_HEIGHT = 32 * config.ui.SCALE  -- 96
-local BASE_WIDTH = 16 * config.ui.SCALE     -- 48
-local EXTRA_HEIGHT = 16 * config.ui.SCALE   -- 48
+-- Projectile dodging
+local PROJECTILE_DODGE_RANGE = 4        -- Tiles: default dodge range
+local PROJECTILE_DODGE_RANGE_BACK = 3   -- Tiles: dodge range while backing away
+local PROJECTILE_VERTICAL_TOLERANCE = 0.25  -- Tiles: vertical range for projectile detection
 
+-- Movement speeds (tiles per second)
+local CHARGE_SPEED = 6
+local BACK_AWAY_SPEED = 4
+local DEATH_KNOCKBACK_SPEED = 4
+
+-- Jump away randomization
+local JUMP_AWAY_SPEED_BASE = 10
+local JUMP_AWAY_SPEED_VARIANCE = 5
+
+-- Jump toward constants
+local JUMP_TOWARD_TARGET_OFFSET = 1.35  -- Distance from player to target landing
+local JUMP_TOWARD_DISTANCE_MULT = 2.5   -- Multiplier for distance to velocity
+local JUMP_TOWARD_MAX_VELOCITY = 12     -- Max horizontal jump velocity
+local JUMP_TOWARD_FALLBACK_SPEED = 10   -- Speed when no player target
+
+-- Jump over constants (higher arc to pass over player)
+local JUMP_OVER_VELOCITY = -24          -- Higher jump than normal (-18)
+local JUMP_OVER_SPEED = 11              -- Horizontal speed to clear player
+local JUMP_OVER_DISTANCE_MIN = 3        -- Minimum trigger distance
+local JUMP_OVER_DISTANCE_VARIANCE = 2   -- Variance for 3-5 range
+
+-- Distance thresholds (in tiles)
+local ATTACK_RANGE = 1.25             -- Distance to trigger attack while charging
+local ATTACK_RANGE_REASSESS = 2       -- Distance to attack from reassess state
+local JUMP_TOWARD_RANGE = 6           -- Distance to trigger jump toward player
+local JUMP_DISTANCE_MIN = 4           -- Minimum jump trigger distance (charge_and_jump)
+local JUMP_DISTANCE_VARIANCE = 4      -- Random variance for jump trigger distance
+
+-- Timers (in seconds)
+local BACK_AWAY_TIME_MIN = 0.5
+local BACK_AWAY_TIME_VARIANCE = 1.0
+
+-- Physics
+local DEATH_FRICTION = 0.9
+
+-- Animation frame indices
+local FRAME_CLUB_RAISED = 1
+local FRAME_MAX_ATTACK = 7
+
+-- Sprite dimensions (in pixels, pre-scaled)
+local SPRITE_RAW_WIDTH = 48
+local SPRITE_RAW_HEIGHT = 32
+local SPRITE_BASE_SIZE = 16           -- Base tile size in pixels
+
+-- Cached sprite dimensions (avoid per-frame multiplication)
+local SPRITE_WIDTH = SPRITE_RAW_WIDTH * config.ui.SCALE   -- 144
+local SPRITE_HEIGHT = SPRITE_RAW_HEIGHT * config.ui.SCALE -- 96
+local BASE_WIDTH = SPRITE_BASE_SIZE * config.ui.SCALE     -- 48
+local EXTRA_HEIGHT = SPRITE_BASE_SIZE * config.ui.SCALE   -- 48
+
+-- Animation timing (milliseconds per frame)
+local ANIM_MS_IDLE = 150
+local ANIM_MS_ALERT = 100
+local ANIM_MS_ATTACK = 100
+local ANIM_MS_HIT = 80
+local ANIM_MS_DEATH = 120
+local ANIM_MS_JUMP = 100
+local ANIM_MS_LAND = 100
+local ANIM_MS_CHARGE = 100
+
+-- Animation frame counts
+local ANIM_FRAMES_IDLE = 6
+local ANIM_FRAMES_ALERT = 4
+local ANIM_FRAMES_ATTACK = 8
+local ANIM_FRAMES_HIT = 5
+local ANIM_FRAMES_DEATH = 6
+local ANIM_FRAMES_JUMP = 2
+local ANIM_FRAMES_LAND = 7
+local ANIM_FRAMES_CHARGE = 4
+
+-- Entity stats
+local MAX_HEALTH = 6
+local ARMOR = 1
+local BODY_DAMAGE = 1
+local GRAVITY = 1.5
+local MAX_FALL_SPEED = 20
+
+-- Loot
+local LOOT_XP = 12
+local LOOT_GOLD_MIN = 5
+local LOOT_GOLD_MAX = 15
+
+-- Body hitbox dimensions (in tiles)
+local BOX_WIDTH = 0.625
+local BOX_HEIGHT = 1
+local BOX_X = 0.125
+local BOX_Y = 0
+
+---------------------------------------------------------------------------
 -- Reusable tables for allocation avoidance
+---------------------------------------------------------------------------
 local club_hits = {}
 local NO_HITBOXES = {}  -- Shared empty table for recovery frames
 
@@ -51,6 +149,24 @@ local function player_filter(entity) return entity.is_player end
 ---@return boolean True if player is behind
 local function player_is_behind(enemy, dx)
 	return (enemy.direction == 1 and dx < 0) or (enemy.direction == -1 and dx > 0)
+end
+
+--- Check if there's a player projectile within specified horizontal range and at same height.
+---@param enemy table The guardian enemy
+---@param range number|nil Horizontal detection range in tiles (defaults to PROJECTILE_DODGE_RANGE)
+---@return boolean True if projectile detected nearby
+local function is_projectile_nearby(enemy, range)
+	local r = range or PROJECTILE_DODGE_RANGE
+	for projectile, _ in pairs(Projectile.all) do
+		local dy = math.abs(projectile.y - enemy.y)
+		if dy <= PROJECTILE_VERTICAL_TOLERANCE then
+			local dx = math.abs(projectile.x - enemy.x)
+			if dx <= r then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 --- Check if player is visible in facing direction.
@@ -109,6 +225,8 @@ end
 -- Attack hitbox definitions per frame (0-indexed)
 -- Positions are offsets from enemy position in tiles (relative to character at sprite center-bottom)
 -- offset_x is positive = right when facing left, mirrored when facing right
+-- nil = use default club hitbox (behind guardian)
+-- NO_HITBOXES = no damage hitbox at all
 local ATTACK_HITBOXES = {
 	-- Frame 0: Idle stance, uses default club hitbox behind guardian
 	[0] = nil,
@@ -129,10 +247,11 @@ local ATTACK_HITBOXES = {
 	[4] = {
 		{ offset_x = -1, offset_y = 0, w = 1, h = 1 },
 	},
-	-- Frames 5-7: Recovery, no active hitbox
+	-- Frames 5-6: Recovery, no damage hitbox
 	[5] = NO_HITBOXES,
 	[6] = NO_HITBOXES,
-	[7] = NO_HITBOXES,
+	-- Frame 7: Last frame, club returns to behind guardian
+	[7] = nil,
 }
 
 --- Calculate attack hitbox world position based on sprite offset and direction.
@@ -147,21 +266,121 @@ local function get_attack_hitbox_world(enemy, hitbox)
 		hx = enemy.x + hitbox.offset_x
 	else
 		-- Facing right: mirror offset and width around character center
-		hx = enemy.x + 1 - hitbox.offset_x - hitbox.w
+		hx = enemy.x + CHARACTER_WIDTH - hitbox.offset_x - hitbox.w
 	end
 	local hy = enemy.y + hitbox.offset_y
 	return hx, hy, hitbox.w, hitbox.h
 end
 
---- Check for player damage using attack hitboxes.
---- Falls back to default club hitbox if hitboxes are empty or nil.
+--- Get the current shield hitbox position based on state and animation.
+--- Shield follows the club through all animations.
+--- Returns nil when club is not in a blocking position (recovery frames).
 ---@param enemy table The guardian enemy
----@param hitboxes table|nil The hitbox definitions to use (nil or empty = use default club)
+---@return number|nil x, number y, number w, number h Hitbox bounds in tiles, or nil if no hitbox
+local function get_shield_hitbox(enemy)
+	local state_name = enemy.state and enemy.state.name
+
+	-- States using CHARGE animation have club raised (ATTACK_HITBOXES[FRAME_CLUB_RAISED])
+	if state_name == "charge" or state_name == "charge_and_jump"
+	   or state_name == "charge_and_jump_over" or state_name == "jump_over"
+	   or state_name == "jump_away" or state_name == "jump_toward"
+	   or state_name == "back_away" or state_name == "reassess" then
+		local hitbox = ATTACK_HITBOXES[FRAME_CLUB_RAISED][1]
+		return get_attack_hitbox_world(enemy, hitbox)
+	end
+
+	-- Attack state uses frame-based hitboxes
+	if state_name == "attack" and enemy.animation then
+		local frame = enemy.animation.frame
+		local hitboxes = ATTACK_HITBOXES[frame]
+		if hitboxes and #hitboxes > 0 then
+			return get_attack_hitbox_world(enemy, hitboxes[1])
+		end
+		-- Frame 0: default club position
+		if frame == 0 then
+			return get_club_hitbox(enemy)
+		end
+		-- Last frame: returning to default club position
+		if frame == FRAME_MAX_ATTACK then
+			return get_club_hitbox(enemy)
+		end
+		-- Recovery frames: no hitbox
+		return nil
+	end
+
+	-- Land state uses frame+1 based hitboxes (land starts with club raised like attack frame 1)
+	if state_name == "land" and enemy.animation then
+		local frame = math.min(enemy.animation.frame + 1, FRAME_MAX_ATTACK)
+		local hitboxes = ATTACK_HITBOXES[frame]
+		if hitboxes and #hitboxes > 0 then
+			return get_attack_hitbox_world(enemy, hitboxes[1])
+		end
+		-- nil = club behind (last frame returning to idle)
+		if hitboxes == nil then
+			return get_club_hitbox(enemy)
+		end
+		-- NO_HITBOXES (empty table) = recovery frames, no shield
+		return nil
+	end
+
+	-- Default: use club hitbox (behind guardian)
+	return get_club_hitbox(enemy)
+end
+
+--- Update shield colliders to follow the club position.
+--- Shield blocks both projectiles (via world.projectile_collider) and
+--- player weapons (via combat.shield).
+--- Removes shield during recovery frames when club is not blocking.
+---@param enemy table The guardian enemy
+local function update_shield(enemy)
+	local hx, hy, hw, hh = get_shield_hitbox(enemy)
+
+	-- No hitbox during recovery frames - remove shield
+	if not hx then
+		if enemy.combat_shield then
+			combat.remove_shield(enemy)
+			world.remove_projectile_collider(enemy)
+			enemy.combat_shield = nil
+		end
+		return
+	end
+
+	if enemy.combat_shield then
+		combat.update_shield(enemy, hx, hy, hw, hh)
+		world.update_projectile_collider(enemy, hx, hy, hw, hh)
+	else
+		combat.add_shield(enemy, hx, hy, hw, hh)
+		world.add_projectile_collider(enemy, hx, hy, hw, hh)
+		enemy.combat_shield = true
+	end
+end
+
+--- Remove shield colliders when guardian is destroyed.
+---@param enemy table The guardian enemy
+local function remove_shield(enemy)
+	if enemy.combat_shield then
+		combat.remove_shield(enemy)
+		world.remove_projectile_collider(enemy)
+		enemy.combat_shield = nil
+	end
+end
+
+--- Check for player damage using attack hitboxes.
+--- nil = use default club hitbox (behind guardian)
+--- Empty table (NO_HITBOXES) = no damage hitbox
+--- Table with hitboxes = use those specific hitboxes
+---@param enemy table The guardian enemy
+---@param hitboxes table|nil The hitbox definitions to use
 ---@return boolean True if player was hit
 local function check_attack_hitboxes(enemy, hitboxes)
-	-- Use default club hitbox for nil or empty hitbox lists
-	if not hitboxes or #hitboxes == 0 then
+	-- nil = use default club hitbox behind guardian
+	if hitboxes == nil then
 		check_club_collision(enemy)
+		return false
+	end
+
+	-- Empty table (NO_HITBOXES) = no damage this frame
+	if #hitboxes == 0 then
 		return false
 	end
 
@@ -187,17 +406,24 @@ local function draw_club_hitbox_rect(enemy)
 end
 
 --- Draw hitboxes for a given frame definition.
---- Handles nil (default club hitbox), empty tables, and hitbox arrays.
+--- nil = draw default club hitbox (behind guardian)
+--- Empty table (NO_HITBOXES) = draw nothing
+--- Table with hitboxes = draw those specific hitboxes
 ---@param enemy table The guardian enemy
----@param hitboxes table|nil The hitbox definitions (nil or empty = default club)
+---@param hitboxes table|nil The hitbox definitions
 local function draw_hitboxes(enemy, hitboxes)
 	if not config.bounding_boxes then return end
 
 	canvas.set_color("#FFA50088")
 
-	-- Nil or empty hitbox list: draw default club hitbox
-	if not hitboxes or #hitboxes == 0 then
+	-- nil = draw default club hitbox behind guardian
+	if hitboxes == nil then
 		draw_club_hitbox_rect(enemy)
+		return
+	end
+
+	-- Empty table (NO_HITBOXES) = no hitbox to draw
+	if #hitboxes == 0 then
 		return
 	end
 
@@ -237,6 +463,19 @@ local function draw_sprite(enemy)
 	canvas.restore()
 end
 
+--- Draw shield hitbox when shield is active.
+---@param enemy table The guardian enemy
+local function draw_shield_hitbox(enemy)
+	if not config.bounding_boxes or not enemy.combat_shield then return end
+
+	local hx, hy, hw, hh = get_shield_hitbox(enemy)
+	if not hx then return end  -- No hitbox during recovery
+
+	local ts = sprites.tile_size
+	canvas.set_color("#00FF0088")  -- Green for shield
+	canvas.draw_rect(hx * ts, hy * ts, hw * ts, hh * ts)
+end
+
 --- Draw function for guardian with club hitbox and detection range visualization.
 ---@param enemy table The guardian enemy
 local function draw_guardian(enemy)
@@ -245,9 +484,12 @@ local function draw_guardian(enemy)
 	if config.bounding_boxes then
 		local ts = sprites.tile_size
 
-		-- Draw club hitbox (orange)
+		-- Draw club damage hitbox (orange)
 		canvas.set_color("#FFA50088")
 		draw_club_hitbox_rect(enemy)
+
+		-- Draw shield hitbox (green) on top when active
+		draw_shield_hitbox(enemy)
 
 		-- Draw detection range (yellow, semi-transparent)
 		local ex = enemy.x + enemy.box.x + enemy.box.w / 2
@@ -270,7 +512,10 @@ end
 local function draw_attack(enemy)
 	draw_sprite(enemy)
 	if enemy.animation then
+		-- Draw damage hitboxes (orange)
 		draw_hitboxes(enemy, ATTACK_HITBOXES[enemy.animation.frame])
+		-- Draw shield hitbox (green) on top
+		draw_shield_hitbox(enemy)
 	end
 end
 
@@ -278,15 +523,22 @@ end
 ---@param enemy table The guardian enemy
 local function draw_club_raised(enemy)
 	draw_sprite(enemy)
-	draw_hitboxes(enemy, ATTACK_HITBOXES[1])
+	-- Draw damage hitboxes (orange)
+	draw_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
+	-- Draw shield hitbox (green) on top
+	draw_shield_hitbox(enemy)
 end
 
---- Draw function for land state (animation frame + 2 maps to attack hitboxes).
+--- Draw function for land state.
 ---@param enemy table The guardian enemy
 local function draw_land(enemy)
 	draw_sprite(enemy)
 	if enemy.animation then
-		draw_hitboxes(enemy, ATTACK_HITBOXES[math.min(enemy.animation.frame + 2, 7)])
+		-- Draw damage hitboxes (orange)
+		local hitbox_frame = math.min(enemy.animation.frame + 1, FRAME_MAX_ATTACK)
+		draw_hitboxes(enemy, ATTACK_HITBOXES[hitbox_frame])
+		-- Draw shield hitbox (green) on top
+		draw_shield_hitbox(enemy)
 	end
 end
 
@@ -304,10 +556,11 @@ end
 --- Holds animation on frame 1 and transitions to land when grounded.
 ---@param enemy table The guardian enemy
 local function update_airborne(enemy)
-	check_attack_hitboxes(enemy, ATTACK_HITBOXES[1])
+	update_shield(enemy)
+	check_attack_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
 
-	-- Hold animation on frame 1 (club raised) while airborne
-	enemy.animation.frame = math.min(enemy.animation.frame, 1)
+	-- Hold animation on club raised frame while airborne
+	enemy.animation.frame = math.min(enemy.animation.frame, FRAME_CLUB_RAISED)
 
 	if enemy.is_grounded then
 		enemy:set_state(guardian.states.land)
@@ -323,21 +576,21 @@ end
 local function create_anim(sprite, frames, ms_per_frame, loop)
 	return Animation.create_definition(sprite, frames, {
 		ms_per_frame = ms_per_frame,
-		width = 48,
-		height = 32,
+		width = SPRITE_RAW_WIDTH,
+		height = SPRITE_RAW_HEIGHT,
 		loop = loop
 	})
 end
 
 guardian.animations = {
-	IDLE = create_anim(sprites.enemies.guardian.idle, 6, 150, true),
-	ALERT = create_anim(sprites.enemies.guardian.alert, 4, 100, false),
-	ATTACK = create_anim(sprites.enemies.guardian.attack, 8, 100, false),
-	HIT = create_anim(sprites.enemies.guardian.hit, 5, 80, false),  -- Stun = 5 * 80ms = 400ms
-	DEATH = create_anim(sprites.enemies.guardian.death, 6, 120, false),
-	JUMP_AWAY = create_anim(sprites.enemies.guardian.jump, 2, 100, false),
-	LAND = create_anim(sprites.enemies.guardian.land, 7, 100, false),
-	CHARGE = create_anim(sprites.enemies.guardian.run, 4, 100, true),
+	IDLE = create_anim(sprites.enemies.guardian.idle, ANIM_FRAMES_IDLE, ANIM_MS_IDLE, true),
+	ALERT = create_anim(sprites.enemies.guardian.alert, ANIM_FRAMES_ALERT, ANIM_MS_ALERT, false),
+	ATTACK = create_anim(sprites.enemies.guardian.attack, ANIM_FRAMES_ATTACK, ANIM_MS_ATTACK, false),
+	HIT = create_anim(sprites.enemies.guardian.hit, ANIM_FRAMES_HIT, ANIM_MS_HIT, false),
+	DEATH = create_anim(sprites.enemies.guardian.death, ANIM_FRAMES_DEATH, ANIM_MS_DEATH, false),
+	JUMP_AWAY = create_anim(sprites.enemies.guardian.jump, ANIM_FRAMES_JUMP, ANIM_MS_JUMP, false),
+	LAND = create_anim(sprites.enemies.guardian.land, ANIM_FRAMES_LAND, ANIM_MS_LAND, false),
+	CHARGE = create_anim(sprites.enemies.guardian.run, ANIM_FRAMES_CHARGE, ANIM_MS_CHARGE, true),
 }
 
 guardian.states = {}
@@ -349,6 +602,7 @@ guardian.states.idle = {
 		enemy.vx = 0
 	end,
 	update = function(enemy, _dt)
+		update_shield(enemy)
 		if can_detect_player(enemy) then
 			enemy:set_state(guardian.states.alert)
 		else
@@ -365,6 +619,7 @@ guardian.states.alert = {
 		enemy.vx = 0
 	end,
 	update = function(enemy, _dt)
+		update_shield(enemy)
 		check_club_collision(enemy)
 
 		-- Wait for alert animation to finish before transitioning
@@ -379,7 +634,7 @@ guardian.states.alert = {
 
 		-- Decide action based on distance
 		local dx = math.abs(player.x - enemy.x)
-		if dx <= 6 then
+		if dx <= JUMP_TOWARD_RANGE then
 			enemy:set_state(guardian.states.jump_toward)
 		else
 			enemy:set_state(guardian.states.assess_charge)
@@ -396,6 +651,8 @@ guardian.states.attack = {
 		enemy.attack_hit_player = false  -- Track hit to allow only one damage per attack
 	end,
 	update = function(enemy, _dt)
+		update_shield(enemy)
+
 		-- Check hitboxes only once per attack (avoid multiple hits)
 		if not enemy.attack_hit_player then
 			local hitboxes = ATTACK_HITBOXES[enemy.animation.frame]
@@ -414,21 +671,29 @@ guardian.states.attack = {
 guardian.states.back_away = {
 	name = "back_away",
 	start = function(enemy, _)
-		common.set_animation(enemy, guardian.animations.CHARGE)
+		common.set_animation(enemy, guardian.animations.CHARGE, { reverse = true })
 		enemy.direction = common.direction_to_player(enemy)
-		enemy.vx = enemy.direction * -4  -- Move backwards (opposite of facing)
+		enemy.vx = enemy.direction * -BACK_AWAY_SPEED  -- Move backwards (opposite of facing)
 		-- Randomize retreat duration for behavior variety
-		enemy.back_away_timer = 0.5 + math.random() * 1.0  -- Random 0.5 to 1.5 seconds
+		enemy.back_away_timer = BACK_AWAY_TIME_MIN + math.random() * BACK_AWAY_TIME_VARIANCE
 	end,
 	update = function(enemy, dt)
-		check_club_collision(enemy)
+		update_shield(enemy)
+		-- Club is raised in CHARGE animation, use raised hitbox
+		check_attack_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
+
+		-- Dodge incoming projectiles by jumping
+		if is_projectile_nearby(enemy, PROJECTILE_DODGE_RANGE_BACK) then
+			enemy:set_state(guardian.states.jump_away)
+			return
+		end
 
 		enemy.back_away_timer = enemy.back_away_timer - dt
 		if enemy.back_away_timer <= 0 then
 			enemy:set_state(guardian.states.reassess)
 		end
 	end,
-	draw = draw_guardian,
+	draw = draw_club_raised,
 }
 
 guardian.states.reassess = {
@@ -437,6 +702,10 @@ guardian.states.reassess = {
 		enemy.vx = 0
 	end,
 	update = function(enemy, _dt)
+		-- Decision state - immediately transitions, no damage check
+		-- Shield still updated for blocking during this frame
+		update_shield(enemy)
+
 		local player = enemy.target_player
 		if not player then
 			enemy:set_state(guardian.states.idle)
@@ -444,16 +713,16 @@ guardian.states.reassess = {
 		end
 
 		local dx = math.abs(player.x - enemy.x)
-		if dx <= 2 then
+		if dx <= ATTACK_RANGE_REASSESS then
 			enemy.direction = common.direction_to_player(enemy)
 			enemy:set_state(guardian.states.attack)
-		elseif dx <= 6 then
+		elseif dx <= JUMP_TOWARD_RANGE then
 			enemy:set_state(guardian.states.jump_toward)
 		else
 			enemy:set_state(guardian.states.assess_charge)
 		end
 	end,
-	draw = draw_guardian,
+	draw = draw_club_raised,
 }
 
 guardian.states.hit = {
@@ -464,6 +733,7 @@ guardian.states.hit = {
 		enemy.vx = 0  -- Guardian is too heavy for knockback
 	end,
 	update = function(enemy, _dt)
+		update_shield(enemy)
 		-- Club remains dangerous during hit stun
 		check_club_collision(enemy)
 
@@ -478,7 +748,7 @@ guardian.states.jump_away = {
 	name = "jump_away",
 	start = function(enemy, _)
 		start_jump(enemy)
-		local jump_speed = 10 + math.random() * 5
+		local jump_speed = JUMP_AWAY_SPEED_BASE + math.random() * JUMP_AWAY_SPEED_VARIANCE
 		enemy.vx = enemy.direction * -jump_speed  -- Jump away (opposite of facing)
 	end,
 	update = update_airborne,
@@ -491,11 +761,11 @@ guardian.states.jump_toward = {
 		start_jump(enemy)
 		local player = enemy.target_player
 		if player then
-			local target_x = player.x - enemy.direction * 1.25
+			local target_x = player.x - enemy.direction * JUMP_TOWARD_TARGET_OFFSET
 			local distance = target_x - enemy.x
-			enemy.vx = math.max(-12, math.min(12, distance * 2.5))
+			enemy.vx = math.max(-JUMP_TOWARD_MAX_VELOCITY, math.min(JUMP_TOWARD_MAX_VELOCITY, distance * JUMP_TOWARD_DISTANCE_MULT))
 		else
-			enemy.vx = enemy.direction * 10
+			enemy.vx = enemy.direction * JUMP_TOWARD_FALLBACK_SPEED
 		end
 	end,
 	update = update_airborne,
@@ -510,9 +780,10 @@ guardian.states.land = {
 		enemy.vx = 0
 	end,
 	update = function(enemy, _dt)
-		-- Map animation frame to attack hitboxes: land frames 0-7 map to attack frames 2-7
-		-- This allows the landing animation to connect with club swing damage
-		local hitbox_frame = math.min(enemy.animation.frame + 2, 7)
+		update_shield(enemy)
+
+		-- Map animation frame to attack hitboxes: land starts with club raised (attack frame 1)
+		local hitbox_frame = math.min(enemy.animation.frame + 1, FRAME_MAX_ATTACK)
 		check_attack_hitboxes(enemy, ATTACK_HITBOXES[hitbox_frame])
 
 		if enemy.animation:is_finished() then
@@ -527,17 +798,24 @@ guardian.states.charge = {
 	start = function(enemy, _)
 		common.set_animation(enemy, guardian.animations.CHARGE)
 		enemy.direction = common.direction_to_player(enemy)
-		enemy.vx = enemy.direction * 6  -- Run toward player
+		enemy.vx = enemy.direction * CHARGE_SPEED
 	end,
 	update = function(enemy, _dt)
-		check_attack_hitboxes(enemy, ATTACK_HITBOXES[1])
+		update_shield(enemy)
+		check_attack_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
+
+		-- Dodge incoming projectiles by jumping
+		if is_projectile_nearby(enemy) then
+			enemy:set_state(guardian.states.jump_toward)
+			return
+		end
 
 		local player = enemy.target_player
 		if not player then return end
 
 		local dx = player.x - enemy.x
 		-- Attack if within range or if passed player
-		if math.abs(dx) <= 1.25 or player_is_behind(enemy, dx) then
+		if math.abs(dx) <= ATTACK_RANGE or player_is_behind(enemy, dx) then
 			enemy:set_state(guardian.states.attack)
 		end
 	end,
@@ -549,12 +827,13 @@ guardian.states.charge_and_jump = {
 	start = function(enemy, _)
 		common.set_animation(enemy, guardian.animations.CHARGE)
 		enemy.direction = common.direction_to_player(enemy)
-		enemy.vx = enemy.direction * 6  -- Run toward player
+		enemy.vx = enemy.direction * CHARGE_SPEED
 		-- Randomize jump trigger distance for behavior variety
-		enemy.jump_at_distance = 4 + math.random() * 4  -- Random 4-8 units
+		enemy.jump_at_distance = JUMP_DISTANCE_MIN + math.random() * JUMP_DISTANCE_VARIANCE
 	end,
 	update = function(enemy, _dt)
-		check_attack_hitboxes(enemy, ATTACK_HITBOXES[1])
+		update_shield(enemy)
+		check_attack_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
 
 		local player = enemy.target_player
 		if not player then return end
@@ -569,16 +848,83 @@ guardian.states.charge_and_jump = {
 	draw = draw_club_raised,
 }
 
+guardian.states.charge_and_jump_over = {
+	name = "charge_and_jump_over",
+	start = function(enemy, _)
+		common.set_animation(enemy, guardian.animations.CHARGE)
+		enemy.direction = common.direction_to_player(enemy)
+		enemy.vx = enemy.direction * CHARGE_SPEED
+		-- Randomize jump trigger distance (3-5 units)
+		enemy.jump_at_distance = JUMP_OVER_DISTANCE_MIN + math.random() * JUMP_OVER_DISTANCE_VARIANCE
+	end,
+	update = function(enemy, _dt)
+		update_shield(enemy)
+		check_attack_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
+
+		local player = enemy.target_player
+		if not player then return end
+
+		local dx = player.x - enemy.x
+		if math.abs(dx) <= enemy.jump_at_distance then
+			enemy:set_state(guardian.states.jump_over)
+		elseif player_is_behind(enemy, dx) then
+			enemy:set_state(guardian.states.attack)
+		end
+	end,
+	draw = draw_club_raised,
+}
+
+guardian.states.jump_over = {
+	name = "jump_over",
+	start = function(enemy, _)
+		common.set_animation(enemy, guardian.animations.JUMP_AWAY)
+		enemy.direction = common.direction_to_player(enemy)
+		enemy.vy = JUMP_OVER_VELOCITY
+		enemy.vx = enemy.direction * JUMP_OVER_SPEED
+		enemy.gravity = JUMP_GRAVITY
+		enemy.has_passed_player = false
+	end,
+	update = function(enemy, _dt)
+		update_shield(enemy)
+		check_attack_hitboxes(enemy, ATTACK_HITBOXES[FRAME_CLUB_RAISED])
+
+		-- Hold animation on club raised frame while airborne
+		enemy.animation.frame = math.min(enemy.animation.frame, FRAME_CLUB_RAISED)
+
+		-- Check if passed player and turn to face them
+		if not enemy.has_passed_player then
+			local player = enemy.target_player
+			if player then
+				local dx = player.x - enemy.x
+				if player_is_behind(enemy, dx) then
+					enemy.direction = -enemy.direction
+					enemy.has_passed_player = true
+				end
+			end
+		end
+
+		if enemy.is_grounded then
+			enemy:set_state(guardian.states.land)
+		end
+	end,
+	draw = draw_club_raised,
+}
+
 guardian.states.assess_charge = {
 	name = "assess_charge",
 	start = function(enemy, _)
 		enemy.vx = 0
 	end,
 	update = function(enemy, _dt)
-		if math.random() < 0.5 then
+		update_shield(enemy)
+
+		local roll = math.random()
+		if roll < 1/3 then
 			enemy:set_state(guardian.states.charge)
-		else
+		elseif roll < 2/3 then
 			enemy:set_state(guardian.states.charge_and_jump)
+		else
+			enemy:set_state(guardian.states.charge_and_jump_over)
 		end
 	end,
 	draw = draw_guardian,
@@ -588,12 +934,14 @@ guardian.states.death = {
 	name = "death",
 	start = function(enemy, _)
 		common.set_animation(enemy, guardian.animations.DEATH)
-		enemy.vx = (enemy.hit_direction or -1) * 4
+		enemy.vx = (enemy.hit_direction or -1) * DEATH_KNOCKBACK_SPEED
 		enemy.vy = 0
 		enemy.gravity = 0
+		-- Clean up shield colliders on death
+		remove_shield(enemy)
 	end,
 	update = function(enemy, dt)
-		enemy.vx = common.apply_friction(enemy.vx, 0.9, dt)
+		enemy.vx = common.apply_friction(enemy.vx, DEATH_FRICTION, dt)
 		if enemy.animation:is_finished() then
 			enemy.marked_for_destruction = true
 		end
@@ -653,14 +1001,14 @@ local function custom_on_hit(self, _source_type, source)
 end
 
 return {
-	box = { w = 0.625, h = 1, x = 0.125, y = 0 },
-	gravity = 1.5,
-	max_fall_speed = 20,
-	max_health = 6,
-	armor = 1,
-	damage = 1,  -- Body contact damage
+	box = { w = BOX_WIDTH, h = BOX_HEIGHT, x = BOX_X, y = BOX_Y },
+	gravity = GRAVITY,
+	max_fall_speed = MAX_FALL_SPEED,
+	max_health = MAX_HEALTH,
+	armor = ARMOR,
+	damage = BODY_DAMAGE,
 	death_sound = "spike_slug",
-	loot = { xp = 12, gold = { min = 5, max = 15 } },
+	loot = { xp = LOOT_XP, gold = { min = LOOT_GOLD_MIN, max = LOOT_GOLD_MAX } },
 	states = guardian.states,
 	animations = guardian.animations,
 	initial_state = "idle",

@@ -162,9 +162,19 @@ Each stat upgrade costs XP equal to the "Next Level" requirement and increases p
 | Health   | `max_health`        | +1 HP           |
 | Stamina  | `max_stamina`       | +1 SP           |
 | Energy   | `max_energy`        | +1 EP           |
-| Defence  | `defense`           | +1 damage reduction |
-| Recovery | `recovery`          | +1 regen rate   |
-| Critical | `critical_chance`   | +1% crit chance |
+| Defence  | `defense`           | Diminishing returns (see below) |
+| Recovery | `recovery`          | Diminishing returns (see below) |
+| Critical | `critical_chance`   | Diminishing returns (see below) |
+
+**Diminishing Returns (`player/stats.lua`):**
+
+Defence, Recovery, and Critical use per-stat progression curves where early points grant more benefit:
+
+| Stat     | Point 1 | Point 2 | Point 3 | Point 4 | Point 5 | Point 6+ |
+|----------|---------|---------|---------|---------|---------|----------|
+| Defence  | 5%      | 5%      | 5%      | 3%      | 3%      | 3%/2.5%  |
+| Recovery | 5%      | 5%      | 5%      | 5%      | 5%      | 2.5%     |
+| Critical | 5%      | 4%      | 3%      | 2.5%    | 2.5%    | 2.5%     |
 
 ### Upgrade Flow
 
@@ -272,6 +282,7 @@ end
 
 - `player/init.lua` - Player state registry and core logic
 - `player/common.lua` - Shared physics, collision utilities, stamina costs, rendering helpers
+- `player/stats.lua` - Stat percentage calculations with diminishing returns (O(1) lookup)
 - `player/attack.lua` - Combat combo system (includes sword hitbox)
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state

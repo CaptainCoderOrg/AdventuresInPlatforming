@@ -16,7 +16,7 @@ function throw.start(player)
 	player.energy_used = math.min(player.energy_used + energy_cost, player.max_energy)
 	player.animation = Animation.new(common.animations.THROW)
 	player.throw_state.remaining_time = (common.animations.THROW.frame_count * common.animations.THROW.ms_per_frame) / 1000
-	player.projectile.create(player.x, player.y, player.direction)
+	player.projectile.create(player.x, player.y, player.direction, player)
 	common.clear_input_queue(player)
 end
 

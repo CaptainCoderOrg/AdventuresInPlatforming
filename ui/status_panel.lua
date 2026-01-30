@@ -5,6 +5,7 @@ local sprites = require("sprites")
 local controls = require("controls")
 local Playtime = require("Playtime")
 local SaveSlots = require("SaveSlots")
+local stats = require("player.stats")
 
 local status_panel = {}
 status_panel.__index = status_panel
@@ -26,6 +27,8 @@ for i = 3, MAX_LEVEL do
     EXP_TABLE[i] = EXP_TABLE[i - 1] + EXP_TABLE[i - 2]
 end
 
+---@param level number Player level to query
+---@return number Experience required for the specified level
 local function exp_for_next_level(level)
     local clamped_level = math.max(1, math.min(level, MAX_LEVEL))
     return EXP_TABLE[clamped_level]
@@ -41,8 +44,11 @@ local LEVELABLE_STATS = {
     Critical = true,
 }
 
--- Cost to level up a stat is the "Next Level" experience requirement
--- based on player level + total pending upgrades
+--- Returns the XP cost for the next stat upgrade.
+--- Cost is the "Next Level" XP requirement based on player level + pending upgrades.
+---@param player_level number Current player level
+---@param total_pending_upgrades number Number of pending stat upgrades
+---@return number XP cost for the next upgrade
 local function stat_level_cost(player_level, total_pending_upgrades)
     return exp_for_next_level(player_level + total_pending_upgrades)
 end
@@ -273,11 +279,15 @@ function status_panel:build_stats_rows()
         return nil
     end
 
-    -- Helper to get suffix for percentage stats (shows percentage increase)
-    local function get_percent_suffix(stat_name)
+    -- Helper to get suffix for percentage stats (shows percentage increase with diminishing returns)
+    -- stat_type is derived from stat_name by lowercasing (e.g., "Defence" -> "defence")
+    local function get_percent_suffix(stat_name, current_points)
         local count = self:get_pending_count(stat_name)
         if count > 0 then
-            return string.format("(+%.1f%%)", count * 2.5)
+            local stat_type = stat_name:lower()
+            local current_percent = stats.calculate_percent(current_points, stat_type)
+            local new_percent = stats.calculate_percent(current_points + count, stat_type)
+            return string.format("(+%.1f%%)", new_percent - current_percent)
         end
         return nil
     end
@@ -291,9 +301,9 @@ function status_panel:build_stats_rows()
         { label = "Health",     value = tostring(player.max_health),    suffix = get_stat_suffix("Health"),   suffix_color = "#88FF88" },
         { label = "Stamina",    value = tostring(player.max_stamina),   suffix = get_stat_suffix("Stamina"),  suffix_color = "#88FF88" },
         { label = "Energy",     value = tostring(player.max_energy),    suffix = get_stat_suffix("Energy"),   suffix_color = "#88FF88" },
-        { label = "Defence",    value = string.format("%.1f%%", player:defense_percent()), suffix = get_percent_suffix("Defence"),  suffix_color = "#88FF88" },
-        { label = "Recovery",   value = string.format("%.1f%%", player:recovery_percent()), suffix = get_percent_suffix("Recovery"), suffix_color = "#88FF88" },
-        { label = "Critical",   value = string.format("%.1f%%", player:critical_percent()), suffix = get_percent_suffix("Critical"), suffix_color = "#88FF88" },
+        { label = "Defence",    value = string.format("%.1f%%", player:defense_percent()), suffix = get_percent_suffix("Defence", player.defense),  suffix_color = "#88FF88" },
+        { label = "Recovery",   value = string.format("%.1f%%", player:recovery_percent()), suffix = get_percent_suffix("Recovery", player.recovery), suffix_color = "#88FF88" },
+        { label = "Critical",   value = string.format("%.1f%%", player:critical_percent()), suffix = get_percent_suffix("Critical", player.critical_chance), suffix_color = "#88FF88" },
         {},
         { label = "Time",       value = SaveSlots.format_playtime(Playtime.get()), monospace = true },
     }

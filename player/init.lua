@@ -9,6 +9,7 @@ local Projectile = require('Projectile')
 local controls = require('controls')
 local Effects = require('Effects')
 local audio = require('audio')
+local stats = require('player.stats')
 
 local Player = {}
 Player.__index = Player
@@ -80,9 +81,9 @@ function Player.new()
 	self.level = 1              -- Player level, gates content and affects base stats
 	self.experience = 0         -- XP toward next level
 	self.gold = 0               -- Currency for purchases
-	self.defense = 0            -- Reduces incoming damage (points, each = 2.5%)
-	self.recovery = 0           -- Increases stamina recovery rate (points, each = 2.5%)
-	self.critical_chance = 0    -- Percent chance for critical hit damage (points, each = 2.5%)
+	self.defense = 0            -- Reduces incoming damage (points, diminishing returns)
+	self.recovery = 0           -- Increases stamina recovery rate (points, diminishing returns)
+	self.critical_chance = 0    -- Percent chance for critical hit damage (points, diminishing returns)
 	self.stat_upgrades = {      -- Track how many times each stat was upgraded (for refunds)
 		Health = 0,
 		Stamina = 0,
@@ -296,22 +297,22 @@ function Player:health()
 	return math.max(0, self.max_health - self.damage)
 end
 
---- Returns defence as a percentage (each point = 2.5%).
+--- Returns defence as a percentage (diminishing returns per point).
 ---@return number Defence percentage
 function Player:defense_percent()
-	return self.defense * 2.5
+	return stats.calculate_percent(self.defense, "defence")
 end
 
---- Returns recovery bonus as a percentage (each point = 2.5%).
+--- Returns recovery bonus as a percentage (diminishing returns per point).
 ---@return number Recovery percentage bonus
 function Player:recovery_percent()
-	return self.recovery * 2.5
+	return stats.calculate_percent(self.recovery, "recovery")
 end
 
---- Returns critical chance as a percentage (each point = 2.5%).
+--- Returns critical chance as a percentage (diminishing returns per point).
 ---@return number Critical chance percentage
 function Player:critical_percent()
-	return self.critical_chance * 2.5
+	return stats.calculate_percent(self.critical_chance, "critical")
 end
 
 --- Applies damage to player, transitioning to hit or death state.
@@ -333,8 +334,10 @@ function Player:take_damage(amount, source_x)
 		local current_stamina = self.max_stamina - self.stamina_used
 
 		if from_front and current_stamina > 0 then
-			-- Successful block: drain stamina, apply knockback, stay in block state
-			local stamina_cost = amount * common.BLOCK_STAMINA_COST_PER_DAMAGE
+			-- Successful block: drain stamina (reduced by doubled defence, capped at 100%), apply knockback, stay in block state
+			local shield_defense = math.min(100, self:defense_percent() * 2)
+			local reduction = 1 - (shield_defense / 100)
+			local stamina_cost = amount * common.BLOCK_STAMINA_COST_PER_DAMAGE * reduction
 			self.stamina_used = self.stamina_used + stamina_cost
 			self.stamina_regen_timer = 0
 			-- Knockback away from source
@@ -347,6 +350,10 @@ function Player:take_damage(amount, source_x)
 			world.remove_shield(self)
 		end
 	end
+
+	-- Apply defence reduction
+	local reduction = 1 - (self:defense_percent() / 100)
+	amount = amount * reduction
 
 	self.damage = math.min(self.damage + amount, self.max_health)
 	audio.play_squish_sound()
@@ -427,9 +434,16 @@ function Player:update(dt)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
 		local is_blocking = self.state == self.states.block or self.state == self.states.block_move
-		local is_slowed = self:is_fatigued() or is_blocking
+		local is_fatigued = self:is_fatigued()
+		local is_slowed = is_fatigued or is_blocking
 		local regen_multiplier = is_slowed and FATIGUE_REGEN_MULTIPLIER or 1
-		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * dt)
+		-- Recovery bonus doubled while fatigued (helps escape fatigue faster)
+		local recovery_percent = self:recovery_percent()
+		if is_fatigued then
+			recovery_percent = recovery_percent * 2
+		end
+		local recovery_bonus = 1 + (recovery_percent / 100)
+		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * recovery_bonus * dt)
 	end
 
 	-- Check for fatigue state transition (show "TIRED" text when entering fatigue)

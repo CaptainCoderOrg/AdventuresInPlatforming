@@ -99,6 +99,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 ### Player
 - `player/init.lua` - State registry and core logic
 - `player/common.lua` - Physics, collision, stamina costs
+- `player/stats.lua` - Stat percentage calculations (diminishing returns)
 - `Animation/init.lua` - Delta-time animation system
 
 ### Entities

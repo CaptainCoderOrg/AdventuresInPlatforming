@@ -154,7 +154,14 @@ function Projectile:on_collision(collision)
         audio.play_solid_sound()
     elseif collision.other and collision.other.owner and collision.other.owner.is_enemy then
         local enemy = collision.other.owner
-        enemy:on_hit("projectile", self)
+        -- Roll for critical hit if owner (player) exists
+        local crit_chance = self.owner and self.owner.critical_percent and self.owner:critical_percent() or 0
+        local is_crit = math.random() * 100 < crit_chance
+        local damage = self.damage
+        if is_crit then
+            damage = damage * 3
+        end
+        enemy:on_hit("projectile", { damage = damage, vx = self.vx, is_crit = is_crit })
     else
         audio.play_solid_sound()
     end
@@ -174,8 +181,9 @@ end
 ---@param direction number Facing direction (-1 left, 1 right)
 ---@param effect_callback function|nil Effect spawner on collision (defaults to Effects.create_hit)
 ---@param damage number|nil Damage dealt to enemies (defaults to 1)
+---@param owner table|nil Player who threw this projectile (for critical hits)
 ---@return table Projectile instance
-function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage)
+function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage, owner)
 	local self = setmetatable({}, Projectile)
     self.create_effect = effect_callback or Effects.create_hit
 	self.id = name .. "_" .. Projectile.next_id
@@ -190,6 +198,7 @@ function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direct
 	self.vy = vy
 	self.gravity_scale = gravity_scale
 	self.damage = damage or 1
+	self.owner = owner
 	self.box = { w = 0.5, h = 0.5, x = 0, y = 0 }
 	self.is_projectile = true
 	self.marked_for_destruction = false
@@ -202,20 +211,22 @@ end
 ---@param x number Spawn X position in tile coordinates
 ---@param y number Spawn Y position in tile coordinates
 ---@param direction number Throw direction (-1 left, 1 right)
+---@param owner table|nil Player who threw this projectile (for critical hits)
 ---@return table The created projectile instance
-function Projectile.create_axe(x, y, direction)
+function Projectile.create_axe(x, y, direction, owner)
     audio.play_axe_throw_sound()
-    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, 1)
+    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, 1, owner)
 end
 
 --- Creates and spawns a shuriken projectile with straight trajectory.
 ---@param x number Spawn X position in tile coordinates
 ---@param y number Spawn Y position in tile coordinates
 ---@param direction number Throw direction (-1 left, 1 right)
+---@param owner table|nil Player who threw this projectile (for critical hits)
 ---@return table The created projectile instance
-function Projectile.create_shuriken(x, y, direction)
+function Projectile.create_shuriken(x, y, direction, owner)
     audio.play_shuriken_throw_sound()
-    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, 2)
+    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, 2, owner)
 end
 
 return Projectile

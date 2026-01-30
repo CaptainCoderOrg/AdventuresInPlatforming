@@ -243,11 +243,15 @@ end
 
 --- Debug function to test hit state via Y key press.
 --- Applies 1 damage to player if not invincible.
+--- Also handles '8' key to grant 8000 experience for testing.
 ---@param player table The player object
 ---@param _cols table Collision results (unused, kept for interface consistency)
 function common.check_hit(player, _cols)
     if canvas.is_key_pressed(canvas.keys.Y) and not player:is_invincible() then
         player:take_damage(1)
+    end
+    if canvas.is_key_pressed(canvas.keys.DIGIT_8) then
+        player.experience = player.experience + 8000
     end
 end
 

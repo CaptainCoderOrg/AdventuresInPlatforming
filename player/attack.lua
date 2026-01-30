@@ -74,9 +74,16 @@ local function check_attack_hits(player, hitbox)
 	-- Query combat system for enemies overlapping sword hitbox
 	filter_player = player
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
+	local crit_threshold = player:critical_percent()
 
 	for _, enemy in ipairs(hits) do
-		enemy:on_hit("weapon", { damage = player.weapon_damage, x = player.x })
+		-- Roll for critical hit
+		local is_crit = math.random() * 100 < crit_threshold
+		local damage = player.weapon_damage
+		if is_crit then
+			damage = damage * 3
+		end
+		enemy:on_hit("weapon", { damage = damage, x = player.x, is_crit = is_crit })
 		player.attack_state.hit_enemies[enemy] = true
 	end
 end

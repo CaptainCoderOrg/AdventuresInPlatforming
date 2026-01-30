@@ -111,12 +111,12 @@ function Effects.draw()
 		effect = next(state.all, effect)
 	end
 
-	-- Set font once for all text rendering
+	-- Draw damage texts (per-text font size for crits)
 	canvas.set_font_family("menu_font")
-	canvas.set_font_size(6*config.ui.SCALE)
-
 	local text = next(state.damage_texts)
 	while text do
+		local font_size = text.font_size or 6
+		canvas.set_font_size(font_size * config.ui.SCALE)
 		local alpha = 1 - (text.elapsed / text.lifetime)
 		canvas.set_global_alpha(alpha)
 		canvas.set_color(text.color)
@@ -125,6 +125,9 @@ function Effects.draw()
 		canvas.draw_text(px, py, text.display)
 		text = next(state.damage_texts, text)
 	end
+
+	-- Set font for status texts
+	canvas.set_font_size(6 * config.ui.SCALE)
 
 	text = next(state.status_texts)
 	while text do
@@ -204,11 +207,13 @@ end
 ---@param x number X position in tile coordinates
 ---@param y number Y position in tile coordinates
 ---@param damage number Damage amount (0 for blocked hits)
+---@param is_crit boolean|nil Whether this is a critical hit (larger text)
 ---@return nil
-function Effects.create_damage_text(x, y, damage)
+function Effects.create_damage_text(x, y, damage, is_crit)
 	local display = tostring(damage)
+	local font_size = is_crit and 10 or 6
 	canvas.set_font_family("menu_font")
-	canvas.set_font_size(6*config.ui.SCALE)
+	canvas.set_font_size(font_size * config.ui.SCALE)
 	local cached_width = canvas.get_text_width(display)
 
 	local text = {
@@ -216,10 +221,11 @@ function Effects.create_damage_text(x, y, damage)
 		y = y,
 		vy = -2,
 		display = display,
-		color = damage > 0 and "#FF0000" or "#FFFFFF",
+		color = is_crit and "#FFFF00" or (damage > 0 and "#FF0000" or "#FFFFFF"),
 		lifetime = 0.8,
 		elapsed = 0,
 		cached_width = cached_width,
+		font_size = font_size,
 	}
 	state.damage_texts[text] = true
 end

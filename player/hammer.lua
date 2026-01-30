@@ -74,11 +74,17 @@ local function check_hammer_hits(player, hitbox)
 
 	filter_player = player
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
+	local crit_threshold = player:critical_percent()
 
 	for i = 1, #hits do
 		local enemy = hits[i]
-		hammer_hit_source.x = player.x
-		enemy:on_hit("weapon", hammer_hit_source)
+		-- Roll for critical hit
+		local is_crit = math.random() * 100 < crit_threshold
+		local damage = hammer_hit_source.damage
+		if is_crit then
+			damage = damage * 3
+		end
+		enemy:on_hit("weapon", { damage = damage, x = player.x, is_crit = is_crit })
 		player.hammer_state.hit_enemies[enemy] = true
 	end
 end

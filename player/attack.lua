@@ -5,7 +5,7 @@ local common = require('player.common')
 local controls = require('controls')
 local Effects = require('Effects')
 local prop_common = require('Prop.common')
-local world = require('world')
+local shield = require('player.shield')
 
 
 --- Attack state: Player performs melee combo attacks.
@@ -25,6 +25,7 @@ local SWORD_Y_OFFSET = -0.1  -- Center vertically relative to player box
 
 -- Reusable state for filters (avoids closure allocation per frame)
 local filter_player = nil
+local attack_hit_source = { damage = 0, x = 0, is_crit = false }
 
 --- Filter function for enemy hits (uses module-level state to avoid closure allocation)
 ---@param entity table Entity to check
@@ -76,14 +77,14 @@ local function check_attack_hits(player, hitbox)
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
 	local crit_threshold = player:critical_percent()
 
-	for _, enemy in ipairs(hits) do
+	for i = 1, #hits do
+		local enemy = hits[i]
 		-- Roll for critical hit
 		local is_crit = math.random() * 100 < crit_threshold
-		local damage = player.weapon_damage
-		if is_crit then
-			damage = damage * 3
-		end
-		enemy:on_hit("weapon", { damage = damage, x = player.x, is_crit = is_crit })
+		attack_hit_source.damage = is_crit and (player.weapon_damage * 3) or player.weapon_damage
+		attack_hit_source.x = player.x
+		attack_hit_source.is_crit = is_crit
+		enemy:on_hit("weapon", attack_hit_source)
 		player.attack_state.hit_enemies[enemy] = true
 	end
 end
@@ -123,7 +124,7 @@ end
 --- Removes shield if transitioning from block/block_move state.
 ---@param player table The player object
 function attack.start(player)
-    world.remove_shield(player)
+    shield.remove(player)
     player.attack_state.count = 1
     player.attack_state.next_anim_ix = 1
     common.clear_input_queue(player)

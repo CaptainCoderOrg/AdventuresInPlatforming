@@ -20,6 +20,7 @@ local SaveSlots = require("SaveSlots")
 local Playtime = require("Playtime")
 local rest_state = require("player.rest")
 local proximity_audio = require("proximity_audio")
+local shield = require("player.shield")
 
 -- UI
 local hud = require("ui/hud")
@@ -393,7 +394,7 @@ end
 ---@return nil
 cleanup_level = function()
     world.remove_collider(player)
-    world.remove_shield(player)
+    shield.remove(player)
     combat.remove(player)
     world.clear_probes()
     platforms.clear()

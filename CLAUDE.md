@@ -20,6 +20,7 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Cyan boxes: Enemy hitboxes / Bridge colliders
   - Magenta boxes: Rotated enemy combat hitboxes (slope-following enemies)
   - Orange boxes: Sign hitboxes / Spear projectile hitboxes
+  - Blue boxes: Player shield collider
 - `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
 - `1`/`2` - Switch between level1/title music
@@ -99,6 +100,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 ### Player
 - `player/init.lua` - State registry and core logic
 - `player/common.lua` - Physics, collision, stamina costs
+- `player/shield.lua` - Shield lifecycle, blocking, knockback
 - `player/stats.lua` - Stat percentage calculations (diminishing returns)
 - `Animation/init.lua` - Delta-time animation system
 

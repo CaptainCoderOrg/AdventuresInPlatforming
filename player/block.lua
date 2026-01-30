@@ -1,6 +1,6 @@
 local common = require('player.common')
 local controls = require('controls')
-local world = require('world')
+local shield = require('player.shield')
 
 --- Block state: Player is in a defensive stance.
 --- Stops horizontal movement when grounded. Exits when block button is released.
@@ -10,7 +10,7 @@ local block = { name = "block" }
 --- Called when entering block state. Sets block animation and creates shield.
 ---@param player table The player object
 function block.start(player)
-	common.init_block_state(player, common.animations.BLOCK)
+	shield.init_state(player, common.animations.BLOCK)
 end
 
 --- Updates block state. Applies gravity, knockback physics, and updates shield position.
@@ -19,28 +19,23 @@ end
 function block.update(player, dt)
 	common.handle_gravity(player, dt)
 
-	local kb = common.decay_knockback(player, dt)
+	local kb = shield.decay_knockback(player, dt)
 	if kb ~= 0 then
 		player.vx = kb
 	elseif player.is_grounded then
 		player.vx = 0
 	end
 
-	world.update_shield(player, common.SHIELD_BOX)
+	shield.update(player)
 end
 
 --- Handles input while blocking. Allows direction change, exits on block release or guard break.
 --- Transitions to block_move when moving while grounded. Allows attacking from block.
 ---@param player table The player object
 function block.input(player)
-	-- Guard break: exit if fatigued (stamina < 0)
-	if player:is_fatigued() then
-		common.exit_block(player)
-		return
-	end
-
+	if shield.check_guard_break(player) then return end
 	if not controls.block_down() then
-		common.exit_block(player)
+		shield.exit_state(player)
 		return
 	end
 

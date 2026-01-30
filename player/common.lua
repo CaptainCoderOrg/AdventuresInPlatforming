@@ -5,9 +5,8 @@ local combat = require('combat')
 local config = require('config')
 local controls = require('controls')
 local Effects = require('Effects')
-local sprites = require('sprites')
-local world = require('world')
 local Prop = require('Prop')
+local sprites = require('sprites')
 
 local common = {}
 
@@ -32,18 +31,8 @@ common.AIR_JUMP_STAMINA_COST = 1
 common.DASH_STAMINA_COST = 2.5
 -- Wall jump costs 1: matches air jump cost
 common.WALL_JUMP_STAMINA_COST = 1
--- Block stamina cost: 1.5 stamina per point of damage blocked (5 stamina blocks ~3 damage)
-common.BLOCK_STAMINA_COST_PER_DAMAGE = 1.5
 -- Block move speed: 35% of normal speed for slow defensive movement
 common.BLOCK_MOVE_SPEED_MULTIPLIER = 0.35
-
--- Shield dimensions: 4px (0.25 tiles) wide, matches player height
-common.SHIELD_BOX = { w = 0.25, h = 0.85 }
-
--- Knockback decay rate (per 60fps frame, applied with dt scaling)
-common.KNOCKBACK_DECAY = 0.85
--- Knockback threshold below which velocity is zeroed
-common.KNOCKBACK_THRESHOLD = 0.1
 
 -- Animations (converted to delta-time based, milliseconds per frame)
 common.animations = {
@@ -545,67 +534,16 @@ function common.create_melee_hitbox(player, width, height, y_offset)
 	return _melee_hitbox
 end
 
---- Applies knockback decay to block_state.knockback_velocity when grounded.
---- Returns updated knockback velocity (also stored in player.block_state).
----@param player table The player object
----@param dt number Delta time in seconds
----@return number Updated knockback velocity
-function common.decay_knockback(player, dt)
-	local kb = player.block_state.knockback_velocity
-	if kb == 0 then return 0 end
-
-	if player.is_grounded then
-		kb = kb * (common.KNOCKBACK_DECAY ^ (dt * 60))
-		if math.abs(kb) < common.KNOCKBACK_THRESHOLD then
-			kb = 0
-		end
-		player.block_state.knockback_velocity = kb
-	end
-	return kb
-end
-
---- Initializes block state: sets animation, clears knockback, creates shield.
---- Shared by block and block_move states.
----@param player table The player object
----@param animation table Animation definition to use
-function common.init_block_state(player, animation)
-	player.animation = Animation.new(animation)
-	player.block_state.knockback_velocity = 0
-	world.add_shield(player, common.SHIELD_BOX)
-end
-
---- Exits block state: removes shield, clears knockback, transitions to idle.
----@param player table The player object
-function common.exit_block(player)
-	world.remove_shield(player)
-	player.block_state.knockback_velocity = 0
-	player:set_state(player.states.idle)
-end
-
---- Draws debug shield bounding box (blue) when config.bounding_boxes is enabled.
----@param player table The player object
-local function draw_shield_debug(player)
-	if not config.bounding_boxes then return end
-
-	local shield = common.SHIELD_BOX
-	local x_offset
-	if player.direction == 1 then
-		x_offset = player.box.x + player.box.w
-	else
-		x_offset = player.box.x - shield.w
-	end
-	local sx = (player.x + x_offset) * sprites.tile_size
-	local sy = (player.y + player.box.y) * sprites.tile_size
-	canvas.set_color("#0088FF")
-	canvas.draw_rect(sx, sy, shield.w * sprites.tile_size, shield.h * sprites.tile_size)
-end
+-- Lazy-loaded to avoid circular dependency (shield requires Animation, common loaded early)
+local shield = nil
 
 --- Draws player animation and shield debug box.
 --- Shared by block and block_move states.
 ---@param player table The player object
 function common.draw_blocking(player)
 	common.draw(player)
-	draw_shield_debug(player)
+	shield = shield or require('player.shield')
+	shield.draw_debug(player)
 end
 
 --- Standard draw helper that applies pressure plate lift.

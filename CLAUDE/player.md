@@ -53,9 +53,13 @@ Player combat abilities managed through state machine.
    - Locks player movement (vx=0, vy=0)
    - 32px wide sprite
 
-4. **Block** - `player/block.lua`
+4. **Block** - `player/block.lua`, `player/block_move.lua`
    - Defensive stance (hold U or Gamepad RT)
-   - Stops horizontal movement when grounded
+   - Stops horizontal movement (block) or slows to 35% (block_move)
+   - Shield logic centralized in `player/shield.lua`
+   - Blocks damage from front, drains stamina proportional to damage
+   - Guard break exits to idle when stamina depleted
+   - Knockback applied when absorbing hits
    - Gravity still applies
 
 5. **Hit** - `player/hit.lua`
@@ -217,6 +221,9 @@ self.attack_state = {           -- Combo tracking
 self.hit_state = {              -- Hit stun tracking
     knockback_speed, remaining_time
 }
+self.block_state = {            -- Shield knockback tracking
+    knockback_velocity          -- Current knockback velocity from blocked hits
+}
 self.input_queue = {            -- Centralized input buffering
     jump, attack, throw         -- Boolean flags for pending inputs
 }
@@ -287,6 +294,7 @@ end
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance
+- `player/shield.lua` - Shield lifecycle, damage blocking, knockback physics
 - `player/hit.lua` - Hit stun with invincibility and input queueing
 - `player/rest.lua` - Rest state (campfire interaction, save trigger)
 - `Animation/init.lua` - Delta-time animation system

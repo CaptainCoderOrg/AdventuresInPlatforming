@@ -1,6 +1,6 @@
 local Animation = require('Animation')
 local common = require('player.common')
-local world = require('world')
+local shield = require('player.shield')
 
 
 --- Hit state: Player is stunned after taking damage.
@@ -9,9 +9,9 @@ local hit = { name = "hit" }
 local INVINCIBLE_TIME = 1.2
 
 --- Called when entering hit state. Sets knockback and clears input queue.
---- @param player table The player object
+---@param player table The player object
 function hit.start(player)
-	world.remove_shield(player)  -- Clean up shield if blocking when hit from behind
+	shield.remove(player)  -- Clean up shield if blocking when hit from behind
 	player.is_climbing = false  -- Prevent infinite fall if hit while on a ladder
 	player.hit_state.knockback_speed = 2
 	player.animation = Animation.new(common.animations.HIT)
@@ -22,8 +22,8 @@ end
 
 --- Updates hit state. Applies knockback velocity and gravity.
 --- Grants invincibility and processes input queue on completion.
---- @param player table The player object
---- @param dt number Delta time
+---@param player table The player object
+---@param dt number Delta time
 function hit.update(player, dt)
 	player.vx = -player.direction * player.hit_state.knockback_speed
 	common.handle_gravity(player, dt)
@@ -37,13 +37,13 @@ function hit.update(player, dt)
 end
 
 --- Handles input while stunned. Queues jump/attack/throw for after stun ends.
---- @param player table The player object
+---@param player table The player object
 function hit.input(player)
 	common.queue_inputs(player)
 end
 
 --- Renders the player in hit stun animation.
---- @param player table The player object
+---@param player table The player object
 function hit.draw(player)
 	common.draw(player)
 end

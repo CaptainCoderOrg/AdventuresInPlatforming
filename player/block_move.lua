@@ -1,6 +1,6 @@
 local common = require('player.common')
 local controls = require('controls')
-local world = require('world')
+local shield = require('player.shield')
 
 --- Block move state: Player is moving slowly while blocking.
 --- Maintains shield collider. Exits to block when stopping or airborne, idle when block released.
@@ -9,22 +9,16 @@ local block_move = { name = "block_move" }
 --- Called when entering block_move state. Sets block_move animation and creates/updates shield.
 ---@param player table The player object
 function block_move.start(player)
-	common.init_block_state(player, common.animations.BLOCK_MOVE)
+	shield.init_state(player, common.animations.BLOCK_MOVE)
 end
 
 --- Handles input while block moving. Updates direction, exits to block or idle.
 --- Allows attacking from block_move.
 ---@param player table The player object
 function block_move.input(player)
-	-- Guard break: exit if fatigued (stamina < 0)
-	if player:is_fatigued() then
-		common.exit_block(player)
-		return
-	end
-
-	-- Exit to idle when block released
+	if shield.check_guard_break(player) then return end
 	if not controls.block_down() then
-		common.exit_block(player)
+		shield.exit_state(player)
 		return
 	end
 
@@ -54,7 +48,7 @@ end
 function block_move.update(player, dt)
 	common.handle_gravity(player, dt)
 
-	local kb = common.decay_knockback(player, dt)
+	local kb = shield.decay_knockback(player, dt)
 	if kb ~= 0 then
 		player.vx = kb
 	else
@@ -77,7 +71,7 @@ function block_move.update(player, dt)
 		end
 	end
 
-	world.update_shield(player, common.SHIELD_BOX)
+	shield.update(player)
 end
 
 --- Renders the player in block_move animation.

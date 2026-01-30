@@ -343,12 +343,16 @@ function Enemy:check_player_overlap(player)
 		local shield_hit = false
 
 		-- Phasing enemies (ghosts) use directional check since they ignore collision shapes
+		-- Still requires body overlap - direction determines if player CAN block, not if contact occurred
 		if self.directional_shield then
-			local is_blocking = player.state == player.states.block or player.state == player.states.block_move
-			if is_blocking then
-				local enemy_on_left = self.x < player.x
-				local player_facing_left = player.direction == -1
-				shield_hit = enemy_on_left == player_facing_left
+			local collides, _ = enemy_shape:collidesWith(player_shape)
+			if collides then
+				local is_blocking = player.state == player.states.block or player.state == player.states.block_move
+				if is_blocking then
+					local enemy_on_left = self.x < player.x
+					local player_facing_left = player.direction == -1
+					shield_hit = enemy_on_left == player_facing_left
+				end
 			end
 		else
 			-- Non-phasing enemies: physics flag + shape overlap fallback

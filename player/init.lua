@@ -4,6 +4,7 @@ local config = require('config')
 local world = require('world')
 local combat = require('combat')
 local common = require('player.common')
+local shield = require('player.shield')
 local Animation = require('Animation')
 local Projectile = require('Projectile')
 local controls = require('controls')
@@ -47,9 +48,6 @@ local FATIGUE_REGEN_MULTIPLIER = 0.25
 local FATIGUE_ENTRY_PENALTY = 1
 -- Seconds between sweat particle spawns (50ms = rapid dripping effect)
 local FATIGUE_PARTICLE_INTERVAL = 0.05
-
--- Block knockback speed when absorbing a hit with shield
-local BLOCK_KNOCKBACK_SPEED = 8
 
 --- Creates a new player instance.
 --- @return table A new player object
@@ -236,6 +234,7 @@ function Player.new()
 end
 
 --- Cycles to the next available projectile type (wraps around to first).
+--- Modifies `self.projectile` and `self.projectile_ix`.
 function Player:next_projectile()
 	self.projectile_ix = self.projectile_ix + 1
 	if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
@@ -327,29 +326,8 @@ function Player:take_damage(amount, source_x)
 	if self.state == self.states.hit then return end
 
 	-- Shield check: block damage from front when in block or block_move state
-	local is_blocking = self.state == self.states.block or self.state == self.states.block_move
-	if is_blocking and source_x then
-		local from_front = (self.direction == 1 and source_x > self.x) or
-		                   (self.direction == -1 and source_x < self.x)
-		local current_stamina = self.max_stamina - self.stamina_used
-
-		if from_front and current_stamina > 0 then
-			-- Successful block: drain stamina (reduced by doubled defence, capped at 100%), apply knockback, stay in block state
-			local shield_defense = math.min(100, self:defense_percent() * 2)
-			local reduction = 1 - (shield_defense / 100)
-			local stamina_cost = amount * common.BLOCK_STAMINA_COST_PER_DAMAGE * reduction
-			self.stamina_used = self.stamina_used + stamina_cost
-			self.stamina_regen_timer = 0
-			-- Knockback away from source
-			local knockback_dir = source_x > self.x and -1 or 1
-			self.block_state.knockback_velocity = knockback_dir * BLOCK_KNOCKBACK_SPEED
-			audio.play_solid_sound()
-			return
-		elseif from_front then
-			-- Guard break: no stamina remaining, remove shield and take damage
-			world.remove_shield(self)
-		end
-	end
+	local blocked, _guard_break = shield.try_block(self, amount, source_x)
+	if blocked then return end
 
 	-- Apply defence reduction
 	local reduction = 1 - (self:defense_percent() / 100)

@@ -5,7 +5,7 @@ local common = require('player.common')
 local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local Prop = require('Prop')
-local world = require('world')
+local shield = require('player.shield')
 
 --- Hammer state: Player performs a heavy overhead attack.
 --- High damage, hits buttons, but consumes full stamina bar.
@@ -26,7 +26,7 @@ local SHIELD_KNOCKBACK = 5  -- Stronger knockback for hammer hitting shield
 
 -- Reusable state for filters (avoids closure allocation per frame)
 local filter_player = nil
-local hammer_hit_source = { damage = 5, x = 0 }
+local hammer_hit_source = { damage = 5, x = 0, is_crit = false }
 
 --- Filter function for enemy hits (uses module-level state to avoid closure allocation)
 ---@param entity table Entity to check
@@ -80,11 +80,10 @@ local function check_hammer_hits(player, hitbox)
 		local enemy = hits[i]
 		-- Roll for critical hit
 		local is_crit = math.random() * 100 < crit_threshold
-		local damage = hammer_hit_source.damage
-		if is_crit then
-			damage = damage * 3
-		end
-		enemy:on_hit("weapon", { damage = damage, x = player.x, is_crit = is_crit })
+		hammer_hit_source.damage = is_crit and 15 or 5  -- Base 5, crit 3x
+		hammer_hit_source.x = player.x
+		hammer_hit_source.is_crit = is_crit
+		enemy:on_hit("weapon", hammer_hit_source)
 		player.hammer_state.hit_enemies[enemy] = true
 	end
 end
@@ -116,7 +115,7 @@ end
 --- Removes shield if transitioning from block/block_move state.
 ---@param player table The player object
 function hammer.start(player)
-	world.remove_shield(player)
+	shield.remove(player)
 	player.animation = Animation.new(common.animations.HAMMER)
 	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
 	player.hammer_state.hit_button = false

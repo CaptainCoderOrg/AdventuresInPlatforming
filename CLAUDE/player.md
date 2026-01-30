@@ -57,7 +57,7 @@ Player combat abilities managed through state machine.
    - Defensive stance (hold U or Gamepad RT)
    - Stops horizontal movement (block) or slows to 35% (block_move)
    - Shield logic centralized in `player/shield.lua`
-   - **Perfect Block**: First 3 frames (~50ms) of stationary block allow perfect parry
+   - **Perfect Block**: First 4 frames (~67ms) of stationary block allow perfect parry
      - No stamina cost on perfect block
      - Shows "Perfect Block" yellow text feedback
      - Triggers `enemy:on_perfect_blocked(player)` callback for custom reactions

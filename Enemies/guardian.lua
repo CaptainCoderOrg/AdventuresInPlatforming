@@ -978,9 +978,15 @@ end
 local function custom_on_hit(self, _source_type, source)
 	if self.invulnerable then return end
 
-	local damage = math.max(0, ((source and source.damage) or 1) - self:get_armor())
+	local is_crit = source and source.is_crit
 
-	Effects.create_damage_text(self.x + self.box.x + self.box.w / 2, self.y, damage)
+	-- Apply armor reduction, then crit multiplier
+	local damage = math.max(0, ((source and source.damage) or 1) - self:get_armor())
+	if is_crit then
+		damage = damage * 2
+	end
+
+	Effects.create_damage_text(self.x + self.box.x + self.box.w / 2, self.y, damage, is_crit)
 
 	if damage <= 0 then
 		audio.play_solid_sound()

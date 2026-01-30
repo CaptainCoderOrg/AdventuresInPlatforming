@@ -78,9 +78,9 @@ local function check_hammer_hits(player, hitbox)
 
 	for i = 1, #hits do
 		local enemy = hits[i]
-		-- Roll for critical hit
+		-- Roll for critical hit (multiplier applied after armor by enemy)
 		local is_crit = math.random() * 100 < crit_threshold
-		hammer_hit_source.damage = is_crit and 15 or 5  -- Base 5, crit 3x
+		hammer_hit_source.damage = 5
 		hammer_hit_source.x = player.x
 		hammer_hit_source.is_crit = is_crit
 		enemy:on_hit("weapon", hammer_hit_source)

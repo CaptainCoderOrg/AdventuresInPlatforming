@@ -154,14 +154,10 @@ function Projectile:on_collision(collision)
         audio.play_solid_sound()
     elseif collision.other and collision.other.owner and collision.other.owner.is_enemy then
         local enemy = collision.other.owner
-        -- Roll for critical hit if owner (player) exists
+        -- Roll for critical hit if owner (player) exists (multiplier applied after armor by enemy)
         local crit_chance = self.owner and self.owner.critical_percent and self.owner:critical_percent() or 0
         local is_crit = math.random() * 100 < crit_chance
-        local damage = self.damage
-        if is_crit then
-            damage = damage * 3
-        end
-        enemy:on_hit("projectile", { damage = damage, vx = self.vx, is_crit = is_crit })
+        enemy:on_hit("projectile", { damage = self.damage, vx = self.vx, is_crit = is_crit })
     else
         audio.play_solid_sound()
     end

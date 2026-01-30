@@ -7,7 +7,7 @@ local MAX_POINTS = 20
 -- Per-stat progression curves (diminishing returns)
 local STAT_TIERS = {
     default = { 5, 5, 4, 4, 3, 3 },
-    critical = { 5, 4, 3, 2.5 },
+    critical = { 2.5 },  -- Always 2.5% per point (no diminishing returns)
     defence = { 5, 5, 5, 3, 3, 3, 3, 3, 2.5 },
     recovery = { 5, 5, 5, 5, 5, 2.5 },
 }

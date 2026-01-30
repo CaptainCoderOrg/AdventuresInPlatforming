@@ -79,9 +79,9 @@ local function check_attack_hits(player, hitbox)
 
 	for i = 1, #hits do
 		local enemy = hits[i]
-		-- Roll for critical hit
+		-- Roll for critical hit (multiplier applied after armor by enemy)
 		local is_crit = math.random() * 100 < crit_threshold
-		attack_hit_source.damage = is_crit and (player.weapon_damage * 3) or player.weapon_damage
+		attack_hit_source.damage = player.weapon_damage
 		attack_hit_source.x = player.x
 		attack_hit_source.is_crit = is_crit
 		enemy:on_hit("weapon", attack_hit_source)

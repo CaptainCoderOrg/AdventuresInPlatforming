@@ -389,8 +389,11 @@ function Enemy:on_hit(source_type, source)
 	local damage = (source and source.damage) or 1
 	local is_crit = source and source.is_crit
 
-	-- Apply armor reduction (minimum 0 damage)
+	-- Apply armor reduction, then crit multiplier (minimum 0 damage)
 	damage = math.max(0, damage - self:get_armor())
+	if is_crit then
+		damage = damage * 2
+	end
 
 	-- Create floating damage text (centered on enemy hitbox)
 	Effects.create_damage_text(self.x + self.box.x + self.box.w / 2, self.y, damage, is_crit)

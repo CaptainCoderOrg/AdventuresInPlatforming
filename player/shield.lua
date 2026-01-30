@@ -24,8 +24,8 @@ shield.KNOCKBACK_DECAY = 0.85
 -- Knockback threshold below which velocity is zeroed
 shield.KNOCKBACK_THRESHOLD = 0.1
 
--- Perfect block window: 3 frames at 60fps
-shield.PERFECT_BLOCK_WINDOW = 3 / 60
+-- Perfect block window: 4 frames at 60fps
+shield.PERFECT_BLOCK_WINDOW = 4 / 60
 
 -- Perfect block cooldown: 6 frames at 60fps (~100ms) - prevents spam
 shield.PERFECT_BLOCK_COOLDOWN = 6 / 60

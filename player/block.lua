@@ -14,10 +14,12 @@ function block.start(player)
 end
 
 --- Updates block state. Applies gravity, knockback physics, and updates shield position.
+--- Decrements perfect block window each frame.
 ---@param player table The player object
 ---@param dt number Delta time
 function block.update(player, dt)
 	common.handle_gravity(player, dt)
+	shield.update_perfect_window(player, dt)
 
 	local kb = shield.decay_knockback(player, dt)
 	if kb ~= 0 then
@@ -51,6 +53,7 @@ function block.input(player)
 
 	-- Transition to block_move when grounded and moving
 	if player.is_grounded and (controls.left_down() or controls.right_down()) then
+		shield.clear_perfect_window(player)
 		player:set_state(player.states.block_move)
 	end
 end

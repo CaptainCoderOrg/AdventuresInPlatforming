@@ -56,6 +56,7 @@ states = {
   - Detection range: 5 tiles
   - Health: 5 HP, Contact damage: 1
   - Chase speed: 6 px/frame (faster than patrol)
+  - Perfect block: Instant death
 - **Worm** - Simple patrol enemy
   - States: run, death
   - Health: 1 HP, Contact damage: 1
@@ -67,7 +68,7 @@ states = {
   - Detection range: 6 tiles (triggers defense)
   - `is_defending` flag blocks all damage while in defend state
 - **Bat Eye** - Flying enemy that patrols between waypoints and dive-attacks
-  - States: idle, patrol, alert, attack_start, attack, attack_recovery, hit, death
+  - States: idle, patrol, alert, attack_start, attack, attack_recovery, hit, stun, death
   - Health: 2 HP, Contact damage: 2
   - Flying (no gravity), damages shield on contact
   - Patrol speed: 4 px/frame, attack speed: 12 px/frame
@@ -76,9 +77,10 @@ states = {
   - Returns to patrol height at 3x patrol speed after attack
   - Shield collision stops attack and triggers recovery state
   - Pauses at waypoints for 1 second before reversing
+  - Perfect block: Enters stun state, falls with gravity for 1 second
   - Spawned via paired `B` symbols on same row in level map
 - **Zombie** - Slow, shambling undead that patrols within bounded area
-  - States: idle, move, chase, attack, hit, death
+  - States: idle, move, chase, attack, hit, stun, death
   - Health: 6 HP, Contact damage: 3
   - Patrol speed: 1.5 px/frame, chase speed: 6 px/frame
   - Detection: AABB check in facing direction within patrol bounds, 1.5 tiles vertical range
@@ -87,6 +89,7 @@ states = {
   - Overshoot detection: idles after 0.5s if player passes behind
   - 70% bias toward patrol center when picking direction
   - Damages shield on contact
+  - Perfect block: Takes 2 damage, strong knockback, stunned for 1 second
   - Spawned via paired `Z` symbols on same row in level map
 - **Ghost Painting** - Haunted painting that attacks when player looks away
   - States: idle, wait, prep_attack, attack, reappear, fade_out, hit, death
@@ -98,6 +101,7 @@ states = {
   - Reappear: Teleports to random position 6 tiles from player, fades in over 1.5s
   - Fade out: Triggered by player hit or shield block, fades over 0.75s then reappears
   - Directional shield check (phases through collision shapes)
+  - Perfect block: Instant death
   - Spawned via `P` symbol in level map
 - **Magician** - Flying mage that casts homing projectiles and teleports to dodge
   - States: idle, attack, fly, disappear, unstuck, hit, return, death
@@ -121,6 +125,7 @@ states = {
   - Post-hit recovery: Jumps away from player after stun
   - Custom on_hit: No knockback (heavy enemy)
   - Frame-based club hitboxes during attack swing animation
+  - Perfect block: Takes 2 damage, enters hit state (no knockback)
   - Spawned via `F` symbol in level map (`f` for flipped/facing right)
 
 ### Damage System
@@ -132,6 +137,25 @@ enemy:on_hit("projectile", projectile)
 ```
 - Knockback direction calculated from damage source
 - Transitions to hit state, then death if health <= 0
+
+### Perfect Block Callback
+
+Enemies can react to player perfect blocks via the `on_perfect_blocked` callback:
+```lua
+--- Called when player performs a perfect block against this enemy.
+---@param enemy table Self
+---@param player table The player who perfect blocked
+function enemy:on_perfect_blocked(player)
+    -- Default: no reaction (defined in Enemies/init.lua)
+end
+```
+
+Enemy definitions can override this for custom reactions:
+- **Ratto**: Instant death (weak enemy)
+- **Bat Eye**: Enters stun state, falls to ground with gravity for 1 second
+- **Zombie**: Takes 2 damage, strong knockback, stunned for 1 second
+- **Guardian**: Takes 2 damage, enters hit state (no knockback - heavy enemy)
+- **Ghost Painting**: Instant death
 
 ### Player Contact
 
@@ -409,7 +433,7 @@ Visual feedback system for transient effects including animations, floating text
 
 **Floating Text:**
 - Damage text - Shows damage numbers above enemies (red, floats upward)
-- Status text - Shows player state messages (TIRED, Low Energy, No Energy, Locked)
+- Status text - Shows player state messages (TIRED, Low Energy, No Energy, Locked, Perfect Block)
 - Gold/XP text - Accumulating pickup feedback that follows player
 
 **Particles:**
@@ -427,6 +451,7 @@ Effects.create_damage_text(x, y, damage)      -- Floating damage number
 Effects.create_fatigue_text(x, y)             -- "TIRED" status
 Effects.create_energy_text(x, y, current)     -- "Low Energy" or "No Energy"
 Effects.create_locked_text(x, y, player)      -- "Locked" for doors
+Effects.create_perfect_block_text(x, y)       -- "Perfect Block" (yellow)
 
 -- Accumulating text (follows player)
 Effects.create_gold_text(x, y, amount, player)-- Accumulating gold pickup

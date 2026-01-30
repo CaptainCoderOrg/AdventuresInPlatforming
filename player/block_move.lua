@@ -7,9 +7,11 @@ local shield = require('player.shield')
 local block_move = { name = "block_move" }
 
 --- Called when entering block_move state. Sets block_move animation and creates/updates shield.
+--- Invalidates perfect block window (moving while blocking).
 ---@param player table The player object
 function block_move.start(player)
 	shield.init_state(player, common.animations.BLOCK_MOVE)
+	shield.clear_perfect_window(player)
 end
 
 --- Handles input while block moving. Updates direction, exits to block or idle.

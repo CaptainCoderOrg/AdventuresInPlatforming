@@ -14,6 +14,9 @@ local common = {}
 local _melee_hitbox = { x = 0, y = 0, w = 0, h = 0 }
 local _ground_tangent = { x = 0, y = 0 }
 
+-- Lazy-loaded to avoid circular dependency (shield requires Animation, common loaded early)
+local shield
+
 common.GRAVITY = 1.5
 common.JUMP_VELOCITY = common.GRAVITY * 14
 common.AIR_JUMP_VELOCITY = common.GRAVITY * 11
@@ -113,12 +116,16 @@ end
 
 --- Checks for attack input and transitions to attack state or queues if on cooldown.
 --- Requires available stamina to attack (consumed via use_stamina).
+--- Invalidates perfect block window when attacking from block state.
 ---@param player table The player object
 ---@return boolean True if transitioned to attack state
 function common.handle_attack(player)
 	if controls.attack_pressed() then
 		if player.attack_cooldown <= 0 then
 			if player:use_stamina(common.ATTACK_STAMINA_COST) then
+				-- Invalidate perfect block window when attacking from block
+				shield = shield or require('player.shield')
+				shield.clear_perfect_window(player)
 				player:set_state(player.states.attack)
 				return true
 			end
@@ -533,9 +540,6 @@ function common.create_melee_hitbox(player, width, height, y_offset)
 	_melee_hitbox.h = height
 	return _melee_hitbox
 end
-
--- Lazy-loaded to avoid circular dependency (shield requires Animation, common loaded early)
-local shield = nil
 
 --- Draws player animation and shield debug box.
 --- Shared by block and block_move states.

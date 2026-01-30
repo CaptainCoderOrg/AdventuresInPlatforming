@@ -286,7 +286,16 @@ ghost_painting.states.death = {
 	draw = common.draw,
 }
 
+--- Called when player performs a perfect block against ghost_painting's attack.
+--- Ghost painting is instantly killed by perfect blocks.
+---@param enemy table The ghost_painting enemy
+---@param _player table The player who perfect blocked
+local function on_perfect_blocked(enemy, _player)
+	enemy:die()
+end
+
 return {
+	on_perfect_blocked = on_perfect_blocked,
 	box = { w = 0.75, h = 1.25, x = 0.125, y = 0.25 },
 	spawn_offset = { y = -0.5 },  -- -8 pixels to match decoy_painting
 	gravity = 0,

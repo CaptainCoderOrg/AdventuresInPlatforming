@@ -57,7 +57,13 @@ Player combat abilities managed through state machine.
    - Defensive stance (hold U or Gamepad RT)
    - Stops horizontal movement (block) or slows to 35% (block_move)
    - Shield logic centralized in `player/shield.lua`
-   - Blocks damage from front, drains stamina proportional to damage
+   - **Perfect Block**: First 3 frames (~50ms) of stationary block allow perfect parry
+     - No stamina cost on perfect block
+     - Shows "Perfect Block" yellow text feedback
+     - Triggers `enemy:on_perfect_blocked(player)` callback for custom reactions
+     - Invalidated by: moving, attacking from block, or transitioning to block_move
+     - 6-frame cooldown between perfect block opportunities
+   - Normal block: drains stamina proportional to damage (reduced by 2x defense)
    - Guard break exits to idle when stamina depleted
    - Knockback applied when absorbing hits
    - Gravity still applies
@@ -221,8 +227,10 @@ self.attack_state = {           -- Combo tracking
 self.hit_state = {              -- Hit stun tracking
     knockback_speed, remaining_time
 }
-self.block_state = {            -- Shield knockback tracking
-    knockback_velocity          -- Current knockback velocity from blocked hits
+self.block_state = {            -- Shield and perfect block tracking
+    knockback_velocity,         -- Current knockback velocity from blocked hits
+    perfect_window,             -- nil = fresh session, 0 = invalidated, >0 = active window
+    cooldown,                   -- Time until next perfect block allowed
 }
 self.input_queue = {            -- Centralized input buffering
     jump, attack, throw         -- Boolean flags for pending inputs

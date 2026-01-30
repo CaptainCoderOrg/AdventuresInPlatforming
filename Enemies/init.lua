@@ -89,15 +89,10 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.shield_hit_cooldown = 0  -- Debounce timer for shield contact damage
 	self.marked_for_destruction = false
 
-	-- Copy custom get_armor function if defined
-	if definition.get_armor then
-		self.get_armor = definition.get_armor
-	end
-
-	-- Copy custom on_hit function if defined
-	if definition.on_hit then
-		self.on_hit = definition.on_hit
-	end
+	-- Copy optional overridable functions (nil values fall through to metatable methods)
+	self.get_armor = definition.get_armor
+	self.on_hit = definition.on_hit
+	self.on_perfect_blocked = definition.on_perfect_blocked
 
 	-- Mark as enemy (for collision filtering)
 	self.is_enemy = true
@@ -362,7 +357,7 @@ function Enemy:check_player_overlap(player)
 		end
 
 		if shield_hit then
-			player:take_damage(self.damage, self.x)
+			player:take_damage(self.damage, self.x, self)
 			self.shield_hit_cooldown = SHIELD_HIT_COOLDOWN
 			self.hit_shield = true  -- Flag for states to react to shield collision
 			return  -- Don't also check body collision
@@ -375,7 +370,7 @@ function Enemy:check_player_overlap(player)
 	if not collides then return end
 
 	-- No shield block - take damage
-	player:take_damage(self.damage, self.x)
+	player:take_damage(self.damage, self.x, self)
 end
 
 --- Returns the enemy's current armor value.
@@ -451,6 +446,13 @@ function Enemy:die()
 	else
 		self.marked_for_destruction = true
 	end
+end
+
+--- Called when player performs a perfect block against this enemy's attack.
+--- Default implementation does nothing. Override in enemy definitions for custom reactions.
+---@param _player table The player who perfect blocked
+function Enemy:on_perfect_blocked(_player)
+	-- Default: no reaction. Enemy-specific definitions can override.
 end
 
 --- Changes the enemy's state.

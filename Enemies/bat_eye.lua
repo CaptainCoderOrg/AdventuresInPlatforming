@@ -3,6 +3,7 @@ local sprites = require('sprites')
 local canvas = require('canvas')
 local config = require('config')
 local common = require('Enemies/common')
+local world = require('world')
 
 --- Bat Eye enemy: A flying enemy that patrols between two waypoints.
 --- States: idle (pause at waypoint), patrol (fly toward waypoint), alert, attack, hit, death
@@ -16,6 +17,9 @@ local DETECTION_RANGE_X = 5      -- horizontal detection range (tiles)
 local DETECTION_RANGE_Y = 12      -- vertical detection range (tiles)
 local ATTACK_ARRIVAL_THRESHOLD_SQ = 0.3 * 0.3  -- squared tiles for perf
 local LOS_CHECK_INTERVAL = 0.1  -- seconds between LOS checks
+local STUN_DURATION = 1.0        -- seconds to remain stunned after perfect block
+local STUN_GRAVITY = 1.5         -- gravity while falling during stun
+local STUN_MAX_FALL_SPEED = 20   -- max fall speed while stunned
 
 bat_eye.animations = {
 	IDLE = Animation.create_definition(sprites.enemies.bat_eye.idle, 6),
@@ -352,7 +356,47 @@ bat_eye.states.death = {
 	draw = draw,
 }
 
+bat_eye.states.stun = {
+	name = "stun",
+	start = function(enemy, _)
+		common.set_animation(enemy, bat_eye.animations.HIT)
+		enemy.vx = 0
+		enemy.vy = 0
+		enemy.stun_timer = STUN_DURATION
+	end,
+	update = function(enemy, dt)
+		-- Apply gravity until grounded
+		-- Note: Position is already updated by update_flying_enemy, so only add gravity
+		-- and check for ground collision without calling world.move (which would double-apply movement)
+		if not enemy.is_grounded then
+			enemy.vy = math.min(STUN_MAX_FALL_SPEED, enemy.vy + STUN_GRAVITY * dt * 60)
+			-- Check for ground using point query (position already synced by flying enemy update)
+			local ground_y = enemy.y + enemy.box.y + enemy.box.h
+			if world.point_has_ground(enemy.x + enemy.box.x + enemy.box.w / 2, ground_y + 0.1) then
+				enemy.is_grounded = true
+				enemy.vy = 0
+			end
+		end
+
+		enemy.stun_timer = enemy.stun_timer - dt
+		if enemy.stun_timer <= 0 then
+			enemy.is_grounded = false  -- Reset flying state before returning to patrol
+			enemy:set_state(bat_eye.states.patrol)
+		end
+	end,
+	draw = draw,
+}
+
+--- Called when player performs a perfect block against bat_eye's attack.
+--- Bat_eye becomes stunned, falling to the ground and disabled for ~1 second.
+---@param enemy table The bat_eye enemy
+---@param _player table The player who perfect blocked
+local function on_perfect_blocked(enemy, _player)
+	enemy:set_state(bat_eye.states.stun)
+end
+
 return {
+	on_perfect_blocked = on_perfect_blocked,
 	box = { w = 0.5, h = 0.5, x = 0.25, y = 0.25 },  -- 8x8 centered hitbox
 	gravity = 0,  -- Flying enemy
 	max_fall_speed = 0,

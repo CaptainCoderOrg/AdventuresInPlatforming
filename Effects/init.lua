@@ -238,7 +238,7 @@ function Effects.create_fatigue_text(x, y)
 	local message = "TIRED"
 	-- Cache text width at creation to avoid per-frame allocation
 	canvas.set_font_family("menu_font")
-	canvas.set_font_size(6*config.ui.SCALE)
+	canvas.set_font_size(6 * config.ui.SCALE)
 	local cached_width = canvas.get_text_width(message)
 
 	local text = {
@@ -247,6 +247,30 @@ function Effects.create_fatigue_text(x, y)
 		vy = -1,          -- Float upward slowly (tiles/second)
 		message = message,
 		color = "#FF0000", -- Red
+		lifetime = 1.0,   -- Duration in seconds
+		elapsed = 0,
+		cached_width = cached_width,
+	}
+	state.status_texts[text] = true
+end
+
+--- Factory: Creates floating "Perfect Block" text at specified location
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@return nil
+function Effects.create_perfect_block_text(x, y)
+	local message = "Perfect Block"
+	-- Cache text width at creation to avoid per-frame allocation
+	canvas.set_font_family("menu_font")
+	canvas.set_font_size(6 * config.ui.SCALE)
+	local cached_width = canvas.get_text_width(message)
+
+	local text = {
+		x = x + 0.5,      -- Center on player
+		y = y,            -- Start at player top
+		vy = -1.5,        -- Float upward (tiles/second)
+		message = message,
+		color = "#FFFF00", -- Yellow
 		lifetime = 1.0,   -- Duration in seconds
 		elapsed = 0,
 		cached_width = cached_width,
@@ -263,7 +287,7 @@ function Effects.create_energy_text(x, y, current_energy)
 	local message = current_energy > 0 and "Low Energy" or "No Energy"
 	-- Cache text width at creation to avoid per-frame allocation
 	canvas.set_font_family("menu_font")
-	canvas.set_font_size(6*config.ui.SCALE)
+	canvas.set_font_size(6 * config.ui.SCALE)
 	local cached_width = canvas.get_text_width(message)
 
 	local text = {

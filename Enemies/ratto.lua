@@ -150,7 +150,16 @@ ratto.states.hit = {
 
 ratto.states.death = common.create_death_state(ratto.animations.DEATH)
 
+--- Called when player performs a perfect block against ratto's attack.
+--- Ratto is instantly killed by perfect blocks (too weak to survive the counter).
+---@param enemy table The ratto enemy
+---@param _player table The player who perfect blocked
+local function on_perfect_blocked(enemy, _player)
+	enemy:die()
+end
+
 return {
+	on_perfect_blocked = on_perfect_blocked,
 	box = { w = 0.9, h = 0.45, x = 0.05, y = 0.05 },
 	gravity = 1.5,
 	max_fall_speed = 20,

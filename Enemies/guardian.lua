@@ -218,7 +218,7 @@ local function check_club_collision(enemy)
 	local hits = combat.query_rect(hx, hy, hw, hh, player_filter, club_hits)
 
 	if #hits > 0 and hits[1].take_damage then
-		hits[1]:take_damage(CLUB_DAMAGE, enemy.x)
+		hits[1]:take_damage(CLUB_DAMAGE, enemy.x, enemy)
 	end
 end
 
@@ -389,7 +389,7 @@ local function check_attack_hitboxes(enemy, hitboxes)
 		local hx, hy, hw, hh = get_attack_hitbox_world(enemy, hitboxes[i])
 		local hits = combat.query_rect(hx, hy, hw, hh, player_filter, club_hits)
 		if #hits > 0 and hits[1].take_damage then
-			hits[1]:take_damage(CLUB_DAMAGE, enemy.x)
+			hits[1]:take_damage(CLUB_DAMAGE, enemy.x, enemy)
 			return true
 		end
 	end
@@ -955,12 +955,10 @@ guardian.states.death = {
 ---@return number Direction (-1 or 1)
 local function get_hit_direction(self, source)
 	if source and source.vx then
-		if source.vx > 0 then return 1 end
-		return -1
+		return source.vx > 0 and 1 or -1
 	end
 	if source and source.x then
-		if source.x < self.x then return 1 end
-		return -1
+		return source.x < self.x and 1 or -1
 	end
 	return -1
 end
@@ -1000,7 +998,17 @@ local function custom_on_hit(self, _source_type, source)
 	end
 end
 
+--- Called when player performs a perfect block against guardian's attack.
+--- Guardian takes 2 damage and enters hit state (no knockback - heavy enemy).
+---@param self table The guardian enemy
+---@param player table The player who perfect blocked
+local function custom_on_perfect_blocked(self, player)
+	-- Simulate being hit by the player's counter (2 damage, weapon type for hit state)
+	custom_on_hit(self, "weapon", { x = player.x, damage = 2 })
+end
+
 return {
+	on_perfect_blocked = custom_on_perfect_blocked,
 	box = { w = BOX_WIDTH, h = BOX_HEIGHT, x = BOX_X, y = BOX_Y },
 	gravity = GRAVITY,
 	max_fall_speed = MAX_FALL_SPEED,

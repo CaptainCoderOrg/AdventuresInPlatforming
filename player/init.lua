@@ -208,7 +208,9 @@ function Player.new()
 		remaining_time = 0
 	}
 	self.block_state = {
-		knockback_velocity = 0
+		knockback_velocity = 0,
+		perfect_window = nil,  -- nil = fresh session, 0 = invalidated, >0 = active window
+		cooldown = 0,          -- Time until next perfect block is allowed
 	}
 
 	-- Centralized input queue for locked states (hit, throw, attack).
@@ -318,16 +320,27 @@ end
 --- Ignored if amount <= 0, player is invincible, or already in hit state.
 --- When blocking and facing the source: drains stamina proportional to damage,
 --- applies knockback, and stays in block state. Guard breaks if out of stamina.
+--- Perfect block: if timed correctly, no stamina cost and enemy receives on_perfect_blocked callback.
 ---@param amount number Damage amount to apply
 ---@param source_x number|nil X position of damage source (for shield check)
-function Player:take_damage(amount, source_x)
+---@param source_enemy table|nil Enemy that dealt the damage (for perfect block callback)
+function Player:take_damage(amount, source_x, source_enemy)
 	if amount <= 0 then return end
 	if self:is_invincible() then return end
 	if self.state == self.states.hit then return end
 
 	-- Shield check: block damage from front when in block or block_move state
-	local blocked, _guard_break = shield.try_block(self, amount, source_x)
-	if blocked then return end
+	local blocked, _guard_break, perfect = shield.try_block(self, amount, source_x)
+	if blocked then
+		-- Perfect block: show text effect and notify enemy for custom reaction
+		if perfect then
+			Effects.create_perfect_block_text(self.x, self.y)
+			if source_enemy and source_enemy.on_perfect_blocked then
+				source_enemy:on_perfect_blocked(self)
+			end
+		end
+		return
+	end
 
 	-- Apply defence reduction
 	local reduction = 1 - (self:defense_percent() / 100)
@@ -410,8 +423,8 @@ function Player:update(dt)
 
 	-- Stamina regeneration (after cooldown period, reduced while fatigued or blocking)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt
+	local is_blocking = self.state == self.states.block or self.state == self.states.block_move
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
-		local is_blocking = self.state == self.states.block or self.state == self.states.block_move
 		local is_fatigued = self:is_fatigued()
 		local is_slowed = is_fatigued or is_blocking
 		local regen_multiplier = is_slowed and FATIGUE_REGEN_MULTIPLIER or 1
@@ -422,6 +435,11 @@ function Player:update(dt)
 		end
 		local recovery_bonus = 1 + (recovery_percent / 100)
 		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * recovery_bonus * dt)
+	end
+
+	-- Perfect block cooldown decrement (only outside block states)
+	if not is_blocking then
+		shield.update_cooldown(self, dt)
 	end
 
 	-- Check for fatigue state transition (show "TIRED" text when entering fatigue)

@@ -5,6 +5,7 @@ local canvas = require('canvas')
 local audio = require('audio')
 local combat = require('combat')
 local common = require('Enemies/common')
+local Effects = require('Effects')
 
 --- Zombie enemy: A slow, shambling undead that patrols within bounded area.
 --- States: idle (pause), move (patrol), chase (pursue), attack, hit, death
@@ -24,6 +25,11 @@ local ATTACK_RANGE = 1.5      -- Distance to trigger attack (stops before contac
 local ATTACK_HITBOX = 1.5     -- Attack hitbox reach
 local ATTACK_COOLDOWN = 0.3   -- Brief cooldown after attack
 local OVERSHOOT_DURATION = 0.5  -- Time to idle after player passes behind
+
+-- Perfect block stun constants
+local STUN_DURATION = 1.0     -- Seconds to remain stunned
+local STUN_KNOCKBACK = 10     -- Strong knockback from perfect block
+local STUN_FRICTION = 0.92    -- Friction applied to knockback velocity
 
 -- Reusable table and filter for attack hitbox queries (avoids per-frame allocation)
 local attack_hits = {}
@@ -313,7 +319,7 @@ zombie.states.attack = {
 			local hits = combat.query_rect(hx, hy, hw, hh, player_filter, attack_hits)
 
 			if #hits > 0 and hits[1].take_damage then
-				hits[1]:take_damage(enemy.damage, enemy.x)
+				hits[1]:take_damage(enemy.damage, enemy.x, enemy)
 				enemy.attack_hit_player = true
 			end
 		end
@@ -348,13 +354,59 @@ zombie.states.hit = {
 	draw = common.draw,
 }
 
+zombie.states.stun = {
+	name = "stun",
+	start = function(enemy, _)
+		common.set_animation(enemy, zombie.animations.HIT)
+		enemy.vx = (enemy.hit_direction or -1) * STUN_KNOCKBACK
+		enemy.stun_timer = STUN_DURATION
+	end,
+	update = function(enemy, dt)
+		-- Apply friction to knockback
+		enemy.vx = common.apply_friction(enemy.vx, STUN_FRICTION, dt)
+
+		enemy.stun_timer = enemy.stun_timer - dt
+		if enemy.stun_timer <= 0 then
+			enemy.direction = common.direction_to_player(enemy)
+			enemy:set_state(zombie.states.idle)
+		end
+	end,
+	draw = common.draw,
+}
+
 zombie.states.death = common.create_death_state(zombie.animations.DEATH)
 
+--- Called when player performs a perfect block against zombie's attack.
+--- Zombie takes 2 damage, gets knocked back hard, and stunned for 1 second.
+---@param enemy table The zombie enemy
+---@param player table The player who perfect blocked
+local function on_perfect_blocked(enemy, player)
+	enemy.hit_direction = player.x < enemy.x and 1 or -1
+
+	-- Bypass on_hit to use stun state instead of hit state
+	local damage = math.max(0, 2 - enemy:get_armor())
+	Effects.create_damage_text(enemy.x + enemy.box.x + enemy.box.w / 2, enemy.y, damage)
+
+	if damage > 0 then
+		enemy.health = enemy.health - damage
+		audio.play_squish_sound()
+	else
+		audio.play_solid_sound()
+	end
+
+	if enemy.health <= 0 then
+		enemy:die()
+	else
+		enemy:set_state(zombie.states.stun)
+	end
+end
+
 return {
+	on_perfect_blocked = on_perfect_blocked,
 	box = { w = 0.8, h = 0.9, x = 0.1, y = 0.1 },
 	gravity = 1.5,
 	max_fall_speed = 20,
-	max_health = 3,
+	max_health = 6,
 	armor = 1,
 	damage = 3,
 	damages_shield = true,

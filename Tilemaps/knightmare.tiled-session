@@ -1,8 +1,15 @@
 {
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
     "activeFile": "",
     "expandedProjectPaths": [
     ],
     "fileStates": {
+        "decorations.tsx": {
+            "dynamicWrapping": true
+        },
         "enemy_spawns.tsx": {
             "dynamicWrapping": true
         },
@@ -14,14 +21,28 @@
             "dynamicWrapping": true,
             "scaleInEditor": 2
         },
+        "test-level.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 364.66666666666663,
+                "y": 109.33333333333337
+            }
+        },
         "tileset_dungeon.tsx": {
+            "dynamicWrapping": false
+        },
+        "tileset_garden.tsx": {
             "dynamicWrapping": false
         }
     },
     "last.exportedFilePath": "C:/Users/User/Desktop/Lua Projects/new-project/Tilemaps",
-    "last.imagePath": "C:/Users/User/Desktop/Lua Projects/new-project/Tilemaps/objects",
+    "last.imagePath": "C:/Users/User/Desktop/Lua Projects/new-project/assets/Tilesets",
     "lastUsedTilesetExportFilter": "Lua files (*.lua)",
+    "map.fixedSize": false,
     "map.lastUsedExportFilter": "All Files (*)",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
     "openFiles": [
     ],
     "project": "knightmare.tiled-project",
@@ -31,5 +52,9 @@
         "idle.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
-    "tileset.type": 1
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    },
+    "tileset.type": 0
 }

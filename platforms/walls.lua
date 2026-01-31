@@ -325,21 +325,23 @@ local function register_colliders(colliders)
 end
 
 --- Adds a tile position to be merged later.
----@param x number
----@param y number
----@param tile_id number|nil Optional Tiled global tile ID for rendering
-function walls.add_tile(x, y, tile_id)
+---@param x number Tile X coordinate
+---@param y number Tile Y coordinate
+---@param tile_id number|nil Optional Tiled global tile ID for tilemap rendering
+---@param tile_image table|nil Optional collection tile {image, width, height}
+function walls.add_tile(x, y, tile_id, tile_image)
 	local key = x .. "," .. y
-	walls.tiles[key] = { x = x, y = y, tile_id = tile_id }
+	walls.tiles[key] = { x = x, y = y, tile_id = tile_id, tile_image = tile_image }
 end
 
 --- Adds a decorative tile (render only, no collision).
----@param x number
----@param y number
----@param tile_id number Tiled global tile ID for rendering
-function walls.add_decorative_tile(x, y, tile_id)
+---@param x number Tile X coordinate
+---@param y number Tile Y coordinate
+---@param tile_id number|nil Tiled global tile ID for tilemap rendering
+---@param tile_image table|nil Optional collection tile {image, width, height}
+function walls.add_decorative_tile(x, y, tile_id, tile_image)
 	local key = x .. "," .. y
-	walls.decorative_tiles[key] = { x = x, y = y, tile_id = tile_id }
+	walls.decorative_tiles[key] = { x = x, y = y, tile_id = tile_id, tile_image = tile_image }
 end
 
 --- Adds a solo tile that won't merge with adjacent tiles.
@@ -426,6 +428,50 @@ function walls.remove_tile(x, y)
 	return true
 end
 
+--- Checks if a tile is visible within the camera bounds.
+--- For collection tiles, accounts for width/height extending beyond origin.
+---@param tile table Tile with x, y, and optional tile_image
+---@param min_x number Minimum visible x in tiles
+---@param min_y number Minimum visible y in tiles
+---@param max_x number Maximum visible x in tiles
+---@param max_y number Maximum visible y in tiles
+---@return boolean True if any part of the tile is visible
+local function is_tile_visible(tile, min_x, min_y, max_x, max_y)
+	if tile.tile_image then
+		-- Collection tile: check full extent
+		local img = tile.tile_image
+		local width_tiles = img.width / common.BASE_TILE
+		local height_tiles = img.height / common.BASE_TILE
+		-- Tile extends right from x and up from y (bottom-left origin)
+		local tile_left = tile.x
+		local tile_right = tile.x + width_tiles
+		local tile_top = tile.y - (height_tiles - 1)
+		local tile_bottom = tile.y + 1
+		return tile_right > min_x and tile_left <= max_x
+			and tile_bottom > min_y and tile_top <= max_y
+	else
+		-- Standard 1x1 tile
+		return tile.x >= min_x and tile.x <= max_x
+			and tile.y >= min_y and tile.y <= max_y
+	end
+end
+
+--- Draws a single tile, handling both tilemap and collection tile images.
+---@param tile table Tile with x, y, tile_id, and optional tile_image
+---@param ts number Tile size in pixels (scaled)
+local function draw_tile(tile, ts)
+	if tile.tile_image then
+		common.draw_collection_tile(tile.tile_image, tile.x, tile.y, ts)
+	elseif tile.tile_id then
+		-- Tilemap tile: draw from tileset
+		local tx, ty = common.gid_to_tilemap(tile.tile_id)
+		sprites.draw_tile(tx, ty, tile.x * ts, tile.y * ts, sprites.environment.tileset_dungeon)
+	else
+		-- Fallback: default tile
+		sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
+	end
+end
+
 --- Draws all wall tiles and debug bounding boxes.
 ---@param camera table Camera instance for viewport culling
 ---@param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
@@ -435,20 +481,14 @@ function walls.draw(camera, margin)
 
 	-- Draw decorative tiles first (behind collision tiles)
 	for _, tile in pairs(walls.decorative_tiles) do
-		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
-			local tx, ty = common.gid_to_tilemap(tile.tile_id)
-			sprites.draw_tile(tx, ty, tile.x * ts, tile.y * ts, sprites.environment.tileset_dungeon)
+		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
+			draw_tile(tile, ts)
 		end
 	end
 
 	for _, tile in pairs(walls.tiles) do
-		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
-			if tile.tile_id then
-				local tx, ty = common.gid_to_tilemap(tile.tile_id)
-				sprites.draw_tile(tx, ty, tile.x * ts, tile.y * ts, sprites.environment.tileset_dungeon)
-			else
-				sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
-			end
+		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
+			draw_tile(tile, ts)
 		end
 	end
 

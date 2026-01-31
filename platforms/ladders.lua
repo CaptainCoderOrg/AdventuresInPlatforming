@@ -11,12 +11,13 @@ ladders.top_colliders = {}
 
 --- Adds a ladder tile at the specified position.
 --- Creates a trigger collider for climb detection.
---- @param x number Tile x coordinate
---- @param y number Tile y coordinate
---- @param tile_id number|nil Optional Tiled global tile ID for rendering
-function ladders.add_ladder(x, y, tile_id)
+---@param x number Tile x coordinate
+---@param y number Tile y coordinate
+---@param tile_id number|nil Optional Tiled global tile ID for tilemap rendering
+---@param tile_image table|nil Optional collection tile {image, width, height}
+function ladders.add_ladder(x, y, tile_id, tile_image)
 	local key = x .. "," .. y
-	local ladder = { x = x, y = y, box = { x = 0, y = 0, w = 1, h = 1 }, is_ladder = true, tile_id = tile_id }
+	local ladder = { x = x, y = y, box = { x = 0, y = 0, w = 1, h = 1 }, is_ladder = true, tile_id = tile_id, tile_image = tile_image }
 	ladders.tiles[key] = ladder
 	world.add_trigger_collider(ladder)
 end
@@ -86,8 +87,10 @@ function ladders.draw(camera, margin)
 			goto continue
 		end
 
-		-- Use Tiled tile_id if available, otherwise fall back to sprite-based rendering
-		if ladder.tile_id then
+		-- Use collection tile_image, Tiled tile_id, or fall back to sprite-based rendering
+		if ladder.tile_image then
+			common.draw_collection_tile(ladder.tile_image, ladder.x, ladder.y, ts)
+		elseif ladder.tile_id then
 			local tx, ty = common.gid_to_tilemap(ladder.tile_id)
 			sprites.draw_tile(tx, ty, ladder.x * ts, ladder.y * ts, sprites.environment.tileset_dungeon)
 		else

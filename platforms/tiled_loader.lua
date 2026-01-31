@@ -1,6 +1,7 @@
 local walls = require("platforms/walls")
 local bridges = require("platforms/bridges")
 local ladders = require("platforms/ladders")
+local canvas = require("canvas")
 
 local tiled = {}
 
@@ -28,13 +29,15 @@ local function get_handler_for_type(tile_type)
 end
 
 --- Build mappings from global tile ID to tile properties by loading tileset files.
---- Returns three maps: tile collision types, full tile properties, and renderable tile IDs.
+--- Returns three maps: tile collision types, full tile properties, and renderable tile info.
+--- For image-based tilesets, tile_renderable[gid] = true.
+--- For collection tilesets, tile_renderable[gid] = {image = path, width = w, height = h}.
 ---@param level_data table Tiled level data with tilesets array
----@return table<number, string>, table<number, table>, table<number, boolean> tile_types, tile_properties, tile_renderable
+---@return table<number, string>, table<number, table>, table<number, boolean|table> tile_types, tile_properties, tile_renderable
 local function build_tile_maps(level_data)
 	local tile_types = {}      -- gid → collision type (bridge, ladder, etc.)
 	local tile_properties = {}
-	local tile_renderable = {}  -- Only true for tiles from image-based tilesets
+	local tile_renderable = {}  -- true for tilemap tiles, {image, width, height} for collection tiles
 
 	for _, tileset_ref in ipairs(level_data.tilesets or {}) do
 		local firstgid = tileset_ref.firstgid
@@ -51,16 +54,17 @@ local function build_tile_maps(level_data)
 				-- Collection tilesets have individual images per tile instead
 				local is_image_tileset = tileset.image ~= nil
 
-				-- Mark ALL tiles from image-based tilesets as renderable
 				if is_image_tileset and tileset.tilecount then
+					-- Mark ALL tiles from image-based tilesets as renderable
 					for i = 0, tileset.tilecount - 1 do
 						tile_renderable[firstgid + i] = true
 					end
 				end
 
-				-- Process tiles with custom properties
+				-- Process tiles with custom properties or individual images
 				for _, tile in ipairs(tileset.tiles or {}) do
 					local gid = firstgid + tile.id
+
 					-- Get type from tile.type or tile.properties.type
 					local tile_type = tile.type or (tile.properties and tile.properties.type)
 					if tile_type then
@@ -69,6 +73,22 @@ local function build_tile_maps(level_data)
 					-- Store all properties for object layer processing
 					if tile.properties then
 						tile_properties[gid] = tile.properties
+					end
+
+					-- Collection tileset: mark tiles as renderable
+					if not is_image_tileset and tile.image then
+						if tile_type then
+							-- Typed tiles (collision/entity): use fallback sprite rendering (no tile_id, no image)
+							tile_renderable[gid] = "fallback"
+						else
+							-- Typeless tiles (decorations): store image info for collection rendering
+							local image_path = tile.image:gsub("^%.%./assets/", "")
+							tile_renderable[gid] = {
+								image = image_path,
+								width = tile.width,
+								height = tile.height
+							}
+						end
 					end
 				end
 			end
@@ -84,15 +104,21 @@ end
 ---@param world_y number World y coordinate (already offset-adjusted)
 ---@param layer_type string|nil Layer's collision type from properties
 ---@param tile_types table<number, string> Map of gid to collision type
----@param tile_renderable table<number, boolean> Map of gid to whether it can be rendered
+---@param tile_renderable table<number, boolean|table> Map of gid to render info (true or {image, width, height})
 local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable)
-	local render_id = tile_renderable[tile_id] and tile_id or nil
+	local render_info = tile_renderable[tile_id]
+	if not render_info then return end
+
+	-- Determine render parameters based on render_info type:
+	-- true = tilemap tile (pass tile_id for gid_to_tilemap)
+	-- "fallback" = typed collection tile (pass nil, use fallback sprites)
+	-- table = typeless collection tile (pass image info)
+	local render_id = (render_info == true) and tile_id or nil
+	local tile_image = (type(render_info) == "table") and render_info or nil
 
 	if not layer_type then
 		-- Layer has no type: all tiles are decorative
-		if render_id then
-			walls.add_decorative_tile(world_x, world_y, render_id)
-		end
+		walls.add_decorative_tile(world_x, world_y, render_id, tile_image)
 		return
 	end
 
@@ -102,7 +128,7 @@ local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_t
 	local handler = get_handler_for_type(tile_type) or get_handler_for_type(layer_type)
 
 	if handler then
-		handler(world_x, world_y, render_id)
+		handler(world_x, world_y, render_id, tile_image)
 	end
 end
 
@@ -114,7 +140,7 @@ end
 ---@param offset_x number X offset to normalize coordinates (subtracted from world coords)
 ---@param offset_y number Y offset to normalize coordinates (subtracted from world coords)
 ---@param tile_types table<number, string> Map of gid to collision type from tileset
----@param tile_renderable table<number, boolean> Map of gid to whether it can be rendered from tileset
+---@param tile_renderable table<number, boolean|table> Map of gid to render info from tileset
 local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_renderable)
 	local layer_type = layer.properties and layer.properties.type
 
@@ -376,8 +402,15 @@ function tiled.load(level_data)
 	-- Build tile maps from tileset files
 	-- tile_types: gid → collision type (bridge, ladder - overrides layer type)
 	-- tile_properties: gid → all tile properties (for objects)
-	-- tile_renderable: gid → true if from image-based tileset (can render from tilemap)
+	-- tile_renderable: gid → true (tilemap) or {image, width, height} (collection)
 	local tile_types, tile_properties, tile_renderable = build_tile_maps(level_data)
+
+	-- Load collection tileset images
+	for _, info in pairs(tile_renderable) do
+		if type(info) == "table" and info.image then
+			canvas.assets.load_image(info.image, info.image)
+		end
+	end
 
 	-- Calculate actual bounds from chunk data (handles negative coordinates)
 	-- All coordinates are normalized by subtracting min_x/min_y so level starts at (0,0)

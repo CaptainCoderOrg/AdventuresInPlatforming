@@ -24,6 +24,17 @@ rest.camera = nil
 ---@type number|nil
 rest.active_slot = nil
 
+--- Extracts the level ID from a level module.
+--- Supports both ASCII levels (id at top level) and Tiled levels (id in properties).
+---@param level table|nil Level module to extract ID from
+---@return string|nil level_id The level ID or nil if not found
+local function get_level_id(level)
+	if not level then return nil end
+	if level.id then return level.id end
+	if level.properties and level.properties.id then return level.properties.id end
+	return nil
+end
+
 --- Find the campfire the player is currently touching
 ---@param player table The player object
 ---@return table|nil campfire The campfire prop or nil if not found
@@ -54,8 +65,9 @@ function rest.start(player)
 	local campfire_name = campfire and campfire.name or "Campfire"
 
 	-- Save to active slot with full data
-	if rest.active_slot and rest.current_level and rest.current_level.id then
-		local save_data = SaveSlots.build_player_data(player, rest.current_level.id, campfire_name)
+	local level_id = get_level_id(rest.current_level)
+	if rest.active_slot and level_id then
+		local save_data = SaveSlots.build_player_data(player, level_id, campfire_name)
 		SaveSlots.set(rest.active_slot, save_data)
 	end
 
@@ -69,7 +81,6 @@ function rest.start(player)
 	-- Show rest screen centered on campfire
 	if campfire and rest.camera then
 		-- Center on campfire (add 0.5 to center on tile)
-		local level_id = rest.current_level and rest.current_level.id or nil
 		hud.show_rest_screen(campfire.x + 0.5, campfire.y + 0.5, rest.camera, player,
 			rest.active_slot, level_id, campfire_name)
 	end

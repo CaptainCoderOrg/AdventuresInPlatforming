@@ -1,11 +1,14 @@
 local canvas = require("canvas")
 local config = require("config")
 local sprites = require("sprites")
+local tiled = require("platforms.tiled_loader")
 
 local platforms = {}
 
 -- Set by load_level(), cleared by clear()
-local background_sprite = nil
+local background_config = nil
+local background_image = nil  -- Cached loaded image for Tiled backgrounds
+local patrol_areas = {}  -- Debug: patrol area rectangles for visualization
 
 -- Background sprite native dimensions (before scaling)
 local BG_NATIVE_WIDTH = 240
@@ -29,9 +32,23 @@ local function apply_offset(tx, ty, offset)
 end
 
 --- Parses a level and adds tiles to walls and slopes.
---- @param level_data table Level data with map array and optional symbols table
---- @return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], props: {type: string, x: number, y: number}[], width: number, height: number}
+--- Supports both ASCII map format and Tiled export format.
+---@param level_data table Level data with map array and optional symbols table, or Tiled export
+---@return {spawn: {x: number, y: number}|nil, enemies: {x: number, y: number, type: string}[], props: {type: string, x: number, y: number}[], width: number, height: number}
 function platforms.load_level(level_data)
+	if tiled.is_tiled_format(level_data) then
+		local result = tiled.load(level_data)
+		background_config = result.background
+		patrol_areas = result.patrol_areas or {}
+		-- Load image for Tiled image layer backgrounds
+		if type(background_config) == "table" and background_config.image then
+			background_image = background_config.image
+			canvas.assets.load_image(background_image, background_config.image)
+		end
+		return result
+	end
+
+	-- ASCII format parsing below
 	local spawn = nil
 	local enemies = {}
 	local props = {}
@@ -43,7 +60,7 @@ function platforms.load_level(level_data)
 	-- Format: [enemy_key][row] = { positions = {x...}, count = 1 }
 	local waypoint_enemies = {}
 
-	background_sprite = level_data.background
+	background_config = level_data.background
 
 	for y, row in ipairs(level_data.map) do
 		for x = 1, #row do
@@ -149,6 +166,7 @@ function platforms.load_level(level_data)
 end
 
 --- Builds all colliders for walls, slopes, ladder tops, and bridges.
+--- Call after load_level() to create collision geometry.
 function platforms.build()
 	platforms.walls.build_colliders(true)
 	platforms.slopes.build_colliders()
@@ -157,49 +175,111 @@ function platforms.build()
 end
 
 --- Draws tiled background across the visible viewport.
---- @param camera {_x: number, _y: number} Camera instance with position in tile coordinates
---- @param sprite_key string Key into sprites.environment for background image
-local function draw_background(camera, sprite_key)
+--- Supports both sprite key strings and Tiled image layer configs.
+---@param camera {_x: number, _y: number} Camera instance with position in tile coordinates
+---@param bg_config string|table Sprite key or Tiled image layer config
+local function draw_background(camera, bg_config)
 	local scale = config.ui.SCALE
 	local bg_width = BG_NATIVE_WIDTH * scale
 	local bg_height = BG_NATIVE_HEIGHT * scale
 
-	local cam_x = camera._x * sprites.tile_size
-	local cam_y = camera._y * sprites.tile_size
+	-- Determine image source and parallax
+	local image
+	local parallax_x, parallax_y = 1, 1
+	local offset_x, offset_y = 0, 0
+	local repeat_x, repeat_y = true, true
 
-	local start_x = math.floor(cam_x / bg_width) * bg_width
-	local start_y = math.floor(cam_y / bg_height) * bg_height
-	local end_x = cam_x + config.ui.canvas_width + bg_width
-	local end_y = cam_y + config.ui.canvas_height + bg_height
+	if type(bg_config) == "string" then
+		-- Old format: sprite key
+		image = sprites.environment[bg_config]
+	elseif type(bg_config) == "table" then
+		-- New format: Tiled image layer config
+		image = background_image
+		parallax_x = bg_config.parallax_x or 1
+		parallax_y = bg_config.parallax_y or 1
+		-- Offset is in native pixels, scale to match display
+		offset_x = (bg_config.offset_x or 0) * scale
+		offset_y = (bg_config.offset_y or 0) * scale
+		repeat_x = bg_config.repeat_x ~= false
+		repeat_y = bg_config.repeat_y ~= false
+	end
 
-	for y = start_y, end_y, bg_height do
-		for x = start_x, end_x, bg_width do
-			canvas.draw_image(
-				sprites.environment[sprite_key],
-				x, y,
-				bg_width, bg_height
-			)
+	if not image then return end
+
+	-- Apply parallax to camera position
+	local cam_x = camera._x * sprites.tile_size * parallax_x
+	local cam_y = camera._y * sprites.tile_size * parallax_y
+
+	if repeat_x and repeat_y then
+		-- Tile in both directions
+		-- Account for offset in tiling calculation to handle any offset value
+		local start_x = math.floor((cam_x - offset_x) / bg_width) * bg_width + offset_x
+		local start_y = math.floor((cam_y - offset_y) / bg_height) * bg_height + offset_y
+		local end_x = cam_x + config.ui.canvas_width + bg_width
+		local end_y = cam_y + config.ui.canvas_height + bg_height
+
+		for y = start_y, end_y, bg_height do
+			for x = start_x, end_x, bg_width do
+				canvas.draw_image(image, x, y, bg_width, bg_height)
+			end
 		end
+	elseif repeat_x then
+		-- Tile horizontally only
+		local start_x = math.floor((cam_x - offset_x) / bg_width) * bg_width + offset_x
+		local end_x = cam_x + config.ui.canvas_width + bg_width
+		local y = offset_y
+
+		for x = start_x, end_x, bg_width do
+			canvas.draw_image(image, x, y, bg_width, bg_height)
+		end
+	elseif repeat_y then
+		-- Tile vertically only
+		local start_y = math.floor((cam_y - offset_y) / bg_height) * bg_height + offset_y
+		local end_y = cam_y + config.ui.canvas_height + bg_height
+		local x = offset_x
+
+		for y = start_y, end_y, bg_height do
+			canvas.draw_image(image, x, y, bg_width, bg_height)
+		end
+	else
+		-- No repeat: single image
+		canvas.draw_image(image, offset_x, offset_y, bg_width, bg_height)
 	end
 end
 
 --- Draws all platforms (walls, slopes, ladders, and bridges).
---- @param camera table Camera instance for viewport culling
---- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+---@param camera table Camera instance for viewport culling
+---@param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
 function platforms.draw(camera, margin)
 	margin = margin or 0
-	if background_sprite then
-		draw_background(camera, background_sprite)
+	if background_config then
+		draw_background(camera, background_config)
 	end
 	platforms.walls.draw(camera, margin)
 	platforms.slopes.draw(camera, margin)
 	platforms.ladders.draw(camera, margin)
 	platforms.bridges.draw(camera, margin)
+
+	-- Debug: draw patrol areas
+	if config.bounding_boxes and #patrol_areas > 0 then
+		local ts = sprites.tile_size
+		canvas.set_color("#ffff0060")  -- Yellow with transparency
+		for _, area in ipairs(patrol_areas) do
+			canvas.fill_rect(area.x * ts, area.y * ts, area.width * ts, area.height * ts)
+		end
+		canvas.set_color("#ffff00")  -- Yellow outline
+		for _, area in ipairs(patrol_areas) do
+			canvas.draw_rect(area.x * ts, area.y * ts, area.width * ts, area.height * ts)
+		end
+	end
 end
 
---- Clears all platform data (for level reloading).
+--- Clears all platform data and resets background state.
+--- Call before loading a new level to prevent stale data.
 function platforms.clear()
-	background_sprite = nil
+	background_config = nil
+	background_image = nil
+	patrol_areas = {}
 	platforms.walls.clear()
 	platforms.slopes.clear()
 	platforms.ladders.clear()

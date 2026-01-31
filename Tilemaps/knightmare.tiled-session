@@ -1,0 +1,35 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "enemy_spawns.tsx": {
+            "dynamicWrapping": true
+        },
+        "idle.tsx": {
+            "dynamicWrapping": false,
+            "scaleInEditor": 1
+        },
+        "spawns.tsx": {
+            "dynamicWrapping": true,
+            "scaleInEditor": 2
+        },
+        "tileset_dungeon.tsx": {
+            "dynamicWrapping": false
+        }
+    },
+    "last.exportedFilePath": "C:/Users/User/Desktop/Lua Projects/new-project/Tilemaps",
+    "last.imagePath": "C:/Users/User/Desktop/Lua Projects/new-project/Tilemaps/objects",
+    "lastUsedTilesetExportFilter": "Lua files (*.lua)",
+    "map.lastUsedExportFilter": "All Files (*)",
+    "openFiles": [
+    ],
+    "project": "knightmare.tiled-project",
+    "property.type": "string",
+    "recentFiles": [
+        "spawns.tsx",
+        "idle.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.type": 1
+}

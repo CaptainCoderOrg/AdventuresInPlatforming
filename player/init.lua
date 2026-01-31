@@ -97,7 +97,7 @@ function Player.new()
 	self.y = 2
 	self.vx = 0
 	self.vy = 0
-	self.box = { w = 0.7, h = 0.85, x = 0.15, y = 0.15 }
+	self.box = { w = 0.60, h = 0.85, x = 0.2, y = 0.15 }
 	self.is_player = true
 	-- Tracks last grounded position for out-of-bounds recovery
 	self.last_safe_position = { x = self.x, y = self.y }

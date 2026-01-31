@@ -63,10 +63,12 @@ end
 ---@param ty number Tile y coordinate in tilemap
 ---@param dx number Destination x in screen pixels
 ---@param dy number Destination y in screen pixels
-function sprites.draw_tile(tx, ty, dx, dy)
+---@param tileset string|nil Optional tileset key (defaults to tilemap)
+function sprites.draw_tile(tx, ty, dx, dy, tileset)
 	local base = config.ui.TILE
+	local image = tileset or sprites.environment.tilemap
 	canvas.draw_image(
-		sprites.environment.tilemap,
+		image,
 		dx, dy, sprites.tile_size, sprites.tile_size,
 		tx * base, ty * base, base, base
 	)

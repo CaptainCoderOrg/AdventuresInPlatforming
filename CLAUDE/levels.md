@@ -1,9 +1,10 @@
 # Levels and Camera
 
 <!-- QUICK REFERENCE
-- Level files: levels/*.lua with ASCII tile maps
-- Geometry symbols: # (wall), X (isolated), / \ (slopes), H (ladder), - (bridge)
-- Entity symbols: configurable via symbols table
+- Level files: levels/*.lua (ASCII) or Tilemaps/*.lua (Tiled export)
+- ASCII geometry: # (wall), X (isolated), / \ (slopes), H (ladder), - (bridge)
+- Tiled: Layer/tile type property determines collision behavior
+- Entity symbols: configurable via symbols table (ASCII) or object properties (Tiled)
 - Camera: Camera/init.lua with entity following
 - Signs: Sign/init.lua with {action_id} variable substitution
 -->
@@ -66,6 +67,85 @@ B          B    -- Bat patrols horizontally between these points
 - Two markers on same row: Creates patrolling bat_eye
 - Single marker: Creates stationary bat_eye
 - 3+ markers on same row: Warning logged, markers ignored
+
+## Tiled Format
+
+The loader auto-detects Tiled exports (Lua format) via `tilesets` and `layers` arrays. Export from Tiled using File > Export As > Lua.
+
+### Format Detection
+
+```lua
+-- Auto-detected as Tiled format if both exist:
+level_data.tilesets ~= nil and level_data.layers ~= nil
+```
+
+### Layer Types
+
+| Layer Type | Purpose |
+|------------|---------|
+| `tilelayer` | Tile-based geometry (walls, bridges, ladders, decorative) |
+| `objectgroup` | Entity placement (spawn, enemies, props, patrol areas) |
+| `imagelayer` | Background images with parallax |
+
+### Collision Type Priority
+
+Collision behavior is determined by the `type` property:
+
+1. **Tile type** (from tileset) - Checked first, overrides layer type
+2. **Layer type** (from layer properties) - Fallback if tile has no type
+3. **No type** - Tiles render as decorative (no collision)
+
+Valid type values: `wall`, `platform`, `bridge`, `ladder`
+
+### Object Layer Properties
+
+Objects use custom properties for entity configuration:
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `type` | string | Entity type: `spawn`, `enemy`, `sign`, `patrol_area`, or prop type |
+| `key` | string | Enemy key (if type=enemy), e.g., `ratto`, `zombie` |
+| `text` | string | Sign text (if type=sign) |
+| `flip` | bool | Face left instead of right |
+| `offset_x` | number | X offset in tiles (for sprite alignment) |
+| `offset_y` | number | Y offset in tiles (for sprite alignment) |
+
+Property merging: Tileset properties are merged with object instance properties. Instance properties override tileset properties.
+
+### Patrol Areas
+
+Rectangle objects with `type = "patrol_area"` define patrol bounds for enemies:
+
+1. Create a rectangle object in Tiled covering the patrol zone
+2. Set custom property `type = "patrol_area"`
+3. Place enemy tile objects inside the rectangle
+4. Enemies automatically use the containing patrol area for waypoints
+
+Debug: Press `P` to visualize patrol areas as yellow rectangles.
+
+### Image Layer Backgrounds
+
+Image layers support parallax scrolling and tiling:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `parallaxx` | number | 1 | Horizontal parallax factor (0 = fixed, 1 = normal scroll) |
+| `parallaxy` | number | 1 | Vertical parallax factor |
+| `repeatx` | bool | false | Tile horizontally |
+| `repeaty` | bool | false | Tile vertically |
+| `offsetx` | number | 0 | X offset in pixels |
+| `offsety` | number | 0 | Y offset in pixels |
+
+### Coordinate Normalization
+
+Tiled maps with negative coordinates (infinite maps) are automatically normalized to start at (0,0). All tile and object positions are adjusted accordingly.
+
+### Tileset Setup
+
+1. Create tileset in Tiled (File > New > New Tileset)
+2. Set tile `type` property for collision tiles (wall, bridge, ladder)
+3. Export tileset as Lua (File > Export As > Lua)
+4. Place exported `.lua` file in `Tilemaps/` directory
 
 ## Sign System
 
@@ -138,7 +218,9 @@ Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead di
 ## Key Files
 
 - `levels/*.lua` - Level definitions with ASCII maps
-- `platforms/init.lua` - Level geometry loader
+- `Tilemaps/*.lua` - Tiled map exports (levels and tilesets)
+- `platforms/init.lua` - Level geometry loader (format auto-detection)
+- `platforms/tiled_loader.lua` - Tiled format parser
 - `Sign/init.lua` - Interactive sign system
 - `Sign/state.lua` - Sign state management
 - `Camera/init.lua` - Camera system with following and framing

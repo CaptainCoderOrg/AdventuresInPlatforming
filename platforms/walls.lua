@@ -8,11 +8,12 @@ local walls = {}
 
 walls.tiles = {}
 walls.solo_tiles = {}
+walls.decorative_tiles = {}  -- Render-only tiles (no collision)
 walls.colliders = {}
 walls.tile_to_collider = {}
 
---- @param tile_lookup table<string, {x: number, y: number}>
---- @return {x: number, y: number}[]
+---@param tile_lookup table<string, {x: number, y: number}>
+---@return {x: number, y: number}[]
 local function get_sorted_tiles(tile_lookup)
 	local sorted = {}
 	for _, tile in pairs(tile_lookup) do
@@ -26,8 +27,8 @@ local function get_sorted_tiles(tile_lookup)
 end
 
 --- Finds all connected components of tiles using flood fill.
---- @param tile_lookup table<string, {x: number, y: number}>
---- @return table[] Array of components, each containing tile arrays
+---@param tile_lookup table<string, {x: number, y: number}>
+---@return table[] Array of components, each containing tile arrays
 local function find_connected_components(tile_lookup)
 	local visited = {}
 	local components = {}
@@ -71,8 +72,8 @@ end
 
 --- Traces ALL boundary loops of a tile component.
 --- Returns multiple polygons if the shape has holes.
---- @param tiles table[] Array of {x, y} tiles
---- @return table[][] Array of vertex arrays
+---@param tiles table[] Array of {x, y} tiles
+---@return table[][] Array of vertex arrays
 local function trace_all_boundaries(tiles)
 	local tile_set = {}
 	for _, t in ipairs(tiles) do
@@ -167,8 +168,8 @@ local function trace_all_boundaries(tiles)
 end
 
 --- Simplifies a polygon by removing collinear points.
---- @param vertices table[]
---- @return table[]
+---@param vertices table[]
+---@return table[]
 local function simplify_polygon(vertices)
 	if #vertices < 3 then return vertices end
 
@@ -195,8 +196,8 @@ local function simplify_polygon(vertices)
 end
 
 --- Merges tiles into rectangular colliders (fallback for shapes with holes).
---- @param tiles table[]
---- @return table[]
+---@param tiles table[]
+---@return table[]
 local function merge_into_rectangles(tiles)
 	local tile_lookup = {}
 	for _, t in ipairs(tiles) do
@@ -275,8 +276,8 @@ local function merge_into_rectangles(tiles)
 end
 
 --- Creates colliders from tiles using polygons when possible, rectangles for shapes with holes.
---- @param tile_lookup table<string, {x: number, y: number}>
---- @return table[]
+---@param tile_lookup table<string, {x: number, y: number}>
+---@return table[]
 local function create_colliders(tile_lookup)
 	local components = find_connected_components(tile_lookup)
 	local colliders = {}
@@ -307,7 +308,8 @@ local function create_colliders(tile_lookup)
 	return colliders
 end
 
---- @param colliders table[]
+--- Registers colliders with the physics world and updates tile-to-collider mapping.
+---@param colliders table[] Array of collider definitions
 local function register_colliders(colliders)
 	for _, col in ipairs(colliders) do
 		table.insert(walls.colliders, col)
@@ -323,23 +325,33 @@ local function register_colliders(colliders)
 end
 
 --- Adds a tile position to be merged later.
---- @param x number
---- @param y number
-function walls.add_tile(x, y)
+---@param x number
+---@param y number
+---@param tile_id number|nil Optional Tiled global tile ID for rendering
+function walls.add_tile(x, y, tile_id)
 	local key = x .. "," .. y
-	walls.tiles[key] = { x = x, y = y }
+	walls.tiles[key] = { x = x, y = y, tile_id = tile_id }
+end
+
+--- Adds a decorative tile (render only, no collision).
+---@param x number
+---@param y number
+---@param tile_id number Tiled global tile ID for rendering
+function walls.add_decorative_tile(x, y, tile_id)
+	local key = x .. "," .. y
+	walls.decorative_tiles[key] = { x = x, y = y, tile_id = tile_id }
 end
 
 --- Adds a solo tile that won't merge with adjacent tiles.
---- @param x number
---- @param y number
+---@param x number
+---@param y number
 function walls.add_solo_tile(x, y)
 	local key = x .. "," .. y
 	walls.solo_tiles[key] = { x = x, y = y }
 end
 
 --- Builds colliders from all added tiles.
---- @param merge? boolean Whether to merge adjacent tiles (default true)
+---@param merge? boolean Whether to merge adjacent tiles (default true)
 function walls.build_colliders(merge)
 	if merge == false then
 		for _, tile in pairs(walls.tiles) do
@@ -375,9 +387,9 @@ function walls.build_colliders(merge)
 end
 
 --- Removes a tile and rebuilds affected collider.
---- @param x number
---- @param y number
---- @return boolean success
+---@param x number
+---@param y number
+---@return boolean success
 function walls.remove_tile(x, y)
 	local key = x .. "," .. y
 	local tile = walls.tiles[key]
@@ -415,15 +427,28 @@ function walls.remove_tile(x, y)
 end
 
 --- Draws all wall tiles and debug bounding boxes.
---- @param camera table Camera instance for viewport culling
---- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+---@param camera table Camera instance for viewport culling
+---@param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
 function walls.draw(camera, margin)
 	local ts = sprites.tile_size
 	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
+	-- Draw decorative tiles first (behind collision tiles)
+	for _, tile in pairs(walls.decorative_tiles) do
+		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
+			local tx, ty = common.gid_to_tilemap(tile.tile_id)
+			sprites.draw_tile(tx, ty, tile.x * ts, tile.y * ts, sprites.environment.tileset_dungeon)
+		end
+	end
+
 	for _, tile in pairs(walls.tiles) do
 		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
-			sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
+			if tile.tile_id then
+				local tx, ty = common.gid_to_tilemap(tile.tile_id)
+				sprites.draw_tile(tx, ty, tile.x * ts, tile.y * ts, sprites.environment.tileset_dungeon)
+			else
+				sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
+			end
 		end
 	end
 
@@ -460,10 +485,12 @@ function walls.draw(camera, margin)
 	end
 end
 
---- Clears all wall data (for level reloading).
+--- Clears all wall data and removes colliders from physics world.
+--- Call before level reload to reset state.
 function walls.clear()
 	walls.tiles = {}
 	walls.solo_tiles = {}
+	walls.decorative_tiles = {}
 	for _, col in ipairs(walls.colliders) do
 		world.remove_collider(col)
 	end
@@ -472,9 +499,9 @@ function walls.clear()
 end
 
 --- Checks if a wall tile exists at the given position.
---- @param x number Tile x coordinate
---- @param y number Tile y coordinate
---- @return boolean True if a wall (normal or solo) exists at position
+---@param x number Tile x coordinate
+---@param y number Tile y coordinate
+---@return boolean True if a wall (normal or solo) exists at position
 function walls.has_tile(x, y)
 	local key = x .. "," .. y
 	return walls.tiles[key] ~= nil or walls.solo_tiles[key] ~= nil

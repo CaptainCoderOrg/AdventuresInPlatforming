@@ -15,7 +15,7 @@ There is no `lua` or `luac` interpreter installed locally. Code cannot be execut
 The game runs via the Canvas framework runtime. Debug controls:
 - `P` - Toggle debug overlay (FPS, player state, bounding boxes)
   - Red boxes: Player hitbox
-  - Yellow boxes: Projectile hitboxes
+  - Yellow boxes: Projectile hitboxes / Patrol areas (filled)
   - Green boxes: World collision geometry
   - Cyan boxes: Enemy hitboxes / Bridge colliders
   - Magenta boxes: Rotated enemy combat hitboxes (slope-following enemies)
@@ -124,6 +124,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 ### World
 - `platforms/init.lua` - Level geometry loader
+- `platforms/tiled_loader.lua` - Tiled map format parser
 - `Camera/init.lua` - Camera following
 - `Sign/init.lua` - Interactive signs
 

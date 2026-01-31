@@ -1,7 +1,8 @@
-local sprites = require('sprites')
-local world = require('world')
-local canvas = require('canvas')
-local config = require('config')
+local common = require('platforms/common')
+local sprites = common.sprites
+local world = common.world
+local canvas = common.canvas
+local config = common.config
 
 local ladders = {}
 
@@ -12,9 +13,10 @@ ladders.top_colliders = {}
 --- Creates a trigger collider for climb detection.
 --- @param x number Tile x coordinate
 --- @param y number Tile y coordinate
-function ladders.add_ladder(x, y)
+--- @param tile_id number|nil Optional Tiled global tile ID for rendering
+function ladders.add_ladder(x, y, tile_id)
 	local key = x .. "," .. y
-	local ladder = { x = x, y = y, box = { x = 0, y = 0, w = 1, h = 1 }, is_ladder = true }
+	local ladder = { x = x, y = y, box = { x = 0, y = 0, w = 1, h = 1 }, is_ladder = true, tile_id = tile_id }
 	ladders.tiles[key] = ladder
 	world.add_trigger_collider(ladder)
 end
@@ -84,13 +86,19 @@ function ladders.draw(camera, margin)
 			goto continue
 		end
 
-		local sprite = nil  -- nil = ladder_mid (default)
-		if ladder.is_top then
-			sprite = sprites.environment.ladder_top
-		elseif ladder.is_bottom then
-			sprite = sprites.environment.ladder_bottom
+		-- Use Tiled tile_id if available, otherwise fall back to sprite-based rendering
+		if ladder.tile_id then
+			local tx, ty = common.gid_to_tilemap(ladder.tile_id)
+			sprites.draw_tile(tx, ty, ladder.x * ts, ladder.y * ts, sprites.environment.tileset_dungeon)
+		else
+			local sprite = nil  -- nil = ladder_mid (default)
+			if ladder.is_top then
+				sprite = sprites.environment.ladder_top
+			elseif ladder.is_bottom then
+				sprite = sprites.environment.ladder_bottom
+			end
+			sprites.draw_ladder(ladder.x * ts, ladder.y * ts, sprite)
 		end
-		sprites.draw_ladder(ladder.x * ts, ladder.y * ts, sprite)
 
 		::continue::
 	end

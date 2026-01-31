@@ -4,6 +4,7 @@ local canvas = require("canvas")
 ---@type table<string, string>
 local environment = {
 	tilemap = "tilemap",
+	tileset_dungeon = "tileset_dungeon",
 	ladder_top = "ladder_top",
 	ladder_mid = "ladder_mid",
 	ladder_bottom = "ladder_bottom",
@@ -40,6 +41,7 @@ local environment = {
 }
 
 canvas.assets.load_image(environment.tilemap, "images/tilemap_packed.png")
+canvas.assets.load_image(environment.tileset_dungeon, "Tilesets/tileset_dungeon.png")
 canvas.assets.load_image(environment.ladder_top, "sprites/environment/ladder_top.png")
 canvas.assets.load_image(environment.ladder_mid, "sprites/environment/ladder_mid.png")
 canvas.assets.load_image(environment.ladder_bottom, "sprites/environment/ladder_bottom.png")

@@ -14,9 +14,10 @@ bridges.colliders = state.colliders
 --- Adds a bridge tile at the specified position.
 --- @param x number Tile x coordinate
 --- @param y number Tile y coordinate
-function bridges.add_bridge(x, y)
+--- @param tile_id number|nil Optional Tiled global tile ID for rendering
+function bridges.add_bridge(x, y, tile_id)
 	local key = x .. "," .. y
-	local bridge = { x = x, y = y, is_bridge = true }
+	local bridge = { x = x, y = y, is_bridge = true, tile_id = tile_id }
 	bridges.tiles[key] = bridge
 end
 
@@ -97,13 +98,19 @@ function bridges.draw(camera, margin)
 			goto continue
 		end
 
-		local sprite = sprites.environment.bridge_middle
-		if bridge.sprite_type == "left" then
-			sprite = sprites.environment.bridge_left
-		elseif bridge.sprite_type == "right" then
-			sprite = sprites.environment.bridge_right
+		-- Use Tiled tile_id if available, otherwise fall back to sprite-based rendering
+		if bridge.tile_id then
+			local tx, ty = common.gid_to_tilemap(bridge.tile_id)
+			sprites.draw_tile(tx, ty, bridge.x * ts, bridge.y * ts, sprites.environment.tileset_dungeon)
+		else
+			local sprite = sprites.environment.bridge_middle
+			if bridge.sprite_type == "left" then
+				sprite = sprites.environment.bridge_left
+			elseif bridge.sprite_type == "right" then
+				sprite = sprites.environment.bridge_right
+			end
+			sprites.draw_bridge(bridge.x * ts, bridge.y * ts, sprite)
 		end
-		sprites.draw_bridge(bridge.x * ts, bridge.y * ts, sprite)
 
 		::continue::
 	end

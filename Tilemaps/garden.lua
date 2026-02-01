@@ -80,7 +80,7 @@ return {
       visible = true,
       opacity = 1,
       offsetx = 0,
-      offsety = 100,
+      offsety = 140,
       parallaxx = 0.1,
       parallaxy = 0.1,
       repeatx = true,

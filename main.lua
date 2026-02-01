@@ -57,18 +57,23 @@ Prop.register("lever", require("Prop/lever"))
 Prop.register("appearing_bridge", require("Prop/appearing_bridge"))
 Prop.register("stairs", require("Prop/stairs"))
 Prop.register("decoy_painting", require("Prop/decoy_painting"))
+Prop.register("witch_npc", require("Prop/witch_npc"))
+Prop.register("explorer_npc", require("Prop/explorer_npc"))
+Prop.register("adept_npc", require("Prop/adept_npc"))
 
 -- Levels
 local level1 = require("levels/level1")
 local level2 = require("levels/level2")
 local test_level = require("Tilemaps/test-level")
 local garden = require("Tilemaps/garden")
+local shop = require("Tilemaps/shop")
 
 local levels = {
     level1 = level1,
     level2 = level2,
     test_level = test_level,
     garden = garden,
+    shop = shop,
 }
 
 --- Get level module by ID
@@ -113,7 +118,7 @@ local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
 local was_dead = false  -- Track death state for game over trigger
-local current_level = garden  -- Track current level module
+local current_level = shop  -- Track current level module
 local active_slot = nil  -- Currently active save slot (1-3)
 local proximity_volumes = {}  -- Reused per-frame to avoid allocations
 

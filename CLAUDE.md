@@ -107,8 +107,10 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 ### Entities
 - `Enemies/init.lua` - Enemy manager
 - `Prop/init.lua` - Prop system manager
+- `Prop/npc_common.lua` - NPC factory for dialogue NPCs
 - `Projectile/init.lua` - Throwable projectiles
 - `Effects/init.lua` - Visual effects
+- `sprites/npcs.lua` - NPC sprite asset loader
 
 ### Audio
 - `audio/init.lua` - Main audio with pools

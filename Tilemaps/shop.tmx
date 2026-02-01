@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="14" tilewidth="16" tileheight="16" infinite="0" nextlayerid="4" nextobjectid="5">
+ <editorsettings>
+  <export target="shop.lua" format="lua"/>
+ </editorsettings>
+ <tileset firstgid="1" source="tileset_witch_shop.tsx"/>
+ <tileset firstgid="226" source="tileset_garden.tsx"/>
+ <tileset firstgid="358" source="idle.tsx"/>
+ <tileset firstgid="364" source="NPCS.tsx"/>
+ <imagelayer id="2" name="Background" repeatx="1" repeaty="1">
+  <image source="../assets/Tilesets/bg_00_witch_shop.png" width="240" height="160"/>
+ </imagelayer>
+ <layer id="1" name="Walls / Platforms" width="24" height="14">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+  <data encoding="csv">
+17,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,19,
+32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+182,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,34,
+78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,78,49,
+238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,
+238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,
+238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238,238
+</data>
+ </layer>
+ <objectgroup id="3" name="Props">
+  <object id="1" name="Start" gid="358" x="32" y="160" width="16" height="16">
+   <properties>
+    <property name="type" value="spawn"/>
+   </properties>
+  </object>
+  <object id="2" gid="364" x="64" y="160" width="32" height="32">
+   <properties>
+    <property name="type" value="witch_npc"/>
+   </properties>
+  </object>
+  <object id="3" gid="365" x="144" y="160" width="16" height="16"/>
+  <object id="4" gid="366" x="224" y="160" width="16" height="16"/>
+ </objectgroup>
+</map>

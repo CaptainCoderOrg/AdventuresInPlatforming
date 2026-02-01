@@ -21,7 +21,7 @@
    <property name="width" type="int" value="240"/>
   </properties>
  </imagelayer>
- <imagelayer id="6" name="Far Trees" locked="1" offsetx="0" offsety="100" parallaxx="0.1" parallaxy="0.1" repeatx="1">
+ <imagelayer id="6" name="Far Trees" locked="1" offsetx="0" offsety="140" parallaxx="0.1" parallaxy="0.1" repeatx="1">
   <image source="../assets/Tilesets/bg_02_garden.png" width="240" height="216"/>
   <properties>
    <property name="clamp_bottom" type="bool" value="true"/>

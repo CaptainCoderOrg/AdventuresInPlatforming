@@ -352,6 +352,33 @@ animation:draw(x, y - lift)
   - Uses ghost_painting static sprite with -0.5 tile Y offset
   - Used to disguise real ghost_painting enemies or as decoration
   - Spawned via `p` symbol in level map
+- **Witch NPC** - Interactable merchant NPC with dialogue
+  - Shows "Talk" prompt when player approaches
+  - Displays dialogue text on interaction
+  - 2-tile collision box, 10-frame idle animation
+- **Explorer NPC** - Interactable NPC with dialogue
+  - 1-tile collision box, 5-frame idle animation
+- **Adept NPC** - Interactable NPC with dialogue
+  - 1-tile collision box, 6-frame reading animation
+
+### NPC Factory Pattern (`Prop/npc_common.lua`)
+
+NPCs share identical behavior (proximity prompt, interaction dialogue) with different visuals. The `npc_common.create(config)` factory generates prop definitions from configuration:
+
+```lua
+return npc_common.create({
+    sprite = sprites.npcs.explorer_idle,
+    frame_count = 5,
+    ms_per_frame = 150,
+    width = 16,
+    height = 16,
+    dialogue = "The dungeon lies ahead...",
+    box_size = 1,      -- Optional, default 1
+    draw_width = 1,    -- Optional, default box_size
+})
+```
+
+Adding a new NPC requires only a configuration file using this factory.
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -494,5 +521,9 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)
 - `Prop/spear_trap.lua` - Spear trap prop (wall-mounted projectile trap with internal Spear pool)
+- `Prop/npc_common.lua` - NPC factory for creating dialogue-enabled NPCs
+- `Prop/witch_npc.lua` - Witch merchant NPC definition
+- `Prop/explorer_npc.lua` - Explorer NPC definition
+- `Prop/adept_npc.lua` - Adept NPC definition
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

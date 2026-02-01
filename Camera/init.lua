@@ -49,6 +49,7 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._world_bounds = { x = 0, y = 0, width = world_width, height = world_height }
 	self._active_bounds = nil
 	self._bounds_transition_time = 0
+	self._bounds_settling = false
 
 	return self
 end
@@ -422,8 +423,20 @@ function Camera:update(tile_size, dt, lerp_factor)
 	local delta_x = target_cam_x - self._x
 	local delta_y = target_cam_y - self._y
 
-	-- Use slower lerp during bounds transition for both axes
-	local is_transitioning = self._bounds_transition_time > 0
+	-- Enter settling mode when transition timer expires; exit when camera converges to target
+	local transition_just_ended = self._bounds_transition_time <= 0 and self._bounds_transition_time + dt > 0
+	if transition_just_ended then
+		self._bounds_settling = true
+	elseif self._bounds_settling then
+		local converged = math.abs(delta_x) <= cfg.bounds_settle_threshold and
+		                  math.abs(delta_y) <= cfg.bounds_settle_threshold
+		if converged then
+			self._bounds_settling = false
+		end
+	end
+
+	-- Use slow lerp during transition and while settling toward target
+	local is_transitioning = self._bounds_transition_time > 0 or self._bounds_settling
 	local x_lerp = is_transitioning and cfg.bounds_transition_lerp or lerp_factor
 
 	if math.abs(delta_x) < cfg.epsilon then

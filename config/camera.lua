@@ -32,6 +32,7 @@ return {
 	-- Camera bounds transition
 	bounds_transition_duration = 0.8,  -- Seconds to use slow lerp when entering new bounds area
 	bounds_transition_lerp = 0.03,     -- Lerp speed during bounds transition
+	bounds_settle_threshold = 0.1,     -- Continue slow lerp until within this many tiles of target
 
 	-- Misc
 	ladder_exit_offset = 0.8,       -- Tiles above ladder top for exit

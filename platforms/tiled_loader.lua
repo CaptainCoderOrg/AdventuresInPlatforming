@@ -169,7 +169,8 @@ end
 ---@param layer_type string|nil Layer's collision type from properties
 ---@param tile_types table<number, string> Map of gid to collision type
 ---@param tile_renderable table<number, table|string> Map of gid to render info (tileset info or collection tile)
-local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable)
+---@param depth number Layer depth for draw ordering
+local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable, depth)
 	local render_info = tile_renderable[tile_id]
 	if not render_info then return end
 
@@ -193,7 +194,7 @@ local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_t
 
 	if not layer_type then
 		-- Layer has no type: all tiles are decorative
-		walls.add_decorative_tile(world_x, world_y, tile_id, tileset_info, tile_image)
+		walls.add_decorative_tile(world_x, world_y, tile_id, tileset_info, tile_image, depth)
 		return
 	end
 
@@ -216,7 +217,8 @@ end
 ---@param offset_y number Y offset to normalize coordinates (subtracted from world coords)
 ---@param tile_types table<number, string> Map of gid to collision type from tileset
 ---@param tile_renderable table<number, boolean|table> Map of gid to render info from tileset
-local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_renderable)
+---@param depth number Layer depth for draw ordering
+local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_renderable, depth)
 	local layer_type = layer.properties and layer.properties.type
 
 	if layer.chunks then
@@ -230,7 +232,7 @@ local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_re
 					local local_y = math.floor((i - 1) / chunk_width)
 					local world_x = chunk_x + local_x - offset_x
 					local world_y = chunk_y + local_y - offset_y
-					process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable)
+					process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable, depth)
 				end
 			end
 		end
@@ -241,7 +243,7 @@ local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_re
 			if tile_id > 0 then
 				local x = (i - 1) % width - offset_x
 				local y = math.floor((i - 1) / width) - offset_y
-				process_single_tile(tile_id, x, y, layer_type, tile_types, tile_renderable)
+				process_single_tile(tile_id, x, y, layer_type, tile_types, tile_renderable, depth)
 			end
 		end
 	end
@@ -303,9 +305,31 @@ end
 ---@param spawn_points table<string, table> Named spawn points lookup (modified in place)
 ---@param map_transitions table Array of map transition zones (modified in place)
 ---@param one_way_platforms table Array of one-way platform zones (modified in place)
+---@param camera_bounds table Array of camera bounds rectangles (modified in place)
 ---@return table|nil spawn Updated spawn point
 ---@return table patrol_areas_tiles Patrol areas converted to tile coordinates
-local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, spawn_points, map_transitions, one_way_platforms)
+local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, spawn_points, map_transitions, one_way_platforms, camera_bounds)
+	-- Check for layer-level type (e.g., "camera_bounds" layer)
+	local layer_type = layer.properties and layer.properties.type
+
+	-- Camera bounds layer: extract all rectangle objects as camera bounds
+	if layer_type == "camera_bounds" then
+		for _, obj in ipairs(layer.objects or {}) do
+			if obj.shape == "rectangle" or (not obj.shape and obj.width and obj.height) then
+				local tx = obj.x / tile_size - offset_x
+				local ty = obj.y / tile_size - offset_y
+				table.insert(camera_bounds, {
+					x = tx,
+					y = ty,
+					width = (obj.width or tile_size) / tile_size,
+					height = (obj.height or tile_size) / tile_size,
+				})
+			end
+		end
+		-- Camera bounds layers don't have other entities, return early
+		return spawn, {}
+	end
+
 	-- First pass: collect patrol areas
 	local patrol_areas = {}
 	for _, obj in ipairs(layer.objects or {}) do
@@ -549,6 +573,7 @@ function tiled.load(level_data)
 	local spawn_points = {}  -- Named spawn points for map transitions
 	local map_transitions = {}  -- Map transition trigger zones
 	local one_way_platforms = {}  -- One-way platform collision zones
+	local camera_bounds = {}  -- Camera constraint rectangles
 	local tile_size = level_data.tilewidth or 16
 
 	-- Build tile maps from tileset files
@@ -569,11 +594,11 @@ function tiled.load(level_data)
 	local min_x, min_y, max_x, max_y = calculate_bounds(level_data)
 
 	-- Process each layer with offset normalization
-	for _, layer in ipairs(level_data.layers) do
+	for layer_index, layer in ipairs(level_data.layers) do
 		if layer.type == "tilelayer" then
-			process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable)
+			process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable, layer_index)
 		elseif layer.type == "objectgroup" then
-			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, spawn_points, map_transitions, one_way_platforms)
+			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, spawn_points, map_transitions, one_way_platforms, camera_bounds)
 			spawn = layer_spawn
 			for _, area in ipairs(layer_patrol_areas) do
 				table.insert(patrol_areas, area)
@@ -604,6 +629,7 @@ function tiled.load(level_data)
 		spawn_points = spawn_points,
 		map_transitions = map_transitions,
 		one_way_platforms = one_way_platforms,
+		camera_bounds = camera_bounds,
 	}
 end
 

@@ -44,6 +44,12 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._manual_y_target = nil
 	self._manual_look_speed = cfg.manual_look_speed
 
+	-- Camera bounds constraint zones
+	self._camera_bounds = {}
+	self._world_bounds = { x = 0, y = 0, width = world_width, height = world_height }
+	self._active_bounds = nil
+	self._bounds_transition_time = 0
+
 	return self
 end
 
@@ -104,12 +110,12 @@ function Camera:snap_to_target(tile_size)
 		(self._viewport_width / 2 / tile_size)
 	local target_cam_y = self:_calculate_default_target_y(self._target.y, tile_size)
 
-	-- Clamp to world bounds
-	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
-	local max_cam_y = self._world_height - (self._viewport_height / tile_size)
+	-- Clamp to active bounds
+	local active_bounds = self:_get_active_bounds(self._target.x, self._target.y)
+	local min_cam_x, min_cam_y, max_cam_x, max_cam_y = self:_calculate_clamp_limits(active_bounds, tile_size)
 
-	self._x = math.max(0, math.min(target_cam_x, max_cam_x))
-	self._y = math.max(0, math.min(target_cam_y, max_cam_y))
+	self._x = math.max(min_cam_x, math.min(target_cam_x, max_cam_x))
+	self._y = math.max(min_cam_y, math.min(target_cam_y, max_cam_y))
 
 	-- Reset look-ahead offset to match target direction
 	self._look_ahead_offset_x = (self._target.direction or 1) * self._look_ahead_distance_x
@@ -205,6 +211,57 @@ function Camera:set_fall_lerp(min_lerp, max_lerp, ramp_duration)
 	self._fall_lerp_min = min_lerp or cfg.fall_lerp_min
 	self._fall_lerp_max = max_lerp or cfg.fall_lerp_max
 	self._fall_lerp_ramp_duration = ramp_duration or cfg.fall_lerp_ramp_duration
+end
+
+--- Sets camera bounds constraint zones
+--- @param bounds table[] Array of bounds rectangles {x, y, width, height} in tiles
+function Camera:set_camera_bounds(bounds)
+	self._camera_bounds = bounds or {}
+end
+
+--- Gets the active camera bounds based on player position.
+--- Returns the first bounds rectangle containing the player, or world bounds as fallback.
+--- @param player_x number Player X position in tiles
+--- @param player_y number Player Y position in tiles
+--- @return table bounds Active bounds {x, y, width, height} in tiles
+function Camera:_get_active_bounds(player_x, player_y)
+	local bounds_list = self._camera_bounds
+	for i = 1, #bounds_list do
+		local bounds = bounds_list[i]
+		if player_x >= bounds.x and player_x < bounds.x + bounds.width and
+		   player_y >= bounds.y and player_y < bounds.y + bounds.height then
+			return bounds
+		end
+	end
+	return self._world_bounds
+end
+
+--- Calculates camera clamping limits from bounds, handling viewports larger than bounds.
+--- @param bounds table Bounds rectangle {x, y, width, height} in tiles
+--- @param tile_size number Pixels per tile
+--- @return number, number, number, number min_cam_x, min_cam_y, max_cam_x, max_cam_y
+function Camera:_calculate_clamp_limits(bounds, tile_size)
+	local viewport_width_tiles = self._viewport_width / tile_size
+	local viewport_height_tiles = self._viewport_height / tile_size
+
+	local min_cam_x = bounds.x
+	local min_cam_y = bounds.y
+	local max_cam_x = bounds.x + bounds.width - viewport_width_tiles
+	local max_cam_y = bounds.y + bounds.height - viewport_height_tiles
+
+	-- Center camera when bounds area is smaller than viewport
+	if max_cam_x < min_cam_x then
+		local center_x = bounds.x + bounds.width / 2 - viewport_width_tiles / 2
+		min_cam_x = center_x
+		max_cam_x = center_x
+	end
+	if max_cam_y < min_cam_y then
+		local center_y = bounds.y + bounds.height / 2 - viewport_height_tiles / 2
+		min_cam_y = center_y
+		max_cam_y = center_y
+	end
+
+	return min_cam_x, min_cam_y, max_cam_x, max_cam_y
 end
 
 
@@ -340,27 +397,44 @@ function Camera:update(tile_size, dt, lerp_factor)
 		end
 	end
 
-	local max_cam_x = self._world_width - (self._viewport_width / tile_size)
-	local max_cam_y = self._world_height - (self._viewport_height / tile_size)
+	-- Get active bounds based on player position
+	local active_bounds = self:_get_active_bounds(self._target.x, self._target.y)
 
-	target_cam_x = math.max(0, math.min(target_cam_x, max_cam_x))
-	target_cam_y = math.max(0, math.min(target_cam_y, max_cam_y))
+	-- Detect bounds transition
+	if self._active_bounds ~= active_bounds then
+		self._active_bounds = active_bounds
+		self._bounds_transition_time = cfg.bounds_transition_duration
+	end
 
-	--- Apply epsilon snapping to prevent floating-point drift.
-	--- When delta is below epsilon (0.01 tiles ~0.5 pixels), snap to target
-	--- instead of lerping to prevent endless approach without arrival.
+	-- Decay transition time
+	if self._bounds_transition_time > 0 then
+		self._bounds_transition_time = math.max(0, self._bounds_transition_time - dt)
+	end
+
+	local min_cam_x, min_cam_y, max_cam_x, max_cam_y = self:_calculate_clamp_limits(active_bounds, tile_size)
+
+	target_cam_x = math.max(min_cam_x, math.min(target_cam_x, max_cam_x))
+	target_cam_y = math.max(min_cam_y, math.min(target_cam_y, max_cam_y))
+
+	-- Apply epsilon snapping to prevent floating-point drift
 	local delta_x = target_cam_x - self._x
 	local delta_y = target_cam_y - self._y
+
+	-- Use slower lerp during bounds transition for both axes
+	local is_transitioning = self._bounds_transition_time > 0
+	local x_lerp = is_transitioning and cfg.bounds_transition_lerp or lerp_factor
 
 	if math.abs(delta_x) < cfg.epsilon then
 		self._x = target_cam_x
 	else
-		self._x = self._x + delta_x * lerp_factor
+		self._x = self._x + delta_x * x_lerp
 	end
 
-	-- Calculate Y lerp speed based on falling duration or wall slide transition
+	-- Calculate Y lerp speed based on bounds transition, falling duration, or wall slide
 	local y_lerp = lerp_factor
-	if is_falling_fast then
+	if is_transitioning then
+		y_lerp = cfg.bounds_transition_lerp
+	elseif is_falling_fast then
 		local ramp_progress = math.min(self._fall_time / self._fall_lerp_ramp_duration, 1.0)
 		y_lerp = self._fall_lerp_min + (self._fall_lerp_max - self._fall_lerp_min) * ramp_progress
 	elseif is_wall_sliding and self._wall_slide_transition_time > 0 then

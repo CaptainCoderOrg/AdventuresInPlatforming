@@ -427,6 +427,9 @@ init_level = function(level, spawn_override, player_data, options)
     )
     camera:set_target(player)
     camera:set_look_ahead()
+    if level_info.camera_bounds and #level_info.camera_bounds > 0 then
+        camera:set_camera_bounds(level_info.camera_bounds)
+    end
     if options.camera_pos then
         -- Restore camera to saved position (skips lerping on next update)
         camera:restore_position(options.camera_pos.x, options.camera_pos.y)

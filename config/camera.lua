@@ -29,6 +29,10 @@ return {
 	wall_slide_transition_duration = 2.0,  -- Seconds to use slow lerp after entering wall slide from fall
 	wall_slide_transition_lerp = 0.02,     -- Lerp speed during transition (slower than default 0.05)
 
+	-- Camera bounds transition
+	bounds_transition_duration = 0.8,  -- Seconds to use slow lerp when entering new bounds area
+	bounds_transition_lerp = 0.03,     -- Lerp speed during bounds transition
+
 	-- Misc
 	ladder_exit_offset = 0.8,       -- Tiles above ladder top for exit
 	epsilon = 0.01,                 -- Snap threshold to prevent drift

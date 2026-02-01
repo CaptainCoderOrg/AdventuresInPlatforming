@@ -8,7 +8,8 @@ local walls = {}
 
 walls.tiles = {}
 walls.solo_tiles = {}
-walls.decorative_tiles = {}  -- Render-only tiles (no collision)
+walls.decorative_tiles = {}  -- Render-only tiles array (no collision), sorted by depth
+walls.decorative_sorted = false  -- Track if decorative tiles need sorting
 walls.colliders = {}
 walls.tile_to_collider = {}
 
@@ -342,9 +343,18 @@ end
 ---@param tile_id number|nil Tiled global tile ID for tilemap rendering
 ---@param tileset_info table|nil Optional tileset info {tileset_image, columns, firstgid}
 ---@param tile_image table|nil Optional collection tile {image, width, height}
-function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image)
-	local key = x .. "," .. y
-	walls.decorative_tiles[key] = { x = x, y = y, tile_id = tile_id, tileset_info = tileset_info, tile_image = tile_image }
+---@param depth number|nil Layer depth for draw ordering (higher = drawn later/on top)
+function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image, depth)
+	-- Use array index as key to allow multiple tiles at same position from different layers
+	table.insert(walls.decorative_tiles, {
+		x = x,
+		y = y,
+		tile_id = tile_id,
+		tileset_info = tileset_info,
+		tile_image = tile_image,
+		depth = depth or 0
+	})
+	walls.decorative_sorted = false
 end
 
 --- Adds a solo tile that won't merge with adjacent tiles.
@@ -475,8 +485,16 @@ function walls.draw(camera, margin)
 	local ts = sprites.tile_size
 	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
-	-- Draw decorative tiles first (behind collision tiles)
-	for _, tile in pairs(walls.decorative_tiles) do
+	-- Sort decorative tiles by depth if needed (lower depth = drawn first/behind)
+	if not walls.decorative_sorted then
+		table.sort(walls.decorative_tiles, function(a, b)
+			return a.depth < b.depth
+		end)
+		walls.decorative_sorted = true
+	end
+
+	-- Draw decorative tiles first (behind collision tiles), in depth order
+	for _, tile in ipairs(walls.decorative_tiles) do
 		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
 			draw_tile(tile, ts)
 		end
@@ -527,6 +545,7 @@ function walls.clear()
 	walls.tiles = {}
 	walls.solo_tiles = {}
 	walls.decorative_tiles = {}
+	walls.decorative_sorted = false
 	for _, col in ipairs(walls.colliders) do
 		world.remove_collider(col)
 	end

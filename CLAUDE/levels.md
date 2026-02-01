@@ -103,7 +103,7 @@ Objects use custom properties for entity configuration:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `type` | string | Entity type: `spawn`, `enemy`, `sign`, `patrol_area`, `map_transition`, `one_way_platform`, or prop type |
+| `type` | string | Entity type: `spawn`, `enemy`, `sign`, `patrol_area`, `map_transition`, `one_way_platform`, or prop type. Layer-level `type = "camera_bounds"` marks all rectangles as camera constraint zones. |
 | `key` | string | Enemy key (if type=enemy), e.g., `ratto`, `zombie` |
 | `text` | string | Sign text (if type=sign) |
 | `flip` | bool | Face left instead of right |
@@ -145,6 +145,24 @@ Image layers support parallax scrolling and tiling:
 | `repeaty` | bool | false | Tile vertically |
 | `offsetx` | number | 0 | X offset in pixels |
 | `offsety` | number | 0 | Y offset in pixels |
+
+### Camera Bounds Zones
+
+Object layers with layer-level `type = "camera_bounds"` define constraint zones for the camera:
+
+1. Create an object layer in Tiled
+2. Set layer custom property `type = "camera_bounds"` (on the layer, not individual objects)
+3. Add rectangle objects to define camera constraint areas
+4. When player enters a bounds zone, camera is constrained to that area
+
+**Behavior:**
+- Camera smoothly transitions between zones (configurable lerp)
+- If player is outside all bounds zones, camera uses world bounds
+- If bounds zone is smaller than viewport, camera centers on the zone
+
+**Configuration** in `config/camera.lua`:
+- `bounds_transition_duration` - Seconds of slow lerp when entering new bounds (default 0.8)
+- `bounds_transition_lerp` - Lerp speed during transition (default 0.03)
 
 ### Coordinate Normalization
 
@@ -231,6 +249,7 @@ Complete camera management system in `Camera/init.lua` with entity following and
 ```lua
 Camera.new(viewport_w, viewport_h, world_w, world_h)
 Camera:set_target(target)           -- Follow an entity
+Camera:set_camera_bounds(bounds)    -- Set constraint zones from level
 Camera:update(tile_size, dt, lerp)  -- Call each frame
 Camera:apply_transform(tile_size)   -- Apply before drawing world
 Camera:get_visible_bounds(tile_size, margin) -- Get visible tile bounds
@@ -242,8 +261,9 @@ Camera:is_visible(entity, tile_size, margin) -- Check if entity is in viewport (
 - **Look-ahead**: Camera leads 3 tiles in movement direction
 - **Manual Look**: Right analog stick adjusts view (0.333 to 0.833 vertical range)
 - **Falling Lerp Ramp**: Camera follows fall progressively faster (0.08 -> 0.25 over 0.5s)
+- **Bounds Zones**: Constrain camera to specific map regions with smooth transitions
 
-Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead distance).
+Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead distance, bounds transitions).
 
 ## Key Files
 

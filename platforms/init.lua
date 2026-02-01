@@ -46,6 +46,7 @@ function platforms.load_level(level_data)
 		background_layers = result.backgrounds or {}
 		patrol_areas = result.patrol_areas or {}
 		platforms.spawn_points = result.spawn_points or {}
+		result.camera_bounds = result.camera_bounds or {}
 
 		-- Create trigger colliders for map transitions
 		for _, transition in ipairs(result.map_transitions or {}) do

@@ -103,7 +103,7 @@ Objects use custom properties for entity configuration:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `type` | string | Entity type: `spawn`, `enemy`, `sign`, `patrol_area`, or prop type |
+| `type` | string | Entity type: `spawn`, `enemy`, `sign`, `patrol_area`, `map_transition`, `one_way_platform`, or prop type |
 | `key` | string | Enemy key (if type=enemy), e.g., `ratto`, `zombie` |
 | `text` | string | Sign text (if type=sign) |
 | `flip` | bool | Face left instead of right |
@@ -122,6 +122,16 @@ Rectangle objects with `type = "patrol_area"` define patrol bounds for enemies:
 4. Enemies automatically use the containing patrol area for waypoints
 
 Debug: Press `P` to visualize patrol areas as yellow rectangles.
+
+### One-Way Platforms (Tiled)
+
+Rectangle objects with `type = "one_way_platform"` create invisible one-way colliders:
+
+1. Create a rectangle object in Tiled at the desired platform location
+2. Set custom property `type = "one_way_platform"`
+3. Width determines platform length; height is ignored (uses thin 0.2 tile collider)
+
+Use for invisible platforms or when you want one-way behavior without bridge sprites.
 
 ### Image Layer Backgrounds
 

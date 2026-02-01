@@ -302,9 +302,10 @@ end
 ---@param tile_properties table<number, table> Map of gid to tileset properties
 ---@param spawn_points table<string, table> Named spawn points lookup (modified in place)
 ---@param map_transitions table Array of map transition zones (modified in place)
+---@param one_way_platforms table Array of one-way platform zones (modified in place)
 ---@return table|nil spawn Updated spawn point
 ---@return table patrol_areas_tiles Patrol areas converted to tile coordinates
-local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, spawn_points, map_transitions)
+local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, spawn_points, map_transitions, one_way_platforms)
 	-- First pass: collect patrol areas
 	local patrol_areas = {}
 	for _, obj in ipairs(layer.objects or {}) do
@@ -361,6 +362,12 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 					target_id = target_id,
 				})
 			end
+		elseif obj_type == "one_way_platform" then
+			table.insert(one_way_platforms, {
+				x = tx,
+				y = ty,
+				width = (obj.width or tile_size) / tile_size,
+			})
 		elseif obj_type == "patrol_area" then
 			-- Already processed in first pass, skip
 		elseif obj_type == "enemy" then
@@ -541,6 +548,7 @@ function tiled.load(level_data)
 	local backgrounds = {}  -- Array of background layers (rendered in order)
 	local spawn_points = {}  -- Named spawn points for map transitions
 	local map_transitions = {}  -- Map transition trigger zones
+	local one_way_platforms = {}  -- One-way platform collision zones
 	local tile_size = level_data.tilewidth or 16
 
 	-- Build tile maps from tileset files
@@ -565,7 +573,7 @@ function tiled.load(level_data)
 		if layer.type == "tilelayer" then
 			process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable)
 		elseif layer.type == "objectgroup" then
-			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, spawn_points, map_transitions)
+			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, spawn_points, map_transitions, one_way_platforms)
 			spawn = layer_spawn
 			for _, area in ipairs(layer_patrol_areas) do
 				table.insert(patrol_areas, area)
@@ -594,7 +602,8 @@ function tiled.load(level_data)
 		height = max_y - min_y,
 		backgrounds = backgrounds,
 		spawn_points = spawn_points,
-		map_transitions = map_transitions
+		map_transitions = map_transitions,
+		one_way_platforms = one_way_platforms,
 	}
 end
 

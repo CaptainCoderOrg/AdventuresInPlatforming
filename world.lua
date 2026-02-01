@@ -391,6 +391,8 @@ function world.move(obj, cols)
 			for other, sep in pairs(collisions) do
 				if is_non_solid(other, cols) then goto skip_x_collision end
 				if should_skip_collision(obj, other) then goto skip_x_collision end
+				-- Skip bridges in X pass (one-way platforms only collide vertically)
+				if other.owner and other.owner.is_bridge then goto skip_x_collision end
 				if other.is_shield then
 					cols.shield = true
 					cols.shield_owner = other.owner

@@ -95,6 +95,10 @@ One-way platforms that can be jumped through from below or dropped through from 
 
 **Level Symbol:** `-` (hyphen)
 
+**Tiled Object:** Rectangle with `type = "one_way_platform"` (invisible, arbitrary width)
+
+**Collision Behavior:** Bridges and one-way platforms only collide in the Y direction. Players and enemies pass through them horizontally, allowing seamless movement from the sides.
+
 ## Key Files
 
 - `world.lua` - HC collision engine wrapper (includes raycast, probe shapes, filtering)

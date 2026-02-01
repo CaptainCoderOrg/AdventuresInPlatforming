@@ -10,6 +10,7 @@ local platforms = {}
 local background_layers = {}  -- Array of background configs for Tiled image layers
 local patrol_areas = {}  -- Debug: patrol area rectangles for visualization
 local map_transition_colliders = {}  -- Array of map transition trigger collider owners
+local one_way_platform_colliders = {}  -- Array of one-way platform collider owners
 
 -- Exposed for main.lua to look up spawn positions
 platforms.spawn_points = {}  -- Named spawn points lookup { [id] = {x, y} }
@@ -58,6 +59,20 @@ function platforms.load_level(level_data)
 			}
 			world.add_trigger_collider(owner)
 			table.insert(map_transition_colliders, owner)
+		end
+
+		-- Create one-way platform colliders for Tiled rectangle objects
+		-- (allows arbitrary-width platforms without visible bridge tiles)
+		for _, platform in ipairs(result.one_way_platforms or {}) do
+			local owner = {
+				x = platform.x,
+				y = platform.y,
+				-- Thin collider (0.2 tiles) matches bridge behavior for consistent drop-through
+				box = { x = 0, y = 0, w = platform.width, h = 0.2 },
+				is_bridge = true,
+			}
+			world.add_collider(owner)
+			table.insert(one_way_platform_colliders, owner)
 		end
 
 		return result
@@ -330,6 +345,12 @@ function platforms.clear()
 		world.remove_trigger_collider(owner)
 	end
 	map_transition_colliders = {}
+
+	-- Remove one-way platform colliders
+	for _, owner in ipairs(one_way_platform_colliders) do
+		world.remove_collider(owner)
+	end
+	one_way_platform_colliders = {}
 
 	platforms.walls.clear()
 	platforms.slopes.clear()

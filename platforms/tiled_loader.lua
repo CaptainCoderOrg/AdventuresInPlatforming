@@ -2,6 +2,7 @@ local walls = require("platforms/walls")
 local bridges = require("platforms/bridges")
 local ladders = require("platforms/ladders")
 local canvas = require("canvas")
+local tileset_registry = require("Tilemaps/registry")
 
 local tiled = {}
 
@@ -49,11 +50,10 @@ function tiled.preload_assets(level_data)
 	for _, tileset_ref in ipairs(level_data.tilesets or {}) do
 		local tileset_filename = tileset_ref.filename
 		if tileset_filename then
-			local lua_filename = tileset_filename:gsub("%.tsx$", ".lua")
-			local require_path = "Tilemaps/" .. lua_filename:gsub("%.lua$", "")
-
-			local ok, tileset = pcall(require, require_path)
-			if ok and tileset then
+			-- Convert .tsx filename to registry key (e.g., "tileset_dungeon.tsx" -> "tileset_dungeon")
+			local registry_key = tileset_filename:gsub("%.tsx$", "")
+			local tileset = tileset_registry[registry_key]
+			if tileset then
 				-- Image-based tileset (main tileset image)
 				local tileset_image = to_asset_path(tileset.image)
 				if tileset_image then
@@ -99,12 +99,10 @@ local function build_tile_maps(level_data)
 		local tileset_filename = tileset_ref.filename
 
 		if tileset_filename then
-			-- Convert .tsx to .lua and build require path
-			local lua_filename = tileset_filename:gsub("%.tsx$", ".lua")
-			local require_path = "Tilemaps/" .. lua_filename:gsub("%.lua$", "")
-
-			local ok, tileset = pcall(require, require_path)
-			if ok and tileset then
+			-- Convert .tsx filename to registry key (e.g., "tileset_dungeon.tsx" -> "tileset_dungeon")
+			local registry_key = tileset_filename:gsub("%.tsx$", "")
+			local tileset = tileset_registry[registry_key]
+			if tileset then
 				-- Check if this is an image-based tileset (has 'image' property)
 				-- Collection tilesets have individual images per tile instead
 				local is_image_tileset = tileset.image ~= nil

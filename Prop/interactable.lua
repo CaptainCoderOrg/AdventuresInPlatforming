@@ -2,6 +2,7 @@
 --- Shows text prompt when player is nearby, calls handler on interact
 local common = require("Prop/common")
 local TextDisplay = require("TextDisplay")
+local map_registry = require("Maps/registry")
 
 --- Resolve a handler path like "garden.on_open_cottage" to a function
 --- Loads Maps/<map_name> and navigates the nested table path
@@ -22,11 +23,11 @@ local function resolve_handler(path)
 
     if #parts < 2 then return nil end
 
-    -- First part is map name, load from Maps/<name>
+    -- First part is map name, look up from registry
     local map_name = parts[1]
-    local ok, map_module = pcall(require, "Maps/" .. map_name)
-    if not ok or not map_module then
-        print("[Interactable] Warning: Could not load Maps/" .. map_name)
+    local map_module = map_registry[map_name]
+    if not map_module then
+        print("[Interactable] Warning: Map not found in registry: " .. map_name)
         return nil
     end
 

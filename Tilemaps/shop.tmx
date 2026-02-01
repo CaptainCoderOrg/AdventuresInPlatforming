@@ -13,11 +13,11 @@
  <imagelayer id="2" name="Background" repeatx="1" repeaty="1">
   <image source="../assets/Tilesets/bg_00_witch_shop.png" width="240" height="160"/>
  </imagelayer>
- <objectgroup id="6" name="Camera" locked="1">
+ <objectgroup id="6" name="Camera">
   <properties>
    <property name="type" value="camera_bounds"/>
   </properties>
-  <object id="11" x="0" y="0" width="384" height="224"/>
+  <object id="11" x="0" y="16" width="384" height="174"/>
  </objectgroup>
  <layer id="1" name="Walls / Platforms" width="24" height="14">
   <properties>
@@ -43,8 +43,8 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="0" y="0" width="16" height="16">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 17,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,
-32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 32,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -61,8 +61,8 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="16" y="0" width="16" height="16">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 18,18,18,18,18,18,18,19,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,34,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,34,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,34,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,34,0,0,0,0,0,0,0,0,

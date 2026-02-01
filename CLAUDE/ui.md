@@ -105,11 +105,13 @@ rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 - Three horizontal meters: HP (red), SP (green/orange), EP (blue)
 - Smooth lerp transitions for meter changes (8 units/second)
 - Fatigue visualization: pulsing orange->red when stamina negative (2 Hz)
+- Energy flash: flickering white overlay when throw fails due to low energy (8 Hz, 0.5s)
 
 ```lua
 local widget = projectile_selector.create({ x = 8, y = 8, alpha = 0.7 })
-widget:update(dt, player)  -- Lerp meter values
-widget:draw(player)        -- Render widget
+widget:update(dt, player)  -- Lerp meter values, check energy_flash_requested
+widget:draw(player)        -- Render widget with flash overlay
+widget:flash_energy()      -- Manually trigger energy bar flash
 ```
 
 ## Status Panel (`ui/status_panel.lua`)

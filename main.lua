@@ -136,6 +136,8 @@ local was_dead = false  -- Track death state for game over trigger
 local current_level = shop  -- Track current level module
 local active_slot = nil  -- Currently active save slot (1-3)
 local proximity_volumes = {}  -- Reused per-frame to avoid allocations
+local HUD_HEIGHT = config.ui.HUD_HEIGHT_PX * config.ui.SCALE  -- Pre-computed scaled HUD height
+local VIEWPORT_HEIGHT = config.ui.canvas_height - HUD_HEIGHT  -- World render area height
 
 -- Forward declarations for functions used before definition
 local cleanup_level
@@ -350,8 +352,13 @@ local function draw()
     canvas.clear()
 
     if not hud.is_title_screen_active() then
-        -- Draw world-space entities (affected by camera)
+        -- Clip world rendering to area above HUD
         canvas.save()
+        canvas.begin_path()
+        canvas.rect(0, 0, config.ui.canvas_width, VIEWPORT_HEIGHT)
+        canvas.clip()
+
+        -- Draw world-space entities (affected by camera)
         camera:apply_transform(sprites.tile_size)
 
         -- Apply rest screen camera offset (keeps campfire centered in circle)
@@ -442,7 +449,7 @@ init_level = function(level, spawn_override, player_data, options)
 
     camera = Camera.new(
         config.ui.canvas_width,
-        config.ui.canvas_height,
+        config.ui.canvas_height - HUD_HEIGHT,
         level_info.width,
         level_info.height
     )

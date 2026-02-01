@@ -7,5 +7,6 @@ return {
 		SCALE = 5,
 		canvas_width = 1920,
 		canvas_height = 1080,
+		HUD_HEIGHT_PX = 40,  -- HUD height in base pixels (scaled by SCALE for canvas)
 	},
 }

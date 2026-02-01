@@ -27,6 +27,12 @@ local BAR_HEIGHT = 6          -- Bar height in pixels
 local BAR_Y_OFFSET = 2        -- Vertical offset for bar within meter
 local SHINE_OPACITY = 0.7     -- Shine overlay relative opacity
 
+-- Pre-computed fatigue colors (green channel 0-136 for orange-to-red pulse)
+local FATIGUE_COLORS = {}
+for green = 0, 136 do
+    FATIGUE_COLORS[green] = string.format("#FF%02X00", green)
+end
+
 --- Lerps a displayed value toward a target at a given speed.
 ---@param current number|nil Current displayed value (nil for first initialization)
 ---@param target number Target value to lerp toward
@@ -73,7 +79,7 @@ local function get_fatigue_color(timer)
     local t = (math.sin(timer * math.pi * 4) + 1) / 2
     -- Interpolate green channel between 136 (orange #FF8800) and 0 (red #FF0000)
     local green = math.floor(136 * (1 - t))
-    return string.format("#FF%02X00", green)
+    return FATIGUE_COLORS[green]
 end
 
 --- Returns a flickering opacity for energy flash overlay.
@@ -125,21 +131,23 @@ function projectile_selector.create(opts)
     self.x = opts.x or 8
     self.y = opts.y or 8
     self.alpha = opts.alpha or 0.7
-    self.displayed_hp = nil -- Initialized on first update
-    self.displayed_stamina = nil -- Initialized on first update
-    self.displayed_energy = nil -- Initialized on first update
-    self.fatigue_pulse_timer = 0 -- For fatigue color pulsing
-    self.energy_flash_timer = 0 -- For energy bar flash effect
+    self.displayed_hp = nil
+    self.displayed_stamina = nil
+    self.displayed_energy = nil
+    self.fatigue_pulse_timer = 0
+    self.energy_flash_timer = 0
     return self
 end
 
 --- Triggers energy bar flash effect for insufficient energy feedback.
+---@return nil
 function projectile_selector:flash_energy()
     self.energy_flash_timer = 0.5 -- Flash duration in seconds
 end
 
 ---@param dt number Delta time in seconds
 ---@param player table Player instance with health, stamina, and energy properties
+---@return nil
 function projectile_selector:update(dt, player)
     local target_hp = player.max_health - player.damage
     local target_stamina = player.max_stamina - player.stamina_used
@@ -164,6 +172,7 @@ function projectile_selector:update(dt, player)
 end
 
 ---@param player table Player instance with projectile, health, stamina, and energy properties
+---@return nil
 function projectile_selector:draw(player)
     local scale = config.ui.SCALE
     canvas.save()

@@ -147,7 +147,7 @@ return {
           x = -80,
           y = -720,
           width = 384,
-          height = 800,
+          height = 784,
           rotation = 0,
           visible = true,
           properties = {}
@@ -158,9 +158,9 @@ return {
           type = "",
           shape = "rectangle",
           x = 304,
-          y = -144,
+          y = -112,
           width = 2527.5,
-          height = 224,
+          height = 176,
           rotation = 0,
           visible = true,
           properties = {}

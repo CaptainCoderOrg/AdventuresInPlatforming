@@ -41,8 +41,8 @@
   <properties>
    <property name="type" value="camera_bounds"/>
   </properties>
-  <object id="12" x="-80" y="-720" width="384" height="800"/>
-  <object id="13" x="304" y="-144" width="2527.5" height="224"/>
+  <object id="12" x="-80" y="-720" width="384" height="784"/>
+  <object id="13" x="304" y="-112" width="2527.5" height="176"/>
  </objectgroup>
  <layer id="2" name="Decorations" width="30" height="20">
   <data encoding="csv">

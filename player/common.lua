@@ -275,6 +275,24 @@ function common.check_ladder(player, cols)
 	end
 end
 
+--- Updates map transition target based on trigger collisions.
+--- Sets player.map_transition_target when overlapping a map transition zone.
+---@param player table The player object
+---@param cols table Collision results from world.move()
+function common.check_map_transition(player, cols)
+	local triggers = cols.triggers
+	for i = 1, #triggers do
+		local trigger = triggers[i]
+		if trigger.owner.is_map_transition then
+			player.map_transition_target = {
+				map = trigger.owner.target_map,
+				spawn_id = trigger.owner.target_id
+			}
+			return
+		end
+	end
+end
+
 --- Processes collision flags to update grounded state, wall contact, and coyote time.
 --- Uses separated X/Y collision pass results from world.move().
 ---@param player table The player object

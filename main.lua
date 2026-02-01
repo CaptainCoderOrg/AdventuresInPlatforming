@@ -76,11 +76,25 @@ local levels = {
     shop = shop,
 }
 
+-- Preload assets for all Tiled levels to ensure they're available during transitions
+local tiled_loader = require("platforms.tiled_loader")
+for _, level in pairs(levels) do
+    tiled_loader.preload_assets(level)
+end
+
 --- Get level module by ID
 ---@param id string Level identifier
 ---@return table|nil Level module or nil if not found
 local function get_level_by_id(id)
     return levels[id]
+end
+
+--- Find spawn position by ID in the current level's spawn_points table.
+--- Used for map transitions where spawn points are named in Tiled.
+---@param spawn_id string Named spawn point ID
+---@return table|nil spawn Position {x, y} or nil if not found
+local function find_spawn_by_id(spawn_id)
+    return platforms.spawn_points[spawn_id]
 end
 
 --- Find spawn position by symbol in a level
@@ -210,6 +224,36 @@ local function update(dt)
             screen_fade.start(function()
                 cleanup_level()
                 init_level(target_level, spawn_pos, player_data)
+                audio.play_music(audio.level1)
+            end)
+            profiler.stop("player")
+            return
+        end
+    end
+
+    -- Check for map transition (triggered by walking into transition zones)
+    if player.map_transition_target and not screen_fade.is_active() then
+        local target = player.map_transition_target
+        local target_level = get_level_by_id(target.map)
+
+        -- Clear flag to prevent re-triggering
+        player.map_transition_target = nil
+
+        if target_level then
+            local player_data = get_player_save_data(player)
+            local player_direction = player.direction
+            screen_fade.start(function()
+                cleanup_level()
+                init_level(target_level, nil, player_data)
+                -- Look up spawn point after level is loaded (spawn_points populated by init_level)
+                local spawn_pos = find_spawn_by_id(target.spawn_id)
+                if spawn_pos then
+                    player:set_position(spawn_pos.x, spawn_pos.y)
+                    camera:snap_to_target(sprites.tile_size)
+                end
+                -- Restore facing direction
+                player.direction = player_direction
+                player.animation.flipped = player_direction
                 audio.play_music(audio.level1)
             end)
             profiler.stop("player")

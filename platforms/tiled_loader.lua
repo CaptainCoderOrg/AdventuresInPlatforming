@@ -12,6 +12,17 @@ function tiled.is_tiled_format(level_data)
 	return level_data.tilesets ~= nil and level_data.layers ~= nil
 end
 
+--- Convert Tiled relative path to game asset path.
+--- Strips "../assets/" prefix from paths used in Tiled exports.
+---@param path string Tiled relative path (e.g., "../assets/Tilesets/bg.png")
+---@return string|nil Asset path (e.g., "Tilesets/bg.png") or nil if not a game asset
+local function to_asset_path(path)
+	if path and path:match("^%.%./assets/") then
+		return path:gsub("^%.%./assets/", "")
+	end
+	return nil
+end
+
 -- Maps tile type strings to their handler functions
 local tile_handlers = {
 	wall = walls.add_tile,
@@ -26,6 +37,50 @@ local tile_handlers = {
 local function get_handler_for_type(tile_type)
 	if not tile_type then return nil end
 	return tile_handlers[tile_type:lower()]
+end
+
+--- Loads all image assets for a Tiled level without processing geometry.
+--- Call this at startup for each level to ensure assets are available during transitions.
+---@param level_data table Tiled level data
+function tiled.preload_assets(level_data)
+	if not tiled.is_tiled_format(level_data) then return end
+
+	-- Load tileset images
+	for _, tileset_ref in ipairs(level_data.tilesets or {}) do
+		local tileset_filename = tileset_ref.filename
+		if tileset_filename then
+			local lua_filename = tileset_filename:gsub("%.tsx$", ".lua")
+			local require_path = "Tilemaps/" .. lua_filename:gsub("%.lua$", "")
+
+			local ok, tileset = pcall(require, require_path)
+			if ok and tileset then
+				-- Image-based tileset (main tileset image)
+				local tileset_image = to_asset_path(tileset.image)
+				if tileset_image then
+					canvas.assets.load_image(tileset_image, tileset_image)
+				end
+
+				-- Collection tileset tiles - only load game assets (../assets/ prefix)
+				-- Tiles with other paths are editor-only images for entities
+				for _, tile in ipairs(tileset.tiles or {}) do
+					local image_path = to_asset_path(tile.image)
+					if image_path then
+						canvas.assets.load_image(image_path, image_path)
+					end
+				end
+			end
+		end
+	end
+
+	-- Load background images from image layers (only game assets)
+	for _, layer in ipairs(level_data.layers or {}) do
+		if layer.type == "imagelayer" then
+			local image_path = to_asset_path(layer.image)
+			if image_path then
+				canvas.assets.load_image(image_path, image_path)
+			end
+		end
+	end
 end
 
 --- Build mappings from global tile ID to tile properties by loading tileset files.
@@ -236,7 +291,7 @@ local function find_patrol_area(px, py, patrol_areas)
 	return nil
 end
 
---- Process an object layer, extracting spawn point, enemies, and props.
+--- Process an object layer, extracting spawn point, enemies, props, spawn points, and map transitions.
 ---@param layer table Tiled object layer data
 ---@param spawn table|nil Current spawn point (modified in place)
 ---@param enemies table Array of enemy definitions (modified in place)
@@ -245,9 +300,11 @@ end
 ---@param offset_x number X offset to normalize coordinates
 ---@param offset_y number Y offset to normalize coordinates
 ---@param tile_properties table<number, table> Map of gid to tileset properties
+---@param spawn_points table<string, table> Named spawn points lookup (modified in place)
+---@param map_transitions table Array of map transition zones (modified in place)
 ---@return table|nil spawn Updated spawn point
 ---@return table patrol_areas_tiles Patrol areas converted to tile coordinates
-local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties)
+local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, spawn_points, map_transitions)
 	-- First pass: collect patrol areas
 	local patrol_areas = {}
 	for _, obj in ipairs(layer.objects or {}) do
@@ -279,8 +336,31 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 		-- Get type from merged properties (or use object name as fallback)
 		local obj_type = merged_props.type or (obj.name or ""):lower()
 
-		if obj_type == "spawn" or obj.name == "Start" then
+		-- Register named spawn point if present (used for map transitions)
+		local spawn_id = merged_props.id
+		if spawn_id then
+			spawn_points[spawn_id] = { x = tx, y = ty }
+		end
+
+		-- Process object based on type (empty type means spawn marker only)
+		if obj_type == "" then
+			-- Spawn point marker with no other behavior
+		elseif obj_type == "spawn" or obj.name == "Start" then
 			spawn = { x = tx, y = ty }
+		elseif obj_type == "map_transition" then
+			-- Map transition zone: trigger area that loads another map
+			local target_map = merged_props.target_map
+			local target_id = merged_props.target_id
+			if target_map and target_id then
+				table.insert(map_transitions, {
+					x = tx,
+					y = ty,
+					width = (obj.width or tile_size) / tile_size,
+					height = (obj.height or tile_size) / tile_size,
+					target_map = target_map,
+					target_id = target_id,
+				})
+			end
 		elseif obj_type == "patrol_area" then
 			-- Already processed in first pass, skip
 		elseif obj_type == "enemy" then
@@ -349,29 +429,65 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 	return spawn, patrol_areas_tiles
 end
 
---- Calculate actual level bounds from tile layer chunks.
---- Returns min/max coordinates that contain tile data.
+--- Calculate actual level bounds from tile layers and object layers.
+--- Returns min/max coordinates that contain tile data and objects.
+--- Supports both chunk-based (infinite) and fixed-size tile layers.
 ---@param level_data table Tiled export data
 ---@return number, number, number, number min_x, min_y, max_x, max_y
 local function calculate_bounds(level_data)
+	local tile_size = level_data.tilewidth or 16
 	local min_x, min_y = math.huge, math.huge
 	local max_x, max_y = -math.huge, -math.huge
 
 	for _, layer in ipairs(level_data.layers) do
-		if layer.type == "tilelayer" and layer.chunks then
-			for _, chunk in ipairs(layer.chunks) do
-				local chunk_width = chunk.width
-				for i, tile_id in ipairs(chunk.data) do
-					if tile_id > 0 then
-						local local_x = (i - 1) % chunk_width
-						local local_y = math.floor((i - 1) / chunk_width)
-						local world_x = chunk.x + local_x
-						local world_y = chunk.y + local_y
-						min_x = math.min(min_x, world_x)
-						min_y = math.min(min_y, world_y)
-						max_x = math.max(max_x, world_x)
-						max_y = math.max(max_y, world_y)
+		if layer.type == "tilelayer" then
+			if layer.chunks then
+				-- Chunk-based storage (infinite map)
+				for _, chunk in ipairs(layer.chunks) do
+					local chunk_width = chunk.width
+					for i, tile_id in ipairs(chunk.data) do
+						if tile_id > 0 then
+							local local_x = (i - 1) % chunk_width
+							local local_y = math.floor((i - 1) / chunk_width)
+							local world_x = chunk.x + local_x
+							local world_y = chunk.y + local_y
+							min_x = math.min(min_x, world_x)
+							min_y = math.min(min_y, world_y)
+							max_x = math.max(max_x, world_x)
+							max_y = math.max(max_y, world_y)
+						end
 					end
+				end
+			elseif layer.data then
+				-- Fixed-size storage (standard map)
+				local width = layer.width
+				for i, tile_id in ipairs(layer.data) do
+					if tile_id > 0 then
+						local x = (i - 1) % width
+						local y = math.floor((i - 1) / width)
+						min_x = math.min(min_x, x)
+						min_y = math.min(min_y, y)
+						max_x = math.max(max_x, x)
+						max_y = math.max(max_y, y)
+					end
+				end
+			end
+		elseif layer.type == "objectgroup" then
+			-- Include object positions in bounds calculation, but skip marker-only objects
+			for _, obj in ipairs(layer.objects or {}) do
+				local obj_type = (obj.properties and obj.properties.type) or ""
+				local has_id = obj.properties and obj.properties.id
+				-- Skip spawn points (id-only) and map transitions (marker objects)
+				local is_marker = (has_id and obj_type == "") or obj_type == "map_transition"
+				if not is_marker then
+					local obj_x = obj.x / tile_size
+					local obj_y = obj.y / tile_size
+					local obj_w = (obj.width or tile_size) / tile_size
+					local obj_h = (obj.height or tile_size) / tile_size
+					min_x = math.min(min_x, obj_x)
+					min_y = math.min(min_y, obj_y)
+					max_x = math.max(max_x, obj_x + obj_w)
+					max_y = math.max(max_y, obj_y + obj_h)
 				end
 			end
 		end
@@ -391,10 +507,9 @@ end
 ---@param layer table Tiled image layer data
 ---@return table|nil Background configuration or nil
 local function process_image_layer(layer)
-	if not layer.image then return nil end
-
-	-- Convert relative path (../assets/Tilesets/bg.png) to asset path (Tilesets/bg.png)
-	local image_path = layer.image:gsub("^%.%./assets/", "")
+	-- Convert relative path to asset path (only game assets)
+	local image_path = to_asset_path(layer.image)
+	if not image_path then return nil end
 
 	-- Check for custom properties
 	local props = layer.properties or {}
@@ -424,6 +539,8 @@ function tiled.load(level_data)
 	local props = {}
 	local patrol_areas = {}
 	local backgrounds = {}  -- Array of background layers (rendered in order)
+	local spawn_points = {}  -- Named spawn points for map transitions
+	local map_transitions = {}  -- Map transition trigger zones
 	local tile_size = level_data.tilewidth or 16
 
 	-- Build tile maps from tileset files
@@ -448,7 +565,7 @@ function tiled.load(level_data)
 		if layer.type == "tilelayer" then
 			process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable)
 		elseif layer.type == "objectgroup" then
-			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties)
+			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, spawn_points, map_transitions)
 			spawn = layer_spawn
 			for _, area in ipairs(layer_patrol_areas) do
 				table.insert(patrol_areas, area)
@@ -475,7 +592,9 @@ function tiled.load(level_data)
 		patrol_areas = patrol_areas,
 		width = max_x - min_x,
 		height = max_y - min_y,
-		backgrounds = backgrounds
+		backgrounds = backgrounds,
+		spawn_points = spawn_points,
+		map_transitions = map_transitions
 	}
 end
 

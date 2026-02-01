@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="14" tilewidth="16" tileheight="16" infinite="0" nextlayerid="4" nextobjectid="5">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="14" tilewidth="16" tileheight="16" infinite="0" nextlayerid="6" nextobjectid="11">
  <editorsettings>
   <export target="shop.lua" format="lua"/>
  </editorsettings>
+ <properties>
+  <property name="id" value="shop"/>
+ </properties>
  <tileset firstgid="1" source="tileset_witch_shop.tsx"/>
  <tileset firstgid="226" source="tileset_garden.tsx"/>
  <tileset firstgid="358" source="idle.tsx"/>
@@ -37,12 +40,26 @@
     <property name="type" value="spawn"/>
    </properties>
   </object>
-  <object id="2" gid="364" x="64" y="160" width="32" height="32">
+  <object id="2" gid="364" x="64.3333" y="160" width="32" height="32">
    <properties>
     <property name="type" value="witch_npc"/>
    </properties>
   </object>
   <object id="3" gid="365" x="144" y="160" width="16" height="16"/>
   <object id="4" gid="366" x="224" y="160" width="16" height="16"/>
+ </objectgroup>
+ <objectgroup id="5" name="Triggers">
+  <object id="5" x="-46" y="80" width="46" height="128">
+   <properties>
+    <property name="target_id" value="shop_exit"/>
+    <property name="target_map" value="garden"/>
+    <property name="type" value="map_transition"/>
+   </properties>
+  </object>
+  <object id="10" x="8.5" y="144.5" width="16" height="16">
+   <properties>
+    <property name="id" value="enter_shop"/>
+   </properties>
+  </object>
  </objectgroup>
 </map>

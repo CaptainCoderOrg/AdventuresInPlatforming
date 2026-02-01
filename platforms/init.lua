@@ -2,12 +2,17 @@ local canvas = require("canvas")
 local config = require("config")
 local sprites = require("sprites")
 local tiled = require("platforms.tiled_loader")
+local world = require("world")
 
 local platforms = {}
 
 -- Set by load_level(), cleared by clear()
 local background_layers = {}  -- Array of background configs for Tiled image layers
 local patrol_areas = {}  -- Debug: patrol area rectangles for visualization
+local map_transition_colliders = {}  -- Array of map transition trigger collider owners
+
+-- Exposed for main.lua to look up spawn positions
+platforms.spawn_points = {}  -- Named spawn points lookup { [id] = {x, y} }
 
 -- Background sprite native dimensions (before scaling)
 local BG_NATIVE_WIDTH = 240
@@ -39,6 +44,22 @@ function platforms.load_level(level_data)
 		local result = tiled.load(level_data)
 		background_layers = result.backgrounds or {}
 		patrol_areas = result.patrol_areas or {}
+		platforms.spawn_points = result.spawn_points or {}
+
+		-- Create trigger colliders for map transitions
+		for _, transition in ipairs(result.map_transitions or {}) do
+			local owner = {
+				x = transition.x,
+				y = transition.y,
+				box = { x = 0, y = 0, w = transition.width, h = transition.height },
+				is_map_transition = true,
+				target_map = transition.target_map,
+				target_id = transition.target_id,
+			}
+			world.add_trigger_collider(owner)
+			table.insert(map_transition_colliders, owner)
+		end
+
 		return result
 	end
 
@@ -302,6 +323,14 @@ end
 function platforms.clear()
 	background_layers = {}
 	patrol_areas = {}
+	platforms.spawn_points = {}
+
+	-- Remove map transition trigger colliders
+	for _, owner in ipairs(map_transition_colliders) do
+		world.remove_trigger_collider(owner)
+	end
+	map_transition_colliders = {}
+
 	platforms.walls.clear()
 	platforms.slopes.clear()
 	platforms.ladders.clear()

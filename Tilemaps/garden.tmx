@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="8" nextobjectid="2">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="9" nextobjectid="5">
  <editorsettings>
   <export target="garden.lua" format="lua"/>
  </editorsettings>
+ <properties>
+  <property name="id" value="garden"/>
+ </properties>
  <tileset firstgid="1" source="tileset_garden.tsx"/>
  <tileset firstgid="133" source="idle.tsx"/>
  <tileset firstgid="139" source="tileset_dungeon.tsx"/>
+ <tileset firstgid="202" source="tileset_witch_shop.tsx"/>
  <imagelayer id="5" name="Sky" locked="1" parallaxx="0.02" parallaxy="0" repeatx="1">
   <image source="../assets/Tilesets/bg_00_garden_lg.png" width="384" height="216"/>
   <properties>
@@ -29,7 +33,7 @@
    <property name="width" type="int" value="240"/>
   </properties>
  </imagelayer>
- <layer id="3" name="Decorations2" width="30" height="20" offsetx="176" offsety="272">
+ <layer id="3" name="Decorations2" width="30" height="20">
   <data encoding="csv">
    <chunk x="0" y="-16" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -51,7 +55,7 @@
 </chunk>
   </data>
  </layer>
- <layer id="2" name="Decorations" width="30" height="20" offsetx="176" offsety="272">
+ <layer id="2" name="Decorations" width="30" height="20">
   <data encoding="csv">
    <chunk x="0" y="-16" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -73,7 +77,7 @@
 </chunk>
   </data>
  </layer>
- <layer id="1" name="Walls / Platforms" width="30" height="20" offsetx="176" offsety="272">
+ <layer id="1" name="Walls / Platforms" width="30" height="20">
   <properties>
    <property name="type" value="wall"/>
   </properties>
@@ -149,6 +153,24 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,1,2,3,0,0,0
+</chunk>
+   <chunk x="176" y="-16" width="16" height="16">
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+218,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+233,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+248,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="-16" y="0" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,13,13,67,2,2,
@@ -386,10 +408,24 @@
 </chunk>
   </data>
  </layer>
- <objectgroup id="4" name="Props" offsetx="176" offsety="272">
+ <objectgroup id="4" name="Props">
   <object id="1" name="Start" gid="133" x="64" y="-32" width="16" height="16">
    <properties>
     <property name="type" value="spawn"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="8" name="Locations">
+  <object id="2" x="2814.33" y="16" width="16" height="16">
+   <properties>
+    <property name="id" value="shop_exit"/>
+   </properties>
+  </object>
+  <object id="4" x="2832" y="-48" width="29" height="117.667">
+   <properties>
+    <property name="target_id" value="enter_shop"/>
+    <property name="target_map" value="shop"/>
+    <property name="type" value="map_transition"/>
    </properties>
   </object>
  </objectgroup>

@@ -9,9 +9,11 @@ return {
   height = 20,
   tilewidth = 16,
   tileheight = 16,
-  nextlayerid = 8,
-  nextobjectid = 2,
-  properties = {},
+  nextlayerid = 9,
+  nextobjectid = 5,
+  properties = {
+    ["id"] = "garden"
+  },
   tilesets = {
     {
       name = "tileset_garden",
@@ -29,6 +31,12 @@ return {
       firstgid = 139,
       filename = "tileset_dungeon.tsx",
       exportfilename = "tileset_dungeon.lua"
+    },
+    {
+      name = "tileset_witch_shop",
+      firstgid = 202,
+      filename = "tileset_witch_shop.tsx",
+      exportfilename = "tileset_witch_shop.lua"
     }
   },
   layers = {
@@ -102,8 +110,8 @@ return {
       class = "",
       visible = true,
       opacity = 1,
-      offsetx = 176,
-      offsety = 272,
+      offsetx = 0,
+      offsety = 0,
       parallaxx = 1,
       parallaxy = 1,
       properties = {},
@@ -143,8 +151,8 @@ return {
       class = "",
       visible = true,
       opacity = 1,
-      offsetx = 176,
-      offsety = 272,
+      offsetx = 0,
+      offsety = 0,
       parallaxx = 1,
       parallaxy = 1,
       properties = {},
@@ -184,8 +192,8 @@ return {
       class = "",
       visible = true,
       opacity = 1,
-      offsetx = 176,
-      offsety = 272,
+      offsetx = 0,
+      offsety = 0,
       parallaxx = 1,
       parallaxy = 1,
       properties = {
@@ -275,6 +283,27 @@ return {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 0
+          }
+        },
+        {
+          x = 176, y = -16, width = 16, height = 16,
+          data = {
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            218, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            233, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            248, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
           }
         },
         {
@@ -560,8 +589,8 @@ return {
       class = "",
       visible = true,
       opacity = 1,
-      offsetx = 176,
-      offsety = 272,
+      offsetx = 0,
+      offsety = 0,
       parallaxx = 1,
       parallaxy = 1,
       properties = {},
@@ -580,6 +609,54 @@ return {
           visible = true,
           properties = {
             ["type"] = "spawn"
+          }
+        }
+      }
+    },
+    {
+      type = "objectgroup",
+      draworder = "topdown",
+      id = 8,
+      name = "Locations",
+      class = "",
+      visible = true,
+      opacity = 1,
+      offsetx = 0,
+      offsety = 0,
+      parallaxx = 1,
+      parallaxy = 1,
+      properties = {},
+      objects = {
+        {
+          id = 2,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2814.33,
+          y = 16,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "shop_exit"
+          }
+        },
+        {
+          id = 4,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2832,
+          y = -48,
+          width = 29,
+          height = 117.667,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["target_id"] = "enter_shop",
+            ["target_map"] = "shop",
+            ["type"] = "map_transition"
           }
         }
       }

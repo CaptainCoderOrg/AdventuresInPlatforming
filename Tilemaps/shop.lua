@@ -9,9 +9,11 @@ return {
   height = 14,
   tilewidth = 16,
   tileheight = 16,
-  nextlayerid = 4,
-  nextobjectid = 5,
-  properties = {},
+  nextlayerid = 6,
+  nextobjectid = 11,
+  properties = {
+    ["id"] = "shop"
+  },
   tilesets = {
     {
       name = "tileset_witch_shop",
@@ -125,7 +127,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 64,
+          x = 64.3333,
           y = 160,
           width = 32,
           height = 32,
@@ -163,6 +165,54 @@ return {
           gid = 366,
           visible = true,
           properties = {}
+        }
+      }
+    },
+    {
+      type = "objectgroup",
+      draworder = "topdown",
+      id = 5,
+      name = "Triggers",
+      class = "",
+      visible = true,
+      opacity = 1,
+      offsetx = 0,
+      offsety = 0,
+      parallaxx = 1,
+      parallaxy = 1,
+      properties = {},
+      objects = {
+        {
+          id = 5,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -46,
+          y = 80,
+          width = 46,
+          height = 128,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["target_id"] = "shop_exit",
+            ["target_map"] = "garden",
+            ["type"] = "map_transition"
+          }
+        },
+        {
+          id = 10,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 8.5,
+          y = 144.5,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "enter_shop"
+          }
         }
       }
     }

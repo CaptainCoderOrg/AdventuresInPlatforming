@@ -478,6 +478,7 @@ function Player:update(dt)
 	end
 
 	common.check_ladder(self, cols)
+	common.check_map_transition(self, cols)
 	common.check_hit(self, cols)
 end
 

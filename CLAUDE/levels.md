@@ -174,6 +174,9 @@ Tiled maps with negative coordinates (infinite maps) are automatically normalize
 2. Set tile `type` property for collision tiles (wall, bridge, ladder)
 3. Export tileset as Lua (File > Export As > Lua)
 4. Place exported `.lua` file in `Tilemaps/` directory
+5. **Add to registry:** Add a static require entry in `Tilemaps/registry.lua`
+
+**Registry requirement:** Canvas uses static analysis for exports. All tilesets must be statically required in the registry—dynamic `require("Tilemaps/" .. name)` calls will break exports.
 
 ### Collection Tilesets
 

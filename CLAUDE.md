@@ -132,6 +132,16 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 ## Conventions
 
+- **No dynamic requires** - Canvas does static analysis to determine which files to include in exports. Never compute require paths at runtime:
+  ```lua
+  -- BAD: Canvas cannot trace this
+  local module = require("Maps/" .. map_name)
+
+  -- GOOD: Use a registry with static requires
+  local registry = require("Maps/registry")
+  local module = registry[map_name]
+  ```
+  Registries exist at `Tilemaps/registry.lua` and `Maps/registry.lua`. When adding new tilesets or maps, update the corresponding registry.
 - Lua doc comments with `---@param` and `---@return`
 - Module pattern (files return tables with functions)
 - Snake_case for functions and variables

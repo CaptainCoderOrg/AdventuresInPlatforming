@@ -147,6 +147,26 @@ Tiled maps with negative coordinates (infinite maps) are automatically normalize
 3. Export tileset as Lua (File > Export As > Lua)
 4. Place exported `.lua` file in `Tilemaps/` directory
 
+### Collection Tilesets
+
+Tiled supports two tileset types:
+
+| Type | Description | Rendering |
+|------|-------------|-----------|
+| Image-based | Single image containing all tiles (e.g., `tileset_dungeon`) | Uses `gid_to_tilemap()` to find tile coordinates |
+| Collection | Individual images per tile (e.g., `decorations`) | Draws images directly with height offset |
+
+**Detection:** Tilesets with a top-level `image` property are image-based. Collection tilesets have `image` on individual tiles instead (and `columns = 0`).
+
+**Height Offset:** Collection tiles taller than 16px are offset upward since Tiled uses bottom-left origin:
+```lua
+height_offset = (tile_image.height / BASE_TILE - 1) * tile_size
+```
+
+**Typed vs Typeless Collection Tiles:**
+- **Typed tiles** (wall, bridge, ladder): Use fallback sprite rendering, image not loaded
+- **Typeless tiles** (decorations): Store image info, rendered via `draw_collection_tile()`
+
 ## Sign System
 
 Interactive text displays triggered by player proximity.

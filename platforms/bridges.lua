@@ -15,10 +15,11 @@ bridges.colliders = state.colliders
 ---@param x number Tile x coordinate
 ---@param y number Tile y coordinate
 ---@param tile_id number|nil Optional Tiled global tile ID for tilemap rendering
+---@param tileset_info table|nil Optional tileset info {tileset_image, columns, firstgid}
 ---@param tile_image table|nil Optional collection tile {image, width, height}
-function bridges.add_bridge(x, y, tile_id, tile_image)
+function bridges.add_bridge(x, y, tile_id, tileset_info, tile_image)
 	local key = x .. "," .. y
-	local bridge = { x = x, y = y, is_bridge = true, tile_id = tile_id, tile_image = tile_image }
+	local bridge = { x = x, y = y, is_bridge = true, tile_id = tile_id, tileset_info = tileset_info, tile_image = tile_image }
 	bridges.tiles[key] = bridge
 end
 
@@ -88,8 +89,8 @@ function bridges.build_colliders()
 end
 
 --- Draws all bridge tiles and debug bounding boxes.
---- @param camera table Camera instance for viewport culling
---- @param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
+---@param camera table Camera instance for viewport culling
+---@param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
 function bridges.draw(camera, margin)
 	local ts = sprites.tile_size
 	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
@@ -99,13 +100,8 @@ function bridges.draw(camera, margin)
 			goto continue
 		end
 
-		-- Use collection tile_image, Tiled tile_id, or fall back to sprite-based rendering
-		if bridge.tile_image then
-			common.draw_collection_tile(bridge.tile_image, bridge.x, bridge.y, ts)
-		elseif bridge.tile_id then
-			local tx, ty = common.gid_to_tilemap(bridge.tile_id)
-			sprites.draw_tile(tx, ty, bridge.x * ts, bridge.y * ts, sprites.environment.tileset_dungeon)
-		else
+		-- Use Tiled tile data or fall back to sprite-based rendering
+		if not common.draw_tiled_tile(bridge, ts) then
 			local sprite = sprites.environment.bridge_middle
 			if bridge.sprite_type == "left" then
 				sprite = sprites.environment.bridge_left

@@ -12,6 +12,7 @@ walls.decorative_tiles = {}  -- Render-only tiles (no collision)
 walls.colliders = {}
 walls.tile_to_collider = {}
 
+--- Returns tiles from lookup sorted by x, then y coordinate.
 ---@param tile_lookup table<string, {x: number, y: number}>
 ---@return {x: number, y: number}[]
 local function get_sorted_tiles(tile_lookup)
@@ -328,20 +329,22 @@ end
 ---@param x number Tile X coordinate
 ---@param y number Tile Y coordinate
 ---@param tile_id number|nil Optional Tiled global tile ID for tilemap rendering
+---@param tileset_info table|nil Optional tileset info {tileset_image, columns, firstgid}
 ---@param tile_image table|nil Optional collection tile {image, width, height}
-function walls.add_tile(x, y, tile_id, tile_image)
+function walls.add_tile(x, y, tile_id, tileset_info, tile_image)
 	local key = x .. "," .. y
-	walls.tiles[key] = { x = x, y = y, tile_id = tile_id, tile_image = tile_image }
+	walls.tiles[key] = { x = x, y = y, tile_id = tile_id, tileset_info = tileset_info, tile_image = tile_image }
 end
 
 --- Adds a decorative tile (render only, no collision).
 ---@param x number Tile X coordinate
 ---@param y number Tile Y coordinate
 ---@param tile_id number|nil Tiled global tile ID for tilemap rendering
+---@param tileset_info table|nil Optional tileset info {tileset_image, columns, firstgid}
 ---@param tile_image table|nil Optional collection tile {image, width, height}
-function walls.add_decorative_tile(x, y, tile_id, tile_image)
+function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image)
 	local key = x .. "," .. y
-	walls.decorative_tiles[key] = { x = x, y = y, tile_id = tile_id, tile_image = tile_image }
+	walls.decorative_tiles[key] = { x = x, y = y, tile_id = tile_id, tileset_info = tileset_info, tile_image = tile_image }
 end
 
 --- Adds a solo tile that won't merge with adjacent tiles.
@@ -457,17 +460,10 @@ local function is_tile_visible(tile, min_x, min_y, max_x, max_y)
 end
 
 --- Draws a single tile, handling both tilemap and collection tile images.
----@param tile table Tile with x, y, tile_id, and optional tile_image
+---@param tile table Tile with x, y, tile_id, tileset_info, and optional tile_image
 ---@param ts number Tile size in pixels (scaled)
 local function draw_tile(tile, ts)
-	if tile.tile_image then
-		common.draw_collection_tile(tile.tile_image, tile.x, tile.y, ts)
-	elseif tile.tile_id then
-		-- Tilemap tile: draw from tileset
-		local tx, ty = common.gid_to_tilemap(tile.tile_id)
-		sprites.draw_tile(tx, ty, tile.x * ts, tile.y * ts, sprites.environment.tileset_dungeon)
-	else
-		-- Fallback: default tile
+	if not common.draw_tiled_tile(tile, ts) then
 		sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
 	end
 end

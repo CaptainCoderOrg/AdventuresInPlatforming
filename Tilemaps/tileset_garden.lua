@@ -31,133 +31,133 @@ return {
     {
       id = 0,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 1,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 2,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 4,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 5,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 6,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 9,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 11,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 12,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 13,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 15,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 17,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 19,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 20,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 21,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 22,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 23,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 24,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 26,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 27,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 28,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 31,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
@@ -181,19 +181,19 @@ return {
     {
       id = 48,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 49,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 50,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
@@ -211,7 +211,7 @@ return {
     {
       id = 60,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
@@ -235,91 +235,91 @@ return {
     {
       id = 70,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 71,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 72,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 85,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 86,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 87,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 89,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 90,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 93,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 99,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 102,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 110,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 113,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 122,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     },
     {
       id = 123,
       properties = {
-        ["type"] = "walll"
+        ["type"] = "wall"
       }
     }
   }

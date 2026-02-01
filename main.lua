@@ -62,11 +62,13 @@ Prop.register("decoy_painting", require("Prop/decoy_painting"))
 local level1 = require("levels/level1")
 local level2 = require("levels/level2")
 local test_level = require("Tilemaps/test-level")
+local garden = require("Tilemaps/garden")
 
 local levels = {
     level1 = level1,
     level2 = level2,
     test_level = test_level,
+    garden = garden,
 }
 
 --- Get level module by ID
@@ -111,7 +113,7 @@ local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
 local was_dead = false  -- Track death state for game over trigger
-local current_level = test_level  -- Track current level module
+local current_level = garden  -- Track current level module
 local active_slot = nil  -- Currently active save slot (1-3)
 local proximity_volumes = {}  -- Reused per-frame to avoid allocations
 
@@ -472,7 +474,7 @@ local function start_new_game()
     Playtime.reset()
     Prop.clear_persistent_states()
     cleanup_level()
-    init_level(test_level)
+    init_level(current_level)
     audio.play_music(audio.level1)
 end
 

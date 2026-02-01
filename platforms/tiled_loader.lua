@@ -30,14 +30,14 @@ end
 
 --- Build mappings from global tile ID to tile properties by loading tileset files.
 --- Returns three maps: tile collision types, full tile properties, and renderable tile info.
---- For image-based tilesets, tile_renderable[gid] = true.
+--- For image-based tilesets, tile_renderable[gid] = {tileset_image, columns, firstgid}.
 --- For collection tilesets, tile_renderable[gid] = {image = path, width = w, height = h}.
 ---@param level_data table Tiled level data with tilesets array
 ---@return table<number, string>, table<number, table>, table<number, boolean|table> tile_types, tile_properties, tile_renderable
 local function build_tile_maps(level_data)
 	local tile_types = {}      -- gid → collision type (bridge, ladder, etc.)
 	local tile_properties = {}
-	local tile_renderable = {}  -- true for tilemap tiles, {image, width, height} for collection tiles
+	local tile_renderable = {}  -- tileset info for tilemap tiles, {image, width, height} for collection tiles
 
 	for _, tileset_ref in ipairs(level_data.tilesets or {}) do
 		local firstgid = tileset_ref.firstgid
@@ -55,9 +55,18 @@ local function build_tile_maps(level_data)
 				local is_image_tileset = tileset.image ~= nil
 
 				if is_image_tileset and tileset.tilecount then
-					-- Mark ALL tiles from image-based tilesets as renderable
+					-- Convert tileset image path and load it
+					local tileset_image = tileset.image:gsub("^%.%./assets/", "")
+					canvas.assets.load_image(tileset_image, tileset_image)
+
+					-- Store tileset info for all tiles from this tileset
+					local tileset_info = {
+						tileset_image = tileset_image,
+						columns = tileset.columns,
+						firstgid = firstgid
+					}
 					for i = 0, tileset.tilecount - 1 do
-						tile_renderable[firstgid + i] = true
+						tile_renderable[firstgid + i] = tileset_info
 					end
 				end
 
@@ -104,21 +113,32 @@ end
 ---@param world_y number World y coordinate (already offset-adjusted)
 ---@param layer_type string|nil Layer's collision type from properties
 ---@param tile_types table<number, string> Map of gid to collision type
----@param tile_renderable table<number, boolean|table> Map of gid to render info (true or {image, width, height})
+---@param tile_renderable table<number, table|string> Map of gid to render info (tileset info or collection tile)
 local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable)
 	local render_info = tile_renderable[tile_id]
 	if not render_info then return end
 
 	-- Determine render parameters based on render_info type:
-	-- true = tilemap tile (pass tile_id for gid_to_tilemap)
+	-- table with tileset_image = tilemap tile (pass tileset info)
 	-- "fallback" = typed collection tile (pass nil, use fallback sprites)
-	-- table = typeless collection tile (pass image info)
-	local render_id = (render_info == true) and tile_id or nil
-	local tile_image = (type(render_info) == "table") and render_info or nil
+	-- table with image = typeless collection tile (pass image info)
+	local tileset_info = nil
+	local tile_image = nil
+
+	if type(render_info) == "table" then
+		if render_info.tileset_image then
+			-- Image-based tileset tile
+			tileset_info = render_info
+		elseif render_info.image then
+			-- Collection tileset tile
+			tile_image = render_info
+		end
+	end
+	-- render_info == "fallback" means use fallback sprites (both nil)
 
 	if not layer_type then
 		-- Layer has no type: all tiles are decorative
-		walls.add_decorative_tile(world_x, world_y, render_id, tile_image)
+		walls.add_decorative_tile(world_x, world_y, tile_id, tileset_info, tile_image)
 		return
 	end
 
@@ -128,7 +148,7 @@ local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_t
 	local handler = get_handler_for_type(tile_type) or get_handler_for_type(layer_type)
 
 	if handler then
-		handler(world_x, world_y, render_id, tile_image)
+		handler(world_x, world_y, tile_id, tileset_info, tile_image)
 	end
 end
 
@@ -376,6 +396,9 @@ local function process_image_layer(layer)
 	-- Convert relative path (../assets/Tilesets/bg.png) to asset path (Tilesets/bg.png)
 	local image_path = layer.image:gsub("^%.%./assets/", "")
 
+	-- Check for custom properties
+	local props = layer.properties or {}
+
 	return {
 		image = image_path,
 		offset_x = layer.offsetx or 0,  -- Keep in pixels, scale applied at draw time
@@ -384,19 +407,23 @@ local function process_image_layer(layer)
 		parallax_y = layer.parallaxy or 1,
 		repeat_x = layer.repeatx or false,
 		repeat_y = layer.repeaty or false,
+		width = props.width,       -- Custom width in native pixels (optional)
+		height = props.height,     -- Custom height in native pixels (optional)
+		clamp_bottom = props.clamp_bottom,  -- Prevent bottom from rising above screen bottom
+		clamp_slack = props.clamp_slack,    -- Extra pixels below screen bottom before clamp activates
 	}
 end
 
 --- Load a Tiled level, converting to game format.
 --- Processes tile layers for geometry and object layers for entities.
 ---@param level_data table Tiled export data
----@return table { spawn, enemies, props, width, height, background }
+---@return table { spawn, enemies, props, width, height, backgrounds }
 function tiled.load(level_data)
 	local spawn = nil
 	local enemies = {}
 	local props = {}
 	local patrol_areas = {}
-	local background = nil
+	local backgrounds = {}  -- Array of background layers (rendered in order)
 	local tile_size = level_data.tilewidth or 16
 
 	-- Build tile maps from tileset files
@@ -427,21 +454,18 @@ function tiled.load(level_data)
 				table.insert(patrol_areas, area)
 			end
 		elseif layer.type == "imagelayer" then
-			-- Process first image layer as background
-			if not background then
-				background = process_image_layer(layer)
-				if background then
-					-- Adjust offset by level normalization (convert tiles to pixels)
-					background.offset_x = background.offset_x - (min_x * tile_size)
-					background.offset_y = background.offset_y - (min_y * tile_size)
-				end
+			local bg = process_image_layer(layer)
+			if bg then
+				-- Load the image asset
+				canvas.assets.load_image(bg.image, bg.image)
+				table.insert(backgrounds, bg)
 			end
 		end
 	end
 
 	-- Fallback: extract background from map properties (sprite key)
-	if not background and level_data.properties and level_data.properties.background then
-		background = level_data.properties.background
+	if #backgrounds == 0 and level_data.properties and level_data.properties.background then
+		table.insert(backgrounds, level_data.properties.background)
 	end
 
 	return {
@@ -451,7 +475,7 @@ function tiled.load(level_data)
 		patrol_areas = patrol_areas,
 		width = max_x - min_x,
 		height = max_y - min_y,
-		background = background
+		backgrounds = backgrounds
 	}
 end
 

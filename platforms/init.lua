@@ -6,8 +6,7 @@ local tiled = require("platforms.tiled_loader")
 local platforms = {}
 
 -- Set by load_level(), cleared by clear()
-local background_config = nil
-local background_image = nil  -- Cached loaded image for Tiled backgrounds
+local background_layers = {}  -- Array of background configs for Tiled image layers
 local patrol_areas = {}  -- Debug: patrol area rectangles for visualization
 
 -- Background sprite native dimensions (before scaling)
@@ -38,13 +37,8 @@ end
 function platforms.load_level(level_data)
 	if tiled.is_tiled_format(level_data) then
 		local result = tiled.load(level_data)
-		background_config = result.background
+		background_layers = result.backgrounds or {}
 		patrol_areas = result.patrol_areas or {}
-		-- Load image for Tiled image layer backgrounds
-		if type(background_config) == "table" and background_config.image then
-			background_image = background_config.image
-			canvas.assets.load_image(background_image, background_config.image)
-		end
 		return result
 	end
 
@@ -60,7 +54,10 @@ function platforms.load_level(level_data)
 	-- Format: [enemy_key][row] = { positions = {x...}, count = 1 }
 	local waypoint_enemies = {}
 
-	background_config = level_data.background
+	-- ASCII format uses a single background
+	if level_data.background then
+		background_layers = { level_data.background }
+	end
 
 	for y, row in ipairs(level_data.map) do
 		for x = 1, #row do
@@ -174,76 +171,101 @@ function platforms.build()
 	platforms.bridges.build_colliders()
 end
 
+--- Calculates tiling range for a single axis.
+--- Returns start position (aligned to tile boundary) and end position (past viewport).
+---@param screen_cam number Camera position in screen space (parallax-adjusted)
+---@param cam_px number Camera position in world pixels
+---@param offset number Layer offset in pixels
+---@param parallax_offset number Offset to counteract camera transform
+---@param bg_size number Size of one background tile in pixels
+---@param viewport_size number Viewport dimension in pixels
+---@return number, number start, end positions
+local function calc_tile_range(screen_cam, cam_px, offset, parallax_offset, bg_size, viewport_size)
+	local start = math.floor((screen_cam - offset) / bg_size) * bg_size + offset + parallax_offset
+	local end_pos = cam_px + viewport_size + bg_size + parallax_offset
+	return start, end_pos
+end
+
 --- Draws tiled background across the visible viewport.
 --- Supports both sprite key strings and Tiled image layer configs.
+--- Parallax: 0 = fixed on screen, 1 = scrolls with world, 0.5 = half speed
 ---@param camera {_x: number, _y: number} Camera instance with position in tile coordinates
 ---@param bg_config string|table Sprite key or Tiled image layer config
 local function draw_background(camera, bg_config)
 	local scale = config.ui.SCALE
-	local bg_width = BG_NATIVE_WIDTH * scale
-	local bg_height = BG_NATIVE_HEIGHT * scale
+	local tile_size = sprites.tile_size
 
 	-- Determine image source and parallax
 	local image
 	local parallax_x, parallax_y = 1, 1
 	local offset_x, offset_y = 0, 0
 	local repeat_x, repeat_y = true, true
+	local clamp_bottom = false
+	local bg_width, bg_height
 
 	if type(bg_config) == "string" then
 		-- Old format: sprite key
 		image = sprites.environment[bg_config]
+		bg_width = BG_NATIVE_WIDTH * scale
+		bg_height = BG_NATIVE_HEIGHT * scale
 	elseif type(bg_config) == "table" then
 		-- New format: Tiled image layer config
-		image = background_image
+		image = bg_config.image
 		parallax_x = bg_config.parallax_x or 1
 		parallax_y = bg_config.parallax_y or 1
-		-- Offset is in native pixels, scale to match display
 		offset_x = (bg_config.offset_x or 0) * scale
 		offset_y = (bg_config.offset_y or 0) * scale
 		repeat_x = bg_config.repeat_x ~= false
 		repeat_y = bg_config.repeat_y ~= false
+		clamp_bottom = bg_config.clamp_bottom or false
+		bg_width = (bg_config.width or BG_NATIVE_WIDTH) * scale
+		bg_height = (bg_config.height or BG_NATIVE_HEIGHT) * scale
 	end
 
 	if not image then return end
 
-	-- Apply parallax to camera position
-	local cam_x = camera._x * sprites.tile_size * parallax_x
-	local cam_y = camera._y * sprites.tile_size * parallax_y
+	-- Camera position in pixels
+	local cam_px = camera._x * tile_size
+	local cam_py = camera._y * tile_size
 
-	if repeat_x and repeat_y then
-		-- Tile in both directions
-		-- Account for offset in tiling calculation to handle any offset value
-		local start_x = math.floor((cam_x - offset_x) / bg_width) * bg_width + offset_x
-		local start_y = math.floor((cam_y - offset_y) / bg_height) * bg_height + offset_y
-		local end_x = cam_x + config.ui.canvas_width + bg_width
-		local end_y = cam_y + config.ui.canvas_height + bg_height
+	-- Parallax offset: counteracts camera transform for slower/fixed backgrounds
+	local parallax_offset_x = cam_px * (1 - parallax_x)
+	local parallax_offset_y = cam_py * (1 - parallax_y)
 
-		for y = start_y, end_y, bg_height do
-			for x = start_x, end_x, bg_width do
-				canvas.draw_image(image, x, y, bg_width, bg_height)
+	-- Screen-space camera position (where tiling should start)
+	local screen_cam_x = cam_px * parallax_x
+	local screen_cam_y = cam_py * parallax_y
+
+	-- Calculate positions for each axis
+	local start_x, end_x, start_y, end_y
+
+	if repeat_x then
+		start_x, end_x = calc_tile_range(screen_cam_x, cam_px, offset_x, parallax_offset_x, bg_width, config.ui.canvas_width)
+	else
+		start_x = offset_x + parallax_offset_x
+		end_x = start_x
+	end
+
+	if repeat_y then
+		start_y, end_y = calc_tile_range(screen_cam_y, cam_py, offset_y, parallax_offset_y, bg_height, config.ui.canvas_height)
+	else
+		start_y = offset_y + parallax_offset_y
+		-- Clamp bottom: prevent image bottom from rising above screen bottom
+		if clamp_bottom then
+			local image_bottom = start_y + bg_height
+			local screen_bottom = cam_py + config.ui.canvas_height
+			if image_bottom < screen_bottom then
+				start_y = screen_bottom - bg_height
 			end
 		end
-	elseif repeat_x then
-		-- Tile horizontally only
-		local start_x = math.floor((cam_x - offset_x) / bg_width) * bg_width + offset_x
-		local end_x = cam_x + config.ui.canvas_width + bg_width
-		local y = offset_y
+		end_y = start_y
+	end
 
+	-- Draw tiles
+	for y = start_y, end_y, bg_height do
 		for x = start_x, end_x, bg_width do
 			canvas.draw_image(image, x, y, bg_width, bg_height)
 		end
-	elseif repeat_y then
-		-- Tile vertically only
-		local start_y = math.floor((cam_y - offset_y) / bg_height) * bg_height + offset_y
-		local end_y = cam_y + config.ui.canvas_height + bg_height
-		local x = offset_x
-
-		for y = start_y, end_y, bg_height do
-			canvas.draw_image(image, x, y, bg_width, bg_height)
-		end
-	else
-		-- No repeat: single image
-		canvas.draw_image(image, offset_x, offset_y, bg_width, bg_height)
 	end
 end
 
@@ -252,8 +274,9 @@ end
 ---@param margin number|nil Optional margin in tiles to expand culling bounds (default 0)
 function platforms.draw(camera, margin)
 	margin = margin or 0
-	if background_config then
-		draw_background(camera, background_config)
+	-- Draw all background layers in order (first layer = furthest back)
+	for _, bg in ipairs(background_layers) do
+		draw_background(camera, bg)
 	end
 	platforms.walls.draw(camera, margin)
 	platforms.slopes.draw(camera, margin)
@@ -277,8 +300,7 @@ end
 --- Clears all platform data and resets background state.
 --- Call before loading a new level to prevent stale data.
 function platforms.clear()
-	background_config = nil
-	background_image = nil
+	background_layers = {}
 	patrol_areas = {}
 	platforms.walls.clear()
 	platforms.slopes.clear()

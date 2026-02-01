@@ -600,7 +600,7 @@
   </object>
  </objectgroup>
  <objectgroup id="8" name="Locations">
-  <object id="2" x="2814.33" y="16" width="16" height="16">
+  <object id="2" x="2816" y="16" width="16" height="16">
    <properties>
     <property name="id" value="shop_exit"/>
    </properties>

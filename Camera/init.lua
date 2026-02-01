@@ -233,7 +233,9 @@ function Camera:_get_active_bounds(player_x, player_y)
 			return bounds
 		end
 	end
-	return self._world_bounds
+	-- Lock to last known bounds when player exits defined zones
+	-- Falls back to world_bounds only if no bounds were ever active
+	return self._active_bounds or self._world_bounds
 end
 
 --- Calculates camera clamping limits from bounds, handling viewports larger than bounds.

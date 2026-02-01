@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 7,
-  nextobjectid = 12,
+  nextobjectid = 13,
   properties = {
     ["id"] = "shop"
   },
@@ -267,7 +267,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = -46,
+          x = -54,
           y = 80,
           width = 46,
           height = 128,
@@ -284,8 +284,8 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 8.5,
-          y = 144.5,
+          x = 0,
+          y = 144,
           width = 16,
           height = 16,
           rotation = 0,

@@ -157,7 +157,7 @@ Object layers with layer-level `type = "camera_bounds"` define constraint zones 
 
 **Behavior:**
 - Camera smoothly transitions between zones (configurable lerp)
-- If player is outside all bounds zones, camera uses world bounds
+- If player exits all bounds zones, camera locks to the last active bounds (edge-locking). Falls back to world bounds only if no bounds were ever active.
 - If bounds zone is smaller than viewport, camera centers on the zone
 
 **Configuration** in `config/camera.lua`:

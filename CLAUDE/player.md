@@ -25,6 +25,22 @@ state = {
 
 States are registered in `player/init.lua`. Common utilities (gravity, jump, collision checks, ability handlers) are in `player/common.lua`.
 
+## Learnable Abilities
+
+Abilities are gated behind unlock flags (set via progression/items). Checked in `player/common.lua`.
+
+| Ability | Unlock Flag | Checked In |
+|---------|-------------|------------|
+| Double Jump | `has_double_jump` | `handle_air_jump()` |
+| Wall Slide | `has_wall_slide` | state transitions |
+| Hammer | `has_hammer` | `handle_hammer()` |
+| Shield/Block | `has_shield` | `handle_block()` |
+| Dash | `can_dash` | `handle_dash()` |
+| Axe Throw | `has_axe` | `is_projectile_unlocked()` |
+| Shuriken | `has_shuriken` | `is_projectile_unlocked()` |
+
+**Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
+
 ## Combat System
 
 Player combat abilities managed through state machine.

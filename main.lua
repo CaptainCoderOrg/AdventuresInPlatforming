@@ -352,10 +352,10 @@ local function draw()
     canvas.clear()
 
     if not hud.is_title_screen_active() then
-        -- Clip world rendering to area above HUD
+        -- Clip world rendering to full canvas (HUD backdrop is drawn separately)
         canvas.save()
         canvas.begin_path()
-        canvas.rect(0, 0, config.ui.canvas_width, VIEWPORT_HEIGHT)
+        canvas.rect(0, 0, config.ui.canvas_width, config.ui.canvas_height)
         canvas.clip()
 
         -- Draw world-space entities (affected by camera)

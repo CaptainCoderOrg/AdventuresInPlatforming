@@ -1,5 +1,6 @@
 --- In-game HUD elements: projectile selector, game over, rest screen, title screen, slot screen
 local canvas = require("canvas")
+local config = require("config")
 local controls = require("controls")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
@@ -93,11 +94,30 @@ function hud.update(dt, player)
     selector_widget:update(dt, player)
 end
 
+--- Draw the HUD backdrop and widgets
+---@param player table Player instance with max_health, damage, and projectile properties
+local function draw_hud_bar(player)
+    local hud_height = config.ui.HUD_HEIGHT_PX * config.ui.SCALE
+    local hud_y = config.ui.canvas_height - hud_height
+    local slide = rest_screen.get_hud_slide()
+    local slide_offset = slide * hud_height
+
+    canvas.save()
+    canvas.translate(0, slide_offset)
+    canvas.set_fill_style("#000000")
+    canvas.fill_rect(0, hud_y, config.ui.canvas_width, hud_height)
+    selector_widget:draw(player)
+    canvas.restore()
+end
+
 --- Draw all HUD elements
 ---@param player table Player instance with max_health, damage, and projectile properties
 function hud.draw(player)
     if not title_screen.is_active() and not slot_screen.is_active() then
-        selector_widget:draw(player)
+        local slide = rest_screen.get_hud_slide()
+        if slide < 1 then
+            draw_hud_bar(player)
+        end
     end
     game_over.draw()
     rest_screen.draw()

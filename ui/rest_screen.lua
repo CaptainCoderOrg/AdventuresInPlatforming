@@ -35,7 +35,9 @@ local STATE = {
 
 -- Timing configuration (seconds)
 local FADE_IN_DURATION = 0.5
-local FADE_OUT_DURATION = 0.3
+local FADE_OUT_DURATION = 0.5
+local SLIDE_DURATION = 0.2
+local SLIDE_OUT_DELAY = 0.2
 local RELOAD_PAUSE = 0.1
 local FADE_BACK_IN_DURATION = 0.4
 
@@ -94,6 +96,8 @@ local LEVEL_UP_ICON_INSET = 6  -- Inset from button left edge (accounts for text
 -- Screen state
 local state = STATE.HIDDEN
 local fade_progress = 0
+local slide_progress = 0
+local fade_out_time = 0
 local elapsed_time = 0
 local nav_mode = NAV_MODE.MENU
 local confirm_selection = 2
@@ -400,6 +404,7 @@ end
 function rest_screen.hide()
     state = STATE.HIDDEN
     fade_progress = 0
+    slide_progress = 0
     if player_status_panel then
         player_status_panel:cancel_upgrades()
     end
@@ -415,6 +420,7 @@ function rest_screen.trigger_continue()
     end
     state = STATE.FADING_OUT
     fade_progress = 0
+    fade_out_time = 0
 end
 
 --- Save camera position every frame (called from main.lua before player:update)
@@ -501,6 +507,7 @@ local function init_screen_state(mode, player, camera, description, button_label
     camera_ref = camera
     state = STATE.FADING_IN
     fade_progress = 0
+    slide_progress = 0
     elapsed_time = 0
 
     campfire_x = player.x + 0.5
@@ -582,6 +589,13 @@ end
 ---@return boolean is_active True if rest screen is visible or animating
 function rest_screen.is_active()
     return state ~= STATE.HIDDEN
+end
+
+--- Get the HUD slide offset (for sliding HUD off screen)
+--- Returns 0.0 when hidden, increases to 1.0 as rest screen opens
+---@return number offset Slide progress (0.0 = on screen, 1.0 = off screen)
+function rest_screen.get_hud_slide()
+    return slide_progress
 end
 
 --- Check if rest screen is in a submenu (settings or confirm dialog)
@@ -1078,13 +1092,18 @@ function rest_screen.update(dt, block_mouse)
             fade_progress = 1
             state = STATE.OPEN
         end
+        -- Animate slide (faster than fade)
+        slide_progress = math.min(slide_progress + dt / SLIDE_DURATION, 1)
         -- Animate circle lerp for both modes
         circle_lerp_t = math.min(circle_lerp_t + dt / CIRCLE_LERP_DURATION, 1)
     elseif state == STATE.FADING_OUT then
         fade_progress = fade_progress + dt / FADE_OUT_DURATION
+        fade_out_time = fade_out_time + dt
         if fade_progress >= 1 then
             save_settings()
             fade_progress = 0
+            slide_progress = 0
+            fade_out_time = 0
             if current_mode == MODE.PAUSE then
                 -- Pause mode: skip reload, just hide
                 state = STATE.HIDDEN
@@ -1093,6 +1112,10 @@ function rest_screen.update(dt, block_mouse)
                 -- Rest mode: proceed to reload sequence
                 state = STATE.RELOADING
             end
+        end
+        -- Animate slide after delay
+        if fade_out_time >= SLIDE_OUT_DELAY then
+            slide_progress = math.max(slide_progress - dt / SLIDE_DURATION, 0)
         end
         circle_lerp_t = math.max(circle_lerp_t - dt / CIRCLE_LERP_DURATION, 0)
     elseif state == STATE.RELOADING then

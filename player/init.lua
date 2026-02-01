@@ -123,9 +123,10 @@ function Player.new()
 	self.max_jumps = 2
 	self.is_air_jumping = false
 	self.coyote_time = 0
+	self.has_double_jump = false
 
 	-- Wall movement
-	self.has_wall_slide = true
+	self.has_wall_slide = false
 	self.wall_direction = 0
 	self.wall_jump_dir = 0
 
@@ -146,11 +147,16 @@ function Player.new()
 	self.attack_cooldown = 0
 	self.throw_cooldown = 0
 	self.weapon_damage = 2
+	self.has_hammer = false
+	self.has_axe = false
+	self.has_shuriken = false
+	self.has_shield = false
 
 	-- Dash
 	self.dash_cooldown = 0
 	self.dash_speed = self._base_speed * 3
-	self.has_dash = true
+	self.has_dash = true       -- Cooldown flag (resets on ground)
+	self.can_dash = false      -- Unlock flag (progression)
 
 	-- Animation
 	self.animation = Animation.new(common.animations.IDLE)
@@ -235,12 +241,31 @@ function Player.new()
 	return self
 end
 
---- Cycles to the next available projectile type (wraps around to first).
+--- Returns whether a projectile type is unlocked.
+---@param proj table Projectile definition
+---@return boolean True if unlocked
+function Player:is_projectile_unlocked(proj)
+	if proj.name == "Axe" then return self.has_axe end
+	if proj.name == "Shuriken" then return self.has_shuriken end
+	return true  -- Unknown projectile types default to unlocked
+end
+
+--- Cycles to the next unlocked projectile type (wraps around).
+--- Skips locked projectiles. If no projectiles are unlocked, does nothing.
 --- Modifies `self.projectile` and `self.projectile_ix`.
 function Player:next_projectile()
-	self.projectile_ix = self.projectile_ix + 1
-	if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
-	self.projectile = self.projectile_options[self.projectile_ix]
+	local start_ix = self.projectile_ix
+	for _ = 1, #self.projectile_options do
+		self.projectile_ix = self.projectile_ix + 1
+		if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
+		local proj = self.projectile_options[self.projectile_ix]
+		if self:is_projectile_unlocked(proj) then
+			self.projectile = proj
+			return
+		end
+	end
+	-- No unlocked projectiles found, restore original selection
+	self.projectile_ix = start_ix
 end
 
 --- Returns whether player is currently invincible (post-hit immunity frames).

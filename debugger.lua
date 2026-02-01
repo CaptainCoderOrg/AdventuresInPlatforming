@@ -26,6 +26,18 @@ local function get_frame_color(ms)
     end
 end
 
+--- Returns a colored status string for an ability flag
+---@param enabled boolean Whether the ability is unlocked
+---@return string color Hex color for the status
+---@return string text Status text ("ON" or "OFF")
+local function ability_status(enabled)
+    if enabled then
+        return "#44FF44", "ON"
+    else
+        return "#FF4444", "OFF"
+    end
+end
+
 --- Draw debug overlay showing FPS, player state, and bounding boxes
 ---@param player table Player instance to display debug info for
 ---@return nil
@@ -54,6 +66,41 @@ function debugger.draw(player)
     canvas.draw_text(0, 24, POS)
     canvas.draw_text(0, 48, CAN_CLIMB)
     canvas.draw_text(0, 72, PLAYER_STATE)
+
+    -- Draw ability unlock status panel (top-right)
+    local line_h = 20
+    local panel_width = 180
+    local ability_x = w - panel_width
+    local ability_y = 0
+
+    canvas.set_font_size(16)
+    canvas.set_color("#FFFFFF")
+    canvas.draw_text(ability_x, ability_y, "Abilities (1-7 to toggle):")
+    ability_y = ability_y + line_h
+
+    -- NOTE: This table is allocated per-frame when debug mode is on.
+    -- Could be moved to module scope with in-place flag updates if GC pressure becomes an issue.
+    -- Monitor for performance problems during extended debug sessions.
+    local abilities = {
+        { key = "1", name = "Double Jump", flag = player.has_double_jump },
+        { key = "2", name = "Dash",        flag = player.can_dash },
+        { key = "3", name = "Wall Slide",  flag = player.has_wall_slide },
+        { key = "4", name = "Hammer",      flag = player.has_hammer },
+        { key = "5", name = "Axe",         flag = player.has_axe },
+        { key = "6", name = "Shuriken",    flag = player.has_shuriken },
+        { key = "7", name = "Shield",      flag = player.has_shield },
+    }
+
+    for _, ability in ipairs(abilities) do
+        local color, status = ability_status(ability.flag)
+        canvas.set_color("#AAAAAA")
+        canvas.draw_text(ability_x, ability_y, ability.key .. ":")
+        canvas.set_color("#FFFFFF")
+        canvas.draw_text(ability_x + 25, ability_y, ability.name)
+        canvas.set_color(color)
+        canvas.draw_text(ability_x + 120, ability_y, status)
+        ability_y = ability_y + line_h
+    end
 
     if config.profiler then
         debugger.draw_profiler()

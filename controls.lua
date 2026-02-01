@@ -328,7 +328,6 @@ end
 function controls.dash_pressed()
     return is_key_binding_pressed("dash")
         or is_button_binding_pressed("dash")
-        or canvas.is_gamepad_button_pressed(1, canvas.buttons.LB) -- Secondary dash button
 end
 
 --- Check if attack input was pressed this frame

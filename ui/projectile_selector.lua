@@ -172,7 +172,10 @@ function projectile_selector:draw(player)
     canvas.scale(scale, scale)
 
     canvas.draw_image(sprites.ui.ability_selector_left, 0, 0)
-    canvas.draw_image(player.projectile.icon, 8, 8, 16, 16)
+    -- Only draw projectile icon if current projectile is unlocked
+    if player:is_projectile_unlocked(player.projectile) then
+        canvas.draw_image(player.projectile.icon, 8, 8, 16, 16)
+    end
 
     draw_meter(self.alpha, METER_Y, player.max_health, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
     draw_stamina_meter(self.alpha, METER_Y + METER_HEIGHT, player, self.displayed_stamina, self.fatigue_pulse_timer)

@@ -69,49 +69,55 @@ common.animations = {
 ---@param player table The player object
 ---@return boolean True if throw is allowed (no cost or stamina consumed)
 local function try_use_throw_stamina(player)
-    local stamina_cost = player.projectile.stamina_cost or 0
-    return stamina_cost == 0 or player:use_stamina(stamina_cost)
+	local stamina_cost = player.projectile.stamina_cost or 0
+	return stamina_cost == 0 or player:use_stamina(stamina_cost)
 end
 
 --- Checks if the player has enough energy for the current projectile's energy cost.
 ---@param player table The player object
 ---@return boolean True if player has sufficient energy to throw
 local function has_throw_energy(player)
-    local energy_cost = player.projectile.energy_cost or 1
-    return player.energy_used + energy_cost <= player.max_energy
+	local energy_cost = player.projectile.energy_cost or 1
+	return player.energy_used + energy_cost <= player.max_energy
 end
 
 --- Checks for hammer input and transitions to hammer state if pressed.
+--- Requires hammer ability to be unlocked.
 ---@param player table The player object
 function common.handle_hammer(player)
-    if controls.hammer_pressed() then
-        if player:use_stamina(common.HAMMER_STAMINA_COST) then
-            player:set_state(player.states.hammer)
-        end
-    end
+	if not player.has_hammer then return end
+	if controls.hammer_pressed() then
+		if player:use_stamina(common.HAMMER_STAMINA_COST) then
+			player:set_state(player.states.hammer)
+		end
+	end
 end
 
 --- Checks for throw input and transitions to throw state or queues if on cooldown.
+--- Requires the current projectile type to be unlocked.
 --- Requires sufficient energy and stamina (based on projectile costs) to throw.
 ---@param player table The player object
 function common.handle_throw(player)
-    if controls.throw_pressed() then
-        -- Block throw entirely when insufficient energy (no cooldown queue needed)
-        if not has_throw_energy(player) then
-            -- Show visual feedback for insufficient energy
-            local current_energy = player.max_energy - player.energy_used
-            Effects.create_energy_text(player.x, player.y, current_energy)
-            player.energy_flash_requested = true
-            return
-        end
-        if player.throw_cooldown <= 0 then
-            if try_use_throw_stamina(player) then
-                player:set_state(player.states.throw)
-            end
-        else
-            common.queue_input(player, "throw")
-        end
-    end
+	if not controls.throw_pressed() then return end
+
+	-- Block throw if current projectile type is locked
+	if not player:is_projectile_unlocked(player.projectile) then return end
+
+	-- Block throw entirely when insufficient energy (no cooldown queue needed)
+	if not has_throw_energy(player) then
+		local current_energy = player.max_energy - player.energy_used
+		Effects.create_energy_text(player.x, player.y, current_energy)
+		player.energy_flash_requested = true
+		return
+	end
+
+	if player.throw_cooldown <= 0 then
+		if try_use_throw_stamina(player) then
+			player:set_state(player.states.throw)
+		end
+	else
+		common.queue_input(player, "throw")
+	end
 end
 
 --- Checks for attack input and transitions to attack state or queues if on cooldown.
@@ -138,10 +144,12 @@ function common.handle_attack(player)
 end
 
 --- Checks for block input and transitions to block state if held.
+--- Requires shield ability to be unlocked.
 --- Requires positive stamina (cannot block while fatigued).
 --- Shows "TIRED" text on first press when fatigued.
 ---@param player table The player object
 function common.handle_block(player)
+	if not player.has_shield then return end
 	local block_down = controls.block_down()
 	if block_down and not player:is_fatigued() then
 		player:set_state(player.states.block)
@@ -387,10 +395,13 @@ function common.handle_jump(player)
 end
 
 --- Attempts an air jump if the player has remaining jumps, stamina, and jump is pressed.
+--- Requires double jump ability to be unlocked (first jump is always available).
 ---@param player table The player object
 ---@return boolean True if air jump was performed
 function common.handle_air_jump(player)
 	if controls.jump_pressed() and player.jumps > 0 then
+		-- Block double jump if ability not unlocked (only first air jump after coyote time allowed)
+		if player.jumps < player.max_jumps and not player.has_double_jump then return false end
 		if player:use_stamina(common.AIR_JUMP_STAMINA_COST) then
 			player.vy = -common.AIR_JUMP_VELOCITY
 			player.jumps = player.jumps - 1
@@ -403,9 +414,11 @@ function common.handle_air_jump(player)
 end
 
 --- Attempts to initiate a dash if off cooldown, has stamina, and dash is pressed.
+--- Requires dash ability to be unlocked (can_dash) and available (has_dash).
 ---@param player table The player object
 ---@return boolean True if dash was initiated
 function common.handle_dash(player)
+	if not player.can_dash then return false end
 	if player.dash_cooldown > 0 or not player.has_dash then return false end
 	if controls.dash_pressed() then
 		if player:use_stamina(common.DASH_STAMINA_COST) then
@@ -477,10 +490,13 @@ local function try_queued_combat_action(player)
 			return player.states.attack
 		end
 	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 and has_throw_energy(player) then
+	if player.input_queue.throw and player.throw_cooldown <= 0 then
 		player.input_queue.throw = false
-		if try_use_throw_stamina(player) then
-			return player.states.throw
+		-- Check projectile unlock and energy before attempting throw
+		if player:is_projectile_unlocked(player.projectile) and has_throw_energy(player) then
+			if try_use_throw_stamina(player) then
+				return player.states.throw
+			end
 		end
 	end
 	return nil

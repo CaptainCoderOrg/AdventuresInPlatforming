@@ -162,10 +162,30 @@ local function user_input()
     if canvas.is_key_pressed(canvas.keys.P) then
         config.bounding_boxes = not config.bounding_boxes
         config.debug = not config.debug
-    elseif canvas.is_key_pressed(canvas.keys.DIGIT_1) then
-        audio.play_music(audio.level1)
-    elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
-        audio.play_music(audio.title_screen)
+    elseif config.debug then
+        -- Debug mode: 1-7 toggle ability flags
+        if canvas.is_key_pressed(canvas.keys.DIGIT_1) then
+            player.has_double_jump = not player.has_double_jump
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
+            player.can_dash = not player.can_dash
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_3) then
+            player.has_wall_slide = not player.has_wall_slide
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_4) then
+            player.has_hammer = not player.has_hammer
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_5) then
+            player.has_axe = not player.has_axe
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_6) then
+            player.has_shuriken = not player.has_shuriken
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_7) then
+            player.has_shield = not player.has_shield
+        end
+    else
+        -- Normal mode: 1-2 switch music
+        if canvas.is_key_pressed(canvas.keys.DIGIT_1) then
+            audio.play_music(audio.level1)
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
+            audio.play_music(audio.title_screen)
+        end
     end
     player:input()
 end

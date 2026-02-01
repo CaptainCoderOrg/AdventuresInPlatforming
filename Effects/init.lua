@@ -131,12 +131,31 @@ function Effects.draw()
 
 	text = next(state.status_texts)
 	while text do
-		local alpha = 1 - (text.elapsed / text.lifetime)
+		local alpha
+		if text.fade_delay and text.elapsed < text.fade_delay then
+			alpha = 1
+		else
+			local fade_start = text.fade_delay or 0
+			local fade_duration = text.lifetime - fade_start
+			alpha = 1 - ((text.elapsed - fade_start) / fade_duration)
+		end
 		canvas.set_global_alpha(alpha)
 		canvas.set_color(text.color)
 		local px = text.x * sprites.tile_size - text.cached_width / 2
 		local py = text.y * sprites.tile_size
-		canvas.draw_text(px, py, text.message)
+
+		if text.typewriter_duration then
+			local char_count = math.floor((text.elapsed / text.typewriter_duration) * #text.message)
+			char_count = math.min(char_count, #text.message)
+			local font_height = 6 * config.ui.SCALE
+			canvas.draw_label(px, py - font_height, text.cached_width, font_height, text.message, {
+				align_h = "left",
+				align_v = "top",
+				char_count = char_count
+			})
+		else
+			canvas.draw_text(px, py, text.message)
+		end
 		text = next(state.status_texts, text)
 	end
 
@@ -392,6 +411,49 @@ function Effects.create_locked_text(x, y, player)
 		cached_width = 0,
 		follow_player = player,
 		offset_y = -0.3,
+	}
+	update_text_width(text)
+	state.status_texts[text] = true
+end
+
+--- Factory: Creates hover text above a player that follows them
+---@param player table Player to follow
+---@param message string Text to display
+---@param visible_duration number|nil Time to stay fully visible (default 3)
+---@param fade_duration number|nil Time to fade out after visible duration (default 0)
+---@param tag string|nil Optional tag to identify this text (removes existing text with same tag)
+---@param typewriter_duration number|nil Time for text to appear letter by letter (default 0, instant)
+---@return nil
+function Effects.create_hover_text(player, message, visible_duration, fade_duration, tag, typewriter_duration)
+	visible_duration = visible_duration or 3
+	fade_duration = fade_duration or 0
+
+	-- Remove existing text with same tag
+	if tag then
+		local text = next(state.status_texts)
+		while text do
+			local next_text = next(state.status_texts, text)
+			if text.tag == tag then
+				state.status_texts[text] = nil
+			end
+			text = next_text
+		end
+	end
+
+	local text = {
+		x = player.x + 0.5,
+		y = player.y - 0.5,
+		vy = 0,
+		message = message,
+		color = "#FFFFFF",
+		lifetime = visible_duration + fade_duration,
+		fade_delay = fade_duration > 0 and visible_duration or nil,
+		elapsed = 0,
+		cached_width = 0,
+		follow_player = player,
+		offset_y = -0.5,
+		tag = tag,
+		typewriter_duration = typewriter_duration and typewriter_duration > 0 and typewriter_duration or nil,
 	}
 	update_text_width(text)
 	state.status_texts[text] = true

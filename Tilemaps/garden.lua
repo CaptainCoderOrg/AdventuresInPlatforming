@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 21,
+  nextobjectid = 25,
   properties = {
     ["id"] = "garden"
   },
@@ -273,7 +273,7 @@ return {
           x = 16, y = 0, width = 16, height = 16,
           data = {
             0, 0, 0, 0, 0, 0, 0, 591, 592, 593, 594, 595, 596, 597, 598, 599,
-            0, 0, 0, 678, 679, 680, 465, 466, 622, 623, 624, 625, 626, 627, 628, 629,
+            0, 678, 679, 679, 679, 680, 465, 466, 622, 623, 624, 625, 626, 627, 628, 629,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1013,6 +1013,69 @@ return {
             ["target_id"] = "enter_shop",
             ["target_map"] = "shop",
             ["type"] = "map_transition"
+          }
+        },
+        {
+          id = 21,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 393.125,
+          y = 8.625,
+          width = 15.75,
+          height = 23.875,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["on_interact"] = "maps.garden.on_open_cottage",
+            ["text"] = "Enter: {move_up}",
+            ["type"] = "interactable"
+          }
+        },
+        {
+          id = 23,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 912.063,
+          y = 8.1875,
+          width = 15.75,
+          height = 23.875,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["on_interact"] = "maps.garden.on_open_dungeon",
+            ["text"] = "Enter: {move_up}",
+            ["type"] = "interactable"
+          }
+        },
+        {
+          id = 22,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 381.125,
+          y = 6.25,
+          width = 0.125,
+          height = 0,
+          rotation = 0,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 24,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 623.458,
+          y = 0.0625,
+          width = 32.0833,
+          height = 32.2083,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["on_interact"] = "maps.garden.on_dead_tree",
+            ["type"] = "interactable"
           }
         }
       }

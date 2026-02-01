@@ -60,6 +60,7 @@ Prop.register("decoy_painting", require("Prop/decoy_painting"))
 Prop.register("witch_npc", require("Prop/witch_npc"))
 Prop.register("explorer_npc", require("Prop/explorer_npc"))
 Prop.register("adept_npc", require("Prop/adept_npc"))
+Prop.register("interactable", require("Prop/interactable"))
 
 -- Levels
 local level1 = require("levels/level1")

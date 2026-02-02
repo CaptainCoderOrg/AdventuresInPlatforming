@@ -39,6 +39,7 @@ sprites.ui = require("sprites/ui")
 sprites.environment = require("sprites/environment")
 sprites.controls = require("sprites/controls")
 sprites.npcs = require("sprites/npcs")
+sprites.items = require("sprites/items")
 
 --- Draws a ladder tile at the given screen position.
 ---@param dx number Destination x in screen pixels

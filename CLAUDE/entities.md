@@ -447,7 +447,7 @@ Visual feedback system for transient effects including animations, floating text
 
 ### Architecture
 
-- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`
+- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`, `state.collect_particles`
 - Factory methods for specific effects
 - Integrated into main loop via `Effects.update(dt)` and `Effects.draw()`
 - Text width cached at creation to avoid per-frame measurement
@@ -465,6 +465,7 @@ Visual feedback system for transient effects including animations, floating text
 
 **Particles:**
 - Fatigue particles - Sweat droplets when stamina exhausted
+- Collect particles - Gold/yellow burst when collecting unique items
 
 ### Usage
 
@@ -486,6 +487,7 @@ Effects.create_xp_text(x, y, amount, player)  -- Accumulating XP pickup
 
 -- Particles
 Effects.create_fatigue_particle(x, y)         -- Sweat particle
+Effects.create_collect_particles(x, y)        -- Item collection burst
 ```
 
 Effects are positioned in tile coordinates and converted to screen pixels for rendering.
@@ -517,6 +519,7 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/pressure_plate.lua` - Pressure plate prop (entity-triggered with lift effect)
 - `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
+- `Prop/unique_item_registry.lua` - Unique item definitions (sprites, sounds)
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)
@@ -527,3 +530,4 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/adept_npc.lua` - Adept NPC definition
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)
+- `Effects/state.lua` - Persistent state tables for hot reload

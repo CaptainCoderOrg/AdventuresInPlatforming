@@ -7,7 +7,6 @@ local config = require('config')
 local Effects = {}
 Effects.__index = Effects
 
--- Animation definitions
 Effects.animations = {
 	HIT = Animation.create_definition(sprites.effects.hit, 4, {
 		width = 16,
@@ -23,10 +22,11 @@ Effects.animations = {
 
 -- Module-level table to avoid allocation each frame
 local to_remove = {}
+local typewriter_opts = { align_h = "left", align_v = "top", char_count = 0 }
 
 --- Removes items from a set that match a predicate.
 ---@param set table Set (table with items as keys)
----@param should_remove function Predicate returning true if item should be removed
+---@param should_remove fun(item: table): boolean Predicate returning true if item should be removed
 local function remove_from_set(set, should_remove)
 	-- Clear module-level table instead of allocating new one
 	for i = 1, #to_remove do to_remove[i] = nil end
@@ -75,7 +75,6 @@ function Effects.update(dt)
 
 	text = next(state.status_texts)
 	while text do
-		-- Follow player if set
 		if text.follow_player then
 			text.x = text.follow_player.x + 0.5
 			text.y = text.follow_player.y + text.offset_y
@@ -96,6 +95,15 @@ function Effects.update(dt)
 		particle = next(state.fatigue_particles, particle)
 	end
 	remove_from_set(state.fatigue_particles, particle_expired)
+
+	particle = next(state.collect_particles)
+	while particle do
+		particle.x = particle.x + particle.vx * dt
+		particle.y = particle.y + particle.vy * dt
+		particle.elapsed = particle.elapsed + dt
+		particle = next(state.collect_particles, particle)
+	end
+	remove_from_set(state.collect_particles, particle_expired)
 end
 
 --- Draws all active effects (hit effects, damage text, status text, particles)
@@ -126,7 +134,6 @@ function Effects.draw()
 		text = next(state.damage_texts, text)
 	end
 
-	-- Set font for status texts
 	canvas.set_font_size(6 * config.ui.SCALE)
 
 	text = next(state.status_texts)
@@ -148,11 +155,8 @@ function Effects.draw()
 			local char_count = math.floor((text.elapsed / text.typewriter_duration) * #text.message)
 			char_count = math.min(char_count, #text.message)
 			local font_height = 6 * config.ui.SCALE
-			canvas.draw_label(px, py - font_height, text.cached_width, font_height, text.message, {
-				align_h = "left",
-				align_v = "top",
-				char_count = char_count
-			})
+			typewriter_opts.char_count = char_count
+			canvas.draw_label(px, py - font_height, text.cached_width, font_height, text.message, typewriter_opts)
 		else
 			canvas.draw_text(px, py, text.message)
 		end
@@ -168,6 +172,17 @@ function Effects.draw()
 		local py = particle.y * sprites.tile_size
 		canvas.fill_rect(px, py, particle.size, particle.size)
 		particle = next(state.fatigue_particles, particle)
+	end
+
+	particle = next(state.collect_particles)
+	while particle do
+		local alpha = 1 - (particle.elapsed / particle.lifetime)
+		canvas.set_global_alpha(alpha)
+		canvas.set_fill_style(particle.color)
+		local px = particle.x * sprites.tile_size
+		local py = particle.y * sprites.tile_size
+		canvas.fill_rect(px, py, particle.size, particle.size)
+		particle = next(state.collect_particles, particle)
 	end
 
 	canvas.set_global_alpha(1)
@@ -494,6 +509,62 @@ function Effects.create_fatigue_particle(x, y)
 	state.fatigue_particles[particle] = true
 end
 
+-- Gold/yellow color palette for collect particles
+local collect_colors = { "#FFD700", "#FFEC8B", "#FFF8DC", "#FFE4B5" }
+
+--- Helper: Spawns a ring of particles around a point
+---@param x number Center X in tile coordinates
+---@param y number Center Y in tile coordinates
+---@param cfg table Particle layer configuration
+local function spawn_particle_ring(x, y, cfg)
+	local count = cfg.base_count + math.random(cfg.count_variance)
+	for i = 1, count do
+		local angle = (i / count) * math.pi * 2 + math.random() * cfg.angle_jitter
+		local speed = cfg.speed_min + math.random() * cfg.speed_range
+		local particle = {
+			x = x + (math.random() - 0.5) * cfg.spawn_spread,
+			y = y + (math.random() - 0.5) * cfg.spawn_spread,
+			vx = math.cos(angle) * speed,
+			vy = math.sin(angle) * speed + (cfg.vy_offset or 0),
+			color = cfg.color or collect_colors[math.random(#collect_colors)],
+			size = cfg.size_min + math.random() * cfg.size_range,
+			lifetime = cfg.lifetime_min + math.random() * cfg.lifetime_range,
+			elapsed = 0,
+		}
+		state.collect_particles[particle] = true
+	end
+end
+
+-- Particle layer configurations for collect effect
+local collect_layers = {
+	{ -- Outer burst - large particles
+		base_count = 32, count_variance = 6, angle_jitter = 0.4,
+		speed_min = 1.2, speed_range = 0.8, spawn_spread = 0.15,
+		size_min = 5, size_range = 4, lifetime_min = 0.2, lifetime_range = 0.15,
+	},
+	{ -- Middle layer - medium particles
+		base_count = 32, count_variance = 6, angle_jitter = 0.5,
+		speed_min = 0.6, speed_range = 0.6, spawn_spread = 0.1, vy_offset = -0.2,
+		size_min = 4, size_range = 3, lifetime_min = 0.25, lifetime_range = 0.15,
+	},
+	{ -- Inner sparkles - small white particles
+		base_count = 28, count_variance = 4, angle_jitter = 0.6,
+		speed_min = 0.3, speed_range = 0.4, spawn_spread = 0.05, vy_offset = -0.3,
+		size_min = 2, size_range = 3, lifetime_min = 0.3, lifetime_range = 0.2,
+		color = "#FFFFFF",
+	},
+}
+
+--- Factory: Creates sparkle/burst particles when collecting an item
+---@param x number X position in tile coordinates (item center)
+---@param y number Y position in tile coordinates (item center)
+---@return nil
+function Effects.create_collect_particles(x, y)
+	for i = 1, #collect_layers do
+		spawn_particle_ring(x, y, collect_layers[i])
+	end
+end
+
 --- Clears all effects (for level reloading)
 ---@return nil
 function Effects.clear()
@@ -501,6 +572,7 @@ function Effects.clear()
 	for k in pairs(state.damage_texts) do state.damage_texts[k] = nil end
 	for k in pairs(state.status_texts) do state.status_texts[k] = nil end
 	for k in pairs(state.fatigue_particles) do state.fatigue_particles[k] = nil end
+	for k in pairs(state.collect_particles) do state.collect_particles[k] = nil end
 	state.active_xp_text = nil
 	state.active_gold_text = nil
 end

@@ -13,4 +13,5 @@ return {
     shop = require("Tilemaps/shop"),
     outside_tileset = require("Tilemaps/outside_tileset"),
     garden = require("Tilemaps/garden"),
+    unique_items = require("Tilemaps/unique_items"),
 }

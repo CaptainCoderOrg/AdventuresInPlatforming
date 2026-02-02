@@ -96,6 +96,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `combat.lua` - Combat spatial indexing
 - `profiler.lua` - Per-system timing profiler
 - `sprites/init.lua` - Sprite loading and pixel-alignment helpers
+- `sprites/items.lua` - Unique item sprite asset loader
 
 ### Player
 - `player/init.lua` - State registry and core logic

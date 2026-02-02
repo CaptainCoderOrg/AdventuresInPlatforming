@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 25,
+  nextobjectid = 32,
   properties = {
     ["id"] = "garden"
   },
@@ -61,6 +61,12 @@ return {
       firstgid = 1173,
       filename = "decorations.tsx",
       exportfilename = "decorations.lua"
+    },
+    {
+      name = "unique_items",
+      firstgid = 1218,
+      filename = "unique_items.tsx",
+      exportfilename = "unique_items.lua"
     }
   },
   layers = {
@@ -966,6 +972,104 @@ return {
           properties = {
             ["offset_y"] = 0
           }
+        },
+        {
+          id = 25,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1088,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1218,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 26,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1152,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1219,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 27,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1216,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1220,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 28,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1280,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1221,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 29,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1344,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1222,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 30,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1408,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1225,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 31,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1472,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1226,
+          visible = true,
+          properties = {}
         }
       }
     },

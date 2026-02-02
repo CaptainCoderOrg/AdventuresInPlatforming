@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="25">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="32">
  <editorsettings>
   <export target="garden.lua" format="lua"/>
  </editorsettings>
@@ -14,6 +14,7 @@
  <tileset firstgid="1147" source="enemy_spawns.tsx"/>
  <tileset firstgid="1155" source="spawns.tsx"/>
  <tileset firstgid="1173" source="decorations.tsx"/>
+ <tileset firstgid="1218" source="unique_items.tsx"/>
  <imagelayer id="5" name="Sky" locked="1" parallaxx="0.02" parallaxy="0" repeatx="1">
   <image source="../assets/Tilesets/bg_00_garden_lg.png" width="384" height="216"/>
   <properties>
@@ -598,6 +599,13 @@
     <property name="offset_y" type="float" value="0"/>
    </properties>
   </object>
+  <object id="25" gid="1218" x="1088" y="32" width="16" height="16"/>
+  <object id="26" gid="1219" x="1152" y="32" width="16" height="16"/>
+  <object id="27" gid="1220" x="1216" y="32" width="16" height="16"/>
+  <object id="28" gid="1221" x="1280" y="32" width="16" height="16"/>
+  <object id="29" gid="1222" x="1344" y="32" width="16" height="16"/>
+  <object id="30" gid="1225" x="1408" y="32" width="16" height="16"/>
+  <object id="31" gid="1226" x="1472" y="32" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="8" name="Locations">
   <object id="2" x="2816" y="16" width="16" height="16">

@@ -183,7 +183,7 @@ function attack.input(player)
 	if controls.jump_pressed() then
 		common.queue_input(player, "jump")
 	end
-	if controls.throw_pressed() then
+	if controls.ability_pressed() then
 		common.queue_input(player, "throw")
 	end
 

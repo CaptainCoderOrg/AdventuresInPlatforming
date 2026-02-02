@@ -411,11 +411,7 @@ init_level = function(level, spawn_override, player_data, options)
     if player_data then
         SaveSlots.restore_player_stats(player, player_data)
         SaveSlots.restore_transient_state(player, player_data)
-        -- Update active projectile reference if projectile_ix was restored
-        if player_data.projectile_ix then
-            player.projectile = player.projectile_options[player.projectile_ix]
-        end
-        -- Sync player ability flags with restored equipment
+        -- Sync player ability flags and projectile reference with restored equipment
         local weapon_sync = require("player.weapon_sync")
         weapon_sync.sync(player)
     end

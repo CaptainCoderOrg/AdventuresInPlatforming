@@ -133,12 +133,12 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "max_health", "max_stamina", "max_energy",
     "level", "experience", "gold",
     "defense", "recovery", "critical_chance",
-    "stat_upgrades", "unique_items", "equipped_items", "active_weapon",
+    "stat_upgrades", "unique_items", "equipped_items", "active_weapon", "active_secondary",
 }
 
 --- Transient state preserved during level transitions but reset at campfires
 ---@type string[]
-SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "projectile_ix" }
+SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used" }
 
 --- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)
 ---@param key string The stat key being copied

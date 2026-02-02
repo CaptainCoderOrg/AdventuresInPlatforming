@@ -3,6 +3,7 @@ local canvas = require("canvas")
 local sprites = require("sprites")
 local config = require("config")
 local weapon_sync = require("player.weapon_sync")
+local control_icon = require("ui.control_icon")
 
 ---@class projectile_selector
 ---@field x number X position offset from screen edge
@@ -19,7 +20,7 @@ projectile_selector.__index = projectile_selector
 
 -- Animation and layout constants
 local LERP_SPEED = 8          -- Units per second for meter animation
-local WIDGET_HEIGHT = 32      -- Must match ability_selector_left sprite for bottom-left anchoring
+local TOP_MARGIN = 1          -- Margin from top of HUD bar (1x scale)
 local METER_X = 36            -- Meter X offset from widget origin (right edge of selector + 4px)
 local METER_Y = 1             -- Meter Y offset from widget origin
 local PX_PER_UNIT = 5         -- Pixels per health/stamina point
@@ -27,6 +28,18 @@ local METER_HEIGHT = 10       -- Total meter sprite height in pixels
 local BAR_HEIGHT = 6          -- Bar height in pixels
 local BAR_Y_OFFSET = 2        -- Vertical offset for bar within meter
 local SHINE_OPACITY = 0.7     -- Shine overlay relative opacity
+
+-- Control icon layout (for attack indicator on weapon slot)
+local CONTROL_ICON_SIZE = 8   -- Size of control icon in 1x scale
+local WEAPON_ICON_X = 8       -- Weapon icon X position
+local WEAPON_ICON_Y = 8       -- Weapon icon Y position
+local WEAPON_ICON_SIZE = 16   -- Weapon icon size
+local ATTACK_ICON_OFFSET_X = 18  -- X offset from weapon container left edge
+local ATTACK_ICON_OFFSET_Y = 20  -- Y offset from weapon container top edge
+
+-- Swap icon layout (shown when multiple weapons equipped)
+local SWAP_ICON_SIZE = 10     -- Size of swap control icon
+local SWAP_ICON_PADDING = 1   -- Padding from bottom-left corner
 
 -- Pre-computed fatigue colors (green channel 0-136 for orange-to-red pulse)
 local FATIGUE_COLORS = {}
@@ -241,9 +254,10 @@ end
 ---@return nil
 function projectile_selector:draw(player)
     local scale = config.ui.SCALE
+    local hud_height = config.ui.HUD_HEIGHT_PX * scale
     canvas.save()
     canvas.set_global_alpha(self.alpha)
-    canvas.translate(self.x, canvas.get_height() - WIDGET_HEIGHT * scale - self.y)
+    canvas.translate(self.x, canvas.get_height() - hud_height + (TOP_MARGIN * scale))
     canvas.scale(scale, scale)
 
     canvas.draw_image(sprites.ui.ability_selector_left, 0, 0)
@@ -252,10 +266,13 @@ function projectile_selector:draw(player)
     if weapon_def then
         if weapon_def.animated_sprite then
             -- For animated sprites, draw only the first frame (16x16)
-            canvas.draw_image(weapon_def.animated_sprite, 8, 8, 16, 16, 0, 0, 16, 16)
+            canvas.draw_image(weapon_def.animated_sprite, WEAPON_ICON_X, WEAPON_ICON_Y, WEAPON_ICON_SIZE, WEAPON_ICON_SIZE, 0, 0, 16, 16)
         elseif weapon_def.static_sprite then
-            canvas.draw_image(weapon_def.static_sprite, 8, 8, 16, 16)
+            canvas.draw_image(weapon_def.static_sprite, WEAPON_ICON_X, WEAPON_ICON_Y, WEAPON_ICON_SIZE, WEAPON_ICON_SIZE)
         end
+
+        -- Draw attack control icon in bottom-right of weapon
+        control_icon.draw("attack", ATTACK_ICON_OFFSET_X, ATTACK_ICON_OFFSET_Y, CONTROL_ICON_SIZE)
     end
 
     local target_hp = player.max_health - player.damage
@@ -273,6 +290,16 @@ function projectile_selector:draw(player)
         canvas.set_fill_style("#FFFFFF")
         canvas.fill_rect(METER_X, energy_y + BAR_Y_OFFSET, meter_width, BAR_HEIGHT)
         canvas.set_global_alpha(self.alpha)
+    end
+
+    -- Draw swap icon in bottom-left of screen if more than 1 weapon equipped
+    local all_weapons = weapon_sync.get_all_equipped_weapons(player)
+    if #all_weapons > 1 then
+        -- Calculate position relative to current transform to place at screen bottom-left
+        -- We're translated by self.x and scaled, so adjust accordingly
+        local swap_x = (SWAP_ICON_PADDING * scale - self.x) / scale
+        local swap_y = config.ui.HUD_HEIGHT_PX - TOP_MARGIN - SWAP_ICON_SIZE - SWAP_ICON_PADDING
+        control_icon.draw("swap_weapon", swap_x, swap_y, SWAP_ICON_SIZE)
     end
 
     canvas.restore()

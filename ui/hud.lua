@@ -6,6 +6,7 @@ local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local game_over = require("ui/game_over")
 local projectile_selector = require("ui/projectile_selector")
+local secondary_bar = require("ui/secondary_bar")
 local rest_screen = require("ui/rest_screen")
 local title_screen = require("ui/title_screen")
 local slot_screen = require("ui/slot_screen")
@@ -18,6 +19,7 @@ local camera_ref = nil
 
 -- Lazily initialized in hud.init() to ensure sprites are loaded
 local selector_widget = nil
+local secondary_widget = nil
 
 canvas.assets.add_path("assets/")
 canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
@@ -31,7 +33,8 @@ function hud.init()
     rest_screen.init()
     title_screen.init()
     slot_screen.init()
-    selector_widget = projectile_selector.create({ x = 8, y = 8 })
+    selector_widget = projectile_selector.create({ x = 8, y = 8, alpha = 1.0 })
+    secondary_widget = secondary_bar.create()
 end
 
 --- Process HUD input for all overlay screens
@@ -92,6 +95,7 @@ function hud.update(dt, player)
     game_over.update(dt)
     rest_screen.update(dt, dialogs_block)
     selector_widget:update(dt, player)
+    secondary_widget:update(dt, player)
 end
 
 --- Draw the HUD backdrop and widgets
@@ -107,6 +111,7 @@ local function draw_hud_bar(player)
     canvas.set_fill_style("#000000")
     canvas.fill_rect(0, hud_y, config.ui.canvas_width, hud_height)
     selector_widget:draw(player)
+    secondary_widget:draw(player)
     canvas.restore()
 end
 

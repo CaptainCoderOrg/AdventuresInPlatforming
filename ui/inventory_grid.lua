@@ -29,10 +29,28 @@ local HEADER_TEXT = "Inventory"
 
 -- Equipment types that only allow one item equipped at a time
 -- Note: weapon removed to allow multiple weapons equipped (quick swap system)
+-- Note: secondary removed to allow up to 4 equipped (active secondary system)
 local EXCLUSIVE_TYPES = {
     shield = true,
-    secondary = true,
 }
+
+-- Maximum number of secondary items that can be equipped at once
+local MAX_SECONDARY_EQUIPPED = 4
+
+--- Counts how many items of a given type are currently equipped
+---@param grid table The inventory_grid instance
+---@param item_type string The type to count (e.g., "secondary")
+---@return number count Number of equipped items of that type
+local function count_equipped_by_type(grid, item_type)
+    local count = 0
+    for _, item_id in ipairs(grid.items) do
+        local def = unique_item_registry[item_id]
+        if def and def.type == item_type and grid.equipped[item_id] then
+            count = count + 1
+        end
+    end
+    return count
+end
 
 --- Create a new inventory grid
 ---@param opts {x: number, y: number, items: table, equipped: table, player: table|nil}
@@ -149,12 +167,26 @@ function inventory_grid:toggle_equipped(item_id)
         end
     end
 
+    -- For secondary items, check max limit before equipping
+    if item_type == "secondary" then
+        local count = count_equipped_by_type(self, "secondary")
+        if count >= MAX_SECONDARY_EQUIPPED then
+            -- Cannot equip more than 4 secondaries
+            return
+        end
+    end
+
     -- Equip the item
     self.equipped[item_id] = true
 
     -- Equipping a weapon makes it the active weapon immediately
     if item_type == "weapon" and self.player then
         self.player.active_weapon = item_id
+    end
+
+    -- Equipping a secondary makes it the active secondary immediately
+    if item_type == "secondary" and self.player then
+        self.player.active_secondary = item_id
     end
 
     -- Sync player ability flags with equipment

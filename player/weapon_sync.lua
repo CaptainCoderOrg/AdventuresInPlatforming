@@ -17,20 +17,26 @@ local function is_valid_weapon(player, weapon_id)
     return def and def.type == "weapon"
 end
 
+--- Returns true if the given secondary_id is a valid equipped secondary
+---@param player table The player object
+---@param secondary_id string|nil The secondary item_id to check
+---@return boolean is_valid True if secondary_id is equipped and is a secondary type
+local function is_valid_secondary(player, secondary_id)
+    if not secondary_id or not player.equipped_items or not player.equipped_items[secondary_id] then
+        return false
+    end
+    local def = unique_item_registry[secondary_id]
+    return def and def.type == "secondary"
+end
+
 --- Returns the first equipped weapon found (helper for fallback scenarios)
 ---@param player table The player object
 ---@return string|nil weapon_id The first equipped weapon's item_id, or nil if none
 ---@return table|nil weapon_def The weapon's definition from unique_item_registry, or nil if none
 function weapon_sync.get_first_equipped_weapon(player)
-    if not player.equipped_items then return nil, nil end
-
-    for item_id, equipped in pairs(player.equipped_items) do
-        if equipped then
-            local def = unique_item_registry[item_id]
-            if def and def.type == "weapon" then
-                return item_id, def
-            end
-        end
+    local weapons = weapon_sync.get_all_equipped_weapons(player)
+    if #weapons > 0 then
+        return weapons[1].id, weapons[1].def
     end
     return nil, nil
 end
@@ -50,21 +56,36 @@ function weapon_sync.get_equipped_weapon(player)
     return weapon_sync.get_first_equipped_weapon(player)
 end
 
---- Returns all equipped weapons as an array
+--- Returns all equipped weapons as an array (cached, invalidated by sync())
 ---@param player table The player object
 ---@return table Array of {id, def} pairs for each equipped weapon
 function weapon_sync.get_all_equipped_weapons(player)
-    local weapons = {}
-    if not player.equipped_items then return weapons end
+    if player._cached_weapons then return player._cached_weapons end
 
-    for item_id, equipped in pairs(player.equipped_items) do
-        if equipped then
-            local def = unique_item_registry[item_id]
-            if def and def.type == "weapon" then
-                table.insert(weapons, { id = item_id, def = def })
+    local weapons = player._weapon_cache or {}
+    player._weapon_cache = weapons
+    local count = 0
+
+    if player.equipped_items then
+        for item_id, equipped in pairs(player.equipped_items) do
+            if equipped then
+                local def = unique_item_registry[item_id]
+                if def and def.type == "weapon" then
+                    count = count + 1
+                    local entry = weapons[count]
+                    if not entry then
+                        entry = {}
+                        weapons[count] = entry
+                    end
+                    entry.id = item_id
+                    entry.def = def
+                end
             end
         end
     end
+    -- Clear stale entries
+    for i = count + 1, #weapons do weapons[i] = nil end
+    player._cached_weapons = weapons
     return weapons
 end
 
@@ -101,11 +122,121 @@ function weapon_sync.get_weapon_stats(player)
     return weapon_def and weapon_def.stats
 end
 
+-- Secondary item functions (similar pattern to weapons)
+
+--- Returns the first equipped secondary found (helper for fallback scenarios)
+---@param player table The player object
+---@return string|nil secondary_id The first equipped secondary's item_id, or nil if none
+---@return table|nil secondary_def The secondary's definition from unique_item_registry, or nil if none
+function weapon_sync.get_first_equipped_secondary(player)
+    local secondaries = weapon_sync.get_equipped_secondaries(player)
+    if #secondaries > 0 then
+        return secondaries[1].id, secondaries[1].def
+    end
+    return nil, nil
+end
+
+--- Returns all equipped secondaries as an array (cached, invalidated by sync())
+---@param player table The player object
+---@return table Array of {id, def} pairs for each equipped secondary
+function weapon_sync.get_equipped_secondaries(player)
+    if player._cached_secondaries then return player._cached_secondaries end
+
+    local secondaries = player._secondary_cache or {}
+    player._secondary_cache = secondaries
+    local count = 0
+
+    if player.equipped_items then
+        for item_id, equipped in pairs(player.equipped_items) do
+            if equipped then
+                local def = unique_item_registry[item_id]
+                if def and def.type == "secondary" then
+                    count = count + 1
+                    local entry = secondaries[count]
+                    if not entry then
+                        entry = {}
+                        secondaries[count] = entry
+                    end
+                    entry.id = item_id
+                    entry.def = def
+                end
+            end
+        end
+    end
+    -- Clear stale entries
+    for i = count + 1, #secondaries do secondaries[i] = nil end
+    player._cached_secondaries = secondaries
+    return secondaries
+end
+
+--- Returns the active secondary id and definition from player's equipped_items
+--- Uses player.active_secondary if set and valid, otherwise falls back to first equipped secondary
+---@param player table The player object
+---@return string|nil secondary_id The active secondary's item_id, or nil if none
+---@return table|nil secondary_def The secondary's definition from unique_item_registry, or nil if none
+function weapon_sync.get_active_secondary(player)
+    if not player.equipped_items then return nil, nil end
+
+    -- Return active_secondary if valid, otherwise fall back to first equipped secondary
+    if is_valid_secondary(player, player.active_secondary) then
+        return player.active_secondary, unique_item_registry[player.active_secondary]
+    end
+    return weapon_sync.get_first_equipped_secondary(player)
+end
+
+--- Cycles to the next equipped secondary
+--- Returns the new active secondary's name if switched, nil if no other secondaries
+---@param player table The player object
+---@return string|nil secondary_name The new active secondary's display name, or nil if not switched
+function weapon_sync.cycle_secondary(player)
+    local secondaries = weapon_sync.get_equipped_secondaries(player)
+    if #secondaries <= 1 then return nil end  -- Need at least 2 secondaries to cycle
+
+    -- Find current active secondary index
+    local current_index = 1
+    for i, sec in ipairs(secondaries) do
+        if sec.id == player.active_secondary then
+            current_index = i
+            break
+        end
+    end
+
+    -- Advance to next secondary (wrap around)
+    local next_index = (current_index % #secondaries) + 1
+    local next_secondary = secondaries[next_index]
+
+    player.active_secondary = next_secondary.id
+    return next_secondary.def.name
+end
+
+--- Returns the projectile spec for the currently active secondary
+--- Maps secondary item_id to the corresponding projectile definition
+---@param player table The player object
+---@return table|nil spec The projectile spec, or nil if no secondary equipped
+function weapon_sync.get_secondary_spec(player)
+    local secondary_id = weapon_sync.get_active_secondary(player)
+    if not secondary_id then return nil end
+
+    -- Map secondary item IDs to projectile specs
+    -- This requires Projectile module to be loaded lazily to avoid circular dependency
+    local Projectile = require("Projectile")
+    if secondary_id == "throwing_axe" then
+        return Projectile.get_axe()
+    elseif secondary_id == "shuriken" then
+        return Projectile.get_shuriken()
+    end
+    return nil
+end
+
 --- Syncs player ability flags from equipped_items
 --- Updates has_shield, has_axe, has_shuriken, can_dash, has_double_jump, has_wall_slide
 --- Also ensures active_weapon is valid (auto-selects first equipped weapon if needed)
 ---@param player table The player object
 function weapon_sync.sync(player)
+    -- Invalidate cached equipment lists
+    player._cached_weapons = nil
+    player._cached_secondaries = nil
+
     if not player.equipped_items then
         player.equipped_items = {}
     end
@@ -125,6 +256,17 @@ function weapon_sync.sync(player)
     -- Ensure active_weapon is valid (auto-select first equipped weapon if invalid)
     if not is_valid_weapon(player, player.active_weapon) then
         player.active_weapon = weapon_sync.get_first_equipped_weapon(player)
+    end
+
+    -- Ensure active_secondary is valid (auto-select first equipped secondary if invalid)
+    if not is_valid_secondary(player, player.active_secondary) then
+        player.active_secondary = weapon_sync.get_first_equipped_secondary(player)
+    end
+
+    -- Keep legacy projectile reference in sync with active_secondary
+    local spec = weapon_sync.get_secondary_spec(player)
+    if spec then
+        player.projectile = spec
     end
 end
 

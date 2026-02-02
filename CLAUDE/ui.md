@@ -101,8 +101,10 @@ rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 
 ## Projectile Selector Widget (`ui/projectile_selector.lua`)
 
-- Bottom-left HUD widget showing current throwable and resource meters
+- Bottom-left HUD widget showing equipped weapon and resource meters
 - Three horizontal meters: HP (red), SP (green/orange), EP (blue)
+- Shows attack control icon on weapon slot
+- Shows swap weapon control icon (bottom-left) when multiple weapons equipped
 - Smooth lerp transitions for meter changes (8 units/second)
 - Fatigue visualization: pulsing orange->red when stamina negative (2 Hz)
 - Energy flash: flickering white overlay when throw fails due to low energy (8 Hz, 0.5s)
@@ -113,6 +115,28 @@ widget:update(dt, player)  -- Lerp meter values, check energy_flash_requested
 widget:draw(player)        -- Render widget with flash overlay
 widget:flash_energy()      -- Manually trigger energy bar flash
 ```
+
+## Secondary Bar Widget (`ui/secondary_bar.lua`)
+
+- Bottom HUD widget showing all equipped secondary items (abilities)
+- Displays 1-4 secondary abilities in a horizontal bar with end caps
+- Selection highlight shows currently active secondary (via `player.active_secondary`)
+- Shows ability control icon on active secondary slot
+- Shows "Swap:" hint with control icon when multiple secondaries equipped
+- Position calculated dynamically: 8px margin after resource meters, 1px from HUD top
+
+```lua
+local widget = secondary_bar.create()
+widget:update(dt, player)  -- No-op (prepared for future animation)
+widget:draw(player)        -- Renders bar with equipped secondaries
+```
+
+**Key Features:**
+- Uses `weapon_sync.get_equipped_secondaries()` to fetch all equipped secondaries
+- Shows item icons from `unique_item_registry` (static_sprite or first frame of animated_sprite)
+- Scales with `config.ui.SCALE` (layout constants in 1x scale)
+- X position auto-calculated based on max(health, stamina, energy) meter width
+- Only renders when at least one secondary is equipped
 
 ## Status Panel (`ui/status_panel.lua`)
 
@@ -136,7 +160,8 @@ panel:draw()                    -- Render stats text
 
 - 5x5 grid for displaying collected unique items
 - Supports mouse hover and keyboard/gamepad navigation
-- Equipment toggling with exclusive types (only one shield/weapon/secondary at a time)
+- Equipment toggling with exclusive types (shield: 1 max, secondary: 4 max)
+- Auto-activates secondary when equipped (sets `player.active_secondary`)
 - Integrated into status_panel for rest screen display
 
 ```lua
@@ -151,8 +176,8 @@ grid:draw()
 
 **Equipment Types:**
 - `shield` - Only one shield equipped at a time
-- `weapon` - Only one weapon equipped at a time
-- `secondary` - Only one secondary (throwable) equipped at a time
+- `weapon` - Multiple weapons can be equipped (cycle with Swap Weapon key)
+- `secondary` - Up to 4 secondaries can be equipped (cycle with Swap Ability key, `player.active_secondary` tracks current)
 - `accessory` - Any number of accessories can be equipped
 - `no_equip` - Cannot be equipped (e.g., keys)
 
@@ -165,6 +190,8 @@ grid:draw()
 - `ui/game_over.lua` - Game over screen
 - `ui/audio_dialog.lua` - Audio settings dialog with volume sliders
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
+- `ui/control_icon.lua` - Shared control icon rendering utility for HUD widgets
 - `ui/projectile_selector.lua` - Resource meters HUD widget (HP/SP/EP)
+- `ui/secondary_bar.lua` - Secondary abilities HUD widget (equipped throwables)
 - `ui/status_panel.lua` - Player stats panel for rest screen
 - `ui/inventory_grid.lua` - 5x5 item grid component for status panel

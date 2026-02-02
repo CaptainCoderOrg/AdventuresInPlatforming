@@ -45,6 +45,9 @@ Multi-slot save system using localStorage with 3 save slots.
     critical_chance = 0,             -- Percent chance for critical hit
     stat_upgrades = {},              -- Track upgrade counts {Health=2, Stamina=1, ...}
     unique_items = {},               -- Collected unique items
+    equipped_items = {},             -- Set of equipped item_ids {throwing_axe=true, ...}
+    active_weapon = nil,             -- Currently active weapon item_id (for quick swap)
+    active_secondary = nil,          -- Currently active secondary item_id (for ability swap)
 
     -- Prop persistence (cross-level)
     prop_states = {},                -- Map of prop_key -> state_data
@@ -53,7 +56,7 @@ Multi-slot save system using localStorage with 3 save slots.
 
 **Transient State** (preserved during level transitions, reset at campfires):
 ```lua
-SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "projectile_ix" }
+SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used" }
 ```
 
 ### Key Methods

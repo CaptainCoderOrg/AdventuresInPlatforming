@@ -70,11 +70,11 @@ Defined in `player/common.lua`:
 Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 **Combat:**
-- Attack: J / Gamepad WEST (combo)
-- Throw: L / Gamepad NORTH
-- Hammer: I / Gamepad EAST
-- Block: U / Gamepad RT (hold)
-- Switch Projectile: 0 / Gamepad SELECT
+- Attack: Mouse Left / Gamepad WEST (combo)
+- Ability: Mouse Right / Gamepad NORTH (throw secondary)
+- Swap Weapon: E / Gamepad EAST (cycle equipped weapons)
+- Block: Q / Gamepad RT (hold)
+- Swap Ability: Z / Gamepad SELECT (cycle equipped secondaries)
 
 **Interaction:**
 - Interact: Up Arrow / D-pad UP (rest at campfires, open chests, collect items, unlock doors)
@@ -91,11 +91,13 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 ### Core
 - `main.lua` - Game loop (on_start, tick, draw)
 - `config.lua` - Debug flags, UI scaling (`config.ui.TILE`, `config.ui.SCALE`)
-- `controls.lua` - Unified keyboard/gamepad input
+- `controls.lua` - Unified keyboard/gamepad input handling
+- `config/controls.lua` - Control action definitions, default bindings, display names
 - `world.lua` - HC collision engine wrapper
 - `combat.lua` - Combat spatial indexing
 - `profiler.lua` - Per-system timing profiler
 - `sprites/init.lua` - Sprite loading and pixel-alignment helpers
+- `sprites/ui.lua` - UI sprite asset loader (HUD widgets, inventory, secondary bar)
 - `sprites/items.lua` - Unique item sprite asset loader
 
 ### Player
@@ -103,7 +105,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/common.lua` - Physics, collision, stamina costs
 - `player/shield.lua` - Shield lifecycle, blocking, knockback
 - `player/stats.lua` - Stat percentage calculations (diminishing returns)
-- `player/weapon_sync.lua` - Equipped weapon management and ability sync
+- `player/weapon_sync.lua` - Equipped weapon/secondary management and ability sync
 - `Animation/init.lua` - Delta-time animation system
 
 ### Entities
@@ -124,6 +126,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/title_screen.lua`, `ui/slot_screen.lua`, `ui/rest_screen.lua`
 - `ui/status_panel.lua` - Player stats and inventory panel
 - `ui/inventory_grid.lua` - 5x5 item grid with equipment management
+- `ui/secondary_bar.lua` - Secondary abilities HUD widget
 
 ### Persistence
 - `SaveSlots/init.lua` - 3-slot save system

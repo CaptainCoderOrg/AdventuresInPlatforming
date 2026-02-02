@@ -18,6 +18,10 @@ local ui = {
 	meter_cap_blue = "meter_cap_blue",
 	level_up_icon = "level_up_icon",
 	inventory_cell = "inventory_cell",
+	secondary_container = "secondary_container",
+	secondary_container_selected = "secondary_container_selected",
+	secondary_left_end = "secondary_left_end",
+	secondary_right_end = "secondary_right_end",
 }
 
 canvas.assets.load_image(ui.heart, "sprites/ui/heart.png")
@@ -35,5 +39,9 @@ canvas.assets.load_image(ui.meter_cap_green, "sprites/ui/meter-cap-green.png")
 canvas.assets.load_image(ui.meter_cap_blue, "sprites/ui/meter-cap-blue.png")
 canvas.assets.load_image(ui.level_up_icon, "sprites/ui/level_up_icon.png")
 canvas.assets.load_image(ui.inventory_cell, "sprites/ui/inventory_cell.png")
+canvas.assets.load_image(ui.secondary_container, "sprites/ui/hud-secondary-container.png")
+canvas.assets.load_image(ui.secondary_container_selected, "sprites/ui/hud-secondary-container-selected.png")
+canvas.assets.load_image(ui.secondary_left_end, "sprites/ui/hud-secondary-left-end.png")
+canvas.assets.load_image(ui.secondary_right_end, "sprites/ui/hud-secondary-right-end.png")
 
 return ui

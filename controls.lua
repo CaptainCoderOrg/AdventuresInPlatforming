@@ -241,18 +241,18 @@ local function is_trigger_binding_down(action_id)
     return check_gamepad_binding(action_id, TRIGGER_THRESHOLD)
 end
 
---- Check if projectile switch input was pressed this frame
----@return boolean pressed True if switch_proj binding was pressed
-function controls.next_projectile_pressed()
-    return is_key_binding_pressed("switch_proj")
-        or is_button_binding_pressed("switch_proj")
+--- Check if ability swap input was pressed this frame
+---@return boolean pressed True if swap_ability binding was pressed
+function controls.swap_ability_pressed()
+    return is_key_binding_pressed("swap_ability")
+        or is_button_binding_pressed("swap_ability")
 end
 
---- Check if throw input was pressed this frame
----@return boolean pressed True if throw binding was pressed
-function controls.throw_pressed()
-    return is_key_binding_pressed("throw")
-        or is_button_binding_pressed("throw")
+--- Check if ability input was pressed this frame
+---@return boolean pressed True if ability binding was pressed
+function controls.ability_pressed()
+    return is_key_binding_pressed("ability")
+        or is_button_binding_pressed("ability")
 end
 
 --- Check if weapon swap input was pressed this frame

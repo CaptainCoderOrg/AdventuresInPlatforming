@@ -105,7 +105,7 @@ end
 --- Requires sufficient energy and stamina (based on projectile costs) to throw.
 ---@param player table The player object
 function common.handle_throw(player)
-	if not controls.throw_pressed() then return end
+	if not controls.ability_pressed() then return end
 
 	-- Block throw if current projectile type is locked
 	if not player:is_projectile_unlocked(player.projectile) then return end
@@ -562,7 +562,7 @@ function common.queue_inputs(player)
 	if controls.attack_pressed() then
 		common.queue_input(player, "attack")
 	end
-	if controls.throw_pressed() then
+	if controls.ability_pressed() then
 		common.queue_input(player, "throw")
 	end
 end

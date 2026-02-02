@@ -41,6 +41,8 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 
 **Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
 
+**Secondary Items:** Up to 4 secondary items (throwables) can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT.
+
 ## Combat System
 
 Player combat abilities managed through state machine.
@@ -65,10 +67,17 @@ Player combat abilities managed through state machine.
    - **Active Frames**: Frame 2 to (frame_count - 2)
    - **Hit Tracking**: `attack_state.hit_enemies` prevents double-hits per swing
 
-2. **Throw** - `player/throw.lua`
+2. **Throw (Ability)** - `player/throw.lua`
    - Launches selected projectile on entry (Axe or Shuriken)
    - Can move horizontally during throw
    - Duration: animation length (7 frames, 33ms/frame)
+   - **Secondary Cycling System:**
+     - Up to 4 secondary items can be equipped simultaneously
+     - `player.active_secondary` tracks currently selected secondary item_id
+     - Cycle with 0 key or Gamepad SELECT via `weapon_sync.cycle_secondary()`
+     - Uses `weapon_sync.get_equipped_secondaries()` to fetch all equipped
+     - Uses `weapon_sync.get_active_secondary()` to get current selection
+     - Uses `weapon_sync.get_secondary_spec()` to get projectile definition
 
 3. **Hammer** - `player/hammer.lua`
    - Heavy stationary attack (7 frames, 150ms/frame)
@@ -232,6 +241,7 @@ self.max_health = 3             -- Starting health
 self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
 self.active_weapon = nil        -- Currently equipped weapon item_id (synced via weapon_sync)
+self.active_secondary = nil     -- Currently active secondary item_id (for ability swap)
 self.attack_cooldown = 0        -- Countdown timer (attack)
 self.throw_cooldown = 0         -- Countdown timer (throw)
 self.level = 1                  -- Player level (progression)

@@ -8,6 +8,7 @@ local shield = require('player.shield')
 local Animation = require('Animation')
 local Projectile = require('Projectile')
 local controls = require('controls')
+local weapon_sync = require('player.weapon_sync')
 local Effects = require('Effects')
 local audio = require('audio')
 local stats = require('player.stats')
@@ -49,8 +50,8 @@ local FATIGUE_ENTRY_PENALTY = 1
 -- Seconds between sweat particle spawns (50ms = rapid dripping effect)
 local FATIGUE_PARTICLE_INTERVAL = 0.05
 
---- Creates a new player instance.
---- @return table A new player object
+--- Creates a new player instance
+---@return table player A new player object
 function Player.new()
 	local self = setmetatable({}, Player)
 
@@ -93,6 +94,7 @@ function Player.new()
 	self.unique_items = {}      -- Permanently collected key items (for locked doors, etc.)
 	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
 	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
+	self.active_secondary = nil -- item_id of currently active secondary (for ability swap)
 
 	-- Position and velocity
 	self.x = 2
@@ -167,11 +169,8 @@ function Player.new()
 	self.state = nil
 	self.states = states  -- Reference for state transitions
 
-	-- Projectile Selected
-	self.projectile_options = { Projectile.get_axe(), Projectile.get_shuriken() }
-	
-	self.projectile_ix = 1
-	self.projectile = self.projectile_options[self.projectile_ix]
+	-- Active projectile spec (synced by weapon_sync from active_secondary)
+	self.projectile = nil
 
 	-- State-specific storage (for states with module-level variables)
 	self.run_state = {
@@ -243,7 +242,7 @@ function Player.new()
 	return self
 end
 
---- Returns whether a projectile type is unlocked.
+--- Returns whether a projectile type is unlocked (legacy check based on ability flags).
 ---@param proj table Projectile definition
 ---@return boolean True if unlocked
 function Player:is_projectile_unlocked(proj)
@@ -252,22 +251,18 @@ function Player:is_projectile_unlocked(proj)
 	return true  -- Unknown projectile types default to unlocked
 end
 
---- Cycles to the next unlocked projectile type (wraps around).
---- Skips locked projectiles. If no projectiles are unlocked, does nothing.
---- Modifies `self.projectile` and `self.projectile_ix`.
+--- Cycles to the next equipped secondary ability.
+--- Uses the active_secondary system from weapon_sync.
+--- Updates self.projectile to maintain compatibility with throw state.
+---@return string|nil name The new active secondary's display name, or nil if not switched
 function Player:next_projectile()
-	local start_ix = self.projectile_ix
-	for _ = 1, #self.projectile_options do
-		self.projectile_ix = self.projectile_ix + 1
-		if self.projectile_ix > #self.projectile_options then self.projectile_ix = 1 end
-		local proj = self.projectile_options[self.projectile_ix]
-		if self:is_projectile_unlocked(proj) then
-			self.projectile = proj
-			return
-		end
+	local name = weapon_sync.cycle_secondary(self)
+	-- Keep legacy projectile reference in sync
+	local spec = weapon_sync.get_secondary_spec(self)
+	if spec then
+		self.projectile = spec
 	end
-	-- No unlocked projectiles found, restore original selection
-	self.projectile_ix = start_ix
+	return name
 end
 
 --- Returns whether player is currently invincible (post-hit immunity frames).
@@ -384,8 +379,8 @@ end
 
 --- Teleports the player to the specified position and updates collision grid.
 --- Also resets last_safe_position to prevent immediate re-triggering of recovery.
---- @param x number World x coordinate (tile units)
---- @param y number World y coordinate (tile units)
+---@param x number World x coordinate (tile units)
+---@param y number World y coordinate (tile units)
 function Player:set_position(x, y)
 	self.x = x
 	self.y = y
@@ -396,7 +391,7 @@ end
 
 --- Transitions the player to a new state, calling the state's start function.
 --- Does nothing if already in the specified state.
---- @param state table A state object with start, input, update, draw functions
+---@param state table A state object with start, input, update, draw functions
 function Player:set_state(state)
 	if self.state == state then return end
 	assert(type(state) == "table" and
@@ -432,7 +427,13 @@ end
 --- Processes player input by delegating to the current state's input handler.
 function Player:input()
 	self.state.input(self)
-	if controls.next_projectile_pressed() then self:next_projectile() end
+	if controls.swap_ability_pressed() then
+		local name = self:next_projectile()
+		if name then
+			audio.play_swap_sound()
+			Effects.create_text(self.x, self.y, name)
+		end
+	end
 end
 
 --- Updates player physics, state logic, collision detection, and animation.

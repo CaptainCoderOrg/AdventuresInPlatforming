@@ -50,9 +50,11 @@ end
 
 -- Pre-compute animation definitions for animated items at module load time
 for _, item in pairs(ITEMS) do
-    if item.spin_sprite then
-        item.spin_anim = create_item_anim(item.spin_sprite, item.spin_frames, 160, true)
-        item.collected_anim = create_item_anim(item.collected_sprite, item.collected_frames, 160, false)
+    if item.animated_sprite then
+        item.animated_anim = create_item_anim(item.animated_sprite, item.animated_frames, 160, true)
+        if item.collected_sprite then
+            item.collected_anim = create_item_anim(item.collected_sprite, item.collected_frames, 160, false)
+        end
     end
 end
 
@@ -80,9 +82,9 @@ return {
         prop.item_id = options and options.item_id or "gold_key"
         prop.item = ITEMS[prop.item_id] or ITEMS.gold_key
 
-        -- Animated items use spin animation, static items use bob timer
-        if prop.item.spin_anim then
-            prop.animation = Animation.new(prop.item.spin_anim)
+        -- Animated items use animated animation, static items use bob timer
+        if prop.item.animated_anim then
+            prop.animation = Animation.new(prop.item.animated_anim)
         else
             prop.bob_timer = 0
         end
@@ -137,9 +139,15 @@ return {
                 end
                 audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
 
-                if prop.item.spin_anim then
-                    -- Animated item - play collected animation
-                    prop.animation = Animation.new(prop.item.collected_anim)
+                if prop.item.animated_anim then
+                    -- Animated item - play collected animation (or loop if no collected anim)
+                    if prop.item.collected_anim then
+                        prop.animation = Animation.new(prop.item.collected_anim)
+                    else
+                        -- No collected animation, just mark as collected immediately
+                        Prop.set_state(prop, "collected")
+                        return
+                    end
                 else
                     -- Static item - fade out with particles
                     prop.fade_elapsed = 0

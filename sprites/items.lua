@@ -9,6 +9,9 @@ local asset_paths = {
     item_hammer = "sprites/items/hammer.png",
     item_jump_ring = "sprites/items/jump_ring.png",
     item_sword = "sprites/items/sword.png",
+    item_longsword = "sprites/items/longsword.png",
+    item_elven_blade = "sprites/items/elven_blade.png",
+    item_great_sword = "sprites/items/great_sword.png",
     item_axe_icon = "sprites/throwables/axe_icon.png",
     item_shuriken_icon = "sprites/throwables/shuriken_icon.png",
 }
@@ -25,6 +28,9 @@ return {
     hammer = "item_hammer",
     jump_ring = "item_jump_ring",
     sword = "item_sword",
+    longsword = "item_longsword",
+    elven_blade = "item_elven_blade",
+    great_sword = "item_great_sword",
     axe_icon = "item_axe_icon",
     shuriken_icon = "item_shuriken_icon",
 }

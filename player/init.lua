@@ -91,6 +91,7 @@ function Player.new()
 		Critical = 0,
 	}
 	self.unique_items = {}      -- Permanently collected key items (for locked doors, etc.)
+	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
 
 	-- Position and velocity
 	self.x = 2

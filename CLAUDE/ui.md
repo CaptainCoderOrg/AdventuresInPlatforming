@@ -119,6 +119,7 @@ widget:flash_energy()      -- Manually trigger energy bar flash
 - Stats display with level-up functionality for rest screen
 - Shows: Level, Exp, Next Level, Gold, HP/SP/EP, DEF, Recovery, CRIT, Playtime
 - Supports stat upgrades at campfires (see [Level Progression](player.md#level-progression-system))
+- Integrates inventory grid for equipment management
 
 ```lua
 local panel = status_panel.create({ x, y, width, height, player })
@@ -127,8 +128,33 @@ panel:can_level_up()            -- Check if XP available for upgrade
 panel:add_pending_upgrade()     -- Queue upgrade for highlighted stat
 panel:confirm_upgrades()        -- Apply pending upgrades
 panel:cancel_upgrades()         -- Discard pending upgrades
+panel:get_description()         -- Get hovered stat/item description
 panel:draw()                    -- Render stats text
 ```
+
+## Inventory Grid (`ui/inventory_grid.lua`)
+
+- 5x5 grid for displaying collected unique items
+- Supports mouse hover and keyboard/gamepad navigation
+- Equipment toggling with exclusive types (only one shield/weapon/secondary at a time)
+- Integrated into status_panel for rest screen display
+
+```lua
+local grid = inventory_grid.create({ x, y, items = {}, equipped = {} })
+grid:set_items(player.unique_items)       -- Set items array
+grid:set_equipped(player.equipped_items)  -- Set equipped set
+grid:get_hovered_item()                   -- Get currently selected/hovered item_id
+grid:toggle_equipped(item_id)             -- Toggle equip state
+grid:update(dt, local_mx, local_my, mouse_active)
+grid:draw()
+```
+
+**Equipment Types:**
+- `shield` - Only one shield equipped at a time
+- `weapon` - Only one weapon equipped at a time
+- `secondary` - Only one secondary (throwable) equipped at a time
+- `accessory` - Any number of accessories can be equipped
+- `no_equip` - Cannot be equipped (e.g., keys)
 
 ## Key Files
 
@@ -141,3 +167,4 @@ panel:draw()                    -- Render stats text
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
 - `ui/projectile_selector.lua` - Resource meters HUD widget (HP/SP/EP)
 - `ui/status_panel.lua` - Player stats panel for rest screen
+- `ui/inventory_grid.lua` - 5x5 item grid component for status panel

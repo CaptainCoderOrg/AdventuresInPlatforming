@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 9,
+  tilecount = 12,
   tiles = {
     {
       id = 0,
@@ -114,6 +114,36 @@ return {
         ["type"] = "unique_item"
       },
       image = "../assets/sprites/throwables/shuriken_icon.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 9,
+      properties = {
+        ["item_id"] = "longsword",
+        ["type"] = "unique_item"
+      },
+      image = "../assets/sprites/items/longsword.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 10,
+      properties = {
+        ["item_id"] = "elven_blade",
+        ["type"] = "unique_item"
+      },
+      image = "../assets/sprites/items/elven_blade.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 11,
+      properties = {
+        ["item_id"] = "great_sword",
+        ["type"] = "unique_item"
+      },
+      image = "../assets/sprites/items/great_sword.png",
       width = 16,
       height = 16
     }

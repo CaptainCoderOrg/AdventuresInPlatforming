@@ -109,6 +109,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `Enemies/init.lua` - Enemy manager
 - `Prop/init.lua` - Prop system manager
 - `Prop/npc_common.lua` - NPC factory for dialogue NPCs
+- `Prop/unique_item_registry.lua` - Item definitions and equipment types
 - `Projectile/init.lua` - Throwable projectiles
 - `Effects/init.lua` - Visual effects
 - `sprites/npcs.lua` - NPC sprite asset loader
@@ -120,6 +121,8 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 ### UI
 - `ui/hud.lua` - Screen aggregator
 - `ui/title_screen.lua`, `ui/slot_screen.lua`, `ui/rest_screen.lua`
+- `ui/status_panel.lua` - Player stats and inventory panel
+- `ui/inventory_grid.lua` - 5x5 item grid with equipment management
 
 ### Persistence
 - `SaveSlots/init.lua` - 3-slot save system

@@ -16,8 +16,12 @@ local gamepad_bindings = {}
 local bindings = { keyboard = keyboard_bindings, gamepad = gamepad_bindings }
 local defaults = { keyboard = controls_config.keyboard_defaults, gamepad = controls_config.gamepad_defaults }
 
--- Track last used input device ("keyboard" or "gamepad")
+-- Track last used input device ("keyboard", "mouse", or "gamepad")
 local last_input_device = "keyboard"
+
+-- Mouse position tracking for movement detection
+local last_mouse_x = nil
+local last_mouse_y = nil
 
 --- Initialize controls with default bindings, then load saved bindings from storage
 ---@return nil
@@ -172,7 +176,7 @@ function controls.get_binding_name(scheme, action_id)
 end
 
 --- Get the last used input device
----@return string "keyboard" or "gamepad"
+---@return string "keyboard", "mouse", or "gamepad"
 function controls.get_last_input_device()
     return last_input_device
 end
@@ -192,7 +196,7 @@ local function check_key_binding(action_id, mouse_fn, key_fn)
     if controls_config.is_mouse_button(code) then
         local mouse_btn = mouse_button_map[code]
         if mouse_btn and mouse_fn(mouse_btn) then
-            last_input_device = "keyboard"
+            last_input_device = "mouse"
             return true
         end
     elseif key_fn(code) then
@@ -415,6 +419,51 @@ end
 ---@return boolean pressed True if ESCAPE or gamepad EAST was pressed
 function controls.menu_back_pressed()
     return check_menu_input_pressed(canvas.keys.ESCAPE, nil, canvas.buttons.EAST)
+end
+
+--- Update input mode based on mouse movement
+--- Call this each frame before processing mouse input
+---@return nil
+function controls.update_mouse_activity()
+    local mx, my = canvas.get_mouse_x(), canvas.get_mouse_y()
+
+    if last_mouse_x ~= nil then
+        if mx ~= last_mouse_x or my ~= last_mouse_y then
+            last_input_device = "mouse"
+        end
+    end
+
+    last_mouse_x = mx
+    last_mouse_y = my
+end
+
+--- Check if mouse input is currently active
+---@return boolean True if mouse is the last used input device
+function controls.is_mouse_active()
+    return last_input_device == "mouse"
+end
+
+--- Get the binding scheme for the current input device
+--- Maps "mouse" to "keyboard" since they share the same bindings
+---@return string "keyboard" or "gamepad"
+function controls.get_binding_scheme()
+    if last_input_device == "gamepad" then
+        return "gamepad"
+    end
+    return "keyboard"
+end
+
+--- Expand {action} placeholders in text to key/button names
+--- Uses the current binding scheme to determine which binding to show
+---@param text string Text with {action} placeholders (e.g., "Press {block} to block")
+---@return string Text with placeholders replaced by key/button names
+function controls.expand_bindings(text)
+    if not text then return "" end
+    local scheme = controls.get_binding_scheme()
+    return text:gsub("{([%w_]+)}", function(action_id)
+        local name = controls.get_binding_name(scheme, action_id)
+        return name or ("{" .. action_id .. "}")
+    end)
 end
 
 -- Initialize with defaults on load

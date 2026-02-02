@@ -273,7 +273,7 @@ end
 ---@return number height Total height including line spacing
 function TextDisplay.get_dimensions(text)
     local lines = TextDisplay.parse_lines(text)
-    local scheme = controls.get_last_input_device()
+    local scheme = controls.get_binding_scheme()
 
     canvas.set_font_family("menu_font")
     canvas.set_font_size(FONT_SIZE)
@@ -349,7 +349,7 @@ function TextDisplay:draw(tile_x, tile_y, tile_w, tile_h)
     local tile_size = sprites.tile_size
     local screen_x = tile_x * tile_size
     local screen_y = tile_y * tile_size
-    local scheme = controls.get_last_input_device()
+    local scheme = controls.get_binding_scheme()
     local lines = self.parsed_lines
     local num_lines = #lines
 
@@ -403,5 +403,12 @@ function TextDisplay:draw(tile_x, tile_y, tile_w, tile_h)
     canvas.set_text_align("left")
     canvas.set_text_baseline("alphabetic")
 end
+
+-- Export utility functions for use by other modules (e.g., simple_dialogue)
+TextDisplay.parse_segments = parse_segments
+TextDisplay.get_segments_width = get_segments_width
+TextDisplay.draw_segments = draw_segments
+TextDisplay.resolve_segment = resolve_segment
+TextDisplay.get_sprite_size = get_sprite_size
 
 return TextDisplay

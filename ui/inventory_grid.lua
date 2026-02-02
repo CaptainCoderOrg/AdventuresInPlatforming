@@ -1,0 +1,320 @@
+--- Inventory grid component for displaying items in a 5x5 grid
+local canvas = require("canvas")
+local sprites = require("sprites")
+local controls = require("controls")
+local unique_item_registry = require("Prop.unique_item_registry")
+
+local inventory_grid = {}
+inventory_grid.__index = inventory_grid
+
+-- Grid configuration
+local CELL_SIZE = 24
+local CELL_SPACING = 1
+local COLS = 5
+local ROWS = 5
+local SELECTION_ALPHA = 0.3
+
+-- Sprite frame positions (24px frames, no spacing in sprite sheet)
+local FRAME_BACKGROUND_X = 0
+local FRAME_SELECTION_X = 24
+
+-- Equipped indicator configuration
+local EQUIPPED_MARGIN = 3
+
+-- Header configuration
+local HEADER_HEIGHT = 12
+local HEADER_FONT_SIZE = 9
+local HEADER_TEXT = "Inventory"
+
+-- Equipment types that only allow one item equipped at a time
+local EXCLUSIVE_TYPES = {
+    shield = true,
+    weapon = true,
+    secondary = true,
+}
+
+--- Create a new inventory grid
+---@param opts {x: number, y: number, items: table, equipped: table}
+---@return table inventory_grid
+function inventory_grid.create(opts)
+    local self = setmetatable({}, inventory_grid)
+    self.x = opts.x or 0
+    self.y = opts.y or 0
+    self.items = opts.items or {}
+    self.equipped = opts.equipped or {}
+    self.selected_col = 1
+    self.selected_row = 1
+    self.hovered_col = nil
+    self.hovered_row = nil
+    self.active = false
+    return self
+end
+
+--- Get the total width of the grid in pixels
+---@return number width
+function inventory_grid:get_width()
+    return COLS * CELL_SIZE + (COLS - 1) * CELL_SPACING
+end
+
+--- Get the total height of the grid in pixels (includes header)
+---@return number height
+function inventory_grid:get_height()
+    return HEADER_HEIGHT + ROWS * CELL_SIZE + (ROWS - 1) * CELL_SPACING
+end
+
+--- Get the Y offset where cells start (after header)
+---@return number offset
+function inventory_grid:get_cells_y_offset()
+    return HEADER_HEIGHT
+end
+
+--- Set the items reference
+---@param items table Array of item_id strings
+function inventory_grid:set_items(items)
+    self.items = items or {}
+end
+
+--- Set the equipped reference
+---@param equipped table Set of equipped item_ids
+function inventory_grid:set_equipped(equipped)
+    self.equipped = equipped or {}
+end
+
+--- Get item at grid position
+---@param col number Column (1-indexed)
+---@param row number Row (1-indexed)
+---@return string|nil item_id
+function inventory_grid:get_item_at(col, row)
+    local slot_index = (row - 1) * COLS + col
+    return self.items[slot_index]
+end
+
+--- Get the currently selected or hovered item based on input mode
+--- Mouse mode: only returns hovered item (no fallback to keyboard selection)
+--- Keyboard/gamepad mode: returns keyboard selection when grid is active
+---@return string|nil item_id
+function inventory_grid:get_hovered_item()
+    if self.hovered_col and self.hovered_row then
+        return self:get_item_at(self.hovered_col, self.hovered_row)
+    end
+    if controls.is_mouse_active() then
+        return nil
+    end
+    if self.active then
+        return self:get_item_at(self.selected_col, self.selected_row)
+    end
+    return nil
+end
+
+--- Toggle equipped state for an item
+--- For exclusive types (shield, weapon, secondary), unequips other items of the same type
+--- Items with type "no_equip" cannot be equipped
+---@param item_id string The item to toggle
+function inventory_grid:toggle_equipped(item_id)
+    if not item_id then return end
+
+    -- Get the item's type
+    local item_def = unique_item_registry[item_id]
+    local item_type = item_def and item_def.type
+
+    -- Prevent equipping no_equip items
+    if item_type == "no_equip" then return end
+
+    -- If already equipped, just unequip
+    if self.equipped[item_id] then
+        self.equipped[item_id] = nil
+        return
+    end
+
+    -- For exclusive types, unequip any other item of the same type
+    if item_type and EXCLUSIVE_TYPES[item_type] then
+        for _, other_id in ipairs(self.items) do
+            if other_id ~= item_id and self.equipped[other_id] then
+                local other_def = unique_item_registry[other_id]
+                if other_def and other_def.type == item_type then
+                    self.equipped[other_id] = nil
+                end
+            end
+        end
+    end
+
+    -- Equip the item
+    self.equipped[item_id] = true
+end
+
+--- Reset selection to first cell
+---@return nil
+function inventory_grid:reset_selection()
+    self.selected_col = 1
+    self.selected_row = 1
+end
+
+--- Wrap a value within a range (1 to max, cycling)
+---@param value number Current value
+---@param delta number Change amount (-1 or 1)
+---@param max number Maximum value
+---@return number Wrapped value
+local function wrap(value, delta, max)
+    return ((value - 1 + delta) % max) + 1
+end
+
+--- Handle keyboard/gamepad input
+---@return boolean consumed True if input was consumed
+function inventory_grid:input()
+    if not self.active then return false end
+
+    local consumed = false
+
+    if controls.menu_up_pressed() then
+        self.selected_row = wrap(self.selected_row, -1, ROWS)
+        consumed = true
+    elseif controls.menu_down_pressed() then
+        self.selected_row = wrap(self.selected_row, 1, ROWS)
+        consumed = true
+    end
+
+    if controls.menu_left_pressed() then
+        self.selected_col = wrap(self.selected_col, -1, COLS)
+        consumed = true
+    elseif controls.menu_right_pressed() then
+        self.selected_col = wrap(self.selected_col, 1, COLS)
+        consumed = true
+    end
+
+    if controls.menu_confirm_pressed() then
+        local item_id = self:get_hovered_item()
+        if item_id then
+            self:toggle_equipped(item_id)
+            consumed = true
+        end
+    end
+
+    return consumed
+end
+
+--- Update the grid with mouse hover detection
+---@param _ number Delta time (unused, for API consistency)
+---@param local_mx number Local mouse X (relative to grid)
+---@param local_my number Local mouse Y (relative to grid)
+---@param mouse_active boolean Whether mouse input is active
+function inventory_grid:update(_, local_mx, local_my, mouse_active)
+    self.hovered_col = nil
+    self.hovered_row = nil
+
+    if not mouse_active then return end
+
+    -- Offset mouse Y by header height
+    local cell_my = local_my - HEADER_HEIGHT
+
+    -- Check each cell for hover
+    for row = 1, ROWS do
+        for col = 1, COLS do
+            local cx = (col - 1) * (CELL_SIZE + CELL_SPACING)
+            local cy = (row - 1) * (CELL_SIZE + CELL_SPACING)
+
+            if local_mx >= cx and local_mx < cx + CELL_SIZE and
+               cell_my >= cy and cell_my < cy + CELL_SIZE then
+                self.hovered_col = col
+                self.hovered_row = row
+                if self.active then
+                    self.selected_col = col
+                    self.selected_row = row
+                end
+                return
+            end
+        end
+    end
+end
+
+--- Check if a cell is selected (keyboard) or hovered (mouse) based on input mode
+--- Mouse mode: only returns true for hovered cell
+--- Keyboard/gamepad mode: returns true for keyboard selection when grid is active
+---@param col number Column to check
+---@param row number Row to check
+---@return boolean is_selected
+function inventory_grid:is_cell_selected(col, row)
+    if self.suppress_selection then
+        return false
+    end
+    local is_hovered = self.hovered_col == col and self.hovered_row == row
+    if controls.is_mouse_active() then
+        return is_hovered
+    end
+    local is_keyboard_selected = self.active and self.selected_col == col and self.selected_row == row
+    return is_hovered or is_keyboard_selected
+end
+
+--- Draw the inventory grid
+---@return nil
+function inventory_grid:draw()
+    local sprite = sprites.ui.inventory_cell
+
+    canvas.save()
+    canvas.set_font_family("menu_font")
+
+    -- Draw header text
+    canvas.set_font_size(HEADER_FONT_SIZE)
+    canvas.set_text_align("left")
+    canvas.set_text_baseline("top")
+    canvas.set_color("#AAAAAA")
+    canvas.draw_text(self.x, self.y, HEADER_TEXT)
+
+    -- Set up font for equipped indicators (used inside loop)
+    canvas.set_font_size(7)
+    canvas.set_text_align("right")
+    canvas.set_text_baseline("bottom")
+
+    -- Draw cells (offset by header)
+    local cells_y = self.y + HEADER_HEIGHT
+
+    for row = 1, ROWS do
+        for col = 1, COLS do
+            local cx = self.x + (col - 1) * (CELL_SIZE + CELL_SPACING)
+            local cy = cells_y + (row - 1) * (CELL_SIZE + CELL_SPACING)
+
+            -- 1. Draw cell background (frame 1)
+            canvas.draw_image(sprite, cx, cy, CELL_SIZE, CELL_SIZE,
+                FRAME_BACKGROUND_X, 0, CELL_SIZE, CELL_SIZE)
+
+            -- 2. Draw item if present
+            local item_id = self:get_item_at(col, row)
+            if item_id then
+                local item_def = unique_item_registry[item_id]
+                if item_def then
+                    -- Center 16px item in 24px cell
+                    local item_size = 16
+                    local offset = (CELL_SIZE - item_size) / 2
+                    local draw_x = cx + offset
+                    local draw_y = cy + offset
+
+                    if item_def.static_sprite then
+                        -- Static items: draw the whole sprite
+                        canvas.draw_image(item_def.static_sprite, draw_x, draw_y, item_size, item_size)
+                    elseif item_def.animated_sprite then
+                        -- Animated items: draw only the first frame (16x16)
+                        canvas.draw_image(item_def.animated_sprite, draw_x, draw_y, item_size, item_size,
+                            0, 0, item_size, item_size)
+                    end
+
+                    -- 3. Draw "E" if equipped
+                    if self.equipped[item_id] then
+                        canvas.set_color("#FFFFFF")
+                        canvas.draw_text(cx + CELL_SIZE - EQUIPPED_MARGIN, cy + CELL_SIZE - EQUIPPED_MARGIN, "E")
+                    end
+                end
+            end
+
+            -- 4. Draw selection overlay if selected/hovered (frame 2)
+            if self:is_cell_selected(col, row) then
+                canvas.set_global_alpha(SELECTION_ALPHA)
+                canvas.draw_image(sprite, cx, cy, CELL_SIZE, CELL_SIZE,
+                    FRAME_SELECTION_X, 0, CELL_SIZE, CELL_SIZE)
+                canvas.set_global_alpha(1)
+            end
+        end
+    end
+
+    canvas.restore()
+end
+
+return inventory_grid

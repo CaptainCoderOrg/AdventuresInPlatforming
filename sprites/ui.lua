@@ -17,6 +17,7 @@ local ui = {
 	meter_cap_green = "meter_cap_green",
 	meter_cap_blue = "meter_cap_blue",
 	level_up_icon = "level_up_icon",
+	inventory_cell = "inventory_cell",
 }
 
 canvas.assets.load_image(ui.heart, "sprites/ui/heart.png")
@@ -33,5 +34,6 @@ canvas.assets.load_image(ui.meter_cap_red, "sprites/ui/meter-cap-red.png")
 canvas.assets.load_image(ui.meter_cap_green, "sprites/ui/meter-cap-green.png")
 canvas.assets.load_image(ui.meter_cap_blue, "sprites/ui/meter-cap-blue.png")
 canvas.assets.load_image(ui.level_up_icon, "sprites/ui/level_up_icon.png")
+canvas.assets.load_image(ui.inventory_cell, "sprites/ui/inventory_cell.png")
 
 return ui

@@ -285,7 +285,7 @@ end
 ---@param scale number|nil Scale multiplier
 function controls.draw_action(action_id, x, y, scale)
     local controls_module = require("controls")
-    local scheme = controls_module.get_last_input_device()
+    local scheme = controls_module.get_binding_scheme()
     local code = controls_module.get_binding(scheme, action_id)
 
     if not code then return end

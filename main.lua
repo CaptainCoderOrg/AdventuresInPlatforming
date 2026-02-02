@@ -1,6 +1,7 @@
 -- Core dependencies
 local canvas = require("canvas")
 local config = require("config")
+local controls = require("controls")
 local sprites = require("sprites")
 local audio = require("audio")
 local debugger = require("debugger")
@@ -149,6 +150,7 @@ canvas.set_image_smoothing(false)
 --- Process player and debug input each frame
 ---@return nil
 local function user_input()
+    controls.update_mouse_activity()
     hud.input()
 
     -- Profiler toggle works on any screen

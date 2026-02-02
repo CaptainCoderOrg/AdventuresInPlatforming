@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="unique_items" tilewidth="16" tileheight="16" tilecount="9" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="unique_items" tilewidth="16" tileheight="16" tilecount="12" columns="0">
  <editorsettings>
   <export target="unique_items.lua" format="lua"/>
  </editorsettings>
@@ -51,7 +51,7 @@
    <property name="item_id" value="sword"/>
    <property name="type" value="unique_item"/>
   </properties>
-  <image source="../assets/sprites/items/sword.png" width="16" height="16"/>
+  <image source="../assets/sprites/items/sword.png" width="192" height="16"/>
  </tile>
  <tile id="7">
   <properties>
@@ -66,5 +66,26 @@
    <property name="type" value="unique_item"/>
   </properties>
   <image source="../assets/sprites/throwables/shuriken_icon.png" width="16" height="16"/>
+ </tile>
+ <tile id="9">
+  <properties>
+   <property name="item_id" value="longsword"/>
+   <property name="type" value="unique_item"/>
+  </properties>
+  <image source="../assets/sprites/items/longsword.png" width="16" height="16"/>
+ </tile>
+ <tile id="10">
+  <properties>
+   <property name="item_id" value="elven_blade"/>
+   <property name="type" value="unique_item"/>
+  </properties>
+  <image source="../assets/sprites/items/elven_blade.png" width="16" height="16"/>
+ </tile>
+ <tile id="11">
+  <properties>
+   <property name="item_id" value="great_sword"/>
+   <property name="type" value="unique_item"/>
+  </properties>
+  <image source="../assets/sprites/items/great_sword.png" width="16" height="16"/>
  </tile>
 </tileset>

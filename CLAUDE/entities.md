@@ -332,9 +332,16 @@ animation:draw(x, y - lift)
 - **Unique Item** - Permanent collectible that persists across saves
   - States: idle, collect, collected
   - Items stored in `player.unique_items` for gameplay checks (e.g., locked doors)
+  - Equipped items tracked in `player.equipped_items` (set of item_ids)
   - `should_spawn` callback prevents respawning if player already has item
   - Collection via up input
   - Configurable: `item_id` (e.g., "gold_key")
+  - Equipment types (see `unique_item_registry.lua`):
+    - `shield` - Only one equipped at a time
+    - `weapon` - Only one equipped at a time
+    - `secondary` - Only one equipped at a time (throwables)
+    - `accessory` - Any number can be equipped
+    - `no_equip` - Cannot be equipped (e.g., keys)
 - **Lever** - Toggleable switch that fires callbacks on state changes
   - States: left, right, toggling
   - Configurable: `initial_state`, `on_left`, `on_right` callbacks, `text` prompt
@@ -519,7 +526,7 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/pressure_plate.lua` - Pressure plate prop (entity-triggered with lift effect)
 - `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
-- `Prop/unique_item_registry.lua` - Unique item definitions (sprites, sounds)
+- `Prop/unique_item_registry.lua` - Unique item definitions (sprites, sounds, equipment types)
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)

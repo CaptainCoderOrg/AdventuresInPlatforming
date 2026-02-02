@@ -113,11 +113,6 @@ local upgrade_button_focus = nil  -- nil = stats focused, "confirm" or "cancel" 
 local hold_direction = 0
 local hold_time = 0
 
--- Mouse tracking
-local mouse_active = true
-local last_mouse_x = 0
-local last_mouse_y = 0
-
 -- Campfire and camera state
 local campfire_x = 0
 local campfire_y = 0
@@ -239,12 +234,49 @@ local function wrap_index(index, delta, max)
     return ((index - 1 + delta) % max) + 1
 end
 
---- Calculate layout dimensions for all UI panels
+-- Cached layout to avoid per-frame allocations
+local cached_layout = {
+    menu = { x = 0, y = 0, width = 0, height = 0 },
+    info = { x = 0, y = 0, width = 0, height = 0 },
+    rest = { x = 0, y = 0, width = 0, height = DIALOGUE_HEIGHT },
+}
+local cached_layout_scale = nil
+local cached_layout_width = nil
+local cached_layout_height = nil
+
+-- Cached glow gradient colors to avoid per-frame string allocations
+local glow_color_cache = {}
+
+--- Get cached glow color string for gradient (quantized to 50 levels)
+---@param alpha number Alpha value (0-1)
+---@return string RGBA color string
+local function get_glow_color(alpha)
+    local key = math.floor(alpha * 50)
+    if not glow_color_cache[key] then
+        glow_color_cache[key] = string.format("rgba(255,150,40,%.2f)", key / 50)
+    end
+    return glow_color_cache[key]
+end
+
+--- Calculate layout dimensions for all UI panels (cached)
 ---@param scale number UI scale factor
 ---@return table Layout dimensions for menu, info panel, and rest dialogue
 local function calculate_layout(scale)
-    local screen_w = canvas.get_width() / scale
-    local screen_h = canvas.get_height() / scale
+    local width = canvas.get_width()
+    local height = canvas.get_height()
+
+    -- Return cached layout if inputs haven't changed
+    if scale == cached_layout_scale and width == cached_layout_width and height == cached_layout_height then
+        return cached_layout
+    end
+
+    -- Update cache keys
+    cached_layout_scale = scale
+    cached_layout_width = width
+    cached_layout_height = height
+
+    local screen_w = width / scale
+    local screen_h = height / scale
 
     -- Layout around circle viewport (bottom-left)
     local circle_right = CIRCLE_EDGE_PADDING + CIRCLE_RADIUS * 2
@@ -261,11 +293,22 @@ local function calculate_layout(scale)
     local rest_y = screen_h - DIALOGUE_PADDING - DIALOGUE_HEIGHT
     local info_height = rest_y - DIALOGUE_GAP - DIALOGUE_PADDING
 
-    return {
-        menu = { x = menu_x, y = menu_y, width = menu_width, height = menu_height },
-        info = { x = info_x, y = info_y, width = info_width, height = info_height },
-        rest = { x = info_x, y = rest_y, width = info_width, height = DIALOGUE_HEIGHT },
-    }
+    -- Update cached layout tables in place
+    cached_layout.menu.x = menu_x
+    cached_layout.menu.y = menu_y
+    cached_layout.menu.width = menu_width
+    cached_layout.menu.height = menu_height
+
+    cached_layout.info.x = info_x
+    cached_layout.info.y = info_y
+    cached_layout.info.width = info_width
+    cached_layout.info.height = info_height
+
+    cached_layout.rest.x = info_x
+    cached_layout.rest.y = rest_y
+    cached_layout.rest.width = info_width
+
+    return cached_layout
 end
 
 --- Position all menu buttons within the menu dialogue
@@ -435,7 +478,6 @@ end
 --- Reset navigation state to defaults (called when showing rest/pause screen)
 ---@return nil
 local function reset_navigation_state()
-    mouse_active = true
     focused_index = 1  -- Default to Status
     nav_mode = NAV_MODE.MENU  -- Start in menu mode
     active_panel_index = 1  -- Show stats by default
@@ -679,10 +721,8 @@ local function handle_audio_settings_input()
     end
 
     if controls.menu_up_pressed() then
-        mouse_active = false
         audio_focus_index = wrap_index(audio_focus_index, -1, 3)
     elseif controls.menu_down_pressed() then
-        mouse_active = false
         audio_focus_index = wrap_index(audio_focus_index, 1, 3)
     end
 
@@ -744,6 +784,19 @@ end
 --- Handle input when in Status panel navigation mode
 ---@return nil
 local function handle_status_settings_input()
+    -- Check if inventory is focused - delegate navigation to status panel
+    if player_status_panel:is_inventory_focused() then
+        -- Back exits inventory focus, returns to stats
+        if controls.menu_back_pressed() then
+            player_status_panel:focus_stats()
+            return
+        end
+
+        -- Let status panel handle inventory navigation
+        player_status_panel:input()
+        return
+    end
+
     local has_pending = player_status_panel:has_pending_upgrades()
 
     -- Handle back/cancel button
@@ -775,18 +828,6 @@ local function handle_status_settings_input()
         end
     end
 
-    -- Left also exits when no pending and not on buttons
-    if controls.menu_left_pressed() then
-        if upgrade_button_focus then
-            -- Move from buttons back to stats
-            upgrade_button_focus = nil
-            return
-        elseif not has_pending then
-            return_to_status()
-            return
-        end
-    end
-
     -- Confirm button behavior
     if controls.menu_confirm_pressed() then
         if upgrade_button_focus == "confirm" then
@@ -808,16 +849,13 @@ local function handle_status_settings_input()
 
     -- Navigation
     if controls.menu_up_pressed() or controls.menu_down_pressed() then
-        mouse_active = false
-
         if upgrade_button_focus then
-            -- Move between Confirm/Cancel or back to stats
+            -- Up from buttons goes back to stats (bottom row)
             if controls.menu_up_pressed() then
-                upgrade_button_focus = nil  -- Go back to stats
-            elseif controls.menu_down_pressed() then
-                -- Toggle between confirm and cancel
-                upgrade_button_focus = upgrade_button_focus == "confirm" and "cancel" or "confirm"
+                upgrade_button_focus = nil
+                player_status_panel.selected_index = #player_status_panel.selectable_rows
             end
+            -- Down from buttons does nothing (already at bottom)
         else
             -- Navigate stats, but check if we should move to buttons
             local old_index = player_status_panel.selected_index
@@ -835,9 +873,25 @@ local function handle_status_settings_input()
         return
     end
 
-    -- Right arrow to move to buttons when pending
-    if controls.menu_right_pressed() and has_pending and not upgrade_button_focus then
-        upgrade_button_focus = "confirm"
+    -- Left/Right navigation
+    if controls.menu_left_pressed() or controls.menu_right_pressed() then
+        if upgrade_button_focus then
+            -- Left/Right switches between Confirm and Cancel
+            if controls.menu_left_pressed() then
+                upgrade_button_focus = "confirm"
+            elseif controls.menu_right_pressed() then
+                upgrade_button_focus = "cancel"
+            end
+        else
+            -- Right goes to inventory
+            if controls.menu_right_pressed() then
+                player_status_panel:input()
+            end
+            -- Left exits when no pending upgrades
+            if controls.menu_left_pressed() and not has_pending then
+                return_to_status()
+            end
+        end
         return
     end
 end
@@ -865,9 +919,6 @@ local function handle_controls_settings_input()
     end
 
     -- Let panel handle row navigation
-    if controls.menu_up_pressed() or controls.menu_down_pressed() then
-        mouse_active = false
-    end
     controls_panel:input()
 
     -- If panel wrapped to -2 (settings tab header), wrap to reset button instead
@@ -885,10 +936,8 @@ local function handle_confirm_input()
     end
 
     if controls.menu_left_pressed() or controls.menu_up_pressed() then
-        mouse_active = false
         confirm_selection = 1
     elseif controls.menu_right_pressed() or controls.menu_down_pressed() then
-        mouse_active = false
         confirm_selection = 2
     end
 
@@ -906,14 +955,14 @@ end
 local upgrade_confirm_hovered = false
 local upgrade_cancel_hovered = false
 
---- Draw the upgrade confirm/cancel buttons at the bottom of the status panel
+--- Draw the upgrade confirm/cancel buttons below the stats area
 --- Only visible in REST mode when there are pending upgrades
 ---@param info table Layout info with x, y, width, height
 ---@param local_mx number Local mouse X coordinate
 ---@param local_my number Local mouse Y coordinate
----@param mouse_active boolean Whether mouse input is active
 ---@return nil
-local function draw_upgrade_buttons(info, local_mx, local_my, mouse_active)
+local function draw_upgrade_buttons(info, local_mx, local_my)
+    local mouse_active = controls.is_mouse_active()
     -- Only show upgrade buttons in REST mode with pending upgrades
     if current_mode ~= MODE.REST or not player_status_panel:has_pending_upgrades() then
         upgrade_confirm_hovered = false
@@ -924,21 +973,22 @@ local function draw_upgrade_buttons(info, local_mx, local_my, mouse_active)
 
     canvas.save()
 
-    local button_y = info.y + info.height - 16
-    local center_x = info.x + info.width / 2
-    local button_spacing = 8
+    -- Position below stats area (left side of panel)
+    local stats_layout = player_status_panel:get_stats_layout()
+    local button_y = info.y + stats_layout.bottom + 6
+    local button_x = info.x + stats_layout.x
+    local button_spacing = 12
 
     canvas.set_font_family("menu_font")
     canvas.set_font_size(7)
-    canvas.set_text_baseline("middle")
+    canvas.set_text_baseline("top")
 
-    local confirm_text = "Confirm"
+    local confirm_text = "Spend XP"
     local cancel_text = "Cancel"
     local confirm_metrics = canvas.get_text_metrics(confirm_text)
     local cancel_metrics = canvas.get_text_metrics(cancel_text)
 
-    local total_width = confirm_metrics.width + button_spacing + cancel_metrics.width
-    local confirm_x = center_x - total_width / 2
+    local confirm_x = button_x
     local cancel_x = confirm_x + confirm_metrics.width + button_spacing
 
     -- Check hover state (mouse)
@@ -947,9 +997,8 @@ local function draw_upgrade_buttons(info, local_mx, local_my, mouse_active)
 
     if mouse_active then
         local btn_height = 10
-        local btn_y = button_y - btn_height / 2
 
-        if local_my >= btn_y and local_my <= btn_y + btn_height then
+        if local_my >= button_y and local_my <= button_y + btn_height then
             if local_mx >= confirm_x and local_mx <= confirm_x + confirm_metrics.width then
                 upgrade_confirm_hovered = true
                 upgrade_button_focus = "confirm"  -- Sync mouse hover with focus
@@ -1023,10 +1072,8 @@ local function handle_menu_input()
     end
 
     if controls.menu_up_pressed() then
-        mouse_active = false
         focused_index = wrap_index(focused_index, -1, MENU_ITEM_COUNT)
     elseif controls.menu_down_pressed() then
-        mouse_active = false
         focused_index = wrap_index(focused_index, 1, MENU_ITEM_COUNT)
     end
 
@@ -1143,13 +1190,9 @@ function rest_screen.update(dt, block_mouse)
         local is_capturing = controls_panel and controls_panel:is_capturing_input()
 
         if not block_mouse then
+            local mouse_active = controls.is_mouse_active()
             local mx = canvas.get_mouse_x()
             local my = canvas.get_mouse_y()
-            if mx ~= last_mouse_x or my ~= last_mouse_y then
-                mouse_active = true
-                last_mouse_x = mx
-                last_mouse_y = my
-            end
 
             local local_mx = mx / scale
             local local_my = my / scale
@@ -1230,6 +1273,11 @@ function rest_screen.update(dt, block_mouse)
                             player_status_panel:remove_pending_upgrade()
                         end
                     end
+                end
+
+                -- Handle mouse clicks for inventory (toggle equipped)
+                if mouse_active and canvas.is_mouse_pressed(0) then
+                    player_status_panel:toggle_hovered_equipped()
                 end
 
                 -- Update rest dialogue with stat description when hovering or navigating
@@ -1364,13 +1412,11 @@ local PROMPT_ICON_SPACING = 4
 ---@param use_mouse boolean Whether to show mouse icon instead of keyboard/gamepad
 ---@return nil
 local function draw_input_icon(x, y, use_mouse)
-    if use_mouse then
-        sprites.controls.draw_key(controls_config.MOUSE_LEFT, x, y, PROMPT_KEY_SCALE)
-        return
-    end
+    local mode = use_mouse and "mouse" or controls.get_last_input_device()
 
-    local scheme = controls.get_last_input_device()
-    if scheme == "gamepad" then
+    if mode == "mouse" then
+        sprites.controls.draw_key(controls_config.MOUSE_LEFT, x, y, PROMPT_KEY_SCALE)
+    elseif mode == "gamepad" then
         sprites.controls.draw_button(canvas.buttons.SOUTH, x, y, PROMPT_BUTTON_SCALE)
     else
         sprites.controls.draw_key(canvas.keys.SPACE, x, y, PROMPT_KEY_SCALE)
@@ -1381,9 +1427,19 @@ end
 --- Only true in REST mode on Status panel when a levelable stat is highlighted
 ---@return boolean
 local function is_level_up_prompt_visible()
-    return active_panel_index == 1
-        and current_mode == MODE.REST
-        and player_status_panel:is_highlighted_levelable()
+    if active_panel_index ~= 1 or current_mode ~= MODE.REST then
+        return false
+    end
+
+    -- Don't show if inventory has mouse hover or keyboard focus (without stats mouse hover)
+    local inventory_has_hover = player_status_panel.inventory.hovered_col ~= nil
+    local inventory_has_focus = player_status_panel.focus_area == "inventory" and
+                                player_status_panel.hovered_index == nil
+    if inventory_has_hover or inventory_has_focus then
+        return false
+    end
+
+    return player_status_panel:is_highlighted_levelable()
 end
 
 --- Draw the level-up prompt in the bottom right of the rest dialogue
@@ -1431,12 +1487,38 @@ local function draw_level_up_prompt(dialogue)
     canvas.restore()
 end
 
+--- Check if the inventory equip prompt should be visible
+--- Only true when inventory has a hovered/selected item AND level-up prompt is not visible
+---@return boolean
+local function is_inventory_prompt_visible()
+    -- Only on status panel, and mutually exclusive with level-up prompt
+    if active_panel_index ~= 1 or is_level_up_prompt_visible() then
+        return false
+    end
+
+    -- Don't show if stats has mouse hover or keyboard focus (without inventory mouse hover)
+    local stats_has_hover = player_status_panel.hovered_index ~= nil
+    local stats_has_focus = player_status_panel.focus_area == "stats" and
+                            player_status_panel.active and
+                            player_status_panel.inventory.hovered_col == nil
+    if stats_has_hover or stats_has_focus then
+        return false
+    end
+
+    return player_status_panel:is_hovered_item_equipped() ~= nil
+end
+
 --- Draw the submenu entry prompt in the bottom right of the info panel
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_submenu_prompt(dialogue)
-    -- Only show in menu mode for submenu items (Status, Audio, Controls) when level-up prompt is hidden
-    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 3 or is_level_up_prompt_visible() then
+    -- Only show in menu mode for submenu items (Status, Audio, Controls)
+    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 3 then
+        return
+    end
+
+    -- Mutual exclusion: never show if level-up or inventory prompts are visible
+    if is_level_up_prompt_visible() or is_inventory_prompt_visible() then
         return
     end
 
@@ -1466,6 +1548,41 @@ local function draw_submenu_prompt(dialogue)
     local icon_x = text_x - text_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
     local icon_y = text_y - PROMPT_ICON_SIZE / 2
     draw_input_icon(icon_x, icon_y, mouse_on_submenu)
+
+    canvas.restore()
+end
+
+--- Draw the inventory equip/unequip prompt in the bottom right of the rest dialogue
+---@param dialogue table The rest dialogue with x, y, width, height
+---@return nil
+local function draw_inventory_equip_prompt(dialogue)
+    if not is_inventory_prompt_visible() then
+        return
+    end
+
+    local is_equipped = player_status_panel:is_hovered_item_equipped()
+    local text = is_equipped and "Unequip" or "Equip"
+
+    canvas.save()
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(7)
+    canvas.set_text_baseline("middle")
+    canvas.set_text_align("right")
+
+    local text_metrics = canvas.get_text_metrics(text)
+    local text_x = dialogue.x + dialogue.width - PROMPT_PADDING
+    local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
+
+    canvas.set_color("#FFFFFF")
+    canvas.draw_text(text_x, text_y, text)
+
+    local icon_x = text_x - text_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
+    local icon_y = text_y - PROMPT_ICON_SIZE / 2
+
+    -- Use mouse icon if inventory has mouse hover
+    local use_mouse = player_status_panel.inventory.hovered_col ~= nil
+    draw_input_icon(icon_x, icon_y, use_mouse)
 
     canvas.restore()
 end
@@ -1535,7 +1652,7 @@ local function draw_campfire_glow(x, y, radius, pulse)
 
     local glow_gradient = canvas.create_radial_gradient(x, y, glow_inner, x, y, glow_outer)
     glow_gradient:add_color_stop(0, "rgba(255,180,50,0)")
-    glow_gradient:add_color_stop(0.4, string.format("rgba(255,150,40,%.2f)", glow_alpha * 0.5))
+    glow_gradient:add_color_stop(0.4, get_glow_color(glow_alpha * 0.5))
     glow_gradient:add_color_stop(1, "rgba(255,80,20,0)")
 
     canvas.set_fill_style(glow_gradient)
@@ -1611,7 +1728,7 @@ function rest_screen.draw()
             -- Draw confirm/cancel buttons if there are pending upgrades (scaled mouse coordinates)
             local local_mx = canvas.get_mouse_x() / scale
             local local_my = canvas.get_mouse_y() / scale
-            draw_upgrade_buttons(info, local_mx, local_my, mouse_active)
+            draw_upgrade_buttons(info, local_mx, local_my)
         elseif active_panel_index == 2 then
             draw_audio_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 3 then
@@ -1621,6 +1738,7 @@ function rest_screen.draw()
         simple_dialogue.draw(rest_dialogue)
         draw_level_up_prompt(rest_dialogue)
         draw_submenu_prompt(rest_dialogue)
+        draw_inventory_equip_prompt(rest_dialogue)
 
         for i, btn in ipairs(buttons) do
             local is_focused = focused_index == i or hovered_index == i

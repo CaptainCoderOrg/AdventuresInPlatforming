@@ -7,6 +7,7 @@ local controls = require('controls')
 local Effects = require('Effects')
 local Prop = require('Prop')
 local sprites = require('sprites')
+local weapon_sync = require('player.weapon_sync')
 
 local common = {}
 
@@ -53,9 +54,15 @@ common.animations = {
 	CLIMB_UP = Animation.create_definition(sprites.player.climb_up, 6),
 	CLIMB_DOWN = Animation.create_definition(sprites.player.climb_down, 6),
 
-	ATTACK_0 = Animation.create_definition(sprites.player.attack_0, 5, { ms_per_frame = 50, width = 32, loop = false }),
-	ATTACK_1 = Animation.create_definition(sprites.player.attack_1, 5, { ms_per_frame = 67, width = 32, loop = false }),
-	ATTACK_2 = Animation.create_definition(sprites.player.attack_2, 5, { ms_per_frame = 83, width = 32, loop = false }),
+	ATTACK_0 = Animation.create_definition(sprites.player.attack_0, 5, { ms_per_frame = 60, width = 32, loop = false }),
+	ATTACK_1 = Animation.create_definition(sprites.player.attack_1, 5, { ms_per_frame = 60, width = 32, loop = false }),
+	ATTACK_2 = Animation.create_definition(sprites.player.attack_2, 5, { ms_per_frame = 60, width = 32, loop = false }),
+	ATTACK_SHORT_0 = Animation.create_definition(sprites.player.attack_short_0, 5, { ms_per_frame = 60, width = 32, loop = false }),
+	ATTACK_SHORT_1 = Animation.create_definition(sprites.player.attack_short_1, 5, { ms_per_frame = 60, width = 32, loop = false }),
+	ATTACK_SHORT_2 = Animation.create_definition(sprites.player.attack_short_2, 5, { ms_per_frame = 60, width = 32, loop = false }),
+	ATTACK_WIDE_0 = Animation.create_definition(sprites.player.attack_wide_0, 5, { ms_per_frame = 60, width = 40, loop = false }),
+	ATTACK_WIDE_1 = Animation.create_definition(sprites.player.attack_wide_1, 5, { ms_per_frame = 60, width = 40, loop = false }),
+	ATTACK_WIDE_2 = Animation.create_definition(sprites.player.attack_wide_2, 5, { ms_per_frame = 60, width = 40, loop = false }),
 	HAMMER = Animation.create_definition(sprites.player.attack_hammer, 7, { ms_per_frame = 150, width = 32, loop = false }),
 	THROW = Animation.create_definition(sprites.player.throw, 7, { ms_per_frame = 33, loop = false }),
 
@@ -81,15 +88,15 @@ local function has_throw_energy(player)
 	return player.energy_used + energy_cost <= player.max_energy
 end
 
---- Checks for hammer input and transitions to hammer state if pressed.
---- Requires hammer ability to be unlocked.
+--- Checks for weapon swap input and cycles to the next equipped weapon.
+--- Shows weapon name text and plays swap sound on successful swap.
 ---@param player table The player object
-function common.handle_hammer(player)
-	if not player.has_hammer then return end
-	if controls.hammer_pressed() then
-		if player:use_stamina(common.HAMMER_STAMINA_COST) then
-			player:set_state(player.states.hammer)
-		end
+function common.handle_weapon_swap(player)
+	if not controls.swap_weapon_pressed() then return end
+	local weapon_name = weapon_sync.cycle_weapon(player)
+	if weapon_name then
+		audio.play_swap_sound()
+		Effects.create_text(player.x, player.y, weapon_name)
 	end
 end
 
@@ -120,25 +127,39 @@ function common.handle_throw(player)
 	end
 end
 
---- Checks for attack input and transitions to attack state or queues if on cooldown.
---- Requires available stamina to attack (consumed via use_stamina).
+--- Checks for attack input and transitions to appropriate attack state based on equipped weapon.
+--- Routes to combo (attack) or heavy (hammer) state based on weapon's attack_type.
+--- Shows "No Weapon" effect if no weapon equipped.
 --- Invalidates perfect block window when attacking from block state.
 ---@param player table The player object
 ---@return boolean True if transitioned to attack state
 function common.handle_attack(player)
-	if controls.attack_pressed() then
-		if player.attack_cooldown <= 0 then
-			if player:use_stamina(common.ATTACK_STAMINA_COST) then
-				-- Invalidate perfect block window when attacking from block
-				shield = shield or require('player.shield')
-				shield.clear_perfect_window(player)
+	if not controls.attack_pressed() then return false end
+
+	local stats = weapon_sync.get_weapon_stats(player)
+
+	-- No weapon equipped
+	if not stats then
+		Effects.create_text(player.x, player.y, "No Weapon")
+		return false
+	end
+
+	if player.attack_cooldown <= 0 then
+		if player:use_stamina(stats.stamina_cost) then
+			-- Invalidate perfect block window when attacking from block
+			shield = shield or require('player.shield')
+			shield.clear_perfect_window(player)
+			-- Route to appropriate state based on weapon type
+			if stats.attack_type == "heavy" then
+				player:set_state(player.states.hammer)
+			else
 				player:set_state(player.states.attack)
-				return true
 			end
-		else
-			-- Queue attack during cooldown (stamina checked when queue is processed)
-			common.queue_input(player, "attack")
+			return true
 		end
+	else
+		-- Queue attack during cooldown (stamina checked when queue is processed)
+		common.queue_input(player, "attack")
 	end
 	return false
 end
@@ -486,8 +507,13 @@ end
 local function try_queued_combat_action(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
 		player.input_queue.attack = false
-		if player:use_stamina(common.ATTACK_STAMINA_COST) then
-			return player.states.attack
+		local stats = weapon_sync.get_weapon_stats(player)
+		if stats and player:use_stamina(stats.stamina_cost) then
+			if stats.attack_type == "heavy" then
+				return player.states.hammer
+			else
+				return player.states.attack
+			end
 		end
 	end
 	if player.input_queue.throw and player.throw_cooldown <= 0 then
@@ -588,10 +614,12 @@ end
 --- Call this instead of player.animation:draw() in state draw functions.
 ---@param player table The player object
 ---@param y_offset number|nil Optional Y offset in tiles (e.g., 0.25 for sitting pose)
-function common.draw(player, y_offset)
+---@param x_offset number|nil Optional X offset in tiles (e.g., for wide attack sprites)
+function common.draw(player, y_offset, x_offset)
 	local lift = Prop.get_pressure_plate_lift(player)
+	local x = player.x + (x_offset or 0)
 	local y = player.y + (y_offset or 0)
-	player.animation:draw(sprites.px(player.x), sprites.stable_y(player, y, -lift))
+	player.animation:draw(sprites.px(x), sprites.stable_y(player, y, -lift))
 end
 
 --- Draws a debug hitbox when bounding boxes are enabled.

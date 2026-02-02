@@ -1,7 +1,8 @@
---- Player resource display widget showing health, stamina, energy meters and current throwable
+--- Player resource display widget showing health, stamina, energy meters and equipped weapon
 local canvas = require("canvas")
 local sprites = require("sprites")
 local config = require("config")
+local weapon_sync = require("player.weapon_sync")
 
 ---@class projectile_selector
 ---@field x number X position offset from screen edge
@@ -52,19 +53,39 @@ local function lerp_toward(current, target, speed, dt)
 end
 
 --- Draws a horizontal meter with background, fill bar, shine overlay, and end cap.
+--- Shows animating portion at reduced opacity so player can see final value immediately.
 ---@param alpha number Widget alpha for shine calculation
 ---@param y number Y position of the meter
 ---@param max_value number Maximum meter value (determines width)
----@param displayed_value number Current displayed value (for fill width)
+---@param target_value number Actual current value (shown at full opacity)
+---@param displayed_value number Animated displayed value (difference shown at reduced opacity)
 ---@param fill_color string Fill bar color (e.g., "#FF0000")
 ---@param cap_sprite string Sprite key for the end cap
-local function draw_meter(alpha, y, max_value, displayed_value, fill_color, cap_sprite)
+local function draw_meter(alpha, y, max_value, target_value, displayed_value, fill_color, cap_sprite)
     local meter_width = max_value * PX_PER_UNIT
-    local bar_width = displayed_value * PX_PER_UNIT
+    local target_width = math.max(0, target_value) * PX_PER_UNIT
+    local displayed_width = math.max(0, displayed_value) * PX_PER_UNIT
+    local animating_alpha = 0.3
 
     canvas.draw_image(sprites.ui.meter_background, METER_X, y, meter_width, METER_HEIGHT)
+
+    -- Draw the final/target bar at full opacity
     canvas.set_fill_style(fill_color)
-    canvas.fill_rect(METER_X, y + BAR_Y_OFFSET, bar_width, BAR_HEIGHT)
+    canvas.fill_rect(METER_X, y + BAR_Y_OFFSET, target_width, BAR_HEIGHT)
+
+    -- Draw the animating portion at reduced opacity
+    if displayed_width > target_width then
+        -- Draining: show the portion that's still animating away
+        canvas.set_global_alpha(alpha * animating_alpha)
+        canvas.fill_rect(METER_X + target_width, y + BAR_Y_OFFSET, displayed_width - target_width, BAR_HEIGHT)
+        canvas.set_global_alpha(alpha)
+    elseif displayed_width < target_width then
+        -- Regenerating: show the portion that's filling in
+        canvas.set_global_alpha(alpha * animating_alpha)
+        canvas.fill_rect(METER_X + displayed_width, y + BAR_Y_OFFSET, target_width - displayed_width, BAR_HEIGHT)
+        canvas.set_global_alpha(alpha)
+    end
+
     canvas.set_global_alpha(alpha * SHINE_OPACITY)
     canvas.draw_image(sprites.ui.meter_shine, METER_X + 1, y, meter_width - 2, METER_HEIGHT)
     canvas.set_global_alpha(alpha)
@@ -91,7 +112,27 @@ local function get_energy_flash_opacity(timer)
     return t * 0.5  -- Max 50% opacity
 end
 
+--- Draws a portion of a stamina bar (either green stamina or fatigue).
+---@param alpha number Widget alpha
+---@param y number Y position of the meter
+---@param x_offset number X offset from METER_X
+---@param width number Width of the bar segment
+---@param color string Fill color
+---@param is_animating boolean Whether to draw at reduced opacity
+local function draw_stamina_segment(alpha, y, x_offset, width, color, is_animating)
+    if width <= 0 then return end
+    if is_animating then
+        canvas.set_global_alpha(alpha * 0.3)
+    end
+    canvas.set_fill_style(color)
+    canvas.fill_rect(METER_X + x_offset, y + BAR_Y_OFFSET, width, BAR_HEIGHT)
+    if is_animating then
+        canvas.set_global_alpha(alpha)
+    end
+end
+
 --- Draws the stamina meter with fatigue support (debt shown as pulsing orange/red bar).
+--- Shows animating portion at reduced opacity so player can see final value immediately.
 ---@param alpha number Widget alpha for shine calculation
 ---@param y number Y position of the meter
 ---@param player table Player instance with stamina properties
@@ -99,27 +140,52 @@ end
 ---@param fatigue_timer number Timer for fatigue color pulsing
 local function draw_stamina_meter(alpha, y, player, displayed_stamina, fatigue_timer)
     local meter_width = player.max_stamina * PX_PER_UNIT
+    local target_stamina = player.max_stamina - player.stamina_used
+    local fatigue_color = get_fatigue_color(fatigue_timer)
 
     canvas.draw_image(sprites.ui.meter_background, METER_X, y, meter_width, METER_HEIGHT)
 
-    if displayed_stamina >= 0 then
-        -- Normal: green bar
-        local bar_width = displayed_stamina * PX_PER_UNIT
-        canvas.set_fill_style("#00FF00")
-        canvas.fill_rect(METER_X, y + BAR_Y_OFFSET, bar_width, BAR_HEIGHT)
+    -- Determine what to draw based on current state
+    local target_in_fatigue = target_stamina < 0
+    local displayed_in_fatigue = displayed_stamina < 0
+
+    if not target_in_fatigue and not displayed_in_fatigue then
+        -- Normal: both positive, draw green bar with animation
+        local target_w = target_stamina * PX_PER_UNIT
+        local displayed_w = displayed_stamina * PX_PER_UNIT
+        draw_stamina_segment(alpha, y, 0, target_w, "#00FF00", false)
+        if displayed_w > target_w then
+            draw_stamina_segment(alpha, y, target_w, displayed_w - target_w, "#00FF00", true)
+        elseif displayed_w < target_w then
+            draw_stamina_segment(alpha, y, displayed_w, target_w - displayed_w, "#00FF00", true)
+        end
+    elseif target_in_fatigue and displayed_in_fatigue then
+        -- Both in fatigue: draw fatigue bar with animation
+        local target_debt_w = math.abs(target_stamina) * PX_PER_UNIT
+        local displayed_debt_w = math.abs(displayed_stamina) * PX_PER_UNIT
+        draw_stamina_segment(alpha, y, 0, target_debt_w, fatigue_color, false)
+        if displayed_debt_w > target_debt_w then
+            draw_stamina_segment(alpha, y, target_debt_w, displayed_debt_w - target_debt_w, fatigue_color, true)
+        end
+    elseif target_in_fatigue then
+        -- Transitioning into fatigue: target is fatigue, displayed still positive
+        local target_debt_w = math.abs(target_stamina) * PX_PER_UNIT
+        local displayed_w = displayed_stamina * PX_PER_UNIT
+        draw_stamina_segment(alpha, y, 0, target_debt_w, fatigue_color, false)
+        draw_stamina_segment(alpha, y, 0, displayed_w, "#00FF00", true)
     else
-        -- Fatigue: pulsating orange/red bar showing debt
-        local debt = math.abs(displayed_stamina)
-        local bar_width = debt * PX_PER_UNIT
-        canvas.set_fill_style(get_fatigue_color(fatigue_timer))
-        canvas.fill_rect(METER_X, y + BAR_Y_OFFSET, bar_width, BAR_HEIGHT)
+        -- Recovering from fatigue: target is positive, displayed still in fatigue
+        local target_w = target_stamina * PX_PER_UNIT
+        local displayed_debt_w = math.abs(displayed_stamina) * PX_PER_UNIT
+        draw_stamina_segment(alpha, y, 0, target_w, "#00FF00", false)
+        draw_stamina_segment(alpha, y, 0, displayed_debt_w, fatigue_color, true)
     end
 
     canvas.set_global_alpha(alpha * SHINE_OPACITY)
     canvas.draw_image(sprites.ui.meter_shine, METER_X + 1, y, meter_width - 2, METER_HEIGHT)
     canvas.set_global_alpha(alpha)
 
-    local cap_sprite = displayed_stamina >= 0 and sprites.ui.meter_cap_green or sprites.ui.meter_cap_red
+    local cap_sprite = target_in_fatigue and sprites.ui.meter_cap_red or sprites.ui.meter_cap_green
     canvas.draw_image(cap_sprite, METER_X + meter_width, y)
 end
 
@@ -181,14 +247,22 @@ function projectile_selector:draw(player)
     canvas.scale(scale, scale)
 
     canvas.draw_image(sprites.ui.ability_selector_left, 0, 0)
-    -- Only draw projectile icon if current projectile is unlocked
-    if player:is_projectile_unlocked(player.projectile) then
-        canvas.draw_image(player.projectile.icon, 8, 8, 16, 16)
+    -- Draw equipped weapon icon
+    local _, weapon_def = weapon_sync.get_equipped_weapon(player)
+    if weapon_def then
+        if weapon_def.animated_sprite then
+            -- For animated sprites, draw only the first frame (16x16)
+            canvas.draw_image(weapon_def.animated_sprite, 8, 8, 16, 16, 0, 0, 16, 16)
+        elseif weapon_def.static_sprite then
+            canvas.draw_image(weapon_def.static_sprite, 8, 8, 16, 16)
+        end
     end
 
-    draw_meter(self.alpha, METER_Y, player.max_health, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
+    local target_hp = player.max_health - player.damage
+    local target_energy = player.max_energy - player.energy_used
+    draw_meter(self.alpha, METER_Y, player.max_health, target_hp, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
     draw_stamina_meter(self.alpha, METER_Y + METER_HEIGHT, player, self.displayed_stamina, self.fatigue_pulse_timer)
-    draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
+    draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, target_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
 
     -- Energy flash overlay (flickering rectangle over the meter)
     if self.energy_flash_timer > 0 then

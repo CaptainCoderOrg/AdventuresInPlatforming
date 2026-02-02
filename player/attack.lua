@@ -6,22 +6,37 @@ local controls = require('controls')
 local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local shield = require('player.shield')
+local weapon_sync = require('player.weapon_sync')
 
 
 --- Attack state: Player performs melee combo attacks.
---- Supports 3-hit combo chain with input queueing for smooth chaining.
+--- Supports unlimited combo chain (stamina-limited) with input queueing for smooth chaining.
+--- Animation pattern: 1 → 2 → 3 → 2 → 3 → 2 → 3...
 local attack = { name = "attack" }
 
 local ATTACK_COOLDOWN = 0.2
 local HOLD_TIME = 0.16
 local SHIELD_KNOCKBACK = 3  -- Slight knockback when hitting enemy shield
 
-local attack_animations = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 }
+-- Animation sets by weapon type
+local animation_sets = {
+	default = { common.animations.ATTACK_0, common.animations.ATTACK_1, common.animations.ATTACK_2 },
+	short = { common.animations.ATTACK_SHORT_0, common.animations.ATTACK_SHORT_1, common.animations.ATTACK_SHORT_2 },
+	wide = { common.animations.ATTACK_WIDE_0, common.animations.ATTACK_WIDE_1, common.animations.ATTACK_WIDE_2 },
+}
 
--- Sword hitbox dimensions (centered relative to player box)
-local SWORD_WIDTH = 1.15
-local SWORD_HEIGHT = 1.1
-local SWORD_Y_OFFSET = -0.1  -- Center vertically relative to player box
+--- Returns the attack animation set for the given weapon stats.
+---@param stats table|nil Weapon stats (may be nil)
+---@return table Array of animation definitions
+local function get_attack_animations(stats)
+	local variant = stats and stats.animation
+	return animation_sets[variant] or animation_sets.default
+end
+
+-- Default hitbox dimensions (used if weapon has no hitbox stats)
+local DEFAULT_WIDTH = 1.15
+local DEFAULT_HEIGHT = 1.1
+local DEFAULT_Y_OFFSET = -0.1
 
 -- Reusable state for filters (avoids closure allocation per frame)
 local filter_player = nil
@@ -36,52 +51,54 @@ local function enemy_filter(entity)
 		and not filter_player.attack_state.hit_enemies[entity]
 end
 
---- Returns the sword hitbox for the current attack frame, or nil if not active.
---- Hitbox is only active during specific animation frames to match visual sword position.
+--- Returns the weapon hitbox for the current attack frame, or nil if not active.
+--- Hitbox is only active during frames 2 to (frame_count - 2) to match visual weapon position.
 ---@param player table The player object
----@return table|nil Hitbox {x, y, w, h} in tiles, or nil if sword not active
-local function get_sword_hitbox(player)
-	-- next_anim_ix points to NEXT animation (incremented in next_animation()).
-	-- When == 1, we just played ATTACK_2 (wrapped from 3->1), which shows sword on frame 2.
-	-- ATTACK_0/1 show sword on frame 3.
-	local min_frame = player.attack_state.next_anim_ix == 1 and 1 or 2
+---@param stats table|nil Pre-fetched weapon stats (avoids redundant lookup)
+---@return table|nil Hitbox {x, y, w, h} in tiles, or nil if weapon not active
+local function get_weapon_hitbox(player, stats)
+	local min_frame = 2
 	local max_frame = player.animation.definition.frame_count - 2
 
 	if player.animation.frame < min_frame or player.animation.frame > max_frame then
 		return nil
 	end
-	return common.create_melee_hitbox(player, SWORD_WIDTH, SWORD_HEIGHT, SWORD_Y_OFFSET)
+
+	local weapon_hitbox = stats and stats.hitbox
+	local width = (weapon_hitbox and weapon_hitbox.width) or DEFAULT_WIDTH
+	local height = (weapon_hitbox and weapon_hitbox.height) or DEFAULT_HEIGHT
+	local y_offset = (weapon_hitbox and weapon_hitbox.y_offset) or DEFAULT_Y_OFFSET
+
+	return common.create_melee_hitbox(player, width, height, y_offset)
 end
 
---- Checks for enemies overlapping the sword hitbox and applies damage.
+--- Checks for enemies overlapping the weapon hitbox and applies damage.
 --- Tracks hit enemies to prevent multi-hit within a single swing.
 --- Blocked by enemy shields (plays solid sound, no damage, slight knockback).
 ---@param player table The player object
 ---@param hitbox table Hitbox with x, y, w, h in tile coordinates
-local function check_attack_hits(player, hitbox)
-	-- Check if blocked by enemy shield
+---@param stats table|nil Pre-fetched weapon stats
+local function check_attack_hits(player, hitbox, stats)
 	local blocked_by, shield_x, shield_y = combat.check_shield_block(hitbox.x, hitbox.y, hitbox.w, hitbox.h)
 	if blocked_by then
 		if not player.attack_state.hit_shield then
 			audio.play_solid_sound()
 			Effects.create_hit(shield_x - 0.5, shield_y - 0.5, player.direction)
-			-- Slight knockback away from player
 			blocked_by.vx = player.direction * SHIELD_KNOCKBACK
 			player.attack_state.hit_shield = true
 		end
-		return  -- Always return when blocked
+		return
 	end
 
-	-- Query combat system for enemies overlapping sword hitbox
+	local damage = stats and stats.damage or 1
 	filter_player = player
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
 	local crit_threshold = player:critical_percent()
 
 	for i = 1, #hits do
 		local enemy = hits[i]
-		-- Roll for critical hit (multiplier applied after armor by enemy)
 		local is_crit = math.random() * 100 < crit_threshold
-		attack_hit_source.damage = player.weapon_damage
+		attack_hit_source.damage = damage
 		attack_hit_source.x = player.x
 		attack_hit_source.is_crit = is_crit
 		enemy:on_hit("weapon", attack_hit_source)
@@ -103,10 +120,15 @@ end
 --- Advances to the next attack animation in the combo chain.
 --- Resets hit tracking, plays sword sound, and wraps to first animation after final.
 ---@param player table The player object
-local function next_animation(player)
+---@param stats table|nil Pre-fetched weapon stats
+local function next_animation(player, stats)
+	local attack_animations = get_attack_animations(stats)
 	local animation = attack_animations[player.attack_state.next_anim_ix]
-	player.animation = Animation.new(animation)
-	player.attack_state.remaining_time = (animation.frame_count * animation.ms_per_frame) / 1000
+	local override_ms = stats and stats.ms_per_frame
+	player.animation = Animation.new(animation, { ms_per_frame = override_ms })
+	-- Use override for remaining_time calculation
+	local effective_ms = override_ms or animation.ms_per_frame
+	player.attack_state.remaining_time = (animation.frame_count * effective_ms) / 1000
 	audio.play_sword_sound()
 	player.attack_state.queued = false
 	-- Clear existing table instead of allocating new one
@@ -116,7 +138,8 @@ local function next_animation(player)
 	player.attack_state.hit_shield = false
 	player.attack_state.next_anim_ix = player.attack_state.next_anim_ix + 1
 	if player.attack_state.next_anim_ix > #attack_animations then
-		player.attack_state.next_anim_ix = 1
+		-- Loop back to 2nd animation after 3rd (pattern: 1, 2, 3, 2, 3, 2, 3...)
+		player.attack_state.next_anim_ix = 2
 	end
 end
 
@@ -124,11 +147,12 @@ end
 --- Removes shield if transitioning from block/block_move state.
 ---@param player table The player object
 function attack.start(player)
-    shield.remove(player)
-    player.attack_state.count = 1
-    player.attack_state.next_anim_ix = 1
-    common.clear_input_queue(player)
-    next_animation(player)
+	shield.remove(player)
+	player.attack_state.count = 1
+	player.attack_state.next_anim_ix = 1
+	common.clear_input_queue(player)
+	local stats = weapon_sync.get_weapon_stats(player)
+	next_animation(player, stats)
 end
 
 --- Returns whether the attack can be canceled into another action.
@@ -164,20 +188,20 @@ function attack.input(player)
 	end
 
 	if can_cancel(player) then
-		local combo_available = player.attack_state.queued and player.attacks > player.attack_state.count
-		if not combo_available and player.input_queue.jump and player.is_grounded then
+		local combo_queued = player.attack_state.queued
+		if not combo_queued and player.input_queue.jump and player.is_grounded then
 			player.vy = -common.JUMP_VELOCITY
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.air)
 			return
 		end
 		-- Check energy inline since we're bypassing handle_throw for queued input
-		if not combo_available and player.input_queue.throw and player.energy_used < player.max_energy then
+		if not combo_queued and player.input_queue.throw and player.energy_used < player.max_energy then
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.throw)
 			return
 		end
-		if not combo_available and (controls.left_down() or controls.right_down()) then
+		if not combo_queued and (controls.left_down() or controls.right_down()) then
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.run)
 			return
@@ -190,10 +214,13 @@ end
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function attack.update(player, dt)
-	-- Compute hitbox once and pass to all check functions
-	local hitbox = get_sword_hitbox(player)
+	-- Fetch stats once per frame and cache for draw()
+	local stats = weapon_sync.get_weapon_stats(player)
+	player.attack_state.cached_stats = stats
+	local hitbox = get_weapon_hitbox(player, stats)
+	player.attack_state.cached_hitbox = hitbox
 	if hitbox then
-		check_attack_hits(player, hitbox)
+		check_attack_hits(player, hitbox, stats)
 		check_lever_hits(player, hitbox)
 	end
 	-- Lock player in place during attack animation (no movement, no gravity)
@@ -201,24 +228,28 @@ function attack.update(player, dt)
 	player.vy = 0
 	player.attack_state.remaining_time = player.attack_state.remaining_time - dt
 	if player.attack_state.remaining_time <= 0 then
-		local can_combo = player.attack_state.queued and player.attacks > player.attack_state.count
-		if can_combo and player:use_stamina(common.ATTACK_STAMINA_COST) then
+		local stamina_cost = stats and stats.stamina_cost or common.ATTACK_STAMINA_COST
+		if player.attack_state.queued and player:use_stamina(stamina_cost) then
 			player.attack_state.count = player.attack_state.count + 1
-			next_animation(player)
+			next_animation(player, stats)
 		elseif player.attack_state.remaining_time <= -HOLD_TIME then
-			-- Hold time expired, transition back to idle
 			player:set_state(player.states.idle)
 			player.attack_cooldown = ATTACK_COOLDOWN
 		end
-		-- else: animation finished but still in hold period, waiting for combo input
 	end
 end
 
 --- Renders the player in attack animation with optional debug hitbox.
+--- Wide animations (40px) need X offset to center properly.
 ---@param player table The player object
 function attack.draw(player)
-	common.draw(player)
-	common.draw_debug_hitbox(get_sword_hitbox(player), "#FF00FF")
+	local stats = player.attack_state.cached_stats
+	local x_offset = 0
+	if stats and stats.animation == "wide" and player.direction == -1 then
+		x_offset = -0.5  -- 8px left when facing left
+	end
+	common.draw(player, nil, x_offset)
+	common.draw_debug_hitbox(player.attack_state.cached_hitbox, "#FF00FF")
 end
 
 return attack

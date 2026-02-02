@@ -48,15 +48,21 @@ Player combat abilities managed through state machine.
 ### Attack States
 
 1. **Attack (Combo System)** - `player/attack.lua`
-   - 3-hit combo chain (ATTACK_0 -> ATTACK_1 -> ATTACK_2)
+   - 3-hit combo chain (pattern: 1 → 2 → 3 → 2 → 3 → 2 → 3...)
    - Input queueing: can buffer next attack during current swing
    - Hold window: 0.16s after animation for combo input
    - Cooldown: 0.2s between combo chains
-   - Frame speeds increase per hit: 50ms -> 67ms -> 83ms
-   - All attacks 5 frames, 32px wide, non-looping
-   - **Sword Hitbox**: 1.0 tile wide, extends from player's front edge
-   - **Active Frames**: Frame 2-3 (ATTACK_2 starts on frame 1)
-   - **Damage**: `player.weapon_damage` (2.5) applied via `enemy:on_hit()`
+   - **Weapon Switching**: `player/weapon_sync.lua` manages equipped weapon
+     - Cycle with 0 key or Gamepad SELECT
+     - `player.active_weapon` tracks currently selected weapon item_id
+     - Stats flow from `unique_item_registry.lua` via `weapon_sync.get_weapon_stats()`
+   - **Per-Weapon Stats** (from equipped weapon):
+     - `damage` - Damage per hit
+     - `stamina_cost` - Stamina consumed per swing
+     - `ms_per_frame` - Animation speed (lower = faster attacks)
+     - `hitbox` - Width, height, y_offset in tiles
+     - `animation` - Variant: "default", "short", or "wide"
+   - **Active Frames**: Frame 2 to (frame_count - 2)
    - **Hit Tracking**: `attack_state.hit_enemies` prevents double-hits per swing
 
 2. **Throw** - `player/throw.lua`
@@ -225,8 +231,7 @@ panel:cancel_upgrades()        -- Discard pending upgrades
 self.max_health = 3             -- Starting health
 self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
-self.weapon_damage = 2.5        -- Damage per sword hit
-self.attacks = 3                -- Max combo hits
+self.active_weapon = nil        -- Currently equipped weapon item_id (synced via weapon_sync)
 self.attack_cooldown = 0        -- Countdown timer (attack)
 self.throw_cooldown = 0         -- Countdown timer (throw)
 self.level = 1                  -- Player level (progression)
@@ -314,7 +319,8 @@ end
 - `player/init.lua` - Player state registry and core logic
 - `player/common.lua` - Shared physics, collision utilities, stamina costs, rendering helpers
 - `player/stats.lua` - Stat percentage calculations with diminishing returns (O(1) lookup)
-- `player/attack.lua` - Combat combo system (includes sword hitbox)
+- `player/attack.lua` - Combat combo system (includes weapon hitbox)
+- `player/weapon_sync.lua` - Equipped weapon management, cycling, and ability flag sync
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance

@@ -92,6 +92,7 @@ function Player.new()
 	}
 	self.unique_items = {}      -- Permanently collected key items (for locked doors, etc.)
 	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
+	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
 
 	-- Position and velocity
 	self.x = 2
@@ -147,8 +148,8 @@ function Player.new()
 	self.attacks = 3
 	self.attack_cooldown = 0
 	self.throw_cooldown = 0
-	self.weapon_damage = 2
-	self.has_hammer = false
+	self.attack_speed_multiplier = 1.0  -- For future speed upgrades
+	self.has_hammer = false             -- Legacy flag (combat now uses equipped_items)
 	self.has_axe = false
 	self.has_shuriken = false
 	self.has_shield = false

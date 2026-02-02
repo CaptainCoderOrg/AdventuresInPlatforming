@@ -23,7 +23,7 @@ end
 
 --- Creates a new animation instance (per-entity state)
 --- @param definition table Animation definition
---- @param options table Options: flipped, start_frame
+--- @param options table Options: flipped, start_frame, ms_per_frame (override)
 --- @return table Animation instance
 function Animation.new(definition, options)
 	options = options or {}
@@ -41,6 +41,7 @@ function Animation.new(definition, options)
 	self.elapsed = 0  -- Accumulated time in milliseconds
 	self.playing = true
 	self.finished = false
+	self.ms_per_frame = options.ms_per_frame  -- nil means use definition
 
 	return self
 end
@@ -60,14 +61,12 @@ function Animation:play(dt)
 	-- Accumulate elapsed time (convert dt from seconds to milliseconds)
 	self.elapsed = self.elapsed + (dt * 1000)
 
-	-- Check if we should advance to next frame
-	if self.elapsed >= self.definition.ms_per_frame then
-		-- How many frames should we advance?
-		local frames_to_advance = math.floor(self.elapsed / self.definition.ms_per_frame)
-		self.elapsed = self.elapsed % self.definition.ms_per_frame  -- Keep remainder
+	local ms_per_frame = self.ms_per_frame or self.definition.ms_per_frame
+	if self.elapsed >= ms_per_frame then
+		local frames_to_advance = math.floor(self.elapsed / ms_per_frame)
+		self.elapsed = self.elapsed % ms_per_frame  -- Keep remainder
 
 		if self.reverse then
-			-- Reverse playback: decrement frames
 			self.frame = self.frame - frames_to_advance
 
 			if self.frame < 0 then
@@ -81,7 +80,6 @@ function Animation:play(dt)
 				end
 			end
 		else
-			-- Forward playback: increment frames
 			self.frame = self.frame + frames_to_advance
 
 			-- Handle frame wrapping/clamping
@@ -109,7 +107,7 @@ end
 --- Reinitializes an existing animation instance with a new definition.
 --- Avoids allocation by reusing the existing table.
 --- @param definition table Animation definition
---- @param options table|nil Options: flipped, reverse, start_frame
+--- @param options table|nil Options: flipped, reverse, start_frame, ms_per_frame
 --- @return table Self for chaining
 function Animation:reinit(definition, options)
 	options = options or {}
@@ -124,15 +122,16 @@ function Animation:reinit(definition, options)
 	self.elapsed = 0
 	self.playing = true
 	self.finished = false
+	self.ms_per_frame = options.ms_per_frame  -- nil means use definition
 	return self
 end
 
---- Pauses animation
+--- Pauses animation playback
 function Animation:pause()
 	self.playing = false
 end
 
---- Resumes animation
+--- Resumes animation playback if not finished
 function Animation:resume()
 	if not self.finished then
 		self.playing = true

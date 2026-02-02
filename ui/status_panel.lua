@@ -8,6 +8,7 @@ local SaveSlots = require("SaveSlots")
 local stats = require("player.stats")
 local inventory_grid = require("ui/inventory_grid")
 local unique_item_registry = require("Prop.unique_item_registry")
+local weapon_sync = require("player.weapon_sync")
 
 local status_panel = {}
 status_panel.__index = status_panel
@@ -140,7 +141,9 @@ function status_panel:set_player(player)
     self.player = player
     if player then
         self.inventory:set_items(player.unique_items)
-        self.inventory:set_equipped(player.equipped_items)
+        self.inventory:set_equipped(player.equipped_items, player)
+        -- Sync player ability flags with current equipment
+        weapon_sync.sync(player)
     end
 end
 

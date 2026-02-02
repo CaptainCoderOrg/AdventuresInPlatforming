@@ -17,6 +17,12 @@ local player = {
 	attack_0 = "player_attack_0",
 	attack_1 = "player_attack_1",
 	attack_2 = "player_attack_2",
+	attack_short_0 = "player_attack_short_0",
+	attack_short_1 = "player_attack_short_1",
+	attack_short_2 = "player_attack_short_2",
+	attack_wide_0 = "player_attack_wide_0",
+	attack_wide_1 = "player_attack_wide_1",
+	attack_wide_2 = "player_attack_wide_2",
 	attack_hammer = "player_attack_hammer",
 	throw = "player_throw",
 	climb_up = "player_climb_up",
@@ -41,6 +47,12 @@ canvas.assets.load_image(player.death, "sprites/character/death.png")
 canvas.assets.load_image(player.attack_0, "sprites/character/attack_0.png")
 canvas.assets.load_image(player.attack_1, "sprites/character/attack_1.png")
 canvas.assets.load_image(player.attack_2, "sprites/character/attack_2.png")
+canvas.assets.load_image(player.attack_short_0, "sprites/character/attack_short_0.png")
+canvas.assets.load_image(player.attack_short_1, "sprites/character/attack_short_1.png")
+canvas.assets.load_image(player.attack_short_2, "sprites/character/attack_short_2.png")
+canvas.assets.load_image(player.attack_wide_0, "sprites/character/attack_wide_0.png")
+canvas.assets.load_image(player.attack_wide_1, "sprites/character/attack_wide_1.png")
+canvas.assets.load_image(player.attack_wide_2, "sprites/character/attack_wide_2.png")
 canvas.assets.load_image(player.attack_hammer, "sprites/character/attack_hammer.png")
 canvas.assets.load_image(player.throw, "sprites/character/throw.png")
 canvas.assets.load_image(player.climb_up, "sprites/character/climb_up.png")

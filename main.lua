@@ -415,6 +415,9 @@ init_level = function(level, spawn_override, player_data, options)
         if player_data.projectile_ix then
             player.projectile = player.projectile_options[player.projectile_ix]
         end
+        -- Sync player ability flags with restored equipment
+        local weapon_sync = require("player.weapon_sync")
+        weapon_sync.sync(player)
     end
 
     level_info = platforms.load_level(level)

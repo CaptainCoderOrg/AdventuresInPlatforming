@@ -337,6 +337,31 @@ function Effects.create_energy_text(x, y, current_energy)
 	state.status_texts[text] = true
 end
 
+--- Factory: Creates floating status text with custom message and color
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param message string The text to display
+---@param color string|nil Hex color (defaults to white)
+---@return nil
+function Effects.create_text(x, y, message, color)
+	-- Cache text width at creation to avoid per-frame allocation
+	canvas.set_font_family("menu_font")
+	canvas.set_font_size(6 * config.ui.SCALE)
+	local cached_width = canvas.get_text_width(message)
+
+	local text = {
+		x = x + 0.5,      -- Center on entity
+		y = y,            -- Start at position
+		vy = -1,          -- Float upward slowly (tiles/second)
+		message = message,
+		color = color or "#FFFFFF",
+		lifetime = 1.0,   -- Duration in seconds
+		elapsed = 0,
+		cached_width = cached_width,
+	}
+	state.status_texts[text] = true
+end
+
 --- Helper: Recalculates cached text width for a status text entry.
 ---@param text table The status text entry to update
 local function update_text_width(text)

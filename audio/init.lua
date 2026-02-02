@@ -82,6 +82,8 @@ audio.play_wall_slide_start = audio.play_landing_sound
 audio.play_air_jump_sound = audio.play_jump_sound
 --- Wall jump reuses jump sound
 audio.play_wall_jump_sound = audio.play_jump_sound
+--- Weapon swap reuses sword sound for quick feedback
+audio.play_swap_sound = audio.play_sword_sound
 
 --- Play background music track with crossfade
 ---@param track table Music asset returned from canvas.assets.load_music()

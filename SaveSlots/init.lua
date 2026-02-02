@@ -133,14 +133,14 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "max_health", "max_stamina", "max_energy",
     "level", "experience", "gold",
     "defense", "recovery", "critical_chance",
-    "stat_upgrades", "unique_items",
+    "stat_upgrades", "unique_items", "equipped_items", "active_weapon",
 }
 
 --- Transient state preserved during level transitions but reset at campfires
 ---@type string[]
 SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "projectile_ix" }
 
---- Copy a value, creating deep copies for tables (stat_upgrades) and arrays (unique_items)
+--- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)
 ---@param key string The stat key being copied
 ---@param value any The value to copy
 ---@return any copy Deep copy for tables/arrays, direct value otherwise
@@ -149,10 +149,10 @@ local function copy_stat_value(key, value)
     if key == "unique_items" then
         local prop_common = require("Prop/common")
         return prop_common.copy_array(value)
-    elseif key == "stat_upgrades" then
+    elseif key == "stat_upgrades" or key == "equipped_items" then
         local copy = {}
-        for stat, count in pairs(value) do
-            copy[stat] = count
+        for k, v in pairs(value) do
+            copy[k] = v
         end
         return copy
     end

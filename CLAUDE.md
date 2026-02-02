@@ -103,6 +103,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/common.lua` - Physics, collision, stamina costs
 - `player/shield.lua` - Shield lifecycle, blocking, knockback
 - `player/stats.lua` - Stat percentage calculations (diminishing returns)
+- `player/weapon_sync.lua` - Equipped weapon management and ability sync
 - `Animation/init.lua` - Delta-time animation system
 
 ### Entities

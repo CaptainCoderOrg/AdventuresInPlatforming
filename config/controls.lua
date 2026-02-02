@@ -17,7 +17,7 @@ controls_config.actions = {
     { id = "jump",        label = "Jump" },
     { id = "attack",      label = "Attack" },
     { id = "throw",       label = "Throw" },
-    { id = "hammer",      label = "Hammer" },
+    { id = "swap_weapon", label = "Swap Weapon" },
     { id = "dash",        label = "Dash" },
     { id = "block",       label = "Block" },
     { id = "switch_proj", label = "Switch Ability" },
@@ -33,7 +33,7 @@ controls_config.keyboard_defaults = {
     dash        = canvas.keys.SHIFT,
     attack      = controls_config.MOUSE_LEFT,
     throw       = controls_config.MOUSE_RIGHT,
-    hammer      = canvas.keys.E,
+    swap_weapon = canvas.keys.E,
     block       = canvas.keys.Q,
     switch_proj = canvas.keys.Z,
 }
@@ -48,7 +48,7 @@ controls_config.gamepad_defaults = {
     dash        = canvas.buttons.RB,
     attack      = canvas.buttons.WEST,
     throw       = canvas.buttons.NORTH,
-    hammer      = canvas.buttons.EAST,
+    swap_weapon = canvas.buttons.EAST,
     block       = canvas.buttons.RT,
     switch_proj = canvas.buttons.SELECT,
 }

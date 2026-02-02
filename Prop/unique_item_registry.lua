@@ -9,6 +9,7 @@ local audio = require("audio")
 ---@field name string Display name
 ---@field description string|nil Item description (supports {action} keybinding placeholders)
 ---@field type string|nil Equipment type: "shield", "weapon", "secondary", "accessory", "no_equip"
+---@field stats table|nil Weapon combat stats: damage, stamina_cost, attack_type, hitbox, ms_per_frame, animation, active_frames, can_hit_buttons
 ---@field static_sprite string|nil Sprite for non-animated items
 ---@field animated_sprite string|nil Sprite sheet for animated items
 ---@field collected_sprite string|nil Animation played when collected
@@ -51,6 +52,14 @@ return {
         description = "A slow but heavy weapon that can smash buttons and enemies.",
         type = "weapon",
         static_sprite = sprites.items.hammer,
+        stats = {
+            damage = 5,
+            stamina_cost = 5,
+            attack_type = "heavy",
+            hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
+            active_frames = { min = 3, max = 4 },
+            can_hit_buttons = true,
+        },
     },
     jump_ring = {
         name = "Jump Ring",
@@ -64,24 +73,54 @@ return {
         type = "weapon",
         animated_sprite = sprites.items.sword,
         animated_frames = 12,
+        stats = {
+            damage = 1,
+            stamina_cost = 1.5,
+            attack_type = "combo",
+            animation = "short",
+            hitbox = { width = 0.7, height = 1.1, y_offset = -0.1 },
+            ms_per_frame = 60,
+        },
     },
     longsword = {
         name = "Longsword",
-        description = "The blade of choice for most fighters. Uses more stamina than a shortsword but gives a longer reach.",
+        description = "The blade of choice for most fighters. Slower than shortsword and uses more stamina but deals more damage and has a longer reach.",
         type = "weapon",
         static_sprite = sprites.items.longsword,
+        stats = {
+            damage = 2,
+            stamina_cost = 2.5,
+            attack_type = "combo",
+            hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
+            ms_per_frame = 80,
+        },
     },
     elven_blade = {
         name = "Elven Blade",
-        description = "The fine craftsmanship of this blade makes it incredibly light. Uses little stamina while given a long reach.",
+        description = "The fine craftsmanship of this blade makes it incredibly light. It is faster and uses less stamina while being just as deadly as a longsword.",
         type = "weapon",
         static_sprite = sprites.items.elven_blade,
+        stats = {
+            damage = 2,
+            stamina_cost = 1.5,
+            attack_type = "combo",
+            hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
+            ms_per_frame = 70,
+        },
     },
     great_sword = {
         name = "Greatsword",
-        description = "A massive two-handed sword with devastating power.",
+        description = "A massive two-handed sword with devastating power. Slower than a longsword but has a greater reach.",
         type = "weapon",
         static_sprite = sprites.items.great_sword,
+        stats = {
+            damage = 5,
+            stamina_cost = 4,
+            attack_type = "combo",
+            animation = "wide",
+            hitbox = { width = 1.7, height = 1.2, y_offset = -0.15 },
+            ms_per_frame = 90,
+        },
     },
     throwing_axe = {
         name = "Throwing Axe",

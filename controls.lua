@@ -255,11 +255,11 @@ function controls.throw_pressed()
         or is_button_binding_pressed("throw")
 end
 
---- Check if hammer attack input was pressed this frame
----@return boolean pressed True if hammer binding was pressed
-function controls.hammer_pressed()
-    return is_key_binding_pressed("hammer")
-        or is_button_binding_pressed("hammer")
+--- Check if weapon swap input was pressed this frame
+---@return boolean pressed True if swap_weapon binding was pressed
+function controls.swap_weapon_pressed()
+    return is_key_binding_pressed("swap_weapon")
+        or is_button_binding_pressed("swap_weapon")
 end
 
 --- Check if block input is currently held down

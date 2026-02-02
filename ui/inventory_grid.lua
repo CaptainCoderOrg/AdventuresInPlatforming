@@ -3,6 +3,7 @@ local canvas = require("canvas")
 local sprites = require("sprites")
 local controls = require("controls")
 local unique_item_registry = require("Prop.unique_item_registry")
+local weapon_sync = require("player.weapon_sync")
 
 local inventory_grid = {}
 inventory_grid.__index = inventory_grid
@@ -27,14 +28,14 @@ local HEADER_FONT_SIZE = 9
 local HEADER_TEXT = "Inventory"
 
 -- Equipment types that only allow one item equipped at a time
+-- Note: weapon removed to allow multiple weapons equipped (quick swap system)
 local EXCLUSIVE_TYPES = {
     shield = true,
-    weapon = true,
     secondary = true,
 }
 
 --- Create a new inventory grid
----@param opts {x: number, y: number, items: table, equipped: table}
+---@param opts {x: number, y: number, items: table, equipped: table, player: table|nil}
 ---@return table inventory_grid
 function inventory_grid.create(opts)
     local self = setmetatable({}, inventory_grid)
@@ -42,6 +43,7 @@ function inventory_grid.create(opts)
     self.y = opts.y or 0
     self.items = opts.items or {}
     self.equipped = opts.equipped or {}
+    self.player = opts.player
     self.selected_col = 1
     self.selected_row = 1
     self.hovered_col = nil
@@ -74,10 +76,12 @@ function inventory_grid:set_items(items)
     self.items = items or {}
 end
 
---- Set the equipped reference
+--- Set the equipped reference and optional player for syncing
 ---@param equipped table Set of equipped item_ids
-function inventory_grid:set_equipped(equipped)
+---@param player table|nil Player reference for weapon_sync
+function inventory_grid:set_equipped(equipped, player)
     self.equipped = equipped or {}
+    self.player = player
 end
 
 --- Get item at grid position
@@ -107,7 +111,8 @@ function inventory_grid:get_hovered_item()
 end
 
 --- Toggle equipped state for an item
---- For exclusive types (shield, weapon, secondary), unequips other items of the same type
+--- For exclusive types (shield, secondary), unequips other items of the same type
+--- Weapons can stack (multiple equipped), with active_weapon tracking which is in use
 --- Items with type "no_equip" cannot be equipped
 ---@param item_id string The item to toggle
 function inventory_grid:toggle_equipped(item_id)
@@ -120,9 +125,15 @@ function inventory_grid:toggle_equipped(item_id)
     -- Prevent equipping no_equip items
     if item_type == "no_equip" then return end
 
-    -- If already equipped, just unequip
+    -- If already equipped, unequip
     if self.equipped[item_id] then
         self.equipped[item_id] = nil
+
+        -- If unequipping the active weapon, weapon_sync.sync will auto-select another
+        -- Sync player ability flags with equipment
+        if self.player then
+            weapon_sync.sync(self.player)
+        end
         return
     end
 
@@ -140,6 +151,16 @@ function inventory_grid:toggle_equipped(item_id)
 
     -- Equip the item
     self.equipped[item_id] = true
+
+    -- Equipping a weapon makes it the active weapon immediately
+    if item_type == "weapon" and self.player then
+        self.player.active_weapon = item_id
+    end
+
+    -- Sync player ability flags with equipment
+    if self.player then
+        weapon_sync.sync(self.player)
+    end
 end
 
 --- Reset selection to first cell

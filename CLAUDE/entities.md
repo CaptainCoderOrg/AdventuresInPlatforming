@@ -526,7 +526,7 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/pressure_plate.lua` - Pressure plate prop (entity-triggered with lift effect)
 - `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
-- `Prop/unique_item_registry.lua` - Unique item definitions (sprites, sounds, equipment types)
+- `Prop/unique_item_registry.lua` - Unique item definitions (sprites, sounds, equipment types, weapon stats)
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)

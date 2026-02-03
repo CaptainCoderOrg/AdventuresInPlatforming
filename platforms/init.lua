@@ -1,5 +1,6 @@
 local canvas = require("canvas")
 local config = require("config")
+local Player = require("player")
 local sprites = require("sprites")
 local tiled = require("platforms.tiled_loader")
 local world = require("world")
@@ -330,6 +331,45 @@ function platforms.draw(camera, margin)
 		canvas.set_color("#ffff00")  -- Yellow outline
 		for _, area in ipairs(patrol_areas) do
 			canvas.draw_rect(area.x * ts, area.y * ts, area.width * ts, area.height * ts)
+		end
+	end
+
+	-- Debug: draw one-way platform colliders with pass-through state
+	if config.bounding_boxes and #one_way_platform_colliders > 0 then
+		local ts = sprites.tile_size
+		local player = Player.instance
+		for _, col in ipairs(one_way_platform_colliders) do
+			-- Check if this platform would be skipped (pass-through)
+			local would_skip = false
+			if player then
+				local bridge_top = col.y + col.box.y
+				local player_bottom = player.y + player.box.y + player.box.h
+				local overlap = player_bottom - bridge_top
+
+				-- Same logic as should_skip_bridge in world.lua
+				if overlap > 0.3 then
+					would_skip = true
+				elseif player.vy <= 0 then
+					would_skip = true
+				elseif player.wants_drop_through and player.drop_through_y then
+					if bridge_top < player.drop_through_y + 0.5 then
+						would_skip = true
+					end
+				end
+			end
+
+			-- Green = active, Blue = disabled (pass-through)
+			if would_skip then
+				canvas.set_color("#0088FF")  -- Blue
+			else
+				canvas.set_color("#00FF00")  -- Green
+			end
+			canvas.draw_rect(
+				(col.x + col.box.x) * ts,
+				(col.y + col.box.y) * ts,
+				col.box.w * ts,
+				col.box.h * ts
+			)
 		end
 	end
 end

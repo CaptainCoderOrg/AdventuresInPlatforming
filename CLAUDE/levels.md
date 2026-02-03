@@ -133,6 +133,17 @@ Rectangle objects with `type = "one_way_platform"` create invisible one-way coll
 
 Use for invisible platforms or when you want one-way behavior without bridge sprites.
 
+### Layer Depth Ordering
+
+Decorative tile layers are automatically sorted and split based on their depth relative to collision layers:
+
+- **Below collision tiles**: Decorative layers with depth <= the highest collision layer depth
+- **Above collision tiles**: Decorative layers with depth > the highest collision layer depth
+
+This allows foreground decorative elements (like tree canopies, overhangs) to render in front of the player while background decorations render behind collision geometry.
+
+The depth is determined by layer order in Tiled—later layers have higher depth values. The split is recalculated lazily when `walls.set_walls_depth()` is called.
+
 ### Image Layer Backgrounds
 
 Image layers support parallax scrolling and tiling:

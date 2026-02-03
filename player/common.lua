@@ -405,6 +405,7 @@ function common.handle_jump(player)
 			player.wants_drop_through = true
 			-- Store the Y position of the bridge we're dropping through
 			player.drop_through_y = player.y + player.box.y + player.box.h
+			player.drop_through_timer = 0.5  -- 0.5 second fallback timer
 			return false
 		end
 		player.vy = -common.JUMP_VELOCITY

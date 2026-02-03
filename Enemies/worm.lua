@@ -45,7 +45,7 @@ return {
 	gravity = 1.5,
 	max_fall_speed = 20,
 	max_health = 1,
-	damage = 1,
+	damage = 0.5,
 	loot = { xp = 1 },
 	states = worm.states,
 	animations = worm.animations,

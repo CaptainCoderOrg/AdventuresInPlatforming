@@ -496,12 +496,21 @@ function Player:update(dt)
 	-- Check for collisions
 	common.check_ground(self, cols, dt)
 
-	-- Clear drop-through flag once player's top is below the bridge they dropped through
-	if self.wants_drop_through and self.drop_through_y then
+	-- Clear drop-through flag: either by distance OR by timer expiry
+	if self.wants_drop_through then
 		local player_top = self.y + self.box.y
-		if player_top > self.drop_through_y + 0.5 then
+		local cleared_by_distance = self.drop_through_y and player_top > self.drop_through_y + 0.5
+
+		-- Decrement timer
+		if self.drop_through_timer then
+			self.drop_through_timer = self.drop_through_timer - dt
+		end
+		local cleared_by_timer = self.drop_through_timer and self.drop_through_timer <= 0
+
+		if cleared_by_distance or cleared_by_timer then
 			self.wants_drop_through = false
 			self.drop_through_y = nil
+			self.drop_through_timer = nil
 		end
 	end
 

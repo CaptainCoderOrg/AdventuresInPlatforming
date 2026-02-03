@@ -334,7 +334,8 @@ animation:draw(x, y - lift)
   - Items stored in `player.unique_items` for gameplay checks (e.g., locked doors)
   - Equipped items tracked in `player.equipped_items` (set of item_ids)
   - `should_spawn` callback prevents respawning if player already has item
-  - Collection via up input
+  - Collection via up input shows pickup dialogue with "Equip" and "Add to Inventory" options
+  - Non-equippable items (type = "no_equip") are added to inventory immediately without dialogue
   - Configurable: `item_id` (e.g., "gold_key")
   - Equipment types (see `unique_item_registry.lua`):
     - `shield` - Only one equipped at a time

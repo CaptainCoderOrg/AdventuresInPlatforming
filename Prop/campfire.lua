@@ -29,7 +29,7 @@ return {
     ---@param options table Spawn options (may contain name)
     on_spawn = function(prop, def, options)
         prop.animation = Animation.new(CAMPFIRE)
-        prop.text_display = TextDisplay.new("Rest\n{move_up}", { anchor = "top" })
+        prop.text_display = TextDisplay.new("Rest: {move_up}", { anchor = "top" })
         -- Copy name from level symbol definition for save slot display
         prop.name = options and options.name or nil
 

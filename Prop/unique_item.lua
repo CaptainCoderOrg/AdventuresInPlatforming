@@ -88,7 +88,7 @@ return {
         else
             prop.bob_timer = 0
         end
-        prop.text_display = TextDisplay.new("Collect\n{move_up}", { anchor = "top" })
+        prop.text_display = TextDisplay.new("Take: {move_up}", { anchor = "top" })
     end,
 
     states = {

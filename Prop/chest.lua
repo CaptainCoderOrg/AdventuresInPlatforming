@@ -64,7 +64,7 @@ return {
         prop.animation = Animation.new(CHEST_IDLE)
         prop.animation:pause()  -- Shine effect starts after idle delay, not immediately
 
-        local text = options and options.text or "Open\n{move_up}"
+        local text = options and options.text or "Open: {move_up}"
         prop.text_display = TextDisplay.new(text, { anchor = "top" })
     end,
 

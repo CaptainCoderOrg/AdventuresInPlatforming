@@ -38,7 +38,7 @@ return {
     on_spawn = function(prop, _def, options)
         prop.required_key = options and options.required_key
         if prop.required_key then
-            prop.text_display = TextDisplay.new("Open\n{move_up}", { anchor = "top" })
+            prop.text_display = TextDisplay.new("Open: {move_up}", { anchor = "top" })
         end
     end,
 

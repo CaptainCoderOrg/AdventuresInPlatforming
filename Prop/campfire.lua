@@ -43,19 +43,6 @@ return {
         })
     end,
 
-    --- Update text display visibility based on player proximity
-    ---@param prop table Campfire prop instance
-    ---@param dt number Delta time in seconds
-    ---@param player table Player instance for proximity check
-    update = function(prop, dt, player)
-        local is_active = common.player_touching(prop, player)
-        prop.text_display:update(dt, is_active)
-    end,
-
-    --- Draw campfire animation and text display
-    ---@param prop table Campfire prop instance
-    draw = function(prop)
-        common.draw(prop)
-        prop.text_display:draw(prop.x, prop.y)
-    end,
+    update = common.update_text_display,
+    draw = common.draw_with_text,
 }

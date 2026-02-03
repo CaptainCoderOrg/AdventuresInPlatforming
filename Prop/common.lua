@@ -87,4 +87,22 @@ function common.check_lever_hit(hitbox)
     return false
 end
 
+--- Update text display visibility based on player proximity
+--- Common pattern used by interactive props with text prompts
+---@param prop table Prop instance with text_display
+---@param dt number Delta time in seconds
+---@param player table The player object
+function common.update_text_display(prop, dt, player)
+    local touching = common.player_touching(prop, player)
+    prop.text_display:update(dt, touching)
+end
+
+--- Draw prop animation and text display
+--- Common pattern for interactive props with text prompts
+---@param prop table Prop instance with animation and text_display
+function common.draw_with_text(prop)
+    common.draw(prop)
+    prop.text_display:draw(prop.x, prop.y)
+end
+
 return common

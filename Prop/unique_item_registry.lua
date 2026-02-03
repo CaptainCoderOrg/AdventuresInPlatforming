@@ -69,7 +69,7 @@ return {
     },
     sword = {
         name = "Shortsword",
-        description = "A fast lightweight blade that uses little stamina but has a short reach.",
+        description = "A fast lightweight blade that uses little stamina but has a short reach. Press {attack} to attack.",
         type = "weapon",
         animated_sprite = sprites.items.sword,
         animated_frames = 12,
@@ -84,7 +84,7 @@ return {
     },
     longsword = {
         name = "Longsword",
-        description = "The blade of choice for most fighters. Slower than shortsword and uses more stamina but deals more damage and has a longer reach.",
+        description = "The blade of choice for most fighters. Slower than shortsword and uses more stamina but deals more damage and has a longer reach. Press {swap_weapon} to swap between equipped weapons.",
         type = "weapon",
         static_sprite = sprites.items.longsword,
         stats = {
@@ -124,13 +124,13 @@ return {
     },
     throwing_axe = {
         name = "Throwing Axe",
-        description = "A simple projectile that can be thrown.",
+        description = "A simple projectile that can be thrown. While active press {ability} to use.",
         type = "secondary",
         static_sprite = sprites.items.axe_icon,
     },
     shuriken = {
         name = "Summon Shuriken",
-        description = "Spend energy to summon a magic shuriken.",
+        description = "Spend energy to summon a magic shuriken. Press {swap_ability} to swap between equipped abilities.",
         type = "secondary",
         static_sprite = sprites.items.shuriken_icon,
     },

@@ -20,22 +20,6 @@ local LEVER_TOGGLE = Animation.create_definition(sprites.environment.lever_switc
     loop = false
 })
 
---- Draw lever with text display (used in idle states)
----@param prop table Lever prop instance
-local function draw_with_text(prop)
-    common.draw(prop)
-    prop.text_display:draw(prop.x, prop.y)
-end
-
---- Update text display visibility based on player proximity
----@param prop table Lever prop instance
----@param dt number Delta time in seconds
----@param player table The player object
-local function update_text_display(prop, dt, player)
-    local touching = common.player_touching(prop, player)
-    prop.text_display:update(dt, touching)
-end
-
 --- Handle lever interaction (toggle from left/right states)
 ---@param prop table Lever prop instance
 ---@return boolean True to indicate interaction was handled
@@ -91,14 +75,14 @@ local definition = {
         left = {
             start = function(prop) start_position(prop, -1, prop.on_left) end,
             interact = toggle_interact,
-            update = update_text_display,
-            draw = draw_with_text
+            update = common.update_text_display,
+            draw = common.draw_with_text
         },
         right = {
             start = function(prop) start_position(prop, 1, prop.on_right) end,
             interact = toggle_interact,
-            update = update_text_display,
-            draw = draw_with_text
+            update = common.update_text_display,
+            draw = common.draw_with_text
         },
         toggling = {
             --- Starts the toggling animation and plays sound

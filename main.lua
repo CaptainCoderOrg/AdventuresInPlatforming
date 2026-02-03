@@ -159,7 +159,13 @@ local function user_input()
         config.profiler = profiler.enabled
     end
 
-    if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active() then
+    if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active()
+        or hud.is_pickup_dialogue_active() then
+        return
+    end
+
+    -- Skip player input for a few frames after pickup dialogue closes (prevents jump)
+    if hud.should_block_pickup_input() then
         return
     end
 
@@ -202,6 +208,13 @@ local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering rec
 local function update(dt)
     if hud.is_title_screen_active() or hud.is_slot_screen_active() or hud.is_game_over_active() then
         Playtime.pause()
+        return
+    end
+
+    -- Pickup dialogue pauses gameplay but keeps timer running
+    if hud.is_pickup_dialogue_active() then
+        Playtime.resume()
+        Playtime.update(dt)
         return
     end
 

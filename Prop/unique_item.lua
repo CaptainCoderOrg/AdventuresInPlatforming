@@ -7,6 +7,7 @@ local canvas = require("canvas")
 local common = require("Prop/common")
 local Effects = require("Effects")
 local ITEMS = require("Prop/unique_item_registry")
+local pickup_dialogue = require("ui/pickup_dialogue")
 local Prop = require("Prop")
 local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
@@ -30,6 +31,17 @@ local function draw_static_item(prop, alpha)
         sprites.tile_size, sprites.tile_size)
     if alpha and alpha < 1 then
         canvas.set_global_alpha(1)
+    end
+end
+
+--- Draws item sprite (animated or static) with optional alpha
+---@param prop table The unique_item prop instance
+---@param alpha number|nil Optional alpha for fade effect (1.0 if nil)
+local function draw_item(prop, alpha)
+    if prop.animation then
+        common.draw(prop)
+    else
+        draw_static_item(prop, alpha)
     end
 end
 
@@ -58,6 +70,22 @@ for _, item in pairs(ITEMS) do
     end
 end
 
+--- Start the collection animation or fade effect for a prop
+--- Handles both animated items (collected animation) and static items (fade + particles)
+---@param prop table The unique_item prop instance
+local function start_collection_effect(prop)
+    if prop.item.animated_anim then
+        if prop.item.collected_anim then
+            prop.animation = Animation.new(prop.item.collected_anim)
+        else
+            Prop.set_state(prop, "collected")
+        end
+    else
+        prop.fade_elapsed = 0
+        Effects.create_collect_particles(prop.x + 0.5, prop.y + 0.5)
+    end
+end
+
 --- Check if this item should spawn (not already in player's inventory)
 ---@param options table Spawn options containing item_id
 ---@param player table Player instance
@@ -82,7 +110,7 @@ return {
         prop.item_id = options and options.item_id or "gold_key"
         prop.item = ITEMS[prop.item_id] or ITEMS.gold_key
 
-        -- Animated items use animated animation, static items use bob timer
+        -- Animated items have pre-defined animations, static items need manual bob timer for floating effect
         if prop.item.animated_anim then
             prop.animation = Animation.new(prop.item.animated_anim)
         else
@@ -121,11 +149,7 @@ return {
 
             ---@param prop table The unique_item prop instance
             draw = function(prop)
-                if prop.animation then
-                    common.draw(prop)
-                else
-                    draw_static_item(prop)
-                end
+                draw_item(prop)
                 prop.text_display:draw(prop.x, prop.y)
             end
         },
@@ -133,31 +157,35 @@ return {
         collect = {
             ---@param prop table The unique_item prop instance
             start = function(prop)
-                -- Add to player's unique_items (item_id is always set in on_spawn)
-                if prop.last_player then
-                    table.insert(prop.last_player.unique_items, prop.item_id)
-                end
-                audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
+                -- Check if this item type is equippable (shows dialogue)
+                local item_type = prop.item.type
+                local is_equippable = item_type and item_type ~= "no_equip"
 
-                if prop.item.animated_anim then
-                    -- Animated item - play collected animation (or loop if no collected anim)
-                    if prop.item.collected_anim then
-                        prop.animation = Animation.new(prop.item.collected_anim)
-                    else
-                        -- No collected animation, just mark as collected immediately
-                        Prop.set_state(prop, "collected")
-                        return
-                    end
+                if is_equippable and prop.last_player then
+                    -- Equippable item - show pickup dialogue
+                    prop.pending_dialogue = true
+                    pickup_dialogue.show(prop.item_id, prop.last_player, function()
+                        -- Callback when dialogue closes - continue collection animation
+                        prop.pending_dialogue = false
+                        audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
+                        start_collection_effect(prop)
+                    end)
                 else
-                    -- Static item - fade out with particles
-                    prop.fade_elapsed = 0
-                    Effects.create_collect_particles(prop.x + 0.5, prop.y + 0.5)
+                    -- Non-equippable item - immediate add to inventory
+                    if prop.last_player then
+                        table.insert(prop.last_player.unique_items, prop.item_id)
+                    end
+                    audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
+                    start_collection_effect(prop)
                 end
             end,
 
             ---@param prop table The unique_item prop instance
             ---@param dt number Delta time in seconds
             update = function(prop, dt, _player)
+                -- Skip update while waiting for dialogue
+                if prop.pending_dialogue then return end
+
                 if prop.animation then
                     -- Animated item - wait for animation to finish
                     if prop.animation:is_finished() then
@@ -174,12 +202,12 @@ return {
 
             ---@param prop table The unique_item prop instance
             draw = function(prop)
-                if prop.animation then
-                    common.draw(prop)
-                else
-                    local alpha = 1 - (prop.fade_elapsed / FADE_DURATION)
-                    draw_static_item(prop, alpha)
+                if prop.pending_dialogue then
+                    draw_item(prop)
+                    return
                 end
+                local alpha = prop.animation and 1 or (1 - prop.fade_elapsed / FADE_DURATION)
+                draw_item(prop, alpha)
             end
         },
 

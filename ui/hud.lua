@@ -5,6 +5,7 @@ local controls = require("controls")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local game_over = require("ui/game_over")
+local pickup_dialogue = require("ui/pickup_dialogue")
 local projectile_selector = require("ui/projectile_selector")
 local secondary_bar = require("ui/secondary_bar")
 local rest_screen = require("ui/rest_screen")
@@ -52,6 +53,12 @@ function hud.input()
         return
     end
 
+    -- Pickup dialogue blocks other input when open
+    if pickup_dialogue.is_active() then
+        pickup_dialogue.input()
+        return
+    end
+
     -- Handle ESC/START for pause screen toggle
     if controls.settings_pressed() then
         if rest_screen.is_pause_mode() and not rest_screen.is_in_submenu() then
@@ -86,8 +93,9 @@ end
 function hud.update(dt, player)
     audio_dialog.update(dt)
     controls_dialog.update(dt)
+    pickup_dialogue.update(dt)
     -- Block mouse input on screens beneath active overlays
-    local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active()
+    local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active() or pickup_dialogue.is_active()
     slot_screen.update(dt, dialogs_block)
     -- Title screen also blocked by slot screen
     local title_block = dialogs_block or slot_screen.is_active()
@@ -129,8 +137,21 @@ function hud.draw(player)
     title_screen.draw()
     slot_screen.draw()
     -- Dialogs drawn last so they appear on top of everything
+    pickup_dialogue.draw()
     audio_dialog.draw()
     controls_dialog.draw()
+end
+
+--- Check if pickup dialogue is blocking game input
+---@return boolean is_active True if pickup dialogue is visible
+function hud.is_pickup_dialogue_active()
+    return pickup_dialogue.is_active()
+end
+
+--- Check if pickup dialogue just closed and input should be blocked
+---@return boolean should_block True if player input should be skipped this frame
+function hud.should_block_pickup_input()
+    return pickup_dialogue.should_block_input()
 end
 
 --- Show the game over screen

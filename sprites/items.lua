@@ -1,4 +1,5 @@
 --- Item sprite asset keys.
+--- Returns a table mapping item names to canvas asset keys.
 local canvas = require("canvas")
 
 -- Asset key to path mapping (items in sprites/items/, throwables in sprites/throwables/)
@@ -20,6 +21,7 @@ for key, path in pairs(asset_paths) do
     canvas.assets.load_image(key, path)
 end
 
+--- Map of item names to loaded canvas asset keys
 ---@type table<string, string>
 return {
     shield = "item_shield",

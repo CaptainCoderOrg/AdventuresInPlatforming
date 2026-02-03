@@ -12,10 +12,7 @@ return {
         prop.text_display = TextDisplay.new(options.text or "", { anchor = "top" })
     end,
 
-    update = function(prop, dt, player)
-        local is_active = common.player_touching(prop, player)
-        prop.text_display:update(dt, is_active)
-    end,
+    update = common.update_text_display,
 
     draw = function(prop)
         local tile_size = sprites.tile_size

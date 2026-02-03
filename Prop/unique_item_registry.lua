@@ -29,6 +29,20 @@ return {
         collected_frames = 5,
         collect_sfx = audio.pick_up_key,
     },
+    brass_key = {
+        name = "Brass Key",
+        description = "An ornate brass key. Opens brass locks.",
+        type = "no_equip",
+        static_sprite = sprites.items.brass_key,
+        collect_sfx = audio.pick_up_key,
+    },
+    old_key = {
+        name = "Old Key",
+        description = "A weathered iron key. Opens old locks.",
+        type = "no_equip",
+        static_sprite = sprites.items.old_key,
+        collect_sfx = audio.pick_up_key,
+    },
     shield = {
         name = "Shield",
         description = "Block incoming attacks using {block}. Blocking drains stamina preventing damage. A perfectly timed block will use no stamina.",

@@ -76,7 +76,7 @@ return {
       properties = {
         ["key"] = "worm",
         ["offset_x"] = 0,
-        ["offset_y"] = 0.5,
+        ["offset_y"] = 0,
         ["type"] = "enemy"
       },
       image = "enemies/worm.png",

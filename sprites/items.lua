@@ -15,6 +15,8 @@ local asset_paths = {
     item_great_sword = "sprites/items/great_sword.png",
     item_axe_icon = "sprites/throwables/axe_icon.png",
     item_shuriken_icon = "sprites/throwables/shuriken_icon.png",
+    item_brass_key = "sprites/items/brass-key.png",
+    item_old_key = "sprites/items/old-key.png",
 }
 
 for key, path in pairs(asset_paths) do
@@ -35,4 +37,6 @@ return {
     great_sword = "item_great_sword",
     axe_icon = "item_axe_icon",
     shuriken_icon = "item_shuriken_icon",
+    brass_key = "item_brass_key",
+    old_key = "item_old_key",
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="unique_items" tilewidth="16" tileheight="16" tilecount="12" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="unique_items" tilewidth="16" tileheight="16" tilecount="14" columns="0">
  <editorsettings>
   <export target="unique_items.lua" format="lua"/>
  </editorsettings>
@@ -87,5 +87,19 @@
    <property name="type" value="unique_item"/>
   </properties>
   <image source="../assets/sprites/items/great_sword.png" width="16" height="16"/>
+ </tile>
+ <tile id="12">
+  <properties>
+   <property name="item_id" value="brass_key"/>
+   <property name="type" value="unique_item"/>
+  </properties>
+  <image source="../assets/sprites/items/brass-key.png" width="16" height="16"/>
+ </tile>
+ <tile id="13">
+  <properties>
+   <property name="item_id" value="old_key"/>
+   <property name="type" value="unique_item"/>
+  </properties>
+  <image source="../assets/sprites/items/old-key.png" width="16" height="16"/>
  </tile>
 </tileset>

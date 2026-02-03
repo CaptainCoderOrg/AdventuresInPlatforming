@@ -42,7 +42,7 @@
   <properties>
    <property name="key" value="worm"/>
    <property name="offset_x" type="float" value="0"/>
-   <property name="offset_y" type="float" value="0.5"/>
+   <property name="offset_y" type="float" value="0"/>
    <property name="type" value="enemy"/>
   </properties>
   <image source="enemies/worm.png" width="16" height="8"/>

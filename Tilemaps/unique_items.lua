@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 12,
+  tilecount = 14,
   tiles = {
     {
       id = 0,
@@ -144,6 +144,26 @@ return {
         ["type"] = "unique_item"
       },
       image = "../assets/sprites/items/great_sword.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 12,
+      properties = {
+        ["item_id"] = "brass_key",
+        ["type"] = "unique_item"
+      },
+      image = "../assets/sprites/items/brass-key.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 13,
+      properties = {
+        ["item_id"] = "old_key",
+        ["type"] = "unique_item"
+      },
+      image = "../assets/sprites/items/old-key.png",
       width = 16,
       height = 16
     }

@@ -56,13 +56,13 @@ function Player.new()
 	local self = setmetatable({}, Player)
 
 	-- Player Health
-	self.max_health = 6
+	self.max_health = 3
 	self.damage = 0
 	self.invincible_time = 0
 
 	-- Player Stamina
 	-- Consumed by attacks and abilities, regenerates gradually after delay
-	self.max_stamina = 5
+	self.max_stamina = 3
 	self.stamina_used = 0
 	self.stamina_regen_rate = 5       -- Stamina regenerated per second
 	self.stamina_regen_cooldown = 0.5 -- Seconds before regen begins after use
@@ -72,7 +72,7 @@ function Player.new()
 
 	-- Player Energy
 	-- Consumed by thrown weapons (1 per throw), restored when resting at campfire
-	self.max_energy = 4
+	self.max_energy = 3
 	self.energy_used = 0
 	self.energy_flash_requested = false  -- Flag for UI to trigger energy bar flash
 
@@ -82,7 +82,7 @@ function Player.new()
 	self.gold = 0               -- Currency for purchases
 	self.defense = 0            -- Reduces incoming damage (points, diminishing returns)
 	self.recovery = 0           -- Increases stamina recovery rate (points, diminishing returns)
-	self.critical_chance = 0    -- Percent chance for critical hit damage (points, diminishing returns)
+	self.critical_chance = 2    -- Percent chance for critical hit damage (2 points = 5% base)
 	self.stat_upgrades = {      -- Track how many times each stat was upgraded (for refunds)
 		Health = 0,
 		Stamina = 0,

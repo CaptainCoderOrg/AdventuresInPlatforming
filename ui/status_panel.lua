@@ -22,10 +22,10 @@ local TEXT_PADDING_LEFT = 10
 local TEXT_PADDING_RIGHT = 9
 local LINE_HEIGHT = 8
 
--- Experience required for each level (Fibonacci-like: level 1 = 10, level 2 = 20, level N = level(N-1) + level(N-2))
+-- Experience required for each level (Fibonacci-like: level 1 = 3, level 2 = 5, level N = level(N-1) + level(N-2))
 -- Precomputed table for levels 1-100 (max level)
 local MAX_LEVEL = 100
-local EXP_TABLE = { [1] = 10, [2] = 20 }
+local EXP_TABLE = { [1] = 3, [2] = 5 }
 for i = 3, MAX_LEVEL do
     EXP_TABLE[i] = EXP_TABLE[i - 1] + EXP_TABLE[i - 2]
 end

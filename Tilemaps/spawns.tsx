@@ -79,7 +79,7 @@
    <property name="text" value="Undefined"/>
    <property name="type" value="sign"/>
   </properties>
-  <image source="objects/sign.png" width="16" height="16"/>
+  <image source="../assets/sprites/environment/sign.png" width="16" height="16"/>
  </tile>
  <tile id="12">
   <properties>

@@ -92,6 +92,7 @@ function Player.new()
 		Critical = 0,
 	}
 	self.unique_items = {}      -- Permanently collected key items (for locked doors, etc.)
+	self.stackable_items = {}   -- Consumable stackable items (item_id -> count)
 	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
 	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
 	self.active_secondary = nil -- item_id of currently active secondary (for ability swap)

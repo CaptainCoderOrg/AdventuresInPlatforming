@@ -100,10 +100,14 @@ return {
                 if prop.is_open then return false end
 
                 -- Check key requirement
-                if prop.required_key and not common.player_has_item(player, prop.required_key) then
-                    Effects.create_locked_text(player.x + 0.5, player.y - 1, player)
-                    audio.play_sfx(audio.locked_door)
-                    return true
+                if prop.required_key then
+                    if not common.player_has_item(player, prop.required_key) then
+                        Effects.create_locked_text(player.x + 0.5, player.y - 1, player)
+                        audio.play_sfx(audio.locked_door)
+                        return true
+                    end
+                    -- Consume the key (works for both stackable and unique items)
+                    common.consume_stackable_item(player, prop.required_key)
                 end
 
                 prop.last_player = player

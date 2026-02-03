@@ -335,9 +335,18 @@ end
 ---@param tile_id number|nil Optional Tiled global tile ID for tilemap rendering
 ---@param tileset_info table|nil Optional tileset info {tileset_image, columns, firstgid}
 ---@param tile_image table|nil Optional collection tile {image, width, height}
-function walls.add_tile(x, y, tile_id, tileset_info, tile_image)
+---@param flip_h boolean|nil Horizontal flip flag
+---@param flip_v boolean|nil Vertical flip flag
+function walls.add_tile(x, y, tile_id, tileset_info, tile_image, flip_h, flip_v)
 	local key = x .. "," .. y
-	walls.tiles[key] = { x = x, y = y, tile_id = tile_id, tileset_info = tileset_info, tile_image = tile_image }
+	walls.tiles[key] = {
+		x = x, y = y,
+		tile_id = tile_id,
+		tileset_info = tileset_info,
+		tile_image = tile_image,
+		flip_h = flip_h,
+		flip_v = flip_v
+	}
 end
 
 --- Adds a decorative tile (render only, no collision).
@@ -347,7 +356,9 @@ end
 ---@param tileset_info table|nil Optional tileset info {tileset_image, columns, firstgid}
 ---@param tile_image table|nil Optional collection tile {image, width, height}
 ---@param depth number|nil Layer depth for draw ordering (higher = drawn later/on top)
-function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image, depth)
+---@param flip_h boolean|nil Horizontal flip flag
+---@param flip_v boolean|nil Vertical flip flag
+function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image, depth, flip_h, flip_v)
 	-- Use array index as key to allow multiple tiles at same position from different layers
 	table.insert(walls.decorative_tiles, {
 		x = x,
@@ -355,7 +366,9 @@ function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image, dept
 		tile_id = tile_id,
 		tileset_info = tileset_info,
 		tile_image = tile_image,
-		depth = depth or 0
+		depth = depth or 0,
+		flip_h = flip_h,
+		flip_v = flip_v
 	})
 	walls.decorative_sorted = false
 end

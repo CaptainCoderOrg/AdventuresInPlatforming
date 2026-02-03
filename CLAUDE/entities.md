@@ -343,6 +343,15 @@ animation:draw(x, y - lift)
     - `secondary` - Only one equipped at a time (throwables)
     - `accessory` - Any number can be equipped
     - `no_equip` - Cannot be equipped (e.g., keys)
+- **Stackable Item** - Consumable collectibles that stack in inventory (keys, etc.)
+  - States: idle, collect, collected
+  - Items stored in `player.stackable_items` as counts (item_id -> count)
+  - Persistence: `collected` state saved per-position to prevent re-collection within same playthrough
+  - Collection via up input adds to count and displays item name
+  - Consumed when used (e.g., unlocking doors/chests) with floating text feedback
+  - Configurable: `item_id` (e.g., "dungeon_key"), `count` (default: 1)
+  - Visual: Silver debug color to distinguish from gold unique items, floating bob animation
+  - Registry: `Prop/stackable_item_registry.lua` defines item names, sprites, sounds, max_stack
 - **Lever** - Toggleable switch that fires callbacks on state changes
   - States: left, right, toggling
   - Configurable: `initial_state`, `on_left`, `on_right` callbacks, `text` prompt
@@ -398,10 +407,13 @@ Adding a new NPC requires only a configuration file using this factory.
 
 Shared functions to reduce duplication across prop types:
 ```lua
-common.draw(prop)                        -- Standard animation rendering
-common.player_touching(prop, player)     -- Uses combat spatial indexing for overlap
-common.damage_player(prop, player, damage)  -- Consolidated hazard damage
-common.check_lever_hit(hitbox)           -- Check if hitbox overlaps lever and toggle it
+common.draw(prop)                              -- Standard animation rendering
+common.player_touching(prop, player)           -- Uses combat spatial indexing for overlap
+common.damage_player(prop, player, damage)     -- Consolidated hazard damage
+common.check_lever_hit(hitbox)                 -- Check if hitbox overlaps lever and toggle it
+common.player_has_item(player, item_id)        -- Check both stackable and unique items
+common.add_stackable_item(player, id, count)   -- Add stackable item to inventory
+common.consume_stackable_item(player, id, count) -- Consume stackable item, shows text effect
 ```
 
 `common.damage_player()` handles the full damage pattern: touch check, invincibility check, health check, and `player:take_damage()` call.
@@ -534,6 +546,8 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/locked_door.lua` - Locked door prop (key-based or group-action unlock)
 - `Prop/unique_item.lua` - Unique item prop (permanent collectibles)
 - `Prop/unique_item_registry.lua` - Unique item definitions (sprites, sounds, equipment types, weapon stats)
+- `Prop/stackable_item.lua` - Stackable item prop (consumable collectibles)
+- `Prop/stackable_item_registry.lua` - Stackable item definitions (keys, consumables)
 - `Prop/lever.lua` - Lever prop (toggleable switch with callbacks)
 - `Prop/appearing_bridge.lua` - Appearing bridge prop (group-triggered fade-in/out platform)
 - `Prop/decoy_painting.lua` - Decoy painting prop (visual-only ghost_painting lookalike)

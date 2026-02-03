@@ -3,6 +3,7 @@ local canvas = require("canvas")
 local sprites = require("sprites")
 local controls = require("controls")
 local unique_item_registry = require("Prop.unique_item_registry")
+local stackable_item_registry = require("Prop.stackable_item_registry")
 local weapon_sync = require("player.weapon_sync")
 
 local inventory_grid = {}
@@ -61,6 +62,8 @@ function inventory_grid.create(opts)
     self.y = opts.y or 0
     self.items = opts.items or {}
     self.equipped = opts.equipped or {}
+    self.stackable = {}  -- item_id -> count for stackable items
+    self.display_list = {}  -- Combined list: {item_id, count, is_stackable}
     self.player = opts.player
     self.selected_col = 1
     self.selected_row = 1
@@ -92,6 +95,14 @@ end
 ---@param items table Array of item_id strings
 function inventory_grid:set_items(items)
     self.items = items or {}
+    self:build_display_list()
+end
+
+--- Set the stackable items reference
+---@param stackable table Map of item_id -> count
+function inventory_grid:set_stackable(stackable)
+    self.stackable = stackable or {}
+    self:build_display_list()
 end
 
 --- Set the equipped reference and optional player for syncing
@@ -102,13 +113,43 @@ function inventory_grid:set_equipped(equipped, player)
     self.player = player
 end
 
+--- Build the unified display list combining unique and stackable items
+--- Unique items come first, followed by stackable items
+function inventory_grid:build_display_list()
+    self.display_list = {}
+
+    -- Add unique items first
+    for _, item_id in ipairs(self.items) do
+        table.insert(self.display_list, {
+            item_id = item_id,
+            count = 1,
+            is_stackable = false
+        })
+    end
+
+    -- Add stackable items
+    for item_id, count in pairs(self.stackable) do
+        if count > 0 then
+            table.insert(self.display_list, {
+                item_id = item_id,
+                count = count,
+                is_stackable = true
+            })
+        end
+    end
+end
+
 --- Get item at grid position
 ---@param col number Column (1-indexed)
 ---@param row number Row (1-indexed)
----@return string|nil item_id
+---@return string|nil item_id, number|nil count, boolean|nil is_stackable
 function inventory_grid:get_item_at(col, row)
     local slot_index = (row - 1) * COLS + col
-    return self.items[slot_index]
+    local entry = self.display_list[slot_index]
+    if entry then
+        return entry.item_id, entry.count, entry.is_stackable
+    end
+    return nil, nil, nil
 end
 
 --- Get the currently selected or hovered item based on input mode
@@ -116,25 +157,37 @@ end
 --- Keyboard/gamepad mode: returns keyboard selection when grid is active
 ---@return string|nil item_id
 function inventory_grid:get_hovered_item()
+    local item_id = self:get_hovered_item_info()
+    return item_id
+end
+
+--- Get full info for the currently selected or hovered item based on input mode
+---@return string|nil item_id, number|nil count, boolean|nil is_stackable
+function inventory_grid:get_hovered_item_info()
     if self.hovered_col and self.hovered_row then
         return self:get_item_at(self.hovered_col, self.hovered_row)
     end
     if controls.is_mouse_active() then
-        return nil
+        return nil, nil, nil
     end
     if self.active then
         return self:get_item_at(self.selected_col, self.selected_row)
     end
-    return nil
+    return nil, nil, nil
 end
 
 --- Toggle equipped state for an item
 --- For exclusive types (shield, secondary), unequips other items of the same type
 --- Weapons can stack (multiple equipped), with active_weapon tracking which is in use
 --- Items with type "no_equip" cannot be equipped
+--- Stackable items cannot be equipped
 ---@param item_id string The item to toggle
-function inventory_grid:toggle_equipped(item_id)
+---@param is_stackable boolean|nil Whether this is a stackable item
+function inventory_grid:toggle_equipped(item_id, is_stackable)
     if not item_id then return end
+
+    -- Prevent equipping stackable items
+    if is_stackable then return end
 
     -- Get the item's type
     local item_def = unique_item_registry[item_id]
@@ -235,9 +288,9 @@ function inventory_grid:input()
     end
 
     if controls.menu_confirm_pressed() then
-        local item_id = self:get_hovered_item()
+        local item_id, _, is_stackable = self:get_hovered_item_info()
         if item_id then
-            self:toggle_equipped(item_id)
+            self:toggle_equipped(item_id, is_stackable)
             consumed = true
         end
     end
@@ -330,9 +383,10 @@ function inventory_grid:draw()
                 FRAME_BACKGROUND_X, 0, CELL_SIZE, CELL_SIZE)
 
             -- 2. Draw item if present
-            local item_id = self:get_item_at(col, row)
+            local item_id, count, is_stackable = self:get_item_at(col, row)
             if item_id then
-                local item_def = unique_item_registry[item_id]
+                -- Look up in appropriate registry
+                local item_def = is_stackable and stackable_item_registry[item_id] or unique_item_registry[item_id]
                 if item_def then
                     -- Center 16px item in 24px cell
                     local item_size = 16
@@ -349,15 +403,21 @@ function inventory_grid:draw()
                             0, 0, item_size, item_size)
                     end
 
-                    -- 3. Draw "E" if equipped
-                    if self.equipped[item_id] then
+                    -- 3. Draw "E" if equipped (unique items only)
+                    if not is_stackable and self.equipped[item_id] then
                         canvas.set_color("#FFFFFF")
                         canvas.draw_text(cx + CELL_SIZE - EQUIPPED_MARGIN, cy + CELL_SIZE - EQUIPPED_MARGIN, "E")
+                    end
+
+                    -- 4. Draw count for stackable items with count > 1
+                    if is_stackable and count and count > 1 then
+                        canvas.set_color("#FFFFFF")
+                        canvas.draw_text(cx + CELL_SIZE - EQUIPPED_MARGIN, cy + CELL_SIZE - EQUIPPED_MARGIN, tostring(count))
                     end
                 end
             end
 
-            -- 4. Draw selection overlay if selected/hovered (frame 2)
+            -- 5. Draw selection overlay if selected/hovered (frame 2)
             if self:is_cell_selected(col, row) then
                 canvas.set_global_alpha(SELECTION_ALPHA)
                 canvas.draw_image(sprite, cx, cy, CELL_SIZE, CELL_SIZE,

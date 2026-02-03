@@ -160,15 +160,40 @@ local function build_tile_maps(level_data)
 	return tile_types, tile_properties, tile_renderable
 end
 
+-- Tiled flip flags (high bits of gid)
+local FLIP_HORIZONTAL = 0x80000000  -- Bit 31
+local FLIP_VERTICAL   = 0x40000000  -- Bit 30
+local FLIP_DIAGONAL   = 0x20000000  -- Bit 29 (ignored - rotations not supported)
+
+--- Extract the actual tile ID and flip flags from a Tiled gid.
+--- Tiled encodes flip flags in the high 3 bits of the gid.
+--- Uses modulo arithmetic since Lua 5.1 lacks native bitwise operations.
+--- Note: Diagonal flip (rotation) is ignored - only H/V flips are supported.
+---@param gid number Raw gid from Tiled
+---@return number, boolean, boolean actual_gid, flip_h, flip_v
+local function parse_gid(gid)
+    -- Check each flip bit using modulo arithmetic
+    -- For bit N: (gid % (2^(N+1))) >= 2^N
+    local flip_h = (gid % (FLIP_HORIZONTAL * 2)) >= FLIP_HORIZONTAL
+    local remaining = gid % FLIP_HORIZONTAL
+    local flip_v = remaining >= FLIP_VERTICAL
+    -- Mask off all flip bits to get actual tile ID
+    local actual_gid = remaining % FLIP_DIAGONAL
+    return actual_gid, flip_h, flip_v
+end
+
 --- Process a single tile, adding it as decorative or collision based on layer/tile types.
----@param tile_id number Tile global ID
+---@param raw_tile_id number Raw tile ID from Tiled (may contain flip flags in high bits)
 ---@param world_x number World x coordinate (already offset-adjusted)
 ---@param world_y number World y coordinate (already offset-adjusted)
 ---@param layer_type string|nil Layer's collision type from properties
 ---@param tile_types table<number, string> Map of gid to collision type
 ---@param tile_renderable table<number, table|string> Map of gid to render info (tileset info or collection tile)
 ---@param depth number Layer depth for draw ordering
-local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_types, tile_renderable, depth)
+local function process_single_tile(raw_tile_id, world_x, world_y, layer_type, tile_types, tile_renderable, depth)
+	-- Extract actual tile ID and flip flags from raw GID
+	local tile_id, flip_h, flip_v = parse_gid(raw_tile_id)
+
 	local render_info = tile_renderable[tile_id]
 	if not render_info then return end
 
@@ -192,7 +217,7 @@ local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_t
 
 	if not layer_type then
 		-- Layer has no type: all tiles are decorative
-		walls.add_decorative_tile(world_x, world_y, tile_id, tileset_info, tile_image, depth)
+		walls.add_decorative_tile(world_x, world_y, tile_id, tileset_info, tile_image, depth, flip_h, flip_v)
 		return
 	end
 
@@ -202,7 +227,7 @@ local function process_single_tile(tile_id, world_x, world_y, layer_type, tile_t
 	local handler = get_handler_for_type(tile_type) or get_handler_for_type(layer_type)
 
 	if handler then
-		handler(world_x, world_y, tile_id, tileset_info, tile_image)
+		handler(world_x, world_y, tile_id, tileset_info, tile_image, flip_h, flip_v)
 	end
 end
 
@@ -249,25 +274,6 @@ local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_re
 	end
 
 	return has_collision
-end
-
--- Tiled flip flags (high bits of gid)
--- Only FLIP_HORIZONTAL is currently used; others defined for reference
-local FLIP_HORIZONTAL = 0x80000000
--- local FLIP_VERTICAL = 0x40000000
--- local FLIP_DIAGONAL = 0x20000000
-
---- Extract the actual tile ID and flip state from a Tiled gid.
---- Tiled encodes flip flags in the high 3 bits of the gid.
---- Uses modulo arithmetic since Lua lacks native bitwise operations.
----@param gid number Raw gid from Tiled
----@return number, boolean actual_gid, is_flipped_horizontal
-local function parse_gid(gid)
-    -- Check if horizontal flip bit is set (bit 31)
-    local flip_h = (gid % (FLIP_HORIZONTAL * 2)) >= FLIP_HORIZONTAL
-    -- Mask off all flip bits to get actual tile ID
-    local actual_gid = gid % FLIP_HORIZONTAL
-    return actual_gid, flip_h
 end
 
 --- Merge tileset properties with object properties.
@@ -373,9 +379,9 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 		local ty = obj.y / tile_size - offset_y
 
 		-- Parse gid to extract flip flags and actual tile ID
-		local actual_gid, is_flipped = nil, false
+		local actual_gid, flip_h, flip_v = nil, false, false
 		if obj.gid then
-			actual_gid, is_flipped = parse_gid(obj.gid)
+			actual_gid, flip_h, flip_v = parse_gid(obj.gid)
 			-- Tile objects use bottom-left origin in Tiled, adjust to top-left
 			ty = (obj.y - (obj.height or tile_size)) / tile_size - offset_y
 		end
@@ -478,9 +484,8 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 			if actual_gid then
 				prop_data.gid = actual_gid
 				prop_data.tile_render_info = tile_renderable[actual_gid]
-				if is_flipped then
-					prop_data.flip = true
-				end
+				prop_data.flip_h = flip_h
+				prop_data.flip_v = flip_v
 			end
 			table.insert(props, prop_data)
 		end

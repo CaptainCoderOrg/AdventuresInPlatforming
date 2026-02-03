@@ -2,16 +2,16 @@ return {
   version = "1.10",
   luaversion = "5.1",
   tiledversion = "1.11.2",
-  name = "tileset_dungeon",
+  name = "caves_tileset",
   class = "",
   tilewidth = 16,
   tileheight = 16,
   spacing = 0,
   margin = 0,
-  columns = 9,
-  image = "../assets/Tilesets/tileset_dungeon.png",
-  imagewidth = 144,
-  imageheight = 112,
+  columns = 19,
+  image = "../assets/Tilesets/caves_tileset.png",
+  imagewidth = 304,
+  imageheight = 160,
   objectalignment = "unspecified",
   tilerendersize = "tile",
   fillmode = "stretch",
@@ -27,7 +27,7 @@ return {
   properties = {},
   wangsets = {
     {
-      name = "Unnamed Set",
+      name = "Cave Edges",
       class = "",
       tile = -1,
       wangsettype = "corner",
@@ -35,7 +35,7 @@ return {
       colors = {
         {
           color = { 255, 0, 0 },
-          name = "Platform",
+          name = "Wall",
           class = "",
           probability = 1,
           tile = -1,
@@ -43,7 +43,7 @@ return {
         },
         {
           color = { 0, 255, 0 },
-          name = "Not Platform",
+          name = "Dirt",
           class = "",
           probability = 1,
           tile = -1,
@@ -53,253 +53,249 @@ return {
       wangtiles = {
         {
           wangid = { 0, 1, 0, 2, 0, 1, 0, 1 },
-          tileid = 0
-        },
-        {
-          wangid = { 0, 1, 0, 2, 0, 2, 0, 1 },
-          tileid = 1
-        },
-        {
-          wangid = { 0, 1, 0, 1, 0, 2, 0, 1 },
-          tileid = 2
-        },
-        {
-          wangid = { 0, 2, 0, 2, 0, 1, 0, 1 },
-          tileid = 9
-        },
-        {
-          wangid = { 0, 2, 0, 2, 0, 2, 0, 2 },
-          tileid = 10
-        },
-        {
-          wangid = { 0, 1, 0, 1, 0, 2, 0, 2 },
-          tileid = 11
-        },
-        {
-          wangid = { 0, 2, 0, 2, 0, 2, 0, 1 },
-          tileid = 18
-        },
-        {
-          wangid = { 0, 1, 0, 2, 0, 2, 0, 2 },
           tileid = 20
         },
         {
-          wangid = { 0, 2, 0, 2, 0, 1, 0, 2 },
-          tileid = 36
+          wangid = { 0, 1, 0, 2, 0, 2, 0, 1 },
+          tileid = 21
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 2, 0, 1 },
+          tileid = 22
         },
         {
           wangid = { 0, 2, 0, 1, 0, 2, 0, 2 },
-          tileid = 38
+          tileid = 24
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 1, 0, 2 },
+          tileid = 26
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 1, 0, 1 },
+          tileid = 39
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 2, 0, 2 },
+          tileid = 40
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 2, 0, 2 },
+          tileid = 41
         },
         {
           wangid = { 0, 2, 0, 1, 0, 1, 0, 1 },
-          tileid = 54
+          tileid = 58
         },
         {
           wangid = { 0, 2, 0, 1, 0, 1, 0, 2 },
-          tileid = 55
+          tileid = 59
         },
         {
           wangid = { 0, 1, 0, 1, 0, 1, 0, 2 },
-          tileid = 56
+          tileid = 60
+        },
+        {
+          wangid = { 0, 1, 0, 2, 0, 2, 0, 2 },
+          tileid = 62
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 2, 0, 1 },
+          tileid = 64
         }
       }
     }
   },
-  tilecount = 63,
+  tilecount = 190,
   tiles = {
     {
-      id = 0,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 1,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 2,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 4,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 5,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 6,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 9,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 10,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 11,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 13,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 15,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 17,
-      type = "bridge",
-      properties = {
-        ["type"] = "bridge"
-      }
-    },
-    {
-      id = 18,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
       id = 20,
-      type = "wall",
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 21,
       properties = {
         ["type"] = "wall"
       }
     },
     {
       id = 22,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 23,
-      type = "wall",
       properties = {
         ["type"] = "wall"
       }
     },
     {
       id = 24,
-      type = "wall",
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 25,
       properties = {
         ["type"] = "wall"
       }
     },
     {
       id = 26,
-      type = "bridge",
       properties = {
-        ["type"] = "bridge"
+        ["type"] = "wall"
       }
     },
     {
-      id = 27,
-      type = "wall",
+      id = 28,
       properties = {
         ["type"] = "wall"
       }
     },
     {
       id = 29,
-      type = "wall",
       properties = {
         ["type"] = "wall"
       }
     },
     {
-      id = 35,
-      type = "bridge",
-      properties = {
-        ["type"] = "bridge"
-      }
-    },
-    {
-      id = 36,
-      type = "wall",
+      id = 30,
       properties = {
         ["type"] = "wall"
       }
     },
     {
-      id = 38,
-      type = "wall",
+      id = 31,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 33,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 39,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 40,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 41,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 43,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 44,
       properties = {
         ["type"] = "wall"
       }
     },
     {
       id = 45,
-      type = "wall",
       properties = {
         ["type"] = "wall"
       }
     },
     {
-      id = 47,
-      type = "wall",
+      id = 52,
       properties = {
         ["type"] = "wall"
       }
     },
     {
-      id = 54,
-      type = "wall",
+      id = 58,
       properties = {
         ["type"] = "wall"
       }
     },
     {
-      id = 55,
-      type = "wall",
+      id = 59,
       properties = {
         ["type"] = "wall"
       }
     },
     {
-      id = 56,
-      type = "wall",
+      id = 60,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 62,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 63,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 64,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 66,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 67,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 68,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 71,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 104,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 105,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 106,
+      properties = {
+        ["type"] = "wall"
+      }
+    },
+    {
+      id = 123,
       properties = {
         ["type"] = "wall"
       }

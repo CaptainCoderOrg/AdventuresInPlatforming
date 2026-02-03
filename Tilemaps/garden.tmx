@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="55">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="58">
  <editorsettings>
   <export target="garden.lua" format="lua"/>
  </editorsettings>
@@ -12,9 +12,9 @@
  <tileset firstgid="358" source="tileset_witch_shop.tsx"/>
  <tileset firstgid="583" source="outside_tileset.tsx"/>
  <tileset firstgid="1303" source="enemy_spawns.tsx"/>
- <tileset firstgid="1311" source="spawns.tsx"/>
- <tileset firstgid="1329" source="decorations.tsx"/>
- <tileset firstgid="1375" source="unique_items.tsx"/>
+ <tileset firstgid="1312" source="spawns.tsx"/>
+ <tileset firstgid="1330" source="decorations.tsx"/>
+ <tileset firstgid="1376" source="unique_items.tsx"/>
  <imagelayer id="5" name="Sky" locked="1" parallaxx="0.02" parallaxy="0" repeatx="1">
   <image source="../assets/Tilesets/bg_00_garden_lg.png" width="384" height="216"/>
   <properties>
@@ -231,13 +231,13 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="64" y="0" width="16" height="16">
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-146,146,146,146,146,146,146,146,146,146,146,146,146,146,146,146,
-26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
-26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
-26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
-26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,
+0,0,0,0,0,1,2,3,0,0,1,2,3,0,0,0,
+0,0,0,0,0,25,26,27,321,0,25,26,27,0,0,0,
+146,146,146,146,146,147,26,217,0,0,220,26,145,146,146,146,
+26,26,26,26,26,26,26,217,0,312,220,26,26,26,26,26,
+26,26,26,26,26,26,26,217,0,0,220,26,26,26,26,26,
+26,26,26,26,26,26,26,217,0,0,220,26,26,26,26,26,
+26,26,26,26,26,26,26,217,321,312,220,26,26,26,26,26,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -638,32 +638,36 @@
     <property name="type" value="spawn"/>
    </properties>
   </object>
-  <object id="10" gid="1328" x="384" y="-64" width="16" height="16"/>
-  <object id="11" gid="1314" x="432" y="32" width="16" height="16"/>
-  <object id="39" gid="1322" x="688" y="32" width="16" height="16">
+  <object id="10" gid="1329" x="384" y="-64" width="16" height="16"/>
+  <object id="11" gid="1315" x="432" y="32" width="16" height="16">
+   <properties>
+    <property name="name" value="Adept's Cottage"/>
+   </properties>
+  </object>
+  <object id="39" gid="1323" x="688" y="32" width="16" height="16">
    <properties>
     <property name="text" value="Jump: {jump}"/>
    </properties>
   </object>
-  <object id="44" gid="1322" x="912" y="-48" width="16" height="16">
+  <object id="44" gid="1323" x="928" y="-48" width="16" height="16">
    <properties>
     <property name="text" value="Drop: {move_down} + {jump}"/>
    </properties>
   </object>
-  <object id="47" gid="1307" x="896" y="-48" width="16" height="8"/>
-  <object id="50" gid="1322" x="936" y="48" width="16" height="16">
+  <object id="47" gid="1307" x="976" y="48" width="16" height="8"/>
+  <object id="50" gid="1323" x="936" y="48" width="16" height="16">
    <properties>
     <property name="text" value="Inventory: {menu}"/>
    </properties>
   </object>
-  <object id="51" gid="1322" x="752" y="0" width="16" height="16">
+  <object id="52" gid="1307" x="1088" y="32" width="16" height="8"/>
+  <object id="53" gid="1382" x="944" y="-16" width="16" height="16"/>
+  <object id="54" gid="1307" x="1136" y="0" width="16" height="8"/>
+  <object id="57" gid="1323" x="816" y="-16" width="16" height="16">
    <properties>
     <property name="text" value="[color=#FF0000]BEWARE[/color] of [color=#FFB100]WORMS[/color]"/>
    </properties>
   </object>
-  <object id="52" gid="1307" x="960" y="48" width="16" height="8"/>
-  <object id="53" gid="1381" x="944" y="-16" width="16" height="16"/>
-  <object id="54" gid="1307" x="1008" y="-48" width="16" height="8"/>
  </objectgroup>
  <objectgroup id="8" name="Locations">
   <object id="2" x="2816" y="16" width="16" height="16">
@@ -695,6 +699,18 @@
   <object id="37" x="393.091" y="15.8182" width="16" height="16">
    <properties>
     <property name="id" value="adept_house_exit"/>
+   </properties>
+  </object>
+  <object id="55" x="1142.92" y="75.4165" width="52.25" height="33.917">
+   <properties>
+    <property name="target_id" value="dungeon_entrance"/>
+    <property name="target_map" value="dungeon"/>
+    <property name="type" value="map_transition"/>
+   </properties>
+  </object>
+  <object id="56" x="1168" y="32" width="16" height="16">
+   <properties>
+    <property name="id" value="dungeon_entrance"/>
    </properties>
   </object>
  </objectgroup>

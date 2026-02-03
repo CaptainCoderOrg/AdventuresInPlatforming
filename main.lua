@@ -54,6 +54,7 @@ Prop.register("spear_trap", require("Prop/spear_trap"))
 Prop.register("pressure_plate", require("Prop/pressure_plate"))
 Prop.register("locked_door", require("Prop/locked_door"))
 Prop.register("unique_item", require("Prop/unique_item"))
+Prop.register("stackable_item", require("Prop/stackable_item"))
 Prop.register("lever", require("Prop/lever"))
 Prop.register("appearing_bridge", require("Prop/appearing_bridge"))
 Prop.register("stairs", require("Prop/stairs"))
@@ -67,18 +68,16 @@ Prop.register("decoration", require("Prop/decoration"))
 -- Levels
 local level1 = require("levels/level1")
 local level2 = require("levels/level2")
-local test_level = require("Tilemaps/test-level")
-local garden = require("Tilemaps/garden")
-local shop = require("Tilemaps/shop")
-local adepts_house = require("Tilemaps/adepts_house")
+local tilemap_registry = require("Tilemaps/registry")
 
 local levels = {
     level1 = level1,
     level2 = level2,
-    test_level = test_level,
-    garden = garden,
-    shop = shop,
-    adepts_house = adepts_house,
+    test_level = tilemap_registry["test-level"],
+    garden = tilemap_registry.garden,
+    shop = tilemap_registry.shop,
+    adepts_house = tilemap_registry.adepts_house,
+    dungeon = tilemap_registry.dungeon,
 }
 
 -- Preload assets for all Tiled levels to ensure they're available during transitions
@@ -137,7 +136,7 @@ local player  -- Instance created in init_level
 local camera  -- Camera instance created in init_level
 local level_info  -- Level dimensions from loaded level
 local was_dead = false  -- Track death state for game over trigger
-local current_level = adepts_house  -- Track current level module
+local current_level = levels.adepts_house  -- Track current level module
 local active_slot = nil  -- Currently active save slot (1-3)
 local proximity_volumes = {}  -- Reused per-frame to avoid allocations
 local HUD_HEIGHT = config.ui.HUD_HEIGHT_PX * config.ui.SCALE  -- Pre-computed scaled HUD height

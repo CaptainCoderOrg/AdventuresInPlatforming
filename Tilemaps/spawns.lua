@@ -134,7 +134,7 @@ return {
         ["text"] = "Undefined",
         ["type"] = "sign"
       },
-      image = "objects/sign.png",
+      image = "../assets/sprites/environment/sign.png",
       width = 16,
       height = 16
     },

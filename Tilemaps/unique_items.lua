@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 14,
+  tilecount = 15,
   tiles = {
     {
       id = 0,
@@ -164,6 +164,16 @@ return {
         ["type"] = "unique_item"
       },
       image = "../assets/sprites/items/old-key.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 14,
+      properties = {
+        ["item_id"] = "dungeon_key",
+        ["type"] = "stackable_item"
+      },
+      image = "../assets/sprites/items/dungeon-key.png",
       width = 16,
       height = 16
     }

@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 55,
+  nextobjectid = 58,
   properties = {
     ["id"] = "garden"
   },
@@ -52,19 +52,19 @@ return {
     },
     {
       name = "spawns",
-      firstgid = 1311,
+      firstgid = 1312,
       filename = "spawns.tsx",
       exportfilename = "spawns.lua"
     },
     {
       name = "decorations",
-      firstgid = 1329,
+      firstgid = 1330,
       filename = "decorations.tsx",
       exportfilename = "decorations.lua"
     },
     {
       name = "unique_items",
-      firstgid = 1375,
+      firstgid = 1376,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     }
@@ -406,13 +406,13 @@ return {
         {
           x = 64, y = 0, width = 16, height = 16,
           data = {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146,
-            26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
-            26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
-            26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
-            26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
+            0, 0, 0, 0, 0, 1, 2, 3, 0, 0, 1, 2, 3, 0, 0, 0,
+            0, 0, 0, 0, 0, 25, 26, 27, 321, 0, 25, 26, 27, 0, 0, 0,
+            146, 146, 146, 146, 146, 147, 26, 217, 0, 0, 220, 26, 145, 146, 146, 146,
+            26, 26, 26, 26, 26, 26, 26, 217, 0, 312, 220, 26, 26, 26, 26, 26,
+            26, 26, 26, 26, 26, 26, 26, 217, 0, 0, 220, 26, 26, 26, 26, 26,
+            26, 26, 26, 26, 26, 26, 26, 217, 0, 0, 220, 26, 26, 26, 26, 26,
+            26, 26, 26, 26, 26, 26, 26, 217, 321, 312, 220, 26, 26, 26, 26, 26,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1011,7 +1011,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {}
         },
@@ -1025,9 +1025,11 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1314,
+          gid = 1315,
           visible = true,
-          properties = {}
+          properties = {
+            ["name"] = "Adept's Cottage"
+          }
         },
         {
           id = 39,
@@ -1039,7 +1041,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1322,
+          gid = 1323,
           visible = true,
           properties = {
             ["text"] = "Jump: {jump}"
@@ -1050,12 +1052,12 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 912,
+          x = 928,
           y = -48,
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1322,
+          gid = 1323,
           visible = true,
           properties = {
             ["text"] = "Drop: {move_down} + {jump}"
@@ -1066,8 +1068,8 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 896,
-          y = -48,
+          x = 976,
+          y = 48,
           width = 16,
           height = 8,
           rotation = 0,
@@ -1085,26 +1087,10 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1322,
+          gid = 1323,
           visible = true,
           properties = {
             ["text"] = "Inventory: {menu}"
-          }
-        },
-        {
-          id = 51,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 752,
-          y = 0,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 1322,
-          visible = true,
-          properties = {
-            ["text"] = "[color=#FF0000]BEWARE[/color] of [color=#FFB100]WORMS[/color]"
           }
         },
         {
@@ -1112,8 +1098,8 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 960,
-          y = 48,
+          x = 1088,
+          y = 32,
           width = 16,
           height = 8,
           rotation = 0,
@@ -1131,7 +1117,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1381,
+          gid = 1382,
           visible = true,
           properties = {}
         },
@@ -1140,14 +1126,30 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 1008,
-          y = -48,
+          x = 1136,
+          y = 0,
           width = 16,
           height = 8,
           rotation = 0,
           gid = 1307,
           visible = true,
           properties = {}
+        },
+        {
+          id = 57,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 816,
+          y = -16,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1323,
+          visible = true,
+          properties = {
+            ["text"] = "[color=#FF0000]BEWARE[/color] of [color=#FFB100]WORMS[/color]"
+          }
         }
       }
     },
@@ -1256,6 +1258,38 @@ return {
           visible = true,
           properties = {
             ["id"] = "adept_house_exit"
+          }
+        },
+        {
+          id = 55,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1142.92,
+          y = 75.4165,
+          width = 52.25,
+          height = 33.917,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["target_id"] = "dungeon_entrance",
+            ["target_map"] = "dungeon",
+            ["type"] = "map_transition"
+          }
+        },
+        {
+          id = 56,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1168,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "dungeon_entrance"
           }
         }
       }

@@ -133,7 +133,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "max_health", "max_stamina", "max_energy",
     "level", "experience", "gold",
     "defense", "recovery", "critical_chance",
-    "stat_upgrades", "unique_items", "equipped_items", "active_weapon", "active_secondary",
+    "stat_upgrades", "unique_items", "stackable_items", "equipped_items", "active_weapon", "active_secondary",
 }
 
 --- Transient state preserved during level transitions but reset at campfires
@@ -149,7 +149,7 @@ local function copy_stat_value(key, value)
     if key == "unique_items" then
         local prop_common = require("Prop/common")
         return prop_common.copy_array(value)
-    elseif key == "stat_upgrades" or key == "equipped_items" then
+    elseif key == "stat_upgrades" or key == "equipped_items" or key == "stackable_items" then
         local copy = {}
         for k, v in pairs(value) do
             copy[k] = v

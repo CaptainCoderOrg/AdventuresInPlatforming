@@ -8,6 +8,7 @@ local SaveSlots = require("SaveSlots")
 local stats = require("player.stats")
 local inventory_grid = require("ui/inventory_grid")
 local unique_item_registry = require("Prop.unique_item_registry")
+local stackable_item_registry = require("Prop.stackable_item_registry")
 local weapon_sync = require("player.weapon_sync")
 
 local status_panel = {}
@@ -141,6 +142,7 @@ function status_panel:set_player(player)
     self.player = player
     if player then
         self.inventory:set_items(player.unique_items)
+        self.inventory:set_stackable(player.stackable_items)
         self.inventory:set_equipped(player.equipped_items, player)
         -- Sync player ability flags with current equipment
         weapon_sync.sync(player)
@@ -471,8 +473,13 @@ end
 --- Get the description for the currently hovered inventory item
 ---@return string|nil description Item name and description, or nil if nothing hovered
 function status_panel:get_inventory_description()
-    local item_id = self.inventory:get_hovered_item()
-    local item_def = item_id and unique_item_registry[item_id]
+    local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
+    if not item_id then
+        return nil
+    end
+
+    -- Look up in appropriate registry
+    local item_def = is_stackable and stackable_item_registry[item_id] or unique_item_registry[item_id]
     if not item_def then
         return nil
     end
@@ -484,10 +491,14 @@ function status_panel:get_inventory_description()
 end
 
 --- Check if the currently hovered inventory item is equipped
----@return boolean|nil is_equipped True if equipped, false if not, nil if nothing hovered or item is no_equip
+---@return boolean|nil is_equipped True if equipped, false if not, nil if nothing hovered or item is no_equip/stackable
 function status_panel:is_hovered_item_equipped()
-    local item_id = self.inventory:get_hovered_item()
+    local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
     if item_id then
+        -- Don't show equip option for stackable items
+        if is_stackable then
+            return nil
+        end
         -- Don't show equip option for no_equip items
         local item_def = unique_item_registry[item_id]
         if item_def and item_def.type == "no_equip" then
@@ -551,9 +562,9 @@ end
 --- Toggle equipped state for the currently hovered inventory item
 ---@return boolean toggled True if an item was toggled
 function status_panel:toggle_hovered_equipped()
-    local item_id = self.inventory:get_hovered_item()
+    local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
     if item_id then
-        self.inventory:toggle_equipped(item_id)
+        self.inventory:toggle_equipped(item_id, is_stackable)
         return true
     end
     return false

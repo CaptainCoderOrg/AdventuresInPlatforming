@@ -1,166 +1,186 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="tileset_dungeon" tilewidth="16" tileheight="16" tilecount="63" columns="9">
+<tileset version="1.10" tiledversion="1.11.2" name="caves_tileset" tilewidth="16" tileheight="16" tilecount="190" columns="19">
  <editorsettings>
-  <export target="tileset_dungeon.lua" format="lua"/>
+  <export target="caves_tileset.lua" format="lua"/>
  </editorsettings>
- <image source="../assets/Tilesets/tileset_dungeon.png" width="144" height="112"/>
- <tile id="0" type="wall">
+ <image source="../assets/Tilesets/caves_tileset.png" width="304" height="160"/>
+ <tile id="20">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="1" type="wall">
+ <tile id="21">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="2" type="wall">
+ <tile id="22">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="4" type="wall">
+ <tile id="24">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="5" type="wall">
+ <tile id="25">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="6" type="wall">
+ <tile id="26">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="9" type="wall">
+ <tile id="28">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="10" type="wall">
+ <tile id="29">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="11" type="wall">
+ <tile id="30">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="13" type="wall">
+ <tile id="31">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="15" type="wall">
+ <tile id="33">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="17" type="bridge">
-  <properties>
-   <property name="type" value="bridge"/>
-  </properties>
- </tile>
- <tile id="18" type="wall">
+ <tile id="39">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="20" type="wall">
+ <tile id="40">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="22" type="wall">
+ <tile id="41">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="23" type="wall">
+ <tile id="43">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="24" type="wall">
+ <tile id="44">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="26" type="bridge">
-  <properties>
-   <property name="type" value="bridge"/>
-  </properties>
- </tile>
- <tile id="27" type="wall">
+ <tile id="45">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="29" type="wall">
+ <tile id="52">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="35" type="bridge">
-  <properties>
-   <property name="type" value="bridge"/>
-  </properties>
- </tile>
- <tile id="36" type="wall">
+ <tile id="58">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="38" type="wall">
+ <tile id="59">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="45" type="wall">
+ <tile id="60">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="47" type="wall">
+ <tile id="62">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="54" type="wall">
+ <tile id="63">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="55" type="wall">
+ <tile id="64">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="56" type="wall">
+ <tile id="66">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="67">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="68">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="71">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="104">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="105">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="106">
+  <properties>
+   <property name="type" value="wall"/>
+  </properties>
+ </tile>
+ <tile id="123">
   <properties>
    <property name="type" value="wall"/>
   </properties>
  </tile>
  <wangsets>
-  <wangset name="Unnamed Set" type="corner" tile="-1">
-   <wangcolor name="Platform" color="#ff0000" tile="-1" probability="1"/>
-   <wangcolor name="Not Platform" color="#00ff00" tile="-1" probability="1"/>
-   <wangtile tileid="0" wangid="0,1,0,2,0,1,0,1"/>
-   <wangtile tileid="1" wangid="0,1,0,2,0,2,0,1"/>
-   <wangtile tileid="2" wangid="0,1,0,1,0,2,0,1"/>
-   <wangtile tileid="9" wangid="0,2,0,2,0,1,0,1"/>
-   <wangtile tileid="10" wangid="0,2,0,2,0,2,0,2"/>
-   <wangtile tileid="11" wangid="0,1,0,1,0,2,0,2"/>
-   <wangtile tileid="18" wangid="0,2,0,2,0,2,0,1"/>
-   <wangtile tileid="20" wangid="0,1,0,2,0,2,0,2"/>
-   <wangtile tileid="36" wangid="0,2,0,2,0,1,0,2"/>
-   <wangtile tileid="38" wangid="0,2,0,1,0,2,0,2"/>
-   <wangtile tileid="54" wangid="0,2,0,1,0,1,0,1"/>
-   <wangtile tileid="55" wangid="0,2,0,1,0,1,0,2"/>
-   <wangtile tileid="56" wangid="0,1,0,1,0,1,0,2"/>
+  <wangset name="Cave Edges" type="corner" tile="-1">
+   <wangcolor name="Wall" color="#ff0000" tile="-1" probability="1"/>
+   <wangcolor name="Dirt" color="#00ff00" tile="-1" probability="1"/>
+   <wangtile tileid="20" wangid="0,1,0,2,0,1,0,1"/>
+   <wangtile tileid="21" wangid="0,1,0,2,0,2,0,1"/>
+   <wangtile tileid="22" wangid="0,1,0,1,0,2,0,1"/>
+   <wangtile tileid="24" wangid="0,2,0,1,0,2,0,2"/>
+   <wangtile tileid="26" wangid="0,2,0,2,0,1,0,2"/>
+   <wangtile tileid="39" wangid="0,2,0,2,0,1,0,1"/>
+   <wangtile tileid="40" wangid="0,2,0,2,0,2,0,2"/>
+   <wangtile tileid="41" wangid="0,1,0,1,0,2,0,2"/>
+   <wangtile tileid="58" wangid="0,2,0,1,0,1,0,1"/>
+   <wangtile tileid="59" wangid="0,2,0,1,0,1,0,2"/>
+   <wangtile tileid="60" wangid="0,1,0,1,0,1,0,2"/>
+   <wangtile tileid="62" wangid="0,1,0,2,0,2,0,2"/>
+   <wangtile tileid="64" wangid="0,2,0,2,0,2,0,1"/>
   </wangset>
  </wangsets>
 </tileset>

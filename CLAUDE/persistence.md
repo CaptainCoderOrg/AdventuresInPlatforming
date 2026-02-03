@@ -45,6 +45,7 @@ Multi-slot save system using localStorage with 3 save slots.
     critical_chance = 0,             -- Percent chance for critical hit
     stat_upgrades = {},              -- Track upgrade counts {Health=2, Stamina=1, ...}
     unique_items = {},               -- Collected unique items
+    stackable_items = {},            -- Consumable items with counts (item_id -> count)
     equipped_items = {},             -- Set of equipped item_ids {throwing_axe=true, ...}
     active_weapon = nil,             -- Currently active weapon item_id (for quick swap)
     active_secondary = nil,          -- Currently active secondary item_id (for ability swap)

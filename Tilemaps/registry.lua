@@ -13,8 +13,10 @@ return {
     shop = require("Tilemaps/shop"),
     outside_tileset = require("Tilemaps/outside_tileset"),
     garden = require("Tilemaps/garden"),
+    dungeon = require("Tilemaps/dungeon"),
     unique_items = require("Tilemaps/unique_items"),
     alchemy_room_tileset = require("Tilemaps/alchemy_room_tileset"),
     tileset_library = require("Tilemaps/tileset_library"),
     adepts_house = require("Tilemaps/adepts_house"),
+    caves_tileset = require("Tilemaps/caves_tileset"),
 }

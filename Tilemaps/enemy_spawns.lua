@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 8,
+  tilecount = 9,
   tiles = {
     {
       id = 0,
@@ -113,6 +113,20 @@ return {
       image = "enemies/ghost_painting.png",
       width = 16,
       height = 24
+    },
+    {
+      id = 8,
+      properties = {
+        ["key"] = "flaming_skull",
+        ["offset_y"] = 0,
+        ["speed"] = 5,
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/flaming_skull/flaming_skull.png",
+      x = 0,
+      y = 0,
+      width = 18,
+      height = 26
     }
   }
 }

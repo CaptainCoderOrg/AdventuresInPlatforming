@@ -31,6 +31,23 @@ return {
     box = { x = 0, y = 0, w = 1, h = 2 },
     debug_color = "#8B4513",
     initial_state = "locked",
+    default_reset = false,  -- Persist door state across saves
+
+    --- Get state data for saving (persistent props only)
+    ---@param prop table The door prop instance
+    ---@return table state_data Data to save
+    get_save_state = function(prop)
+        return { state_name = prop.state_name }
+    end,
+
+    --- Restore state from saved data
+    ---@param prop table The door prop instance
+    ---@param saved_state table Saved state data
+    restore_save_state = function(prop, saved_state)
+        if saved_state.state_name then
+            Prop.set_state(prop, saved_state.state_name)
+        end
+    end,
 
     ---@param prop table The prop instance being spawned
     ---@param _def table The door definition (unused)
@@ -60,6 +77,8 @@ return {
             interact = function(prop, player)
                 if not prop.required_key then return false end
                 if common.player_has_item(player, prop.required_key) then
+                    -- Consume the key (works for both stackable and unique items)
+                    common.consume_stackable_item(player, prop.required_key)
                     Prop.set_state(prop, "unlock")
                 else
                     Effects.create_locked_text(player.x + 0.5, player.y - 1, player)

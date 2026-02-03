@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="8" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="9" columns="0">
  <editorsettings>
   <export target="enemy_spawns.lua" format="lua"/>
  </editorsettings>
@@ -68,5 +68,14 @@
    <property name="type" value="enemy"/>
   </properties>
   <image source="enemies/ghost_painting.png" width="16" height="24"/>
+ </tile>
+ <tile id="8" x="0" y="0" width="18" height="26">
+  <properties>
+   <property name="key" value="flaming_skull"/>
+   <property name="offset_y" type="float" value="0"/>
+   <property name="speed" type="float" value="5"/>
+   <property name="type" value="enemy"/>
+  </properties>
+  <image source="../assets/sprites/enemies/flaming_skull/flaming_skull.png" width="144" height="26"/>
  </tile>
 </tileset>

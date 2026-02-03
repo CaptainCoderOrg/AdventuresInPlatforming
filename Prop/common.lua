@@ -1,11 +1,13 @@
 --- Shared utilities for prop definitions
 local sprites = require("sprites")
 local combat = require("combat")
+local stackable_item_registry = require("Prop.stackable_item_registry")
 
 local common = {}
 
 -- Lazy-loaded to avoid circular dependency (Prop/init.lua requires this module)
 local Prop = nil
+local Effects = nil
 
 --- Standard animation draw for props
 ---@param prop table Prop instance with animation
@@ -42,17 +44,76 @@ function common.damage_player(prop, player, damage)
     return true
 end
 
---- Check if player has a specific unique item
+--- Check if player has a specific item (checks both stackable and unique items)
 ---@param player table Player instance
 ---@param item_id string Item identifier to check
 ---@return boolean True if player has the item
 function common.player_has_item(player, item_id)
-    if not player or not player.unique_items then return false end
+    if not player then return false end
+    -- Check stackable_items first
+    if player.stackable_items and player.stackable_items[item_id] and player.stackable_items[item_id] > 0 then
+        return true
+    end
+    -- Fall back to unique_items
+    if not player.unique_items then return false end
     local items = player.unique_items
     for i = 1, #items do
         if items[i] == item_id then return true end
     end
     return false
+end
+
+--- Add a stackable item to the player's inventory
+---@param player table Player instance
+---@param item_id string Item identifier
+---@param count number|nil Amount to add (default: 1)
+---@return boolean True if item was added
+function common.add_stackable_item(player, item_id, count)
+    if not player or not player.stackable_items then return false end
+    count = count or 1
+    if count <= 0 then return false end
+
+    local item_def = stackable_item_registry[item_id]
+    local max_stack = (item_def and item_def.max_stack) or 99
+
+    local current = player.stackable_items[item_id] or 0
+    local new_count = math.min(current + count, max_stack)
+    player.stackable_items[item_id] = new_count
+
+    return true
+end
+
+--- Consume a stackable item from the player's inventory
+--- Displays the item name above the player when consumed
+---@param player table Player instance
+---@param item_id string Item identifier
+---@param count number|nil Amount to consume (default: 1)
+---@return boolean True if item was consumed, false if insufficient quantity
+function common.consume_stackable_item(player, item_id, count)
+    if not player or not player.stackable_items then return false end
+    count = count or 1
+    if count <= 0 then return true end
+
+    local current = player.stackable_items[item_id] or 0
+    if current < count then
+        return false
+    end
+
+    local new_count = current - count
+    if new_count <= 0 then
+        player.stackable_items[item_id] = nil
+    else
+        player.stackable_items[item_id] = new_count
+    end
+
+    -- Display item name above player
+    Effects = Effects or require("Effects")
+    local item_def = stackable_item_registry[item_id]
+    if item_def and item_def.name then
+        Effects.create_text(player.x, player.y, item_def.name)
+    end
+
+    return true
 end
 
 --- Create a shallow copy of an array (for saving without reference issues)

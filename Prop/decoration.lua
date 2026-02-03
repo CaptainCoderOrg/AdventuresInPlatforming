@@ -7,6 +7,7 @@ local platform_common = require("platforms/common")
 local prop_common = require("Prop/common")
 local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
+local tile_transform = require("platforms/tile_transform")
 
 return {
     -- Zero-size hitbox means no collision detection (overridden if text is set)
@@ -15,14 +16,15 @@ return {
     --- Initialize decoration prop with tile render info from Tiled.
     ---@param prop table The prop instance
     ---@param def table The prop definition
-    ---@param options table Spawn options containing gid, tile_render_info, width, height, flip, text
+    ---@param options table Spawn options containing gid, tile_render_info, width, height, flip flags, text
     on_spawn = function(prop, def, options)
         -- Store rendering info from Tiled
         prop.gid = options.gid
         prop.tile_render_info = options.tile_render_info
         prop.width = options.width
         prop.height = options.height
-        prop.flip = options.flip
+        prop.flip_h = options.flip_h
+        prop.flip_v = options.flip_v
 
         -- Optional helper text
         if options.text then
@@ -50,6 +52,8 @@ return {
 
         if not render_info then return end
 
+        local has_transform = tile_transform.has_transform(prop.flip_h, prop.flip_v)
+
         if render_info.image then
             -- Collection tile (individual image)
             local scale = config.ui.SCALE
@@ -59,11 +63,10 @@ return {
             local draw_x = prop.x * ts
             local draw_y = prop.y * ts - height_offset
 
-            if prop.flip then
-                -- Flip horizontally by scaling -1 and offsetting
+            if has_transform then
                 canvas.save()
-                canvas.translate(draw_x + width_scaled, draw_y)
-                canvas.scale(-1, 1)
+                canvas.translate(draw_x, draw_y)
+                tile_transform.apply(prop.flip_h, prop.flip_v, width_scaled, height_scaled)
                 canvas.draw_image(render_info.image, 0, 0, width_scaled, height_scaled)
                 canvas.restore()
             else
@@ -74,15 +77,17 @@ return {
             local local_id = prop.gid - render_info.firstgid
             local tx = local_id % render_info.columns
             local ty = math.floor(local_id / render_info.columns)
+            local draw_x = prop.x * ts
+            local draw_y = prop.y * ts
 
-            if prop.flip then
+            if has_transform then
                 canvas.save()
-                canvas.translate(prop.x * ts + ts, prop.y * ts)
-                canvas.scale(-1, 1)
+                canvas.translate(draw_x, draw_y)
+                tile_transform.apply(prop.flip_h, prop.flip_v, ts, ts)
                 sprites.draw_tile(tx, ty, 0, 0, render_info.tileset_image)
                 canvas.restore()
             else
-                sprites.draw_tile(tx, ty, prop.x * ts, prop.y * ts, render_info.tileset_image)
+                sprites.draw_tile(tx, ty, draw_x, draw_y, render_info.tileset_image)
             end
         end
 

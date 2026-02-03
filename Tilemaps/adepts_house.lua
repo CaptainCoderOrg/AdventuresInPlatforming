@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 8,
-  nextobjectid = 18,
+  nextobjectid = 19,
   properties = {},
   tilesets = {
     {
@@ -34,6 +34,12 @@ return {
       firstgid = 136,
       filename = "decorations.tsx",
       exportfilename = "decorations.lua"
+    },
+    {
+      name = "spawns",
+      firstgid = 182,
+      filename = "spawns.tsx",
+      exportfilename = "spawns.lua"
     }
   },
   layers = {
@@ -436,6 +442,23 @@ return {
           gid = 2147483815,
           visible = true,
           properties = {}
+        },
+        {
+          id = 18,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 256,
+          y = 96,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 199,
+          visible = true,
+          properties = {
+            ["item_id"] = "sword",
+            ["required_key"] = "old_key"
+          }
         }
       }
     },

@@ -216,8 +216,10 @@ end
 ---@param tile_types table<number, string> Map of gid to collision type from tileset
 ---@param tile_renderable table<number, boolean|table> Map of gid to render info from tileset
 ---@param depth number Layer depth for draw ordering
+---@return boolean has_collision True if this layer contains collision tiles
 local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_renderable, depth)
 	local layer_type = layer.properties and layer.properties.type
+	local has_collision = layer_type ~= nil
 
 	if layer.chunks then
 		-- Chunk-based storage (infinite map)
@@ -245,6 +247,8 @@ local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_re
 			end
 		end
 	end
+
+	return has_collision
 end
 
 -- Tiled flip flags (high bits of gid)
@@ -630,9 +634,14 @@ function tiled.load(level_data)
 	local min_x, min_y, max_x, max_y = calculate_bounds(level_data)
 
 	-- Process each layer with offset normalization
+	-- Track the maximum depth of collision layers for draw ordering
+	local max_collision_depth = 0
 	for layer_index, layer in ipairs(level_data.layers) do
 		if layer.type == "tilelayer" then
-			process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable, layer_index)
+			local has_collision = process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable, layer_index)
+			if has_collision then
+				max_collision_depth = layer_index
+			end
 		elseif layer.type == "objectgroup" then
 			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds)
 			spawn = layer_spawn
@@ -648,6 +657,9 @@ function tiled.load(level_data)
 			end
 		end
 	end
+
+	-- Set walls depth so decorative tiles above collision layers draw in front
+	walls.set_walls_depth(max_collision_depth)
 
 	-- Fallback: extract background from map properties (sprite key)
 	if #backgrounds == 0 and level_data.properties and level_data.properties.background then

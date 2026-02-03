@@ -44,6 +44,10 @@ end
 ---@param action_id string Action identifier
 ---@return number|nil Key or button code
 function controls.get_binding(scheme, action_id)
+    -- Special case: menu is not rebindable
+    if action_id == "menu" then
+        return scheme == "gamepad" and canvas.buttons.START or canvas.keys.ESCAPE
+    end
     local scheme_bindings = bindings[scheme]
     return scheme_bindings and scheme_bindings[action_id]
 end

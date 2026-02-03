@@ -119,6 +119,7 @@ controls_config.key_display_names = {
     [canvas.keys.END] = "End",
     [canvas.keys.PAGE_UP] = "PgUp",
     [canvas.keys.PAGE_DOWN] = "PgDn",
+    [canvas.keys.ESCAPE] = "Esc",
 }
 
 -- Human-readable display names for gamepad buttons
@@ -172,14 +173,19 @@ function controls_config.get_button_name(button_code)
     return controls_config.button_display_names[button_code] or "Unknown"
 end
 
+-- Cached arrays for rebind detection (built on first call)
+local all_keys_cache = nil
+local all_buttons_cache = nil
+
 --- Get all bindable key codes (for detecting input during rebind)
 ---@return table Array of key codes
 function controls_config.get_all_keys()
-    local keys = {}
+    if all_keys_cache then return all_keys_cache end
+    all_keys_cache = {}
     for code, _ in pairs(controls_config.key_display_names) do
-        table.insert(keys, code)
+        table.insert(all_keys_cache, code)
     end
-    return keys
+    return all_keys_cache
 end
 
 --- Get all mouse button codes (for detecting input during rebind)
@@ -195,14 +201,15 @@ end
 --- Get all bindable button codes (for detecting input during rebind)
 ---@return table Array of button codes
 function controls_config.get_all_buttons()
-    local buttons = {}
+    if all_buttons_cache then return all_buttons_cache end
+    all_buttons_cache = {}
     for code, _ in pairs(controls_config.button_display_names) do
         -- Exclude START as it's reserved for menu toggle
         if code ~= canvas.buttons.START then
-            table.insert(buttons, code)
+            table.insert(all_buttons_cache, code)
         end
     end
-    return buttons
+    return all_buttons_cache
 end
 
 return controls_config

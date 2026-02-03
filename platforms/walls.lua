@@ -9,7 +9,10 @@ local walls = {}
 walls.tiles = {}
 walls.solo_tiles = {}
 walls.decorative_tiles = {}  -- Render-only tiles array (no collision), sorted by depth
-walls.decorative_sorted = false  -- Track if decorative tiles need sorting
+walls.decorative_below = {}  -- Decorative tiles drawn below collision tiles
+walls.decorative_above = {}  -- Decorative tiles drawn above collision tiles
+walls.decorative_sorted = false  -- Track if decorative tiles need sorting/splitting
+walls.walls_depth = 0  -- Layer depth of collision tiles (for splitting decorative tiles)
 walls.colliders = {}
 walls.tile_to_collider = {}
 
@@ -357,6 +360,14 @@ function walls.add_decorative_tile(x, y, tile_id, tileset_info, tile_image, dept
 	walls.decorative_sorted = false
 end
 
+--- Sets the layer depth of collision tiles.
+--- Decorative tiles with depth > this value will be drawn above collision tiles.
+---@param depth number Layer depth of the last collision tile layer
+function walls.set_walls_depth(depth)
+	walls.walls_depth = depth
+	walls.decorative_sorted = false  -- Force re-split on next draw
+end
+
 --- Adds a solo tile that won't merge with adjacent tiles.
 ---@param x number
 ---@param y number
@@ -485,21 +496,32 @@ function walls.draw(camera, margin)
 	local ts = sprites.tile_size
 	local min_x, min_y, max_x, max_y = camera:get_visible_bounds(ts, margin)
 
-	-- Sort decorative tiles by depth if needed (lower depth = drawn first/behind)
+	-- Sort and split decorative tiles by depth if needed
 	if not walls.decorative_sorted then
 		table.sort(walls.decorative_tiles, function(a, b)
 			return a.depth < b.depth
 		end)
+		-- Split into below/above based on walls_depth
+		walls.decorative_below = {}
+		walls.decorative_above = {}
+		for _, tile in ipairs(walls.decorative_tiles) do
+			if tile.depth <= walls.walls_depth then
+				table.insert(walls.decorative_below, tile)
+			else
+				table.insert(walls.decorative_above, tile)
+			end
+		end
 		walls.decorative_sorted = true
 	end
 
-	-- Draw decorative tiles first (behind collision tiles), in depth order
-	for _, tile in ipairs(walls.decorative_tiles) do
+	-- Draw decorative tiles below collision tiles
+	for _, tile in ipairs(walls.decorative_below) do
 		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
 			draw_tile(tile, ts)
 		end
 	end
 
+	-- Draw collision tiles
 	for _, tile in pairs(walls.tiles) do
 		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
 			draw_tile(tile, ts)
@@ -507,8 +529,15 @@ function walls.draw(camera, margin)
 	end
 
 	for _, tile in pairs(walls.solo_tiles) do
-		if tile.x >= min_x and tile.x <= max_x and tile.y >= min_y and tile.y <= max_y then
-			sprites.draw_tile(4, 3, tile.x * ts, tile.y * ts)
+		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
+			draw_tile(tile, ts)
+		end
+	end
+
+	-- Draw decorative tiles above collision tiles
+	for _, tile in ipairs(walls.decorative_above) do
+		if is_tile_visible(tile, min_x, min_y, max_x, max_y) then
+			draw_tile(tile, ts)
 		end
 	end
 
@@ -545,7 +574,10 @@ function walls.clear()
 	walls.tiles = {}
 	walls.solo_tiles = {}
 	walls.decorative_tiles = {}
+	walls.decorative_below = {}
+	walls.decorative_above = {}
 	walls.decorative_sorted = false
+	walls.walls_depth = 0
 	for _, col in ipairs(walls.colliders) do
 		world.remove_collider(col)
 	end

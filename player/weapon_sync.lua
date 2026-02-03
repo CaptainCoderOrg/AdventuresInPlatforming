@@ -267,6 +267,8 @@ function weapon_sync.sync(player)
     local spec = weapon_sync.get_secondary_spec(player)
     if spec then
         player.projectile = spec
+    else
+        player.projectile = nil
     end
 end
 

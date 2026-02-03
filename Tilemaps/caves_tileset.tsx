@@ -124,21 +124,6 @@
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="66">
-  <properties>
-   <property name="type" value="wall"/>
-  </properties>
- </tile>
- <tile id="67">
-  <properties>
-   <property name="type" value="wall"/>
-  </properties>
- </tile>
- <tile id="68">
-  <properties>
-   <property name="type" value="wall"/>
-  </properties>
- </tile>
  <tile id="71">
   <properties>
    <property name="type" value="wall"/>

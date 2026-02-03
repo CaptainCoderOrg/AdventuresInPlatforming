@@ -41,7 +41,7 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 
 **Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
 
-**Secondary Items:** Up to 4 secondary items (throwables) can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT.
+**Secondary Items:** Up to 4 secondary items (throwables) can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT. When no secondaries are equipped, `player.projectile` is nil and throw inputs are silently ignored.
 
 ## Combat System
 

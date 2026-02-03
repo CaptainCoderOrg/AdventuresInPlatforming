@@ -253,24 +253,6 @@ return {
       }
     },
     {
-      id = 66,
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 67,
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
-      id = 68,
-      properties = {
-        ["type"] = "wall"
-      }
-    },
-    {
       id = 71,
       properties = {
         ["type"] = "wall"

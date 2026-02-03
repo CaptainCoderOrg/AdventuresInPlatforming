@@ -44,10 +44,10 @@ function secondary_bar.create()
     return self
 end
 
----@param _ number Delta time in seconds (unused, for API consistency)
----@param __ table Player instance (unused, for API consistency)
+---@param _dt number Delta time in seconds (unused, for API consistency)
+---@param _player table Player instance (unused, for API consistency)
 ---@return nil
-function secondary_bar:update(_, __)
+function secondary_bar:update(_dt, _player)
 end
 
 ---@param player table Player instance with active_secondary and equipped_items

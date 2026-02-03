@@ -195,8 +195,8 @@ function attack.input(player)
 			player:set_state(player.states.air)
 			return
 		end
-		-- Check energy inline since we're bypassing handle_throw for queued input
-		if not combo_queued and player.input_queue.throw and player.energy_used < player.max_energy then
+		-- Check projectile, unlock and energy inline since we're bypassing handle_throw for queued input
+		if not combo_queued and player.input_queue.throw and player.projectile and player:is_projectile_unlocked(player.projectile) and player.energy_used < player.max_energy then
 			player.attack_cooldown = ATTACK_COOLDOWN
 			player:set_state(player.states.throw)
 			return

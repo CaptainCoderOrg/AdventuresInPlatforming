@@ -73,6 +73,7 @@ common.animations = {
 
 --- Attempts to consume throw stamina cost from the player's current projectile.
 --- Returns true if no cost required or if stamina was successfully consumed.
+--- Precondition: player.projectile must be non-nil (caller must guard).
 ---@param player table The player object
 ---@return boolean True if throw is allowed (no cost or stamina consumed)
 local function try_use_throw_stamina(player)
@@ -81,6 +82,7 @@ local function try_use_throw_stamina(player)
 end
 
 --- Checks if the player has enough energy for the current projectile's energy cost.
+--- Precondition: player.projectile must be non-nil (caller must guard).
 ---@param player table The player object
 ---@return boolean True if player has sufficient energy to throw
 local function has_throw_energy(player)
@@ -107,7 +109,8 @@ end
 function common.handle_throw(player)
 	if not controls.ability_pressed() then return end
 
-	-- Block throw if current projectile type is locked
+	-- Block throw if no projectile equipped or current projectile type is locked
+	if not player.projectile then return end
 	if not player:is_projectile_unlocked(player.projectile) then return end
 
 	-- Block throw entirely when insufficient energy (no cooldown queue needed)
@@ -519,8 +522,8 @@ local function try_queued_combat_action(player)
 	end
 	if player.input_queue.throw and player.throw_cooldown <= 0 then
 		player.input_queue.throw = false
-		-- Check projectile unlock and energy before attempting throw
-		if player:is_projectile_unlocked(player.projectile) and has_throw_energy(player) then
+		-- Check projectile equipped, unlock and energy before attempting throw
+		if player.projectile and player:is_projectile_unlocked(player.projectile) and has_throw_energy(player) then
 			if try_use_throw_stamina(player) then
 				return player.states.throw
 			end

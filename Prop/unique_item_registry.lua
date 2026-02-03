@@ -77,7 +77,7 @@ return {
     },
     jump_ring = {
         name = "Jump Ring",
-        description = "Grants the ability to jump mid air pressing {jump}.",
+        description = "Grants the ability to jump midair: {jump} + {jump}.",
         type = "accessory",
         static_sprite = sprites.items.jump_ring,
     },

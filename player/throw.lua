@@ -11,6 +11,11 @@ local THROW_COOLDOWN = 0.2
 --- Called when entering throw state. Creates projectile and clears input queue.
 ---@param player table The player object
 function throw.start(player)
+	-- Defensive guard: if no projectile equipped, return to idle
+	if not player.projectile then
+		player:set_state(player.states.idle)
+		return
+	end
 	-- Consume energy based on projectile's cost (clamp to max in case of race)
 	local energy_cost = player.projectile.energy_cost or 1
 	player.energy_used = math.min(player.energy_used + energy_cost, player.max_energy)

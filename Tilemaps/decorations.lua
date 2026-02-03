@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 45,
+  tilecount = 46,
   tiles = {
     {
       id = 0,
@@ -294,6 +294,12 @@ return {
       image = "../assets/sprites/decorations/gray_static_door.png",
       width = 16,
       height = 24
+    },
+    {
+      id = 45,
+      image = "../assets/sprites/decorations/bed.png",
+      width = 36,
+      height = 16
     }
   }
 }

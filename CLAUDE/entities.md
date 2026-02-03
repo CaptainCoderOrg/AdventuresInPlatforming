@@ -367,6 +367,12 @@ animation:draw(x, y - lift)
   - 1-tile collision box, 5-frame idle animation
 - **Adept NPC** - Interactable NPC with dialogue
   - 1-tile collision box, 6-frame reading animation
+- **Decoration** - Non-interactive visual props rendered from Tiled tilesets
+  - No collision (box is 0x0), purely visual
+  - No state machine (uses simple draw function)
+  - Supports both collection tiles (individual images) and image-based tileset tiles
+  - Supports horizontal flip via Tiled gid flags
+  - Automatically created for typeless tile objects in Tiled Props layer
 
 ### NPC Factory Pattern (`Prop/npc_common.lua`)
 
@@ -535,6 +541,7 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/witch_npc.lua` - Witch merchant NPC definition
 - `Prop/explorer_npc.lua` - Explorer NPC definition
 - `Prop/adept_npc.lua` - Adept NPC definition
+- `Prop/decoration.lua` - Decoration prop (non-interactive visual tiles)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)
 - `Effects/state.lua` - Persistent state tables for hot reload

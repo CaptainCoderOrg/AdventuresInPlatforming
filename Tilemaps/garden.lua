@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 37,
+  nextobjectid = 38,
   properties = {
     ["id"] = "garden"
   },
@@ -64,7 +64,7 @@ return {
     },
     {
       name = "unique_items",
-      firstgid = 1218,
+      firstgid = 1219,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     }
@@ -983,7 +983,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1218,
+          gid = 1219,
           visible = true,
           properties = {}
         },
@@ -997,7 +997,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1219,
+          gid = 1220,
           visible = true,
           properties = {}
         },
@@ -1011,7 +1011,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1220,
+          gid = 1221,
           visible = true,
           properties = {}
         },
@@ -1025,7 +1025,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1221,
+          gid = 1222,
           visible = true,
           properties = {}
         },
@@ -1039,7 +1039,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1222,
+          gid = 1223,
           visible = true,
           properties = {}
         },
@@ -1053,7 +1053,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1225,
+          gid = 1226,
           visible = true,
           properties = {}
         },
@@ -1067,7 +1067,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1226,
+          gid = 1227,
           visible = true,
           properties = {}
         },
@@ -1081,7 +1081,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1224,
+          gid = 1225,
           visible = true,
           properties = {}
         },
@@ -1095,7 +1095,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1223,
+          gid = 1224,
           visible = true,
           properties = {}
         },
@@ -1109,7 +1109,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1227,
+          gid = 1228,
           visible = true,
           properties = {}
         },
@@ -1123,7 +1123,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1228,
+          gid = 1229,
           visible = true,
           properties = {}
         },
@@ -1137,7 +1137,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1229,
+          gid = 1230,
           visible = true,
           properties = {}
         }
@@ -1250,6 +1250,21 @@ return {
           properties = {
             ["on_interact"] = "maps.garden.on_dead_tree",
             ["type"] = "interactable"
+          }
+        },
+        {
+          id = 37,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 393.091,
+          y = 15.8182,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "adept_house_exit"
           }
         }
       }

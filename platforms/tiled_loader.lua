@@ -247,6 +247,25 @@ local function process_tile_layer(layer, offset_x, offset_y, tile_types, tile_re
 	end
 end
 
+-- Tiled flip flags (high bits of gid)
+-- Only FLIP_HORIZONTAL is currently used; others defined for reference
+local FLIP_HORIZONTAL = 0x80000000
+-- local FLIP_VERTICAL = 0x40000000
+-- local FLIP_DIAGONAL = 0x20000000
+
+--- Extract the actual tile ID and flip state from a Tiled gid.
+--- Tiled encodes flip flags in the high 3 bits of the gid.
+--- Uses modulo arithmetic since Lua lacks native bitwise operations.
+---@param gid number Raw gid from Tiled
+---@return number, boolean actual_gid, is_flipped_horizontal
+local function parse_gid(gid)
+    -- Check if horizontal flip bit is set (bit 31)
+    local flip_h = (gid % (FLIP_HORIZONTAL * 2)) >= FLIP_HORIZONTAL
+    -- Mask off all flip bits to get actual tile ID
+    local actual_gid = gid % FLIP_HORIZONTAL
+    return actual_gid, flip_h
+end
+
 --- Merge tileset properties with object properties.
 --- Object properties override tileset properties.
 ---@param tileset_props table|nil Properties from tileset
@@ -300,13 +319,14 @@ end
 ---@param offset_x number X offset to normalize coordinates
 ---@param offset_y number Y offset to normalize coordinates
 ---@param tile_properties table<number, table> Map of gid to tileset properties
+---@param tile_renderable table<number, table|string> Map of gid to render info for decoration props
 ---@param spawn_points table<string, table> Named spawn points lookup (modified in place)
 ---@param map_transitions table Array of map transition zones (modified in place)
 ---@param one_way_platforms table Array of one-way platform zones (modified in place)
 ---@param camera_bounds table Array of camera bounds rectangles (modified in place)
 ---@return table|nil spawn Updated spawn point
 ---@return table patrol_areas_tiles Patrol areas converted to tile coordinates
-local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, spawn_points, map_transitions, one_way_platforms, camera_bounds)
+local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds)
 	-- Check for layer-level type (e.g., "camera_bounds" layer)
 	local layer_type = layer.properties and layer.properties.type
 
@@ -348,12 +368,15 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 		local tx = obj.x / tile_size - offset_x
 		local ty = obj.y / tile_size - offset_y
 
-		-- Tile objects (with gid) use bottom-left origin in Tiled, adjust to top-left
+		-- Parse gid to extract flip flags and actual tile ID
+		local actual_gid, is_flipped = nil, false
 		if obj.gid then
+			actual_gid, is_flipped = parse_gid(obj.gid)
+			-- Tile objects use bottom-left origin in Tiled, adjust to top-left
 			ty = (obj.y - (obj.height or tile_size)) / tile_size - offset_y
 		end
 
-		local tileset_props = obj.gid and tile_properties[obj.gid]
+		local tileset_props = actual_gid and tile_properties[actual_gid]
 		local merged_props = merge_properties(tileset_props, obj.properties)
 
 		-- Get type from merged properties (or use object name as fallback)
@@ -365,7 +388,12 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 			spawn_points[spawn_id] = { x = tx, y = ty }
 		end
 
-		-- Process object based on type (empty type means spawn marker only)
+		-- Process object based on type
+		-- Empty type with gid = decoration prop, empty type without gid = spawn marker only
+		if obj_type == "" and actual_gid then
+			obj_type = "decoration"
+		end
+
 		if obj_type == "" then
 			-- Spawn point marker with no other behavior
 		elseif obj_type == "spawn" or obj.name == "Start" then
@@ -440,6 +468,14 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 			for k, v in pairs(merged_props) do
 				if k ~= "type" and k ~= "offset_x" and k ~= "offset_y" then
 					prop_data[k] = v
+				end
+			end
+			-- Pass gid and render info for decoration props
+			if actual_gid then
+				prop_data.gid = actual_gid
+				prop_data.tile_render_info = tile_renderable[actual_gid]
+				if is_flipped then
+					prop_data.flip = true
 				end
 			end
 			table.insert(props, prop_data)
@@ -598,7 +634,7 @@ function tiled.load(level_data)
 		if layer.type == "tilelayer" then
 			process_tile_layer(layer, min_x, min_y, tile_types, tile_renderable, layer_index)
 		elseif layer.type == "objectgroup" then
-			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, spawn_points, map_transitions, one_way_platforms, camera_bounds)
+			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds)
 			spawn = layer_spawn
 			for _, area in ipairs(layer_patrol_areas) do
 				table.insert(patrol_areas, area)

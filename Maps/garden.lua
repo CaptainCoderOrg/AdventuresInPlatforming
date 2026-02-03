@@ -5,13 +5,17 @@ local Effects = require("Effects")
 
 local garden = {}
 
---- Handler for attempting to open the cottage door (locked)
+--- Handler for opening the cottage door (transitions to adepts_house)
 ---@param context table Contains player and prop references
 function garden.on_open_cottage(context)
-    Effects.create_locked_text(context.player.x + 0.5, context.player.y - 1, context.player)
-    audio.play_sfx(audio.locked_door)
+    context.player.map_transition_target = {
+        map = "adepts_house",
+        spawn_id = "entrance",
+    }
 end
 
+--- Handler for attempting to open the dungeon door (currently locked)
+---@param context table Contains player and prop references
 function garden.on_open_dungeon(context)
     Effects.create_locked_text(context.player.x + 0.5, context.player.y - 1, context.player)
     audio.play_sfx(audio.locked_door)

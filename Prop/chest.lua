@@ -1,10 +1,15 @@
 --- Chest prop definition - Interactive treasure chest with shine animation
+--- Supports optional key requirements and item rewards
 local sprites = require("sprites")
 local Animation = require("Animation")
-local TextDisplay = require("TextDisplay")
-local common = require("Prop/common")
+local audio = require("audio")
 local Collectible = require("Collectible")
+local common = require("Prop/common")
+local Effects = require("Effects")
+local pickup_dialogue = require("ui/pickup_dialogue")
 local Prop = require("Prop")
+local TextDisplay = require("TextDisplay")
+local unique_item_registry = require("Prop.unique_item_registry")
 
 local CHEST_IDLE = Animation.create_definition(sprites.environment.brown_chest, 5, {
     ms_per_frame = 80,
@@ -38,7 +43,8 @@ return {
         return {
             state_name = prop.state_name,
             is_open = prop.is_open,
-            gold_amount = prop.gold_amount
+            gold_amount = prop.gold_amount,
+            item_id = prop.item_id
         }
     end,
 
@@ -48,6 +54,7 @@ return {
     restore_save_state = function(prop, saved_state)
         prop.is_open = saved_state.is_open
         prop.gold_amount = saved_state.gold_amount or 0
+        prop.item_id = saved_state.item_id
         if saved_state.state_name and prop.states then
             Prop.set_state(prop, saved_state.state_name)
         end
@@ -55,17 +62,20 @@ return {
 
     ---@param prop table The prop instance being spawned
     ---@param def table The chest definition
-    ---@param options table Spawn options (contains gold, text)
+    ---@param options table Spawn options (contains gold, text, required_key, item_id)
     on_spawn = function(prop, def, options)
-        prop.gold_amount = options and options.gold or 0
+        local opts = options or {}
+        prop.gold_amount = opts.gold or 0
+        prop.required_key = opts.required_key
+        prop.item_id = opts.item_id
         prop.is_open = false
         prop.timer = 0
         prop.shine_timer = 0
         prop.animation = Animation.new(CHEST_IDLE)
         prop.animation:pause()  -- Shine effect starts after idle delay, not immediately
 
-        local text = options and options.text or "Open: {move_up}"
-        prop.text_display = TextDisplay.new(text, { anchor = "top" })
+        local default_text = "Open: {move_up}"
+        prop.text_display = TextDisplay.new(opts.text or default_text, { anchor = "top" })
     end,
 
     states = {
@@ -88,6 +98,14 @@ return {
             ---@return boolean True if interaction occurred
             interact = function(prop, player)
                 if prop.is_open then return false end
+
+                -- Check key requirement
+                if prop.required_key and not common.player_has_item(player, prop.required_key) then
+                    Effects.create_locked_text(player.x + 0.5, player.y - 1, player)
+                    audio.play_sfx(audio.locked_door)
+                    return true
+                end
+
                 prop.last_player = player
                 Prop.set_state(prop, "opening")
                 return true
@@ -130,7 +148,7 @@ return {
         },
 
         opening = {
-            --- Begin opening animation and spawn gold particles
+            --- Begin opening animation, spawn gold particles, and give item
             ---@param prop table The chest prop instance
             ---@param def table The chest definition
             start = function(prop, def)
@@ -143,6 +161,19 @@ return {
                     local cy = prop.y + 0.3  -- Slightly above center
                     Collectible.spawn_gold_burst(cx, cy, prop.gold_amount)
                     prop.gold_amount = 0  -- Prevent re-spawning
+                end
+
+                -- Give item to player
+                if prop.item_id and prop.last_player then
+                    local item_def = unique_item_registry[prop.item_id]
+                    if item_def and item_def.type == "no_equip" then
+                        -- Non-equippable items (keys) go directly to inventory
+                        table.insert(prop.last_player.unique_items, prop.item_id)
+                    elseif item_def then
+                        -- Equippable items show the pickup dialogue
+                        pickup_dialogue.show(prop.item_id, prop.last_player)
+                    end
+                    prop.item_id = nil  -- Prevent re-giving on load
                 end
             end,
 

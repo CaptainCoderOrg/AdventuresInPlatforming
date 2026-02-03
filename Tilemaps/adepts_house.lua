@@ -361,7 +361,7 @@ return {
           type = "",
           shape = "rectangle",
           x = 309.333,
-          y = 98.3333,
+          y = 111.333,
           width = 16,
           height = 16,
           rotation = 0,
@@ -413,7 +413,9 @@ return {
           rotation = 0,
           gid = 181,
           visible = true,
-          properties = {}
+          properties = {
+            ["text"] = "Move\n{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}"
+          }
         },
         {
           id = 7,
@@ -448,14 +450,15 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 256,
-          y = 96,
+          x = 80,
+          y = 112,
           width = 16,
           height = 16,
           rotation = 0,
           gid = 199,
           visible = true,
           properties = {
+            ["gold"] = 20,
             ["item_id"] = "sword",
             ["required_key"] = "old_key"
           }

@@ -195,7 +195,7 @@
   </data>
  </layer>
  <objectgroup id="4" name="Props">
-  <object id="1" gid="127" x="309.333" y="98.3333" width="16" height="16">
+  <object id="1" gid="127" x="309.333" y="111.333" width="16" height="16">
    <properties>
     <property name="type" value="spawn"/>
    </properties>
@@ -206,11 +206,17 @@
    </properties>
   </object>
   <object id="3" gid="151" x="8" y="80" width="16" height="16"/>
-  <object id="5" gid="181" x="301" y="112.667" width="36" height="16"/>
+  <object id="5" gid="181" x="301" y="112.667" width="36" height="16">
+   <properties>
+    <property name="text">Move
+{keyboard:move_left}/{keyboard:move_right} or {gamepad:move_left}/{gamepad:move_right}</property>
+   </properties>
+  </object>
   <object id="7" gid="167" x="166" y="112" width="8" height="16"/>
   <object id="8" gid="2147483815" x="211" y="112" width="8" height="16"/>
-  <object id="18" gid="199" x="256" y="96" width="16" height="16">
+  <object id="18" gid="199" x="80" y="112" width="16" height="16">
    <properties>
+    <property name="gold" type="int" value="20"/>
     <property name="item_id" value="sword"/>
     <property name="required_key" value="old_key"/>
    </properties>

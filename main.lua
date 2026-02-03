@@ -523,7 +523,7 @@ cleanup_level = function()
 end
 
 --- Continue from active save slot (campfire checkpoint)
---- Reloads level at saved position, or defaults to level spawn if no checkpoint exists
+--- Reloads level at saved position, or defaults to adepts_house if no checkpoint exists
 ---@param options table|nil Optional settings { restore_camera_from_rest = bool }
 ---@return nil
 local function continue_from_checkpoint(options)
@@ -549,7 +549,8 @@ local function continue_from_checkpoint(options)
         end
         Playtime.set(data.playtime or 0)
     else
-        init_level(nil, nil, nil, options)
+        -- No save data: respawn at adepts_house start location
+        init_level(adepts_house, nil, nil, options)
         Playtime.reset()
     end
 

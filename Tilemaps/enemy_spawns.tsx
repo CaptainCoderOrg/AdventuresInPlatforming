@@ -73,7 +73,8 @@
   <properties>
    <property name="key" value="flaming_skull"/>
    <property name="offset_y" type="float" value="0"/>
-   <property name="speed" type="float" value="5"/>
+   <property name="speed" type="float" value="2"/>
+   <property name="start_direction" value="NE"/>
    <property name="type" value="enemy"/>
   </properties>
   <image source="../assets/sprites/enemies/flaming_skull/flaming_skull.png" width="144" height="26"/>

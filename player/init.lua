@@ -371,6 +371,12 @@ function Player:take_damage(amount, source_x, source_enemy)
 
 	self.damage = math.min(self.damage + amount, self.max_health)
 	audio.play_squish_sound()
+
+	-- Check for energy drain from enemy
+	if source_enemy and source_enemy.energy_drain then
+		self.energy_used = math.min(self.energy_used + source_enemy.energy_drain, self.max_energy)
+	end
+
 	if self:health() > 0 then
 		self:set_state(self.states.hit)
 	else

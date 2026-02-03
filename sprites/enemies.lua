@@ -61,6 +61,11 @@ local enemies = {
 		land = "guardian_land",
 		run = "guardian_run",
 	},
+	flaming_skull = {
+		float = "flaming_skull_float",
+		hit = "flaming_skull_hit",
+		death = "flaming_skull_death",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -112,5 +117,9 @@ canvas.assets.load_image(enemies.guardian.death, "sprites/enemies/guardian/guard
 canvas.assets.load_image(enemies.guardian.jump, "sprites/enemies/guardian/guardian_jump.png")
 canvas.assets.load_image(enemies.guardian.land, "sprites/enemies/guardian/guardian_land.png")
 canvas.assets.load_image(enemies.guardian.run, "sprites/enemies/guardian/guardian_run.png")
+
+canvas.assets.load_image(enemies.flaming_skull.float, "sprites/enemies/flaming_skull/flaming_skull.png")
+canvas.assets.load_image(enemies.flaming_skull.hit, "sprites/enemies/flaming_skull/flaming_skull_hit.png")
+canvas.assets.load_image(enemies.flaming_skull.death, "sprites/enemies/flaming_skull/flaming_skull_death.png")
 
 return enemies

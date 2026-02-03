@@ -41,6 +41,7 @@ Enemy.register("ghost_painting", require("Enemies/ghost_painting"))
 local magician_def = require("Enemies/magician")
 Enemy.register("magician", magician_def)
 Enemy.register("guardian", require("Enemies/guardian"))
+Enemy.register("flaming_skull", require("Enemies/flaming_skull"))
 
 -- Props
 local Prop = require("Prop")
@@ -637,7 +638,7 @@ end
 local function game()
     profiler.begin_frame()
     on_start()
-    local dt = math.min(canvas.get_delta(), 1/30) -- HACK: 1/30 limits to 30 FPS minimum to prevent physics tunneling
+    local dt = math.min(canvas.get_delta(), 1/30) -- Cap dt to 33ms to prevent physics tunneling during frame spikes
 
     profiler.start("audio")
     audio.update(dt)

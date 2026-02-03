@@ -71,6 +71,13 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 		self.target_waypoint = spawn_data.waypoints.b  -- Start moving toward second waypoint
 	end
 
+	-- Copy custom properties from spawn_data (for enemy-specific configuration)
+	-- Properties like speed, start_direction, etc. are set directly on the instance
+	if spawn_data then
+		if spawn_data.speed then self.speed = spawn_data.speed end
+		if spawn_data.start_direction then self.start_direction = spawn_data.start_direction end
+	end
+
 	-- State machine
 	self.states = definition.states
 	self.state = self.states[definition.initial_state] or self.states.idle
@@ -88,6 +95,12 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.directional_shield = definition.directional_shield or false  -- Phasing enemies use direction-based shield check
 	self.shield_hit_cooldown = 0  -- Debounce timer for shield contact damage
 	self.marked_for_destruction = false
+
+	-- Custom health override (for difficulty scaling or testing)
+	if spawn_data and spawn_data.health then
+		self.max_health = spawn_data.health
+		self.health = spawn_data.health
+	end
 
 	-- Copy optional overridable functions (nil values fall through to metatable methods)
 	self.get_armor = definition.get_armor

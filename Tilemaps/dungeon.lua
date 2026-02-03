@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 87,
+  nextobjectid = 89,
   properties = {
     ["id"] = "dungeon"
   },
@@ -2239,6 +2239,38 @@ return {
           gid = 510,
           visible = true,
           properties = {}
+        },
+        {
+          id = 87,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 640,
+          y = -16,
+          width = 18,
+          height = 26,
+          rotation = 0,
+          gid = 505,
+          visible = true,
+          properties = {
+            ["speed"] = 6
+          }
+        },
+        {
+          id = 88,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 880,
+          y = -16,
+          width = 18,
+          height = 26,
+          rotation = 0,
+          gid = 505,
+          visible = true,
+          properties = {
+            ["offset_y"] = 3
+          }
         }
       }
     },

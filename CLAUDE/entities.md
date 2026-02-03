@@ -127,6 +127,27 @@ states = {
   - Frame-based club hitboxes during attack swing animation
   - Perfect block: Takes 2 damage, enters hit state (no knockback)
   - Spawned via `F` symbol in level map (`f` for flipped/facing right)
+- **Flaming Skull** - Bouncing flying skull that drains energy on contact
+  - States: float, hit, death
+  - Health: 40 HP, Contact damage: 1, Energy drain: 1
+  - Flying (no gravity), damages shield on contact
+  - Bounces off walls, floors, ceilings, and bridges
+  - Vertical speed is half of horizontal for flatter trajectory
+  - Custom on_hit: Enters hit state without knockback, preserves velocity direction
+  - Configurable spawn properties from Tiled:
+    - `speed`: Movement speed in tiles/sec (default: 2)
+    - `start_direction`: Initial direction - NE, SE, SW, NW (default: NE)
+    - `health`: Override max health for difficulty scaling
+  - Spawned via Tiled object layer with type "enemy" and key "flaming_skull"
+
+### Spawn Data Properties
+
+Optional properties passed via `spawn_data` during enemy creation (set in Tiled object properties):
+- `flip` - Initial facing direction (true = right, default = left)
+- `waypoints` - Patrol bounds `{a, b}` in tile coordinates (auto-detected from patrol_area)
+- `speed` - Custom movement speed (enemy-specific interpretation)
+- `start_direction` - Initial movement direction string (enemy-specific, e.g., NE/SE/SW/NW)
+- `health` - Override max_health for difficulty scaling or testing
 
 ### Damage System
 
@@ -191,7 +212,7 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician, F=guardian)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician, F=guardian) or use Tiled object layer for enemies without map symbols (flaming_skull)
 5. If the enemy manages its own projectile pool, expose a cleanup function in the definition export and call it from `cleanup_level()` in main.lua to prevent orphaned colliders (see magician's `clear_bolts`)
 
 ## Prop System
@@ -536,6 +557,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
 - `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
 - `Enemies/guardian.lua` - Guardian enemy (heavy club wielder, jump attacks, no knockback)
+- `Enemies/flaming_skull.lua` - Flaming skull enemy (bouncing flyer, energy drain)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

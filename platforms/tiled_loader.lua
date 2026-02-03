@@ -24,7 +24,9 @@ local function to_asset_path(path)
 	return nil
 end
 
--- Maps tile type strings to their handler functions
+--- Maps tile type strings to their handler functions for collision geometry creation.
+--- Used by process_single_tile to route tiles to appropriate systems.
+---@type table<string, function>
 local tile_handlers = {
 	wall = walls.add_tile,
 	platform = walls.add_tile,
@@ -440,9 +442,12 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 				x = ex,
 				y = ey,
 			}
-			-- Copy merged properties
-			if merged_props.flip then
-				enemy_data.flip = merged_props.flip
+			-- Copy all custom properties (except ones used for positioning/type)
+			for k, v in pairs(merged_props) do
+				if k ~= "type" and k ~= "key" and k ~= "offset_x" and k ~= "offset_y"
+				   and k ~= "waypoint_a" and k ~= "waypoint_b" then
+					enemy_data[k] = v
+				end
 			end
 			-- Waypoint support: check if enemy is inside a patrol area
 			-- For tile objects (gid), y is bottom-left origin, adjust to top-left for containment check

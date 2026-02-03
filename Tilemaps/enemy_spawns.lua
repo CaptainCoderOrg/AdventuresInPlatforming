@@ -119,7 +119,8 @@ return {
       properties = {
         ["key"] = "flaming_skull",
         ["offset_y"] = 0,
-        ["speed"] = 5,
+        ["speed"] = 2,
+        ["start_direction"] = "NE",
         ["type"] = "enemy"
       },
       image = "../assets/sprites/enemies/flaming_skull/flaming_skull.png",

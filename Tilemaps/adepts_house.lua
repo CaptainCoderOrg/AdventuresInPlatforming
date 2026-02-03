@@ -459,7 +459,6 @@ return {
           visible = true,
           properties = {
             ["gold"] = 20,
-            ["item_id"] = "sword",
             ["required_key"] = "old_key"
           }
         }

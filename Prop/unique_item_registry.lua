@@ -21,7 +21,7 @@ local audio = require("audio")
 return {
     gold_key = {
         name = "Gold Key",
-        description = "Opens golden locks.",
+        description = "A beautiful golden key.",
         type = "no_equip",
         animated_sprite = sprites.environment.gold_key_spin,
         collected_sprite = sprites.environment.gold_key_collected,
@@ -31,14 +31,14 @@ return {
     },
     brass_key = {
         name = "Brass Key",
-        description = "An ornate brass key. Opens brass locks.",
+        description = "An ornate brass key.",
         type = "no_equip",
         static_sprite = sprites.items.brass_key,
         collect_sfx = audio.pick_up_key,
     },
     old_key = {
         name = "Old Key",
-        description = "A weathered iron key. Opens old locks.",
+        description = "A weathered iron key.",
         type = "no_equip",
         static_sprite = sprites.items.old_key,
         collect_sfx = audio.pick_up_key,

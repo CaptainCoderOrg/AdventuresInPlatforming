@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="53">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="55">
  <editorsettings>
   <export target="garden.lua" format="lua"/>
  </editorsettings>
@@ -650,9 +650,7 @@
     <property name="text" value="Drop: {move_down} + {jump}"/>
    </properties>
   </object>
-  <object id="47" gid="1307" x="912" y="-48" width="16" height="8"/>
-  <object id="48" gid="1307" x="960" y="-16" width="16" height="8"/>
-  <object id="49" gid="1388" x="960" y="-16" width="16" height="16"/>
+  <object id="47" gid="1307" x="896" y="-48" width="16" height="8"/>
   <object id="50" gid="1322" x="936" y="48" width="16" height="16">
    <properties>
     <property name="text" value="Inventory: {menu}"/>
@@ -664,6 +662,8 @@
    </properties>
   </object>
   <object id="52" gid="1307" x="960" y="48" width="16" height="8"/>
+  <object id="53" gid="1381" x="944" y="-16" width="16" height="16"/>
+  <object id="54" gid="1307" x="1008" y="-48" width="16" height="8"/>
  </objectgroup>
  <objectgroup id="8" name="Locations">
   <object id="2" x="2816" y="16" width="16" height="16">

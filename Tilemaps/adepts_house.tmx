@@ -217,7 +217,6 @@
   <object id="18" gid="199" x="80" y="112" width="16" height="16">
    <properties>
     <property name="gold" type="int" value="20"/>
-    <property name="item_id" value="sword"/>
     <property name="required_key" value="old_key"/>
    </properties>
   </object>

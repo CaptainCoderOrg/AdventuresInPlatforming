@@ -39,7 +39,8 @@ enemy_name.animations = {
         width = 16,
         height = 16,
         loop = true,        -- false for death
-        frame_offset = 0,   -- Optional: starting frame in spritesheet (for sub-animations)
+        frame_offset = 0,   -- Optional: starting frame in row (for sub-animations)
+        row = 0,            -- Optional: row index for multi-row spritesheets
     }),
 }
 
@@ -131,19 +132,28 @@ common.create_death_state(death_animation)
 
 ## Sprite Registration (sprites/enemies.lua)
 
-Add to the enemies table:
+**Option A: Separate spritesheets per animation**
 ```lua
 my_enemy = {
     idle = "my_enemy_idle",
     death = "my_enemy_death",
 },
 ```
-
-Add load calls after definitions:
 ```lua
 canvas.assets.load_image(enemies.my_enemy.idle, "sprites/enemies/my_enemy/my_enemy_idle.png")
 canvas.assets.load_image(enemies.my_enemy.death, "sprites/enemies/my_enemy/my_enemy_death.png")
 ```
+
+**Option B: Multi-row spritesheet (all animations in one image)**
+```lua
+my_enemy = {
+    sheet = "my_enemy_sheet",
+},
+```
+```lua
+canvas.assets.load_image(enemies.my_enemy.sheet, "sprites/enemies/my_enemy/my_enemy.png")
+```
+Then use `row` in animation definitions to select rows (see gnomo_axe_thrower.lua for example).
 
 ## Main.lua Registration
 
@@ -274,6 +284,21 @@ animations = {
     FALLING = Animation.create_definition(jump_sprite, 4, {
         ms_per_frame = 100, loop = false, frame_offset = 7   -- Frames 7-10
     }),
+}
+```
+
+**Multi-row spritesheet (using row):**
+```lua
+-- Combined spritesheet with each animation on a separate row
+local sheet = sprites.enemies.gnomo.sheet
+
+animations = {
+    ATTACK = Animation.create_definition(sheet, 8, { ms_per_frame = 60, loop = false }),        -- row 0
+    IDLE = Animation.create_definition(sheet, 5, { ms_per_frame = 150, row = 1 }),
+    JUMP = Animation.create_definition(sheet, 9, { ms_per_frame = 80, loop = false, row = 2 }),
+    RUN = Animation.create_definition(sheet, 6, { ms_per_frame = 100, row = 3 }),
+    HIT = Animation.create_definition(sheet, 5, { ms_per_frame = 120, loop = false, row = 4 }),
+    DEATH = Animation.create_definition(sheet, 6, { ms_per_frame = 100, loop = false, row = 5 }),
 }
 ```
 

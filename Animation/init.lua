@@ -7,7 +7,7 @@ Animation.__index = Animation
 --- Creates a new animation definition (shared template)
 ---@param name string Sprite sheet name
 ---@param frame_count number Total frames in animation
----@param options table Options: ms_per_frame, width, height, loop, frame_offset
+---@param options table Options: ms_per_frame, width, height, loop, frame_offset, row
 ---@return table Animation definition
 function Animation.create_definition(name, frame_count, options)
 	options = options or {}
@@ -18,7 +18,8 @@ function Animation.create_definition(name, frame_count, options)
 		width = options.width or 16,
 		height = options.height or 16,
 		loop = options.loop ~= false,  -- Default true
-		frame_offset = options.frame_offset or 0  -- Starting frame in spritesheet
+		frame_offset = options.frame_offset or 0,  -- Starting frame in spritesheet
+		row = options.row or 0  -- Row index for multi-row spritesheets
 	}
 end
 
@@ -173,9 +174,10 @@ function Animation:draw(x, y, rotation)
 		canvas.translate(-cx, -cy)
 	end
 	local sheet_frame = frame + (definition.frame_offset or 0)
+	local source_y = (definition.row or 0) * definition.height
 	canvas.draw_image(definition.name, 0, 0,
 		definition.width * config.ui.SCALE, definition.height * config.ui.SCALE,
-		sheet_frame * definition.width, 0,
+		sheet_frame * definition.width, source_y,
 		definition.width, definition.height)
 	canvas.restore()
 end

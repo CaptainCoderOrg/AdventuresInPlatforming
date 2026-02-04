@@ -162,7 +162,7 @@ return {
         ["key"] = "gnomo_axe_thrower",
         ["type"] = "enemy"
       },
-      image = "../assets/sprites/enemies/gnomo/gnomo_idle.png",
+      image = "../assets/sprites/enemies/gnomo/gnomo.png",
       x = 0,
       y = 0,
       width = 16,

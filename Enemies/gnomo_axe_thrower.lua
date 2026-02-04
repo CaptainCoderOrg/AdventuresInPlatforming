@@ -32,26 +32,17 @@ local AXE_WALL_CHECK_INTERVAL = 0.05 -- Seconds between wall collision checks
 -- Static tables (hoisted to avoid per-call allocation)
 local RUN_AWAY_DISTANCES = { 5, 6, 4, 7, 3 }
 
--- Animation definitions
+-- Animation definitions (using combined spritesheet)
+local sheet = sprites.enemies.gnomo.sheet
+
 gnomo.animations = {
-	IDLE = Animation.create_definition(sprites.enemies.gnomo.idle, 5, {
-		ms_per_frame = 150, width = 16, height = 16, loop = true
-	}),
-	RUN = Animation.create_definition(sprites.enemies.gnomo.run, 6, {
-		ms_per_frame = 100, width = 16, height = 16, loop = true
-	}),
-	HIT = Animation.create_definition(sprites.enemies.gnomo.hit, 5, {
-		ms_per_frame = 120, width = 16, height = 16, loop = false
-	}),
-	ATTACK = Animation.create_definition(sprites.enemies.gnomo.attack, 8, {
-		ms_per_frame = 60, width = 16, height = 16, loop = false
-	}),
-	DEATH = Animation.create_definition(sprites.enemies.gnomo.death, 6, {
-		ms_per_frame = 100, width = 16, height = 16, loop = false
-	}),
-	AXE = Animation.create_definition(sprites.projectiles.axe, 4, {
-		ms_per_frame = 50, width = 8, height = 8, loop = true
-	}),
+	ATTACK = Animation.create_definition(sheet, 8, { ms_per_frame = 60, loop = false }),
+	IDLE = Animation.create_definition(sheet, 5, { ms_per_frame = 150, row = 1 }),
+	JUMP = Animation.create_definition(sheet, 9, { ms_per_frame = 80, loop = false, row = 2 }),
+	RUN = Animation.create_definition(sheet, 6, { ms_per_frame = 100, row = 3 }),
+	HIT = Animation.create_definition(sheet, 5, { ms_per_frame = 120, loop = false, row = 4 }),
+	DEATH = Animation.create_definition(sheet, 6, { ms_per_frame = 100, loop = false, row = 5 }),
+	AXE = Animation.create_definition(sprites.projectiles.axe, 4, { ms_per_frame = 50, width = 8, height = 8 }),
 }
 
 --------------------------------------------------------------------------------
@@ -293,12 +284,6 @@ end
 -- State helper functions
 --------------------------------------------------------------------------------
 
---- Standard draw for gnomo (axes drawn independently in main.lua)
----@param enemy table The gnomo enemy
-local function draw_gnomo(enemy)
-	common.draw(enemy)
-end
-
 --- Face the player
 ---@param enemy table The gnomo enemy
 local function face_player(enemy)
@@ -330,7 +315,7 @@ gnomo.states.idle = {
 			enemy:set_state(gnomo.states.throw)
 		end
 	end,
-	draw = draw_gnomo,
+	draw = common.draw,
 }
 
 gnomo.states.throw = {
@@ -364,7 +349,7 @@ gnomo.states.throw = {
 			end
 		end
 	end,
-	draw = draw_gnomo,
+	draw = common.draw,
 }
 
 gnomo.states.hit = {
@@ -379,7 +364,7 @@ gnomo.states.hit = {
 			enemy:set_state(gnomo.states.run_away)
 		end
 	end,
-	draw = draw_gnomo,
+	draw = common.draw,
 }
 
 gnomo.states.run_away = {
@@ -424,11 +409,11 @@ gnomo.states.run_away = {
 			enemy:set_state(gnomo.states.throw)
 		end
 	end,
-	draw = draw_gnomo,
+	draw = common.draw,
 }
 
 gnomo.states.death = common.create_death_state(gnomo.animations.DEATH)
-gnomo.states.death.draw = draw_gnomo
+gnomo.states.death.draw = common.draw
 
 --------------------------------------------------------------------------------
 -- Custom on_hit handler (doesn't reset animation if already in hit state)

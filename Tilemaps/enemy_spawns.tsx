@@ -101,6 +101,6 @@
    <property name="key" value="gnomo_axe_thrower"/>
    <property name="type" value="enemy"/>
   </properties>
-  <image source="../assets/sprites/enemies/gnomo/gnomo_idle.png" width="80" height="16"/>
+  <image source="../assets/sprites/enemies/gnomo/gnomo.png" width="144" height="96"/>
  </tile>
 </tileset>

@@ -79,11 +79,7 @@ local enemies = {
 		death = "red_slime_death",
 	},
 	gnomo = {
-		idle = "gnomo_idle",
-		run = "gnomo_run",
-		hit = "gnomo_hit",
-		attack = "gnomo_attack",
-		death = "gnomo_death",
+		sheet = "gnomo_sheet",
 	},
 }
 
@@ -151,10 +147,6 @@ canvas.assets.load_image(enemies.red_slime.jump, "sprites/enemies/red_slime/red_
 canvas.assets.load_image(enemies.red_slime.hit, "sprites/enemies/red_slime/red_slime_hit.png")
 canvas.assets.load_image(enemies.red_slime.death, "sprites/enemies/red_slime/red_slime_death.png")
 
-canvas.assets.load_image(enemies.gnomo.idle, "sprites/enemies/gnomo/gnomo_idle.png")
-canvas.assets.load_image(enemies.gnomo.run, "sprites/enemies/gnomo/gnomo_run.png")
-canvas.assets.load_image(enemies.gnomo.hit, "sprites/enemies/gnomo/gnomo_hit.png")
-canvas.assets.load_image(enemies.gnomo.attack, "sprites/enemies/gnomo/gnomo_attack.png")
-canvas.assets.load_image(enemies.gnomo.death, "sprites/enemies/gnomo/gnomo_death.png")
+canvas.assets.load_image(enemies.gnomo.sheet, "sprites/enemies/gnomo/gnomo.png")
 
 return enemies

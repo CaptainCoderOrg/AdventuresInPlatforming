@@ -288,9 +288,11 @@ Centralized animation system in `Animation/init.lua` using delta-time for frame-
 -- Define animation (in player/common.lua)
 IDLE = Animation.create_definition("player_idle", 6, {
     ms_per_frame = 200,  -- Milliseconds per frame
-    width = 16,
-    height = 16,
-    loop = true
+    width = 16,          -- Frame width (default: 16)
+    height = 16,         -- Frame height (default: 16)
+    loop = true,         -- Loop animation (default: true)
+    frame_offset = 0,    -- Starting frame index in row (default: 0)
+    row = 0              -- Row index for multi-row spritesheets (default: 0)
 })
 
 -- Create instance (in state)
@@ -309,6 +311,8 @@ player.animation:draw(x * sprites.tile_size, y * sprites.tile_size)
 - `is_finished()` - Check if non-looping animation completed
 
 Animation definitions in `player/common.lua` specify timing in milliseconds (e.g., 80ms = 12.5 fps, 240ms = 4.2 fps).
+
+**Multi-row Spritesheets:** Use `row` to select which row of a combined spritesheet contains the animation frames. This allows multiple animations to be stored in a single image file (e.g., gnomo enemy uses rows 0-5 for attack, idle, jump, run, hit, death).
 
 ## Rendering
 

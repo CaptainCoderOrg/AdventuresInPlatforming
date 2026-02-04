@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 114,
+  nextobjectid = 128,
   properties = {
     ["id"] = "dungeon"
   },
@@ -47,7 +47,7 @@ return {
     },
     {
       name = "unique_items",
-      firstgid = 508,
+      firstgid = 509,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     }
@@ -919,8 +919,8 @@ return {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 346, 347, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 346, 347, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 327, 328, 371, 347, 0, 0, 0, 0,
-            0, 0, 327, 328, 328, 329, 0, 0, 346, 347, 347, 347, 0, 0, 0, 0,
-            328, 328, 371, 347, 347, 369, 328, 328, 371, 347, 347, 347, 0, 0, 0, 0,
+            0, 0, 327, 328, 328, 328, 328, 328, 371, 347, 347, 347, 0, 0, 0, 0,
+            328, 328, 371, 347, 347, 347, 347, 347, 347, 347, 347, 347, 0, 0, 0, 0,
             347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 0, 0, 0, 0,
             347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 0, 0, 0, 0,
             347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 347, 0, 0, 0, 0,
@@ -1768,7 +1768,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 522,
+          gid = 523,
           visible = true,
           properties = {}
         },
@@ -1898,7 +1898,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 522,
+          gid = 523,
           visible = true,
           properties = {}
         },
@@ -2222,7 +2222,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 512,
+          gid = 513,
           visible = true,
           properties = {}
         },
@@ -2335,14 +2335,16 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 2608,
-          y = 128,
+          x = 2688,
+          y = 192,
           width = 18,
           height = 26,
           rotation = 0,
           gid = 505,
           visible = true,
-          properties = {}
+          properties = {
+            ["start_direction"] = "NW"
+          }
         },
         {
           id = 96,
@@ -2511,6 +2513,176 @@ return {
           gid = 506,
           visible = true,
           properties = {}
+        },
+        {
+          id = 114,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2640,
+          y = -208,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 508,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 115,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2576,
+          y = -192,
+          width = 16,
+          height = 8,
+          rotation = 0,
+          gid = 501,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 116,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2112,
+          y = -160,
+          width = 16,
+          height = 8,
+          rotation = 0,
+          gid = 501,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 118,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2000,
+          y = -96,
+          width = 16,
+          height = 8,
+          rotation = 0,
+          gid = 501,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 119,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1712,
+          y = 80,
+          width = 16,
+          height = 8,
+          rotation = 0,
+          gid = 501,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 120,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2128,
+          y = 208,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 508,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 122,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2032,
+          y = 240,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 507,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 123,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1712,
+          y = 256,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 506,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 124,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2656,
+          y = 192,
+          width = 16,
+          height = 8,
+          rotation = 0,
+          gid = 501,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 125,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2896,
+          y = 192,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 507,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 126,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2832,
+          y = 192,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 506,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 127,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2752,
+          y = 160,
+          width = 18,
+          height = 26,
+          rotation = 0,
+          gid = 505,
+          visible = true,
+          properties = {
+            ["start_direction"] = "NE"
+          }
         }
       }
     },

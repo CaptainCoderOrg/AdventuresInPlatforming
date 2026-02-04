@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 11,
+  tilecount = 12,
   tiles = {
     {
       id = 0,
@@ -150,6 +150,19 @@ return {
         ["type"] = "enemy"
       },
       image = "../assets/sprites/enemies/red_slime/red_slime_idle.png",
+      x = 0,
+      y = 0,
+      width = 16,
+      height = 16
+    },
+    {
+      id = 11,
+      properties = {
+        ["flip"] = true,
+        ["key"] = "gnomo_axe_thrower",
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/gnomo/gnomo_idle.png",
       x = 0,
       y = 0,
       width = 16,

@@ -159,6 +159,19 @@ states = {
   - Walks off ledges (no edge detection)
   - Perfect block: Instant death
   - Spawned via Tiled object layer with type "enemy" and key "red_slime"
+- **Gnomo Axe Thrower** - Ranged enemy that throws arcing axes at the player
+  - States: idle, throw, hit, run_away, death
+  - Health: 5 HP, Contact damage: 1, Axe damage: 1, XP: 6, Gold: 3-5
+  - Idle: Faces player for 2.5 seconds before attacking
+  - Throw: Launches 3-5 axes per attack sequence (spawned on frame 6 of attack animation)
+  - Axes have varied trajectories (vy randomized between -10 and -6 tiles/sec)
+  - Hit: Does not reset animation if already in hit state (allows multi-hit combos)
+  - Run away: After being hit, becomes invulnerable and repositions ~5 tiles from player
+  - Custom on_hit: Prevents hit animation reset during stun
+  - Manages own projectile pool (GnomoAxe) with gravity-affected arcing physics
+  - Axes update/draw independently from gnomo visibility (called from main.lua)
+  - Wall collision throttled to 0.05s intervals for performance
+  - Spawned via Tiled object layer with type "enemy" and key "gnomo_axe_thrower"
 
 ### Spawn Data Properties
 
@@ -267,7 +280,7 @@ Enemies automatically detect platform edges to avoid falling:
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
 4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician, F=guardian) or use Tiled object layer for enemies without map symbols (flaming_skull, blue_slime, red_slime)
-5. If the enemy manages its own projectile pool, expose a cleanup function in the definition export and call it from `cleanup_level()` in main.lua to prevent orphaned colliders (see magician's `clear_bolts`)
+5. If the enemy manages its own projectile pool, expose a cleanup function in the definition export and call it from `cleanup_level()` in main.lua to prevent orphaned colliders (see magician's `clear_bolts`, gnomo_axe_thrower's `clear_axes`). For projectiles that should update/draw independently of enemy visibility, also export `update_*` and `draw_*` functions and call them from main.lua's update/draw loops (see gnomo_axe_thrower)
 
 ## Prop System
 
@@ -615,6 +628,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/slime_common.lua` - Slime factory for creating variant slime enemies
 - `Enemies/blue_slime.lua` - Blue slime enemy (passive, evasive behavior)
 - `Enemies/red_slime.lua` - Red slime enemy (aggressive, pursuit behavior)
+- `Enemies/gnomo_axe_thrower.lua` - Gnomo axe thrower enemy (ranged attacker, manages GnomoAxe projectile pool)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

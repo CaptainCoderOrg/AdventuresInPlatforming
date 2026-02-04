@@ -44,6 +44,8 @@ Enemy.register("guardian", require("Enemies/guardian"))
 Enemy.register("flaming_skull", require("Enemies/flaming_skull"))
 Enemy.register("blue_slime", require("Enemies/blue_slime"))
 Enemy.register("red_slime", require("Enemies/red_slime"))
+local gnomo_def = require("Enemies/gnomo_axe_thrower")
+Enemy.register("gnomo_axe_thrower", gnomo_def)
 
 -- Props
 local Prop = require("Prop")
@@ -335,6 +337,7 @@ local function update(dt)
 
     profiler.start("enemies")
     Enemy.update(dt, player, camera)
+    gnomo_def.update_axes(dt, player, level_info)
     profiler.stop("enemies")
 
     profiler.start("props")
@@ -395,6 +398,7 @@ local function draw()
         platforms.draw(camera, culling_margin)
         Prop.draw(camera)
         Enemy.draw(camera)
+        gnomo_def.draw_axes()
         player:draw()
         Projectile.draw(camera)
         Effects.draw()
@@ -531,6 +535,9 @@ cleanup_level = function()
 
     -- Clear magician magic bolts
     magician_def.clear_bolts()
+
+    -- Clear gnomo axes
+    if gnomo_def.clear_axes then gnomo_def.clear_axes() end
 
     -- Clear spear trap projectiles (trigger colliders not cleared by Prop.clear)
     local spear_trap_def = Prop.types["spear_trap"]

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="98">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="114">
  <editorsettings>
   <export target="dungeon.lua" format="lua"/>
  </editorsettings>
@@ -11,7 +11,7 @@
  <tileset firstgid="289" source="spawns.tsx"/>
  <tileset firstgid="307" source="caves_tileset.tsx"/>
  <tileset firstgid="497" source="enemy_spawns.tsx"/>
- <tileset firstgid="506" source="unique_items.tsx"/>
+ <tileset firstgid="508" source="unique_items.tsx"/>
  <imagelayer id="3" name="Background" offsetx="0" offsety="-64" repeatx="1" repeaty="1">
   <image source="../assets/Tilesets/caves_background_00.png" width="240" height="160"/>
  </imagelayer>
@@ -1211,12 +1211,11 @@
     <property name="required_key" value="dungeon_key"/>
    </properties>
   </object>
-  <object id="26" gid="520" x="-656" y="96" width="16" height="16"/>
+  <object id="26" gid="522" x="-656" y="96" width="16" height="16"/>
   <object id="27" gid="1073742200" x="-64" y="16" width="16" height="16"/>
   <object id="29" gid="380" x="-160" y="32" width="16" height="16"/>
   <object id="30" gid="499" x="384" y="80" width="16" height="8"/>
   <object id="32" gid="501" x="-368" y="96" width="16" height="8"/>
-  <object id="34" gid="499" x="-624" y="96" width="16" height="8"/>
   <object id="36" gid="499" x="928" y="80" width="16" height="8"/>
   <object id="40" gid="290" x="720" y="16" width="16" height="16"/>
   <object id="41" gid="292" x="1904" y="80" width="16" height="16">
@@ -1229,7 +1228,7 @@
     <property name="text" value="Drop: {move_down} + {jump}"/>
    </properties>
   </object>
-  <object id="47" gid="520" x="2704" y="-224" width="16" height="16"/>
+  <object id="47" gid="522" x="2704" y="-224" width="16" height="16"/>
   <object id="55" gid="304" x="592" y="224" width="32" height="16"/>
   <object id="56" gid="304" x="560" y="224" width="32" height="16"/>
   <object id="57" gid="304" x="528" y="224" width="32" height="16"/>
@@ -1256,7 +1255,7 @@
     <property name="required_key" value="dungeon_key"/>
    </properties>
   </object>
-  <object id="82" gid="510" x="-112" y="336" width="16" height="16"/>
+  <object id="82" gid="512" x="-112" y="336" width="16" height="16"/>
   <object id="87" gid="505" x="640" y="-16" width="18" height="26">
    <properties>
     <property name="speed" type="float" value="6"/>
@@ -1279,6 +1278,16 @@
   <object id="94" gid="505" x="2608" y="128" width="18" height="26"/>
   <object id="96" gid="434" x="434.25" y="83.5" width="16" height="16"/>
   <object id="97" gid="434" x="428.5" y="84.25" width="16" height="16"/>
+  <object id="98" gid="506" x="-304" y="48" width="16" height="16"/>
+  <object id="99" gid="506" x="-544" y="48" width="16" height="16"/>
+  <object id="102" gid="507" x="1312" y="0" width="16" height="16"/>
+  <object id="105" gid="506" x="2080" y="-128" width="16" height="16"/>
+  <object id="107" gid="507" x="2160" y="-192" width="16" height="16"/>
+  <object id="108" gid="507" x="336" y="240" width="16" height="16"/>
+  <object id="109" gid="506" x="672" y="240" width="16" height="16"/>
+  <object id="110" gid="506" x="2112" y="224" width="16" height="16"/>
+  <object id="112" gid="506" x="1200" y="208" width="16" height="16"/>
+  <object id="113" gid="506" x="832" y="208" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="10" name="Platforms">
   <object id="83" x="3216" y="96" width="48" height="16">

@@ -42,6 +42,8 @@ local magician_def = require("Enemies/magician")
 Enemy.register("magician", magician_def)
 Enemy.register("guardian", require("Enemies/guardian"))
 Enemy.register("flaming_skull", require("Enemies/flaming_skull"))
+Enemy.register("blue_slime", require("Enemies/blue_slime"))
+Enemy.register("red_slime", require("Enemies/red_slime"))
 
 -- Props
 local Prop = require("Prop")

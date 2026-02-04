@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 9,
+  tilecount = 11,
   tiles = {
     {
       id = 0,
@@ -128,6 +128,32 @@ return {
       y = 0,
       width = 18,
       height = 26
+    },
+    {
+      id = 9,
+      properties = {
+        ["flip"] = true,
+        ["key"] = "blue_slime",
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/blue_slime/blue_slime_idle.png",
+      x = 0,
+      y = 0,
+      width = 16,
+      height = 16
+    },
+    {
+      id = 10,
+      properties = {
+        ["flip"] = true,
+        ["key"] = "red_slime",
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/red_slime/red_slime_idle.png",
+      x = 0,
+      y = 0,
+      width = 16,
+      height = 16
     }
   }
 }

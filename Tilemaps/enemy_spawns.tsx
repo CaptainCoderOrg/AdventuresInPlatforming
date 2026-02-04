@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="9" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="11" columns="0">
  <editorsettings>
   <export target="enemy_spawns.lua" format="lua"/>
  </editorsettings>
@@ -78,5 +78,21 @@
    <property name="type" value="enemy"/>
   </properties>
   <image source="../assets/sprites/enemies/flaming_skull/flaming_skull.png" width="144" height="26"/>
+ </tile>
+ <tile id="9" x="0" y="0" width="16" height="16">
+  <properties>
+   <property name="flip" type="bool" value="true"/>
+   <property name="key" value="blue_slime"/>
+   <property name="type" value="enemy"/>
+  </properties>
+  <image source="../assets/sprites/enemies/blue_slime/blue_slime_idle.png" width="80" height="16"/>
+ </tile>
+ <tile id="10" x="0" y="0" width="16" height="16">
+  <properties>
+   <property name="flip" type="bool" value="true"/>
+   <property name="key" value="red_slime"/>
+   <property name="type" value="enemy"/>
+  </properties>
+  <image source="../assets/sprites/enemies/red_slime/red_slime_idle.png" width="80" height="16"/>
  </tile>
 </tileset>

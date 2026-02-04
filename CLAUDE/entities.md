@@ -141,6 +141,24 @@ states = {
     - `start_direction`: Initial direction - NE, SE, SW, NW (default: NE)
     - `health`: Override max health for difficulty scaling
   - Spawned via Tiled object layer with type "enemy" and key "flaming_skull"
+- **Blue Slime** - Passive bouncing slime that tends to evade the player
+  - States: idle, prep_jump, launch, falling, landing, hit, knockback, death
+  - Health: 2 HP, Contact damage: 1, XP: 2, Gold: 0-1
+  - Detection range: 3 tiles (player_near_range)
+  - Behavior: 80% chance to move away when near, 70% jump chance when near
+  - Sporadic movement: short bursts with pauses for organic wandering
+  - Walks off ledges (no edge detection)
+  - Perfect block: Instant death
+  - Spawned via Tiled object layer with type "enemy" and key "blue_slime"
+- **Red Slime** - Aggressive bouncing slime that pursues the player
+  - States: idle, prep_jump, launch, falling, landing, hit, knockback, death
+  - Health: 3 HP, Contact damage: 1, XP: 3, Gold: 0-1
+  - Detection range: 4 tiles (player_near_range)
+  - Behavior: 70% chance to move toward when near, 85% jump chance when near
+  - Faster prep animation (225ms vs 300ms per frame), faster horizontal jump speed
+  - Walks off ledges (no edge detection)
+  - Perfect block: Instant death
+  - Spawned via Tiled object layer with type "enemy" and key "red_slime"
 
 ### Spawn Data Properties
 
@@ -213,10 +231,28 @@ Shared functions to reduce duplication across enemy types:
 - `common.draw(enemy)` - Standard sprite rendering with slope rotation support
 - `common.is_blocked(enemy)` - Checks wall or edge in current direction
 - `common.reverse_direction(enemy)` - Flip direction and animation
-- `common.create_death_state(animation)` - Factory for standard death state
+- `common.create_death_state(animation)` - Factory for standard death state with name, start, update, draw functions
 - `common.update_slope_rotation(enemy, dt)` - Smooth lerp toward ground normal rotation
 - `common.get_slope_rotation(enemy)` - Get current rotation angle for drawing
 - `common.get_slope_y_offset(enemy)` - Get Y offset to keep rotated sprite grounded
+
+### Slime Factory Pattern (`Enemies/slime_common.lua`)
+
+Slime variants share identical state machines with configurable behavior. The `slime_common.create(sprite_set, cfg)` factory generates enemy definitions from configuration:
+
+```lua
+return slime_common.create(sprites.enemies.blue_slime, {
+    wander_speed = 1.5,
+    jump_horizontal_speed = 6,
+    player_near_range = 3,
+    near_move_toward_chance = 0.2,  -- Passive: moves away
+    near_jump_chance = 0.7,
+    max_health = 2,
+    -- ... additional config
+})
+```
+
+Adding a new slime variant requires only a configuration file using this factory.
 
 ### Edge Detection
 
@@ -230,7 +266,7 @@ Enemies automatically detect platform edges to avoid falling:
 1. Create definition file in `Enemies/` (animations, states, properties)
 2. Use `common.*` utilities for shared behaviors
 3. Register in main.lua: `Enemy.register("name", require("Enemies/name"))`
-4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician, F=guardian) or use Tiled object layer for enemies without map symbols (flaming_skull)
+4. Add spawn character to level format (R=ratto, W=worm, G=spike_slug, B=bat_eye, Z=zombie, P=ghost_painting, M=magician, F=guardian) or use Tiled object layer for enemies without map symbols (flaming_skull, blue_slime, red_slime)
 5. If the enemy manages its own projectile pool, expose a cleanup function in the definition export and call it from `cleanup_level()` in main.lua to prevent orphaned colliders (see magician's `clear_bolts`)
 
 ## Prop System
@@ -576,6 +612,9 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
 - `Enemies/guardian.lua` - Guardian enemy (heavy club wielder, jump attacks, no knockback)
 - `Enemies/flaming_skull.lua` - Flaming skull enemy (bouncing flyer, energy drain)
+- `Enemies/slime_common.lua` - Slime factory for creating variant slime enemies
+- `Enemies/blue_slime.lua` - Blue slime enemy (passive, evasive behavior)
+- `Enemies/red_slime.lua` - Red slime enemy (aggressive, pursuit behavior)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

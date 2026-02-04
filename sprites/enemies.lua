@@ -66,6 +66,18 @@ local enemies = {
 		hit = "flaming_skull_hit",
 		death = "flaming_skull_death",
 	},
+	blue_slime = {
+		idle = "blue_slime_idle",
+		jump = "blue_slime_jump",
+		hit = "blue_slime_hit",
+		death = "blue_slime_death",
+	},
+	red_slime = {
+		idle = "red_slime_idle",
+		jump = "red_slime_jump",
+		hit = "red_slime_hit",
+		death = "red_slime_death",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -121,5 +133,15 @@ canvas.assets.load_image(enemies.guardian.run, "sprites/enemies/guardian/guardia
 canvas.assets.load_image(enemies.flaming_skull.float, "sprites/enemies/flaming_skull/flaming_skull.png")
 canvas.assets.load_image(enemies.flaming_skull.hit, "sprites/enemies/flaming_skull/flaming_skull_hit.png")
 canvas.assets.load_image(enemies.flaming_skull.death, "sprites/enemies/flaming_skull/flaming_skull_death.png")
+
+canvas.assets.load_image(enemies.blue_slime.idle, "sprites/enemies/blue_slime/blue_slime_idle.png")
+canvas.assets.load_image(enemies.blue_slime.jump, "sprites/enemies/blue_slime/blue_slime_jump.png")
+canvas.assets.load_image(enemies.blue_slime.hit, "sprites/enemies/blue_slime/blue_slime_hit.png")
+canvas.assets.load_image(enemies.blue_slime.death, "sprites/enemies/blue_slime/blue_slime_death.png")
+
+canvas.assets.load_image(enemies.red_slime.idle, "sprites/enemies/red_slime/red_slime_idle.png")
+canvas.assets.load_image(enemies.red_slime.jump, "sprites/enemies/red_slime/red_slime_jump.png")
+canvas.assets.load_image(enemies.red_slime.hit, "sprites/enemies/red_slime/red_slime_hit.png")
+canvas.assets.load_image(enemies.red_slime.death, "sprites/enemies/red_slime/red_slime_death.png")
 
 return enemies

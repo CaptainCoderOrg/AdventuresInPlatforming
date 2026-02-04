@@ -5,10 +5,10 @@ local Animation = {}
 Animation.__index = Animation
 
 --- Creates a new animation definition (shared template)
---- @param name string Sprite sheet name
---- @param frame_count number Total frames in animation
---- @param options table Options: ms_per_frame, width, height, loop
---- @return table Animation definition
+---@param name string Sprite sheet name
+---@param frame_count number Total frames in animation
+---@param options table Options: ms_per_frame, width, height, loop, frame_offset
+---@return table Animation definition
 function Animation.create_definition(name, frame_count, options)
 	options = options or {}
 	return {
@@ -17,14 +17,15 @@ function Animation.create_definition(name, frame_count, options)
 		ms_per_frame = options.ms_per_frame or 80,
 		width = options.width or 16,
 		height = options.height or 16,
-		loop = options.loop ~= false  -- Default true
+		loop = options.loop ~= false,  -- Default true
+		frame_offset = options.frame_offset or 0  -- Starting frame in spritesheet
 	}
 end
 
 --- Creates a new animation instance (per-entity state)
---- @param definition table Animation definition
---- @param options table Options: flipped, start_frame, ms_per_frame (override)
---- @return table Animation instance
+---@param definition table Animation definition
+---@param options table Options: flipped, start_frame, ms_per_frame (override)
+---@return table Animation instance
 function Animation.new(definition, options)
 	options = options or {}
 	local self = setmetatable({}, Animation)
@@ -47,7 +48,7 @@ function Animation.new(definition, options)
 end
 
 --- Advances animation by delta time
---- @param dt number Delta time in seconds
+---@param dt number Delta time in seconds
 function Animation:play(dt)
 	if not self.playing or self.finished then
 		return
@@ -106,9 +107,9 @@ end
 
 --- Reinitializes an existing animation instance with a new definition.
 --- Avoids allocation by reusing the existing table.
---- @param definition table Animation definition
---- @param options table|nil Options: flipped, reverse, start_frame, ms_per_frame
---- @return table Self for chaining
+---@param definition table Animation definition
+---@param options table|nil Options: flipped, reverse, start_frame, ms_per_frame
+---@return table Self for chaining
 function Animation:reinit(definition, options)
 	options = options or {}
 	self.definition = definition
@@ -139,15 +140,15 @@ function Animation:resume()
 end
 
 --- Checks if animation is finished (for non-looping animations)
---- @return boolean
+---@return boolean
 function Animation:is_finished()
 	return self.finished
 end
 
 --- Draws the animation at the specified position
---- @param x number X coordinate in pixels
---- @param y number Y coordinate in pixels
---- @param rotation number Optional rotation in radians
+---@param x number X coordinate in pixels
+---@param y number Y coordinate in pixels
+---@param rotation number|nil Optional rotation in radians
 function Animation:draw(x, y, rotation)
 	local definition = self.definition
 	local frame = self.frame
@@ -171,9 +172,10 @@ function Animation:draw(x, y, rotation)
 		canvas.rotate(rotation * flipped)  -- Flip rotation direction with sprite
 		canvas.translate(-cx, -cy)
 	end
+	local sheet_frame = frame + (definition.frame_offset or 0)
 	canvas.draw_image(definition.name, 0, 0,
 		definition.width * config.ui.SCALE, definition.height * config.ui.SCALE,
-		frame * definition.width, 0,
+		sheet_frame * definition.width, 0,
 		definition.width, definition.height)
 	canvas.restore()
 end

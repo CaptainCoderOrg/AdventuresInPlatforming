@@ -169,7 +169,11 @@ function common.create_death_state(death_animation)
 		name = "death",
 		start = function(enemy, _)
 			anim_opts.flipped = enemy.direction
-			enemy.animation = Animation.new(death_animation, anim_opts)
+			if enemy.animation then
+				enemy.animation:reinit(death_animation, anim_opts)
+			else
+				enemy.animation = Animation.new(death_animation, anim_opts)
+			end
 			enemy.vx = (enemy.hit_direction or -1) * 4
 			enemy.vy = 0
 			enemy.gravity = 0

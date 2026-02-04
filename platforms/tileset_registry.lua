@@ -1,6 +1,7 @@
 --- Static registry of all tilesets for Canvas export compatibility.
 --- Dynamic requires break Canvas static analysis, so we use this registry
 --- with static requires that Canvas can trace.
+--- NOTE: When adding new tilesets in Tiled, add the require here.
 return {
     tileset_dungeon = require("Tilemaps/tileset_dungeon"),
     spawns = require("Tilemaps/spawns"),
@@ -19,4 +20,5 @@ return {
     tileset_library = require("Tilemaps/tileset_library"),
     adepts_house = require("Tilemaps/adepts_house"),
     caves_tileset = require("Tilemaps/caves_tileset"),
+    gnomo_boss = require("Tilemaps/gnomo_boss"),
 }

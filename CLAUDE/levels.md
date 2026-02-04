@@ -133,6 +133,30 @@ Rectangle objects with `type = "one_way_platform"` create invisible one-way coll
 
 Use for invisible platforms or when you want one-way behavior without bridge sprites.
 
+### Trigger Zones
+
+Rectangle objects with `type = "trigger"` fire registered callbacks when the player enters:
+
+1. Create a rectangle object in Tiled
+2. Set custom property `type = "trigger"`
+3. Set `on_trigger` property to handler name (e.g., `"Enemies.Bosses.gnomo.on_start"`)
+4. Optionally set `repeat = false` to make it one-shot (default: repeating)
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `on_trigger` | string | required | Handler key in `triggers/registry.lua` |
+| `repeat` | bool | true | Fire every time player enters (false = one-shot) |
+
+**Registry Pattern:** Handlers are statically mapped in `triggers/registry.lua` to satisfy Canvas static analysis:
+```lua
+local gnomo = require("Enemies/Bosses/gnomo")
+return {
+    ["Enemies.Bosses.gnomo.on_start"] = gnomo.on_start,
+}
+```
+
+Add new triggers by adding entries to this registry.
+
 ### Layer Depth Ordering
 
 Decorative tile layers are automatically sorted and split based on their depth relative to collision layers:
@@ -185,7 +209,7 @@ Tiled maps with negative coordinates (infinite maps) are automatically normalize
 2. Set tile `type` property for collision tiles (wall, bridge, ladder)
 3. Export tileset as Lua (File > Export As > Lua)
 4. Place exported `.lua` file in `Tilemaps/` directory
-5. **Add to registry:** Add a static require entry in `Tilemaps/registry.lua`
+5. **Add to registry:** Add a static require entry in `platforms/tileset_registry.lua`
 
 **Registry requirement:** Canvas uses static analysis for exports. All tilesets must be statically required in the registry—dynamic `require("Tilemaps/" .. name)` calls will break exports.
 
@@ -285,6 +309,8 @@ Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead di
 - `Tilemaps/*.lua` - Tiled map exports (levels and tilesets)
 - `platforms/init.lua` - Level geometry loader (format auto-detection)
 - `platforms/tiled_loader.lua` - Tiled format parser
+- `triggers/init.lua` - Trigger zone manager (create, check, clear)
+- `triggers/registry.lua` - Static mapping of trigger names to handler functions
 - `Sign/init.lua` - Interactive sign system
 - `Sign/state.lua` - Sign state management
 - `Camera/init.lua` - Camera system with following and framing

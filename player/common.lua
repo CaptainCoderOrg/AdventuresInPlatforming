@@ -14,6 +14,7 @@ local common = {}
 -- Reusable tables to avoid per-frame allocations
 local _melee_hitbox = { x = 0, y = 0, w = 0, h = 0 }
 local _ground_tangent = { x = 0, y = 0 }
+local _map_transition_target = { map = nil, spawn_id = nil }
 
 -- Lazy-loaded to avoid circular dependency (shield requires Animation, common loaded early)
 local shield
@@ -309,6 +310,7 @@ end
 
 --- Updates map transition target based on trigger collisions.
 --- Sets player.map_transition_target when overlapping a map transition zone.
+--- Note: Returns a reused table - do not store the reference long-term.
 ---@param player table The player object
 ---@param cols table Collision results from world.move()
 function common.check_map_transition(player, cols)
@@ -316,13 +318,24 @@ function common.check_map_transition(player, cols)
 	for i = 1, #triggers do
 		local trigger = triggers[i]
 		if trigger.owner.is_map_transition then
-			player.map_transition_target = {
-				map = trigger.owner.target_map,
-				spawn_id = trigger.owner.target_id
-			}
+			_map_transition_target.map = trigger.owner.target_map
+			_map_transition_target.spawn_id = trigger.owner.target_id
+			player.map_transition_target = _map_transition_target
 			return
 		end
 	end
+end
+
+-- Lazy-loaded triggers module to avoid circular dependency
+local triggers_module
+
+--- Checks event trigger collisions and fires registered handlers.
+--- Call after movement to process trigger zone overlaps.
+---@param player table The player object (unused, kept for interface consistency)
+---@param cols table Collision results from world.move()
+function common.check_triggers(player, cols)
+	triggers_module = triggers_module or require("triggers")
+	triggers_module.check(cols)
 end
 
 --- Processes collision flags to update grounded state, wall contact, and coyote time.

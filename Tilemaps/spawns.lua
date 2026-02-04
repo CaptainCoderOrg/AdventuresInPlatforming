@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 17,
+  tilecount = 18,
   tiles = {
     {
       id = 1,
@@ -183,6 +183,18 @@ return {
       image = "enemies/ghost_painting.png",
       width = 16,
       height = 24
+    },
+    {
+      id = 18,
+      properties = {
+        ["state"] = "opened",
+        ["type"] = "boss_door"
+      },
+      image = "../assets/sprites/environment/boss_door.png",
+      x = 0,
+      y = 0,
+      width = 32,
+      height = 32
     }
   }
 }

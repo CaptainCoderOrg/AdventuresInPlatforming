@@ -81,6 +81,11 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	-- Enemies are active by default; only dormant if activation_bounds is set
 	self.activated = not self.activation_bounds
 
+	-- Call on_spawn hook before state machine setup (allows custom animation creation)
+	if definition.on_spawn then
+		definition.on_spawn(self, spawn_data)
+	end
+
 	-- State machine
 	self.states = definition.states
 	self.state = self.states[definition.initial_state] or self.states.idle

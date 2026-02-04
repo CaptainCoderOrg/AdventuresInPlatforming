@@ -173,6 +173,34 @@ states = {
   - Wall collision throttled to 0.05s intervals for performance
   - Spawned via Tiled object layer with type "enemy" and key "gnomo_axe_thrower"
 
+### Boss Enemies
+
+Boss encounters use a coordinator pattern for multi-entity management with shared resources.
+
+**Gnomo Brothers** (`Enemies/Bosses/gnomo/`):
+- 4 color variants (green, blue, magenta, red) sharing a 20 HP pool
+- Phase transitions at 75%, 50%, 25% health thresholds
+- Most recently hit gnomo dies at each phase transition
+- Coordinator manages state: `coordinator.start()`, `coordinator.report_damage()`, `coordinator.reset()`
+- Phase modules define per-phase state machines (idle, attack, hit, death behaviors)
+- Victory triggers when shared health reaches 0
+
+**Boss File Structure:**
+```
+Enemies/Bosses/gnomo/
+├── init.lua         -- Enemy definition, on_start trigger, on_hit routing
+├── coordinator.lua  -- Shared state, phase transitions, health pool
+├── phase1.lua       -- Phase 1 state machine (4 gnomos)
+├── phase2.lua       -- Phase 2 state machine (3 gnomos)
+├── phase3.lua       -- Phase 3 state machine (2 gnomos)
+└── phase4.lua       -- Phase 4 state machine (1 gnomo)
+```
+
+**Integration:**
+- Triggered via `triggers/registry.lua` mapping `"Enemies.Bosses.gnomo.on_start"`
+- Health bar via `ui/boss_health_bar.lua` reads `coordinator.get_health_percent()`
+- Reset coordinator on level cleanup to prevent stale state
+
 ### Spawn Data Properties
 
 Optional properties passed via `spawn_data` during enemy creation (set in Tiled object properties):
@@ -629,6 +657,9 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/blue_slime.lua` - Blue slime enemy (passive, evasive behavior)
 - `Enemies/red_slime.lua` - Red slime enemy (aggressive, pursuit behavior)
 - `Enemies/gnomo_axe_thrower.lua` - Gnomo axe thrower enemy (ranged attacker, manages GnomoAxe projectile pool)
+- `Enemies/Bosses/gnomo/init.lua` - Gnomo boss definition (on_start trigger, on_hit routing)
+- `Enemies/Bosses/gnomo/coordinator.lua` - Gnomo boss coordinator (shared health, phase transitions)
+- `Enemies/Bosses/gnomo/phase1-4.lua` - Phase-specific state machines
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

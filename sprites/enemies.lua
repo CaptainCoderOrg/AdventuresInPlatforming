@@ -81,6 +81,12 @@ local enemies = {
 	gnomo = {
 		sheet = "gnomo_sheet",
 	},
+	gnomo_boss = {
+		green = "gnomo_boss_green",
+		blue = "gnomo_boss_blue",
+		magenta = "gnomo_boss_magenta",
+		red = "gnomo_boss_red",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -148,5 +154,11 @@ canvas.assets.load_image(enemies.red_slime.hit, "sprites/enemies/red_slime/red_s
 canvas.assets.load_image(enemies.red_slime.death, "sprites/enemies/red_slime/red_slime_death.png")
 
 canvas.assets.load_image(enemies.gnomo.sheet, "sprites/enemies/gnomo/gnomo.png")
+
+-- Gnomo boss variants (green reuses the original gnomo sheet)
+canvas.assets.load_image(enemies.gnomo_boss.green, "sprites/enemies/gnomo/gnomo.png")
+canvas.assets.load_image(enemies.gnomo_boss.blue, "sprites/enemies/gnomo/gnomo_blue.png")
+canvas.assets.load_image(enemies.gnomo_boss.magenta, "sprites/enemies/gnomo/gnomo_magenta.png")
+canvas.assets.load_image(enemies.gnomo_boss.red, "sprites/enemies/gnomo/gnomo_red.png")
 
 return enemies

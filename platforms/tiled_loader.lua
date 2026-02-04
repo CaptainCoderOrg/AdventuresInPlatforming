@@ -2,7 +2,7 @@ local walls = require("platforms/walls")
 local bridges = require("platforms/bridges")
 local ladders = require("platforms/ladders")
 local canvas = require("canvas")
-local tileset_registry = require("Tilemaps/registry")
+local tileset_registry = require("platforms/tileset_registry")
 
 local tiled = {}
 
@@ -63,11 +63,15 @@ function tiled.preload_assets(level_data)
 				end
 
 				-- Collection tileset tiles - only load game assets (../assets/ prefix)
-				-- Tiles with other paths are editor-only images for entities
+				-- Skip enemy/prop tiles (editor placeholders, actual sprites in sprites/*.lua)
 				for _, tile in ipairs(tileset.tiles or {}) do
-					local image_path = to_asset_path(tile.image)
-					if image_path then
-						canvas.assets.load_image(image_path, image_path)
+					local tile_type = tile.type or (tile.properties and tile.properties.type)
+					local is_entity = tile_type == "enemy" or tile_type == "prop"
+					if not is_entity then
+						local image_path = to_asset_path(tile.image)
+						if image_path then
+							canvas.assets.load_image(image_path, image_path)
+						end
 					end
 				end
 			end
@@ -322,7 +326,7 @@ local function find_patrol_area(px, py, patrol_areas)
 	return nil
 end
 
---- Process an object layer, extracting spawn point, enemies, props, spawn points, and map transitions.
+--- Process an object layer, extracting spawn point, enemies, props, spawn points, map transitions, and triggers.
 ---@param layer table Tiled object layer data
 ---@param spawn table|nil Current spawn point (modified in place)
 ---@param enemies table Array of enemy definitions (modified in place)
@@ -336,9 +340,10 @@ end
 ---@param map_transitions table Array of map transition zones (modified in place)
 ---@param one_way_platforms table Array of one-way platform zones (modified in place)
 ---@param camera_bounds table Array of camera bounds rectangles (modified in place)
+---@param triggers table Array of trigger zones (modified in place)
 ---@return table|nil spawn Updated spawn point
 ---@return table patrol_areas_tiles Patrol areas converted to tile coordinates
-local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds)
+local function process_object_layer(layer, spawn, enemies, props, tile_size, offset_x, offset_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds, triggers)
 	-- Check for layer-level type (e.g., "camera_bounds" layer)
 	local layer_type = layer.properties and layer.properties.type
 
@@ -429,6 +434,16 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 				x = tx,
 				y = ty,
 				width = (obj.width or tile_size) / tile_size,
+			})
+		elseif obj_type == "trigger" then
+			-- Event trigger zone: fires registered callback when player enters
+			table.insert(triggers, {
+				x = tx,
+				y = ty,
+				width = (obj.width or tile_size) / tile_size,
+				height = (obj.height or tile_size) / tile_size,
+				on_trigger = merged_props.on_trigger,
+				["repeat"] = merged_props["repeat"] ~= false,  -- default true
 			})
 		elseif obj_type == "patrol_area" then
 			-- Already processed in first pass, skip
@@ -624,6 +639,7 @@ function tiled.load(level_data)
 	local map_transitions = {}  -- Map transition trigger zones
 	local one_way_platforms = {}  -- One-way platform collision zones
 	local camera_bounds = {}  -- Camera constraint rectangles
+	local triggers = {}  -- Event trigger zones
 	local tile_size = level_data.tilewidth or 16
 
 	-- Build tile maps from tileset files
@@ -653,7 +669,7 @@ function tiled.load(level_data)
 				max_collision_depth = layer_index
 			end
 		elseif layer.type == "objectgroup" then
-			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds)
+			local layer_spawn, layer_patrol_areas = process_object_layer(layer, spawn, enemies, props, tile_size, min_x, min_y, tile_properties, tile_renderable, spawn_points, map_transitions, one_way_platforms, camera_bounds, triggers)
 			spawn = layer_spawn
 			for _, area in ipairs(layer_patrol_areas) do
 				table.insert(patrol_areas, area)
@@ -688,6 +704,7 @@ function tiled.load(level_data)
 		map_transitions = map_transitions,
 		one_way_platforms = one_way_platforms,
 		camera_bounds = camera_bounds,
+		triggers = triggers,
 	}
 end
 

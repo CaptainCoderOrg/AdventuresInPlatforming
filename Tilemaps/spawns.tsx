@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="spawns" tilewidth="32" tileheight="32" tilecount="17" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="spawns" tilewidth="32" tileheight="32" tilecount="18" columns="0">
  <editorsettings>
   <export target="spawns.lua" format="lua"/>
  </editorsettings>
@@ -111,5 +111,12 @@
    <property name="type" value="decoy_painting"/>
   </properties>
   <image source="enemies/ghost_painting.png" width="16" height="24"/>
+ </tile>
+ <tile id="18" x="0" y="0" width="32" height="32">
+  <properties>
+   <property name="state" value="opened"/>
+   <property name="type" value="boss_door"/>
+  </properties>
+  <image source="../assets/sprites/environment/boss_door.png" width="224" height="96"/>
  </tile>
 </tileset>

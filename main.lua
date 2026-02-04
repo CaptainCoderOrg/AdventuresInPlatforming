@@ -29,6 +29,7 @@ local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
 local rest_screen = require("ui/rest_screen")
 local screen_fade = require("ui/screen_fade")
+local boss_health_bar = require("ui/boss_health_bar")
 
 -- Enemies
 local Enemy = require("Enemies")
@@ -46,6 +47,10 @@ Enemy.register("blue_slime", require("Enemies/blue_slime"))
 Enemy.register("red_slime", require("Enemies/red_slime"))
 local gnomo_def = require("Enemies/gnomo_axe_thrower")
 Enemy.register("gnomo_axe_thrower", gnomo_def)
+local gnomo_boss_def = require("Enemies/Bosses/gnomo")
+Enemy.register("gnomo_boss", gnomo_boss_def.definition)
+local gnomo_coordinator = require("Enemies/Bosses/gnomo/coordinator")
+boss_health_bar.set_coordinator(gnomo_coordinator)
 
 -- Props
 local Prop = require("Prop")
@@ -73,7 +78,7 @@ Prop.register("decoration", require("Prop/decoration"))
 -- Levels
 local level1 = require("levels/level1")
 local level2 = require("levels/level2")
-local tilemap_registry = require("Tilemaps/registry")
+local tilemap_registry = require("platforms/tileset_registry")
 
 local levels = {
     level1 = level1,
@@ -338,6 +343,7 @@ local function update(dt)
     profiler.start("enemies")
     Enemy.update(dt, player, camera)
     gnomo_def.update_axes(dt, player, level_info)
+    boss_health_bar.update(dt)
     profiler.stop("enemies")
 
     profiler.start("props")
@@ -411,6 +417,7 @@ local function draw()
 
     -- Draw screen-space UI (not affected by camera)
     hud.draw(player)
+    boss_health_bar.draw()
 
     -- Draw screen fade overlay (covers everything)
     screen_fade.draw()
@@ -545,6 +552,10 @@ cleanup_level = function()
 
     Effects.clear()
     Collectible.clear()
+
+    -- Reset boss encounter state
+    gnomo_coordinator.reset()
+    boss_health_bar.reset()
 
     -- Final cleanup ensures no orphaned shapes in spatial hash
     combat.clear()

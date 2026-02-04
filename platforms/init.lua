@@ -3,6 +3,7 @@ local config = require("config")
 local Player = require("player")
 local sprites = require("sprites")
 local tiled = require("platforms.tiled_loader")
+local triggers = require("triggers")
 local world = require("world")
 
 local platforms = {}
@@ -76,6 +77,9 @@ function platforms.load_level(level_data)
 			world.add_collider(owner)
 			table.insert(one_way_platform_colliders, owner)
 		end
+
+		-- Create trigger colliders for event trigger zones
+		triggers.create_colliders(result.triggers or {})
 
 		return result
 	end
@@ -313,8 +317,8 @@ end
 function platforms.draw(camera, margin)
 	margin = margin or 0
 	-- Draw all background layers in order (first layer = furthest back)
-	for _, bg in ipairs(background_layers) do
-		draw_background(camera, bg)
+	for i = 1, #background_layers do
+		draw_background(camera, background_layers[i])
 	end
 	platforms.walls.draw(camera, margin)
 	platforms.slopes.draw(camera, margin)
@@ -392,6 +396,9 @@ function platforms.clear()
 		world.remove_collider(owner)
 	end
 	one_way_platform_colliders = {}
+
+	-- Clear event trigger zones
+	triggers.clear()
 
 	platforms.walls.clear()
 	platforms.slopes.clear()

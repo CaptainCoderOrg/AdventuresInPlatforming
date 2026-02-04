@@ -138,6 +138,42 @@ widget:draw(player)        -- Renders bar with equipped secondaries
 - X position auto-calculated based on max(health, stamina, energy) meter width
 - Only renders when at least one secondary is equipped
 
+## Boss Health Bar (`ui/boss_health_bar.lua`)
+
+- Top-center HUD widget for boss encounters
+- Sprite-based frame with red health fill underneath
+- Intro animation: health bar fills from 0 to full over ~0.7s
+- Title/subtitle text fades in centered, then fades out after 2.5s
+- Smooth health drain animation (8 units/second) with faded "drain" portion
+
+```lua
+boss_health_bar.set_coordinator(coordinator)  -- Set active boss coordinator
+boss_health_bar.get_coordinator()             -- Get current coordinator
+boss_health_bar.update(dt)                    -- Update fade, health animation, text timer
+boss_health_bar.draw()                        -- Render health bar and text
+boss_health_bar.reset()                       -- Clear state on level cleanup
+```
+
+**Coordinator Interface:**
+The coordinator must implement:
+- `is_active()` - Returns true when encounter is in progress
+- `get_health_percent()` - Returns 0-1 for bar fill
+- `get_boss_name()` - Returns title string
+- `get_boss_subtitle()` - Returns subtitle string
+
+**Integration (main.lua):**
+```lua
+local boss_coordinator = require("Enemies/Bosses/{boss}/coordinator")
+boss_health_bar.set_coordinator(boss_coordinator)
+```
+
+**Visual Features:**
+- Orange/gold title with black outline (16pt scaled)
+- White subtitle with black outline (10pt scaled)
+- Health bar: full opacity for current health, 30% opacity for drain portion
+- Fade in/out at 3 alpha/second
+- Auto-triggers intro animation when coordinator.is_active() becomes true
+
 ## Status Panel (`ui/status_panel.lua`)
 
 - Stats display with level-up functionality for rest screen
@@ -188,6 +224,7 @@ grid:draw()
 - `ui/rest_screen.lua` - Circular viewport rest interface
 - `ui/hud.lua` - UI screen aggregator and input/draw coordinator
 - `ui/game_over.lua` - Game over screen
+- `ui/boss_health_bar.lua` - Boss encounter health bar with intro animation
 - `ui/audio_dialog.lua` - Audio settings dialog with volume sliders
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
 - `ui/control_icon.lua` - Shared control icon rendering utility for HUD widgets

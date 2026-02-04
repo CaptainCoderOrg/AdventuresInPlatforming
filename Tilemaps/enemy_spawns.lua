@@ -29,8 +29,8 @@ return {
       id = 0,
       properties = {
         ["key"] = "guardian",
-        ["offset_x"] = -1,
-        ["offset_y"] = 1,
+        ["offset_x"] = 0,
+        ["offset_y"] = 0,
         ["type"] = "enemy"
       },
       image = "enemies/guardian.png",
@@ -52,7 +52,7 @@ return {
       properties = {
         ["key"] = "ratto",
         ["offset_x"] = 0,
-        ["offset_y"] = 0.5,
+        ["offset_y"] = 0,
         ["type"] = "enemy"
       },
       image = "enemies/ratto.png",

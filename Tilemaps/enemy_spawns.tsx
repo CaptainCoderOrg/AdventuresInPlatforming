@@ -7,8 +7,8 @@
  <tile id="0">
   <properties>
    <property name="key" value="guardian"/>
-   <property name="offset_x" type="float" value="-1"/>
-   <property name="offset_y" type="float" value="1"/>
+   <property name="offset_x" type="float" value="0"/>
+   <property name="offset_y" type="float" value="0"/>
    <property name="type" value="enemy"/>
   </properties>
   <image source="enemies/guardian.png" width="48" height="32"/>
@@ -24,7 +24,7 @@
   <properties>
    <property name="key" value="ratto"/>
    <property name="offset_x" type="float" value="0"/>
-   <property name="offset_y" type="float" value="0.5"/>
+   <property name="offset_y" type="float" value="0"/>
    <property name="type" value="enemy"/>
   </properties>
   <image source="enemies/ratto.png" width="16" height="8"/>

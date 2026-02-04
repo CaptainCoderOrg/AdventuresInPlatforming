@@ -20,6 +20,8 @@ You create enemies for a Lua 2D platformer game built with Canvas framework.
 - `Enemies/flaming_skull.lua` - Flying enemy (230 lines)
 - `Enemies/blue_slime.lua` - Config-only variant using factory (46 lines)
 - `Enemies/slime_common.lua` - Factory pattern for enemy variants
+- `Enemies/gnomo_axe_thrower.lua` - Ranged enemy with projectile pool (~500 lines)
+- `Enemies/magician.lua` - Complex ranged enemy with teleport, particles (~1200 lines)
 - `Enemies/common.lua` - Shared utilities (ALWAYS use these)
 
 ## Required Definition Structure
@@ -112,16 +114,19 @@ common.create_death_state(death_animation)
 | Bouncing/Jumping | 1.5 | blue_slime | idle, prep_jump, launch, falling, landing, hit, knockback, death |
 | Flying | 0 | flaming_skull | float, hit, death |
 | Defensive | 1.5 | spike_slug | run, defend, death |
+| Ranged (projectile) | 1.5 | gnomo_axe_thrower | idle, throw, hit, run_away, death |
 | Variant (factory) | 1.5 | red_slime | Uses slime_common.create() with config |
 
 ## Workflow
 
-1. **Ask** for: name, movement type (ground/flying/bouncing), behavior, stats, sprite dimensions
+1. **Ask** for: name, movement type (ground/flying/bouncing/ranged), behavior, stats, sprite dimensions
 2. **Decide**: standalone enemy or variant of existing type (use factory if variant)
 3. **Read** a similar enemy file as template
 4. **Create** `Enemies/[name].lua` with proper structure (or config-only for factory)
 5. **Edit** `sprites/enemies.lua` to add sprite keys and load calls
-6. **Edit** `main.lua` to add `Enemy.register("[name]", require("Enemies/[name]"))`
+6. **Edit** `main.lua`:
+   - Add `Enemy.register("[name]", require("Enemies/[name]"))`
+   - If enemy has projectiles: add `update_*` and `draw_*` calls, add `clear_*` to cleanup_level
 7. **Explain** Tiled placement: object with `type="enemy"`, `key="[name]"`
 
 ## Sprite Registration (sprites/enemies.lua)
@@ -311,3 +316,169 @@ return slime_common.create(sprites.enemies.blue_slime, {
 ```
 
 This reduces variant files to ~46 lines of pure configuration.
+
+## Projectile Pool Pattern (for ranged enemies)
+
+Ranged enemies that fire projectiles need their own projectile pool. Key considerations:
+
+**CRITICAL: Projectiles must update/draw independently of enemy visibility.**
+If projectile update is called from enemy state updates, projectiles freeze when enemy is off-screen.
+
+**Pool structure with dirty flags:**
+```lua
+local EnemyProjectile = {}
+EnemyProjectile.all = {}
+EnemyProjectile.needs_update = true
+EnemyProjectile.needs_draw = false
+
+function EnemyProjectile.update_all(dt, player, level_info)
+    if not EnemyProjectile.needs_update then return end
+    EnemyProjectile.needs_update = false
+    EnemyProjectile.needs_draw = true
+    -- update logic
+end
+
+function EnemyProjectile.draw_all()
+    if not EnemyProjectile.needs_draw then return end
+    EnemyProjectile.needs_draw = false
+    EnemyProjectile.needs_update = true
+    -- draw logic
+end
+
+function EnemyProjectile.clear_all()
+    for i = 1, #EnemyProjectile.all do
+        local proj = EnemyProjectile.all[i]
+        world.remove_trigger_collider(proj)
+        combat.remove(proj)
+    end
+    EnemyProjectile.all = {}
+    EnemyProjectile.needs_update = true
+    EnemyProjectile.needs_draw = false
+end
+```
+
+**Export functions:**
+```lua
+return {
+    -- ... other fields
+    update_projectiles = EnemyProjectile.update_all,
+    draw_projectiles = EnemyProjectile.draw_all,
+    clear_projectiles = EnemyProjectile.clear_all,
+}
+```
+
+**main.lua integration:**
+```lua
+-- Register
+local my_enemy_def = require("Enemies/my_enemy")
+Enemy.register("my_enemy", my_enemy_def)
+
+-- Update (in update function, after Enemy.update)
+my_enemy_def.update_projectiles(dt, player, level_info)
+
+-- Draw (in draw function, after Enemy.draw)
+my_enemy_def.draw_projectiles()
+
+-- Cleanup (in cleanup_level)
+if my_enemy_def.clear_projectiles then my_enemy_def.clear_projectiles() end
+```
+
+**Performance tips:**
+- Hoist static tables to module scope (avoid per-call allocation)
+- Throttle expensive checks (wall collision every 0.05s instead of every frame)
+- Use swap-removal for destroyed projectiles
+
+## Custom on_hit Pattern (prevent animation reset)
+
+When an enemy should be hittable multiple times during stun without resetting the hit animation:
+
+```lua
+local function custom_on_hit(self, _source_type, source)
+    if self.invulnerable then return end
+
+    local damage = (source and source.damage) or 1
+    local is_crit = source and source.is_crit
+
+    damage = math.max(0, damage - self:get_armor())
+    if is_crit then damage = damage * 2 end
+
+    Effects.create_damage_text(self.x + self.box.x + self.box.w / 2, self.y, damage, is_crit)
+
+    if damage <= 0 then
+        audio.play_solid_sound()
+        return
+    end
+
+    self.health = self.health - damage
+    audio.play_squish_sound()
+
+    -- Knockback direction
+    if source and source.vx then
+        self.hit_direction = source.vx > 0 and 1 or -1
+    elseif source and source.x then
+        self.hit_direction = source.x < self.x and 1 or -1
+    else
+        self.hit_direction = -1
+    end
+
+    if self.health <= 0 then
+        self:die()
+    elseif self.state ~= my_enemy.states.hit then
+        -- Only transition if NOT already in hit state
+        self:set_state(my_enemy.states.hit)
+    end
+end
+
+return {
+    on_hit = custom_on_hit,
+    -- ...
+}
+```
+
+## Tactical Retreat Pattern
+
+For enemies that reposition after being hit (like gnomo's run_away state):
+
+```lua
+states.run_away = {
+    name = "run_away",
+    start = function(enemy, _)
+        common.set_animation(enemy, animations.RUN)
+        enemy.invulnerable = true
+        enemy.run_away_timer = RUN_AWAY_DURATION
+        combat.remove(enemy)  -- Become intangible
+
+        -- Find safe position
+        local target_x = find_safe_position(enemy)
+        if target_x then
+            enemy.target_x = target_x
+            enemy.run_direction = target_x < enemy.x and -1 or 1
+        else
+            -- Fallback: run away from player
+            enemy.target_x = nil
+            enemy.run_direction = enemy.target_player.x < enemy.x and 1 or -1
+        end
+        enemy.direction = enemy.run_direction
+        enemy.animation.flipped = enemy.direction
+    end,
+    update = function(enemy, dt)
+        common.apply_gravity(enemy, dt)
+        enemy.vx = enemy.run_direction * RUN_SPEED
+
+        if common.is_blocked(enemy) then
+            enemy.vx = 0
+        end
+
+        local reached = enemy.target_x and math.abs(enemy.x - enemy.target_x) < 0.5
+        enemy.run_away_timer = enemy.run_away_timer - dt
+
+        if reached or enemy.run_away_timer <= 0 then
+            enemy.vx = 0
+            enemy.invulnerable = false
+            combat.add(enemy)  -- Restore hitbox
+            enemy:set_state(states.idle)
+        end
+    end,
+    draw = common.draw,
+}
+```

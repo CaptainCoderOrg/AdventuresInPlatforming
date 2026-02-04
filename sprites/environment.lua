@@ -33,6 +33,7 @@ local environment = {
 	lever_switch = "lever_switch",
 	stairs_up = "stairs_up",
 	stairs_down = "stairs_down",
+	boss_door = "boss_door",
 	-- Tiling background images (240x160 native, scaled for display)
 	dungeon_bg = "dungeon_bg",
 	garden_bg = "garden_bg",
@@ -70,6 +71,7 @@ canvas.assets.load_image(environment.lever, "sprites/environment/lever.png")
 canvas.assets.load_image(environment.lever_switch, "sprites/environment/lever_switch.png")
 canvas.assets.load_image(environment.stairs_up, "sprites/environment/stairs_up.png")
 canvas.assets.load_image(environment.stairs_down, "sprites/environment/stairs_down.png")
+canvas.assets.load_image(environment.boss_door, "sprites/environment/boss_door.png")
 canvas.assets.load_image(environment.dungeon_bg, "sprites/environment/dungeon_bg.png")
 canvas.assets.load_image(environment.garden_bg, "sprites/environment/garden_bg.png")
 canvas.assets.load_image(environment.library_bg, "sprites/environment/library_bg.png")

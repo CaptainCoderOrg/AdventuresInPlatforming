@@ -50,8 +50,15 @@ function Camera.new(viewport_width, viewport_height, world_width, world_height)
 	self._active_bounds = nil
 	self._bounds_transition_time = 0
 	self._bounds_settling = false
+	self._on_bounds_changed = nil  -- Callback for bounds changes
 
 	return self
+end
+
+--- Set callback for when camera bounds change.
+---@param callback function|nil Function(old_bounds, new_bounds) called on bounds change
+function Camera:set_on_bounds_changed(callback)
+	self._on_bounds_changed = callback
 end
 
 ---@return number Camera X position in tiles
@@ -405,8 +412,12 @@ function Camera:update(tile_size, dt, lerp_factor)
 
 	-- Detect bounds transition
 	if self._active_bounds ~= active_bounds then
+		local old_bounds = self._active_bounds
 		self._active_bounds = active_bounds
 		self._bounds_transition_time = cfg.bounds_transition_duration
+		if self._on_bounds_changed then
+			self._on_bounds_changed(old_bounds, active_bounds)
+		end
 	end
 
 	-- Decay transition time

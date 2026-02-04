@@ -252,6 +252,7 @@ self.strength = 5               -- Base damage multiplier
 self.critical_chance = 0        -- Percent chance for critical hit
 self.recovery = 0               -- Bonus regeneration rate
 self.stat_upgrades = {}         -- Tracks upgrade counts per stat {Health=2, Stamina=1, ...}
+self.defeated_bosses = {}       -- Set of defeated boss ids (boss_id -> true), persisted on rest
 self.attack_state = {           -- Combo tracking
     count, next_anim_ix, remaining_time, queued, hit_enemies
 }

@@ -187,7 +187,7 @@ return {
     {
       id = 18,
       properties = {
-        ["state"] = "opened",
+        ["state"] = "open",
         ["type"] = "boss_door"
       },
       image = "../assets/sprites/environment/boss_door.png",

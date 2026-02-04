@@ -1,4 +1,5 @@
 local sprites = require('sprites')
+local sprites_items = require('sprites/items')
 local canvas = require('canvas')
 local Animation = require('Animation')
 local state = require('Effects/state')
@@ -55,6 +56,10 @@ local function particle_expired(particle)
 	return particle.elapsed >= particle.lifetime
 end
 
+local function flying_object_finished(obj)
+	return obj.phase == "complete"
+end
+
 --- Updates all active effects, removes finished ones
 ---@param dt number Delta time in seconds
 function Effects.update(dt)
@@ -104,6 +109,37 @@ function Effects.update(dt)
 		particle = next(state.collect_particles, particle)
 	end
 	remove_from_set(state.collect_particles, particle_expired)
+
+	-- Update flying objects (boss axe drop, etc.)
+	local obj = next(state.flying_objects)
+	while obj do
+		obj.elapsed = obj.elapsed + dt
+
+		if obj.phase == "flying" then
+			local t = obj.elapsed / obj.flight_duration
+			if t >= 1 then
+				obj.x = obj.target_x
+				obj.y = obj.target_y
+				obj.rotation = obj.end_rotation
+				obj.phase = "complete"
+				if obj.on_complete then
+					obj.on_complete()
+				end
+			else
+				-- Position: ease-in-out for smooth arc
+				local ease_t = t * t * (3 - 2 * t)
+				obj.x = obj.start_x + (obj.target_x - obj.start_x) * ease_t
+				obj.y = obj.start_y + (obj.target_y - obj.start_y) * ease_t
+
+				-- Rotation: ease-out through 3 full rotations over entire flight
+				local rot_ease = 1 - (1 - t) * (1 - t)  -- Ease-out
+				obj.rotation = obj.start_rotation + (obj.end_rotation - obj.start_rotation) * rot_ease
+			end
+		end
+
+		obj = next(state.flying_objects, obj)
+	end
+	remove_from_set(state.flying_objects, flying_object_finished)
 end
 
 --- Draws all active effects (hit effects, damage text, status text, particles)
@@ -134,10 +170,11 @@ function Effects.draw()
 		text = next(state.damage_texts, text)
 	end
 
-	canvas.set_font_size(6 * config.ui.SCALE)
-
 	text = next(state.status_texts)
 	while text do
+		local text_font_size = text.font_size or 6
+		canvas.set_font_size(text_font_size * config.ui.SCALE)
+
 		local alpha
 		if text.fade_delay and text.elapsed < text.fade_delay then
 			alpha = 1
@@ -154,7 +191,7 @@ function Effects.draw()
 		if text.typewriter_duration then
 			local char_count = math.floor((text.elapsed / text.typewriter_duration) * #text.message)
 			char_count = math.min(char_count, #text.message)
-			local font_height = 6 * config.ui.SCALE
+			local font_height = text_font_size * config.ui.SCALE
 			typewriter_opts.char_count = char_count
 			canvas.draw_label(px, py - font_height, text.cached_width, font_height, text.message, typewriter_opts)
 		else
@@ -186,6 +223,22 @@ function Effects.draw()
 	end
 
 	canvas.set_global_alpha(1)
+
+	-- Draw flying objects (spinning axe, etc.)
+	local obj = next(state.flying_objects)
+	while obj do
+		local px = obj.x * sprites.tile_size
+		local py = obj.y * sprites.tile_size
+		local size = obj.sprite_size * config.ui.SCALE
+
+		canvas.save()
+		canvas.translate(px + size / 2, py + size / 2)
+		canvas.rotate(obj.rotation)
+		canvas.draw_image(obj.sprite, -size / 2, -size / 2, size, size)
+		canvas.restore()
+
+		obj = next(state.flying_objects, obj)
+	end
 
 	canvas.restore()
 end
@@ -342,11 +395,13 @@ end
 ---@param y number Y position in tile coordinates
 ---@param message string The text to display
 ---@param color string|nil Hex color (defaults to white)
+---@param font_size number|nil Font size (defaults to 6)
 ---@return nil
-function Effects.create_text(x, y, message, color)
+function Effects.create_text(x, y, message, color, font_size)
+	font_size = font_size or 6
 	-- Cache text width at creation to avoid per-frame allocation
 	canvas.set_font_family("menu_font")
-	canvas.set_font_size(6 * config.ui.SCALE)
+	canvas.set_font_size(font_size * config.ui.SCALE)
 	local cached_width = canvas.get_text_width(message)
 
 	local text = {
@@ -358,6 +413,7 @@ function Effects.create_text(x, y, message, color)
 		lifetime = 1.0,   -- Duration in seconds
 		elapsed = 0,
 		cached_width = cached_width,
+		font_size = font_size,
 	}
 	state.status_texts[text] = true
 end
@@ -590,6 +646,41 @@ function Effects.create_collect_particles(x, y)
 	end
 end
 
+--- Factory: Creates a flying axe effect for boss defeat sequences.
+--- The axe flies from start to target position over 1.5 seconds.
+---@param start_x number Start X position in tile coordinates
+---@param start_y number Start Y position in tile coordinates
+---@param target_x number Target X position in tile coordinates
+---@param target_y number Target Y position in tile coordinates
+---@param on_complete function|nil Callback when axe arrives
+---@return table Flying object instance
+function Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)
+	-- Calculate rotation: 3 full rotations ending upright
+	local two_pi = math.pi * 2
+	local end_rotation = 3 * two_pi
+
+	local obj = {
+		x = start_x,
+		y = start_y,
+		start_x = start_x,
+		start_y = start_y,
+		target_x = target_x,
+		target_y = target_y,
+		rotation = 0,
+		start_rotation = 0,
+		end_rotation = end_rotation,
+		elapsed = 0,
+		phase = "flying",
+		sprite = sprites_items.axe_icon,
+		sprite_size = 16,
+		flight_duration = 1.5,    -- 1.5 seconds to reach target
+		on_complete = on_complete,
+	}
+
+	state.flying_objects[obj] = true
+	return obj
+end
+
 --- Clears all effects (for level reloading)
 ---@return nil
 function Effects.clear()
@@ -598,6 +689,7 @@ function Effects.clear()
 	for k in pairs(state.status_texts) do state.status_texts[k] = nil end
 	for k in pairs(state.fatigue_particles) do state.fatigue_particles[k] = nil end
 	for k in pairs(state.collect_particles) do state.collect_particles[k] = nil end
+	for k in pairs(state.flying_objects) do state.flying_objects[k] = nil end
 	state.active_xp_text = nil
 	state.active_gold_text = nil
 end

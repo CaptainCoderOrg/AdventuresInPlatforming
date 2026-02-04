@@ -190,6 +190,8 @@ Boss encounters use a coordinator pattern for multi-entity management with share
 Enemies/Bosses/gnomo/
 ├── init.lua         -- Enemy definition, on_start trigger, on_hit routing
 ├── coordinator.lua  -- Shared state, phase transitions, health pool
+├── cinematic.lua    -- Intro sequence (walk to position, door closes, "?" → "!!")
+├── victory.lua      -- Defeat sequence (flying axe, collectible spawn, door opens)
 ├── phase1.lua       -- Phase 1 state machine (4 gnomos)
 ├── phase2.lua       -- Phase 2 state machine (3 gnomos)
 ├── phase3.lua       -- Phase 3 state machine (2 gnomos)
@@ -200,6 +202,12 @@ Enemies/Bosses/gnomo/
 - Triggered via `triggers/registry.lua` mapping `"Enemies.Bosses.gnomo.on_start"`
 - Health bar via `ui/boss_health_bar.lua` reads `coordinator.get_health_percent()`
 - Reset coordinator on level cleanup to prevent stale state
+
+**Defeated Boss Tracking:**
+- `player.defeated_bosses` tracks which bosses have been defeated (boss_id → true)
+- Persisted via `SaveSlots.PLAYER_STAT_KEYS` when resting at campfire
+- Boss init checks `player.defeated_bosses[coordinator.boss_id]` to skip re-triggering
+- Death before saving loses defeat state (intentional Soulslike behavior)
 
 ### Spawn Data Properties
 
@@ -589,7 +597,7 @@ Visual feedback system for transient effects including animations, floating text
 
 ### Architecture
 
-- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`, `state.collect_particles`
+- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`, `state.collect_particles`, `state.flying_objects`
 - Factory methods for specific effects
 - Integrated into main loop via `Effects.update(dt)` and `Effects.draw()`
 - Text width cached at creation to avoid per-frame measurement
@@ -608,6 +616,9 @@ Visual feedback system for transient effects including animations, floating text
 **Particles:**
 - Fatigue particles - Sweat droplets when stamina exhausted
 - Collect particles - Gold/yellow burst when collecting unique items
+
+**Flying Objects:**
+- Flying axe - Boss defeat animation (fly up → pause → descend to target, spinning sprite, completion callback)
 
 ### Usage
 
@@ -630,6 +641,9 @@ Effects.create_xp_text(x, y, amount, player)  -- Accumulating XP pickup
 -- Particles
 Effects.create_fatigue_particle(x, y)         -- Sweat particle
 Effects.create_collect_particles(x, y)        -- Item collection burst
+
+-- Flying objects
+Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)  -- Boss defeat axe
 ```
 
 Effects are positioned in tile coordinates and converted to screen pixels for rendering.
@@ -659,6 +673,8 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/gnomo_axe_thrower.lua` - Gnomo axe thrower enemy (ranged attacker, manages GnomoAxe projectile pool)
 - `Enemies/Bosses/gnomo/init.lua` - Gnomo boss definition (on_start trigger, on_hit routing)
 - `Enemies/Bosses/gnomo/coordinator.lua` - Gnomo boss coordinator (shared health, phase transitions)
+- `Enemies/Bosses/gnomo/cinematic.lua` - Gnomo boss intro sequence (walk, door close, text effects)
+- `Enemies/Bosses/gnomo/victory.lua` - Gnomo boss defeat sequence (flying axe, collectible spawn, door open)
 - `Enemies/Bosses/gnomo/phase1-4.lua` - Phase-specific state machines
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)

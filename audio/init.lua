@@ -11,6 +11,7 @@ local audio = {}
 audio.title_screen = canvas.assets.load_music("title_screen", "music/title-screen.ogg")
 audio.level1 = canvas.assets.load_music("level1", "music/level-1.ogg")
 audio.rest = canvas.assets.load_music("rest", "music/rest.ogg")
+audio.gnomo_boss = canvas.assets.load_music("gnomo_boss", "music/gnomo-boss.ogg")
 
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
 audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")
@@ -23,6 +24,11 @@ audio.locked_door = canvas.assets.load_sound("locked_door", "sfx/environment/loc
 audio.unlock_door = canvas.assets.load_sound("unlock_door", "sfx/environment/unlock_door.ogg")
 audio.pick_up_key = canvas.assets.load_sound("pick_up_key", "sfx/environment/pick_up_key.ogg")
 audio.default_collect_sfx = canvas.assets.load_sound("default_collect_sfx", "sfx/environment/default_collect.ogg")
+audio.boss_door_close = canvas.assets.load_sound("boss_door_close", "sfx/environment/boss_door_close.ogg")
+audio.boss_door_open = canvas.assets.load_sound("boss_door_open", "sfx/environment/boss_door_open.ogg")
+audio.huh = canvas.assets.load_sound("huh", "sfx/huh.ogg")
+audio.exclamation = canvas.assets.load_sound("exclamation", "sfx/exclamation-point.ogg")
+audio.defeated_stamp = canvas.assets.load_sound("defeated_stamp", "sfx/defeated-stamp.ogg")
 
 local sfx_group = "sfx_group"
 local sfx_ch = { "sfx_1", "sfx_2", "sfx_3", "sfx_4" }
@@ -75,6 +81,16 @@ function audio.play_shuriken_throw_sound() pool.all.shuriken_throw:play() end
 --- Play enemy death sound (uses enemy-specific sound or default)
 ---@param key string|nil Enemy death sound key
 function audio.play_death_sound(key) death.play(key) end
+--- Play "huh?" reaction sound
+function audio.play_huh() audio.play_sfx(audio.huh) end
+--- Play "!!" exclamation sound
+function audio.play_exclamation() audio.play_sfx(audio.exclamation) end
+--- Play "Defeated!" stamp sound
+function audio.play_defeated_stamp() audio.play_sfx(audio.defeated_stamp) end
+--- Play boss door closing sound
+function audio.play_boss_door_close() audio.play_sfx(audio.boss_door_close) end
+--- Play boss door opening sound
+function audio.play_boss_door_open() audio.play_sfx(audio.boss_door_open) end
 
 --- Wall slide uses landing sound for consistent contact feedback
 audio.play_wall_slide_start = audio.play_landing_sound

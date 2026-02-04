@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 146,
+  nextobjectid = 151,
   properties = {
     ["id"] = "dungeon"
   },
@@ -3435,7 +3435,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 2896,
+          x = 2800,
           y = 192,
           width = 16,
           height = 16,
@@ -3449,7 +3449,7 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 2832,
+          x = 2768,
           y = 192,
           width = 16,
           height = 16,
@@ -3464,7 +3464,7 @@ return {
           type = "",
           shape = "rectangle",
           x = 2752,
-          y = 160,
+          y = 144,
           width = 18,
           height = 26,
           rotation = 0,
@@ -3541,6 +3541,36 @@ return {
           height = 16,
           rotation = 0,
           gid = 292,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 146,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 3072,
+          y = 192,
+          width = 32,
+          height = 32,
+          rotation = 0,
+          gid = 307,
+          visible = true,
+          properties = {
+            ["id"] = "gnomo_boss_door"
+          }
+        },
+        {
+          id = 150,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 2624,
+          y = 192,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 507,
           visible = true,
           properties = {}
         }
@@ -3659,8 +3689,8 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 3426.33,
-          y = 78.6667,
+          x = 3424,
+          y = 80,
           width = 16,
           height = 16,
           rotation = 0,
@@ -3772,6 +3802,51 @@ return {
           visible = true,
           properties = {
             ["id"] = "gnomo_boss_platform_3"
+          }
+        },
+        {
+          id = 147,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 3200,
+          y = 176,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "gnomo_boss_player_start_position"
+          }
+        },
+        {
+          id = 148,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 3272,
+          y = -16,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "gnomo_boss_axe_target"
+          }
+        },
+        {
+          id = 149,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 3270.67,
+          y = 126.667,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "gnomo_boss_axe_drop"
           }
         }
       }

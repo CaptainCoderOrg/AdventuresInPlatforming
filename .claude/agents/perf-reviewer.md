@@ -276,7 +276,9 @@ for i = 1, #t do t[i] = nil end
 
 ## Output Format
 
-Organize findings by severity:
+Organize findings by severity. For each issue, include:
+- **Effort**: Low (< 5 min) / Medium (5-30 min) / High (> 30 min)
+- **Risk**: Low (safe refactor) / Medium (behavior change possible) / High (complex changes, testing required)
 
 ```
 ## Critical Issues (Causes Frame Drops)
@@ -284,6 +286,8 @@ Organize findings by severity:
 ### file_path:line_number
 **Issue:** [Description]
 **Impact:** ~Xms per frame / GC spike risk
+**Effort:** [Low/Medium/High] - [brief reason]
+**Risk:** [Low/Medium/High] - [brief reason]
 **Current:**
 `[The problematic code]`
 **Fix:**
@@ -296,6 +300,8 @@ Organize findings by severity:
 ### file_path:line_number
 **Issue:** [Description]
 **Impact:** [Estimated cost or risk]
+**Effort:** [Low/Medium/High] - [brief reason]
+**Risk:** [Low/Medium/High] - [brief reason]
 **Current:**
 `[The problematic code]`
 **Fix:**
@@ -308,6 +314,8 @@ Organize findings by severity:
 ### file_path:line_number
 **Issue:** [Description]
 **Impact:** Minor / Micro-optimization
+**Effort:** [Low/Medium/High] - [brief reason]
+**Risk:** [Low/Medium/High] - [brief reason]
 **Suggestion:** [Brief fix description]
 
 ---
@@ -322,6 +330,9 @@ Organize findings by severity:
 
 **Frame Budget Assessment:** [Healthy / At Risk / Over Budget]
 [Brief summary of main performance concerns and priorities]
+
+**Quick Wins (Low Effort + Low Risk):**
+[List any issues that are both low effort and low risk to fix]
 ```
 
 ## Important Notes

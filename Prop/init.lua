@@ -95,6 +95,11 @@ function Prop.spawn(type_key, x, y, options)
 
     state.next_id = state.next_id + 1
 
+    -- Store Tiled id for lookup (if provided in spawn options)
+    if options.id then
+        prop.tiled_id = options.id
+    end
+
     if definition.on_spawn then
         definition.on_spawn(prop, definition, options)
     end
@@ -413,6 +418,20 @@ function Prop.get_all_of_type(type_key)
         prop = next(Prop.all, prop)
     end
     return result
+end
+
+--- Find a prop by its Tiled id property
+---@param id string The Tiled id to search for
+---@return table|nil prop The prop with matching id or nil
+function Prop.find_by_id(id)
+    local prop = next(Prop.all)
+    while prop do
+        if prop.tiled_id == id and not prop.marked_for_destruction then
+            return prop
+        end
+        prop = next(Prop.all, prop)
+    end
+    return nil
 end
 
 --- Get pressure plate lift amount for an entity.

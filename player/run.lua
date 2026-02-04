@@ -1,5 +1,4 @@
 local Animation = require('Animation')
-local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
 
@@ -7,14 +6,11 @@ local controls = require('controls')
 --- Transitions to idle when stopping, or dash/jump when triggered.
 local run = { name = "run" }
 
--- Half the run animation duration in seconds (ms / 1000 / 2) for two footsteps per cycle
-local FOOTSTEP_COOLDOWN_TIME = (common.animations.RUN.frame_count * common.animations.RUN.ms_per_frame) / 2000
-
 --- Called when entering run state. Resets animation and footstep timer.
 ---@param player table The player object
 function run.start(player)
 	player.animation = Animation.new(common.animations.RUN)
-	player.run_state.footstep_cooldown = 0
+	common.reset_footsteps(player)
 	player.run_state.is_turning = false
 	player.run_state.turn_remaining_frames = 0
 	player.run_state.previous_direction = player.direction
@@ -87,12 +83,7 @@ function run.update(player, dt)
 		common.handle_gravity(player, dt)
 	end
 
-	if player.run_state.footstep_cooldown <= 0 then
-		audio.play_footstep()
-		player.run_state.footstep_cooldown = FOOTSTEP_COOLDOWN_TIME
-	else
-		player.run_state.footstep_cooldown = player.run_state.footstep_cooldown - dt
-	end
+	common.update_footsteps(player, dt)
 end
 
 --- Renders the player in running animation.

@@ -3,8 +3,8 @@
 --- States come from phase modules controlled by the coordinator.
 local Animation = require('Animation')
 local sprites = require('sprites')
-local common = require('Enemies/common')
 local coordinator = require('Enemies/Bosses/gnomo/coordinator')
+local cinematic = require('Enemies/Bosses/gnomo/cinematic')
 local phase1 = require('Enemies/Bosses/gnomo/phase1')
 local Effects = require('Effects')
 local audio = require('audio')
@@ -111,16 +111,23 @@ gnomo_boss.definition = {
     max_fall_speed = 20,
     max_health = 10,  -- Higher than regular gnomo (5)
     damage = 1,
+    loot = { xp = 12 },
     states = phase1.states,  -- Initial states, coordinator switches these on phase change
     initial_state = "idle",
     on_spawn = on_spawn,
     on_hit = on_hit,
 }
 
---- Trigger handler: Starts the gnomo boss encounter.
+--- Trigger handler: Starts the gnomo boss encounter cinematic.
 --- Called when player enters the boss arena trigger zone.
-function gnomo_boss.on_start()
-    coordinator.start()
+--- Skipped if the boss has already been defeated.
+---@param player table The player instance
+function gnomo_boss.on_start(player)
+    -- Skip if boss already defeated
+    if player.defeated_bosses and player.defeated_bosses[coordinator.boss_id] then
+        return
+    end
+    cinematic.start(player)
 end
 
 return gnomo_boss

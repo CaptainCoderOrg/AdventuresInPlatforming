@@ -91,6 +91,33 @@ local function has_throw_energy(player)
 	return player.energy_used + energy_cost <= player.max_energy
 end
 
+-- Footstep timing: two footsteps per run animation cycle
+local FOOTSTEP_COOLDOWN_TIME = nil  -- Computed lazily after animations are defined
+
+--- Updates footstep sound timing. Call each frame while the player is walking/running.
+--- Plays footstep sounds synchronized with the run animation.
+---@param player table The player object
+---@param dt number Delta time in seconds
+function common.update_footsteps(player, dt)
+	-- Lazy init cooldown time (animations must be defined first)
+	if not FOOTSTEP_COOLDOWN_TIME then
+		FOOTSTEP_COOLDOWN_TIME = (common.animations.RUN.frame_count * common.animations.RUN.ms_per_frame) / 2000
+	end
+
+	if player.footstep_cooldown <= 0 then
+		audio.play_footstep()
+		player.footstep_cooldown = FOOTSTEP_COOLDOWN_TIME
+	else
+		player.footstep_cooldown = player.footstep_cooldown - dt
+	end
+end
+
+--- Resets the footstep cooldown timer. Call when entering a walking/running state.
+---@param player table The player object
+function common.reset_footsteps(player)
+	player.footstep_cooldown = 0
+end
+
 --- Checks for weapon swap input and cycles to the next equipped weapon.
 --- Shows weapon name text and plays swap sound on successful swap.
 ---@param player table The player object
@@ -331,11 +358,11 @@ local triggers_module
 
 --- Checks event trigger collisions and fires registered handlers.
 --- Call after movement to process trigger zone overlaps.
----@param player table The player object (unused, kept for interface consistency)
+---@param player table The player object
 ---@param cols table Collision results from world.move()
 function common.check_triggers(player, cols)
 	triggers_module = triggers_module or require("triggers")
-	triggers_module.check(cols)
+	triggers_module.check(cols, player)
 end
 
 --- Processes collision flags to update grounded state, wall contact, and coyote time.

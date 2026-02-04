@@ -31,7 +31,8 @@ end
 --- Checks trigger collisions and fires registered handlers.
 --- Call each frame after player movement with collision results.
 ---@param cols table Collision results from world.move() with triggers array
-function triggers.check(cols)
+---@param player table|nil Player instance to pass to handlers
+function triggers.check(cols, player)
     local trigger_list = cols.triggers
     if not trigger_list then return end
 
@@ -40,7 +41,7 @@ function triggers.check(cols)
         if owner.is_trigger and owner.on_trigger and not fired_triggers[owner] then
             local handler = registry[owner.on_trigger]
             if handler then
-                handler()
+                handler(player)
                 if not owner["repeat"] then
                     fired_triggers[owner] = true
                 end

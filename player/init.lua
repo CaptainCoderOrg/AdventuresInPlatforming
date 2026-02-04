@@ -35,6 +35,7 @@ local states = {
 	rest = require('player.rest'),
 	stairs_up = require('player.stairs_up'),
 	stairs_down = require('player.stairs_down'),
+	cinematic = require('player.cinematic'),
 }
 
 -- Expose states for direct reference
@@ -96,6 +97,7 @@ function Player.new()
 	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
 	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
 	self.active_secondary = nil -- item_id of currently active secondary (for ability swap)
+	self.defeated_bosses = {}   -- Set of defeated boss ids (boss_id -> true)
 
 	-- Position and velocity
 	self.x = 2
@@ -173,9 +175,11 @@ function Player.new()
 	-- Active projectile spec (synced by weapon_sync from active_secondary)
 	self.projectile = nil
 
+	-- Footstep sound timing (shared across states that play footsteps)
+	self.footstep_cooldown = 0
+
 	-- State-specific storage (for states with module-level variables)
 	self.run_state = {
-		footstep_cooldown = 0,
 		is_turning = false,
 		turn_remaining_frames = 0,
 		previous_direction = nil,

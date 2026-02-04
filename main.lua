@@ -50,7 +50,9 @@ Enemy.register("gnomo_axe_thrower", gnomo_def)
 local gnomo_boss_def = require("Enemies/Bosses/gnomo")
 Enemy.register("gnomo_boss", gnomo_boss_def.definition)
 local gnomo_coordinator = require("Enemies/Bosses/gnomo/coordinator")
+local gnomo_victory = require("Enemies/Bosses/gnomo/victory")
 boss_health_bar.set_coordinator(gnomo_coordinator)
+gnomo_coordinator.on_victory = gnomo_victory.start
 
 -- Props
 local Prop = require("Prop")
@@ -63,6 +65,7 @@ Prop.register("chest", require("Prop/chest"))
 Prop.register("spear_trap", require("Prop/spear_trap"))
 Prop.register("pressure_plate", require("Prop/pressure_plate"))
 Prop.register("locked_door", require("Prop/locked_door"))
+Prop.register("boss_door", require("Prop/boss_door"))
 Prop.register("unique_item", require("Prop/unique_item"))
 Prop.register("stackable_item", require("Prop/stackable_item"))
 Prop.register("lever", require("Prop/lever"))
@@ -344,6 +347,7 @@ local function update(dt)
     Enemy.update(dt, player, camera)
     gnomo_def.update_axes(dt, player, level_info)
     boss_health_bar.update(dt)
+    gnomo_victory.update(dt)
     profiler.stop("enemies")
 
     profiler.start("props")
@@ -474,11 +478,18 @@ init_level = function(level, spawn_override, player_data, options)
     end
 
     for _, enemy_data in ipairs(level_info.enemies) do
-        enemy_data.activation_bounds = find_activation_bounds(
-            enemy_data.x, enemy_data.y,
-            level_info.camera_bounds or {}
-        )
-        Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y, enemy_data)
+        -- Skip gnomo_boss enemies if boss already defeated
+        local is_defeated_boss = enemy_data.type == "gnomo_boss" and
+            player.defeated_bosses and
+            player.defeated_bosses[gnomo_coordinator.boss_id]
+
+        if not is_defeated_boss then
+            enemy_data.activation_bounds = find_activation_bounds(
+                enemy_data.x, enemy_data.y,
+                level_info.camera_bounds or {}
+            )
+            Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y, enemy_data)
+        end
     end
 
     Prop.clear()
@@ -507,6 +518,12 @@ init_level = function(level, spawn_override, player_data, options)
     if level_info.camera_bounds and #level_info.camera_bounds > 0 then
         camera:set_camera_bounds(level_info.camera_bounds)
     end
+    -- Play level music when leaving boss area after victory
+    camera:set_on_bounds_changed(function(_old_bounds, _new_bounds)
+        if gnomo_victory.is_complete() then
+            audio.play_music(audio.level1)
+        end
+    end)
     if options.camera_pos then
         -- Restore camera to saved position (skips lerping on next update)
         camera:restore_position(options.camera_pos.x, options.camera_pos.y)

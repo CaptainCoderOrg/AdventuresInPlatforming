@@ -114,7 +114,7 @@
  </tile>
  <tile id="18" x="0" y="0" width="32" height="32">
   <properties>
-   <property name="state" value="opened"/>
+   <property name="state" value="open"/>
    <property name="type" value="boss_door"/>
   </properties>
   <image source="../assets/sprites/environment/boss_door.png" width="224" height="96"/>

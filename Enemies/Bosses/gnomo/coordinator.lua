@@ -10,16 +10,22 @@ local coordinator = {
     total_health = 20,      -- Current shared health
     last_hit_gnomo = nil,   -- Most recently hit gnomo (dies at phase transition)
     on_victory = nil,       -- Callback when all dead
+    player = nil,           -- Player reference for defeated_bosses tracking
+    boss_id = "gnomo_brothers",  -- ID for defeated_bosses tracking
     boss_name = "Gnomo Brothers",
-    boss_subtitle = "Schemers with Axes",
+    boss_subtitle = "Axe Wielding Schemers",
 }
 
 -- Health thresholds for phase transitions (percentage of max health)
 -- Phase 1: 100%-75%, Phase 2: 75%-50%, Phase 3: 50%-25%, Phase 4: 25%-0%
-local PHASE_THRESHOLDS = { 0.75, 0.50, 0.25, 0 }
+-- Note: 0% is handled by trigger_victory(), not as a phase transition
+local PHASE_THRESHOLDS = { 0.75, 0.50, 0.25 }
 
 -- Phase modules (lazy loaded to avoid circular requires)
 local phase_modules = nil
+
+-- Audio (lazy loaded)
+local audio = nil
 
 --- Lazy load phase modules
 ---@return table Phase modules indexed by number
@@ -49,11 +55,17 @@ end
 
 --- Start the boss encounter.
 --- Transitions from dormant (phase 0) to phase 1.
-function coordinator.start()
+---@param player table|nil Player reference for defeated_bosses tracking
+function coordinator.start(player)
     if coordinator.active then return end
 
     coordinator.active = true
     coordinator.phase = 1
+    coordinator.player = player
+
+    -- Start boss music (fades in as title/subtitle appear)
+    audio = audio or require("audio")
+    audio.play_music(audio.gnomo_boss)
 
     -- Notify all gnomos to use phase 1 states
     local phase_module = coordinator.get_phase_module()
@@ -145,6 +157,14 @@ function coordinator.trigger_victory()
     coordinator.active = false
     coordinator.phase = 0
 
+    -- Find a gnomo to use as axe spawn point (before killing them)
+    local last_gnomo = nil
+    for _, gnomo in pairs(coordinator.enemies) do
+        if not gnomo.marked_for_destruction then
+            last_gnomo = gnomo
+        end
+    end
+
     -- Kill any remaining gnomos
     for _, gnomo in pairs(coordinator.enemies) do
         if not gnomo.marked_for_destruction then
@@ -152,8 +172,9 @@ function coordinator.trigger_victory()
         end
     end
 
+    -- Start victory sequence with last gnomo position
     if coordinator.on_victory then
-        coordinator.on_victory()
+        coordinator.on_victory(last_gnomo)
     end
 end
 
@@ -209,6 +230,7 @@ function coordinator.get_boss_subtitle()
 end
 
 --- Reset coordinator state for level cleanup.
+--- Note: on_victory callback is preserved (set once at startup, reused across resets)
 function coordinator.reset()
     coordinator.active = false
     coordinator.phase = 0
@@ -217,7 +239,16 @@ function coordinator.reset()
     coordinator.total_max_health = 20  -- Fixed shared health pool
     coordinator.total_health = 20
     coordinator.last_hit_gnomo = nil
-    coordinator.on_victory = nil
+    coordinator.player = nil
+    -- on_victory is intentionally NOT reset - it's set once at startup
+
+    -- Reset cinematic state (lazy load to avoid circular dependency)
+    local cinematic = require("Enemies/Bosses/gnomo/cinematic")
+    cinematic.reset()
+
+    -- Reset victory sequence state
+    local victory = require("Enemies/Bosses/gnomo/victory")
+    victory.reset()
 end
 
 return coordinator

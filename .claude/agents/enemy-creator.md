@@ -18,6 +18,8 @@ You create enemies for a Lua 2D platformer game built with Canvas framework.
 - `Enemies/worm.lua` - Simplest template (55 lines, patrol only)
 - `Enemies/ratto.lua` - Patrol/chase template (174 lines)
 - `Enemies/flaming_skull.lua` - Flying enemy (230 lines)
+- `Enemies/blue_slime.lua` - Config-only variant using factory (46 lines)
+- `Enemies/slime_common.lua` - Factory pattern for enemy variants
 - `Enemies/common.lua` - Shared utilities (ALWAYS use these)
 
 ## Required Definition Structure
@@ -34,7 +36,8 @@ enemy_name.animations = {
         ms_per_frame = 200,
         width = 16,
         height = 16,
-        loop = true  -- false for death
+        loop = true,        -- false for death
+        frame_offset = 0,   -- Optional: starting frame in spritesheet (for sub-animations)
     }),
 }
 
@@ -106,17 +109,20 @@ common.create_death_state(death_animation)
 |------|---------|---------|------------|
 | Ground patrol | 1.5 | worm | run, death |
 | Ground chase | 1.5 | ratto | idle, run, chase, hit, death |
+| Bouncing/Jumping | 1.5 | blue_slime | idle, prep_jump, launch, falling, landing, hit, knockback, death |
 | Flying | 0 | flaming_skull | float, hit, death |
 | Defensive | 1.5 | spike_slug | run, defend, death |
+| Variant (factory) | 1.5 | red_slime | Uses slime_common.create() with config |
 
 ## Workflow
 
-1. **Ask** for: name, movement type (ground/flying), behavior, stats, sprite dimensions
-2. **Read** a similar enemy file as template
-3. **Create** `Enemies/[name].lua` with proper structure
-4. **Edit** `sprites/enemies.lua` to add sprite keys and load calls
-5. **Edit** `main.lua` to add `Enemy.register("[name]", require("Enemies/[name]"))`
-6. **Explain** Tiled placement: object with `type="enemy"`, `key="[name]"`
+1. **Ask** for: name, movement type (ground/flying/bouncing), behavior, stats, sprite dimensions
+2. **Decide**: standalone enemy or variant of existing type (use factory if variant)
+3. **Read** a similar enemy file as template
+4. **Create** `Enemies/[name].lua` with proper structure (or config-only for factory)
+5. **Edit** `sprites/enemies.lua` to add sprite keys and load calls
+6. **Edit** `main.lua` to add `Enemy.register("[name]", require("Enemies/[name]"))`
+7. **Explain** Tiled placement: object with `type="enemy"`, `key="[name]"`
 
 ## Sprite Registration (sprites/enemies.lua)
 
@@ -198,3 +204,110 @@ return {
 }
 -- In update: directly set enemy.vx, enemy.vy
 ```
+
+**Hit → Knockback pattern (separated stun and knockback):**
+```lua
+states.hit = {
+    name = "hit",
+    start = function(enemy, _)
+        common.set_animation(enemy, animations.HIT)
+        enemy.vx = 0
+        enemy.vy = 0  -- Frozen during stun
+    end,
+    update = function(enemy, _dt)
+        if enemy.animation:is_finished() then
+            enemy:set_state(states.knockback)
+        end
+    end,
+    draw = common.draw,
+}
+
+states.knockback = {
+    name = "knockback",
+    start = function(enemy, _)
+        common.set_animation(enemy, animations.IDLE)
+        enemy.vx = (enemy.hit_direction or -1) * KNOCKBACK_SPEED
+        enemy.vy = -4  -- Small hop
+    end,
+    update = function(enemy, dt)
+        enemy.vx = common.apply_friction(enemy.vx, 0.9, dt)
+        if enemy.is_grounded and math.abs(enemy.vx) < 0.5 then
+            enemy:set_state(states.idle)
+        end
+    end,
+    draw = common.draw,
+}
+```
+
+**Walk off ledges (ignore edge detection):**
+```lua
+-- Default: reverse at walls AND edges
+if common.is_blocked(enemy) then
+    common.reverse_direction(enemy)
+end
+
+-- Walk off ledges: reverse at walls only
+local hit_wall = (enemy.direction == -1 and enemy.wall_left) or
+                 (enemy.direction == 1 and enemy.wall_right)
+if hit_wall then
+    common.reverse_direction(enemy)
+end
+```
+
+**Sub-animations from single spritesheet (using frame_offset):**
+```lua
+-- Single 15-frame jump spritesheet split into phases
+local jump_sprite = sprites.enemies.slime.jump
+
+animations = {
+    PREP_JUMP = Animation.create_definition(jump_sprite, 4, {
+        ms_per_frame = 100, loop = false, frame_offset = 0   -- Frames 0-3
+    }),
+    LAUNCH = Animation.create_definition(jump_sprite, 3, {
+        ms_per_frame = 100, loop = false, frame_offset = 4   -- Frames 4-6
+    }),
+    FALLING = Animation.create_definition(jump_sprite, 4, {
+        ms_per_frame = 100, loop = false, frame_offset = 7   -- Frames 7-10
+    }),
+}
+```
+
+## Factory Pattern (for enemy variants)
+
+When creating enemies that share behavior but differ in stats/tuning (e.g., blue_slime vs red_slime), use a factory:
+
+**Factory module (`Enemies/slime_common.lua`):**
+```lua
+function slime_common.create(sprite_set, cfg)
+    local animations = create_animations(sprite_set, cfg.prep_jump_ms)
+    local states = create_states(animations, cfg)
+    return {
+        box = { w = BOX_WIDTH, h = BOX_HEIGHT, x = BOX_X, y = BOX_Y },
+        max_health = cfg.max_health,
+        damage = cfg.contact_damage,
+        loot = { xp = cfg.loot_xp, gold = { min = cfg.loot_gold_min, max = cfg.loot_gold_max } },
+        states = states,
+        animations = animations,
+        initial_state = "idle",
+    }
+end
+```
+
+**Variant definition (`Enemies/blue_slime.lua`):**
+```lua
+local sprites = require('sprites')
+local slime_common = require('Enemies/slime_common')
+
+return slime_common.create(sprites.enemies.blue_slime, {
+    wander_speed = 1.5,
+    jump_horizontal_speed = 6,
+    player_near_range = 3,
+    near_move_toward_chance = 0.2,  -- 80% chance to move away
+    near_jump_chance = 0.7,
+    max_health = 2,
+    loot_xp = 2,
+    -- ... additional config
+})
+```
+
+This reduces variant files to ~46 lines of pure configuration.

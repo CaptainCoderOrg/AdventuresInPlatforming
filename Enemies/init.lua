@@ -76,7 +76,10 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	if spawn_data then
 		if spawn_data.speed then self.speed = spawn_data.speed end
 		if spawn_data.start_direction then self.start_direction = spawn_data.start_direction end
+		self.activation_bounds = spawn_data.activation_bounds
 	end
+	-- Enemies are active by default; only dormant if activation_bounds is set
+	self.activated = not self.activation_bounds
 
 	-- State machine
 	self.states = definition.states
@@ -226,9 +229,19 @@ function Enemy.update(dt, player, camera)
 			enemy.animation:play(dt)
 		end
 
-		if camera:is_visible(enemy, sprites.tile_size, UPDATE_CULL_MARGIN) then
+		-- Check activation (one-time, permanent once triggered)
+		if not enemy.activated then
+			local b = enemy.activation_bounds
+			if player.x >= b.x and player.x < b.x + b.width and
+			   player.y >= b.y and player.y < b.y + b.height then
+				enemy.activated = true
+			end
+		end
+
+		-- Only update activated enemies (existing visibility check still applies)
+		if enemy.activated and camera:is_visible(enemy, sprites.tile_size, UPDATE_CULL_MARGIN) then
 			update_active_enemy(enemy, dt, player)
-		else
+		elseif enemy.activated then
 			-- Keep combat hitbox synced for weapon queries (skip physics/state logic)
 			enemy._cached_y_offset = 0
 			combat.update(enemy, 0)

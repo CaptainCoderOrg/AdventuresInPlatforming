@@ -18,7 +18,7 @@ AI-controlled enemies with state machines and combat integration.
 - State machine identical to player (start, update, draw functions)
 - Registration system: `Enemy.register(key, definition)` in main.lua
 - Spawning from level data: `Enemy.spawn(type_key, x, y)`
-- Update culling: `Enemy.update(dt, player, camera)` skips physics/AI for enemies 8+ tiles off-screen (animations still run)
+- Update culling: `Enemy.update(dt, player, camera)` has two-stage culling: (1) dormant enemies with `activation_bounds` remain inactive until player enters their region, (2) activated enemies skip physics/AI when 8+ tiles off-screen (combat hitboxes still sync)
 - Draw culling: `Enemy.draw(camera)` skips rendering for enemies 2+ tiles off-screen
 
 ### Enemy Properties
@@ -33,6 +33,8 @@ enemy = {
     is_enemy = true,         -- Collision filter flag
     states,                  -- State machine definition
     state,                   -- Current active state
+    activation_bounds,       -- Optional camera_bounds region for dormant spawning
+    activated,               -- Whether enemy has been activated (true if no activation_bounds)
 }
 ```
 
@@ -148,6 +150,22 @@ Optional properties passed via `spawn_data` during enemy creation (set in Tiled 
 - `speed` - Custom movement speed (enemy-specific interpretation)
 - `start_direction` - Initial movement direction string (enemy-specific, e.g., NE/SE/SW/NW)
 - `health` - Override max_health for difficulty scaling or testing
+- `activation_bounds` - Camera bounds region for dormant spawning (auto-assigned from level camera_bounds containing spawn position)
+
+### Activation System
+
+Enemies can spawn dormant and activate when the player enters their camera_bounds region:
+
+- `activation_bounds` - The camera_bounds region containing the enemy's spawn position (auto-assigned during level load)
+- `activated` - Flag tracking whether the enemy has been activated (permanent once triggered)
+
+Enemies without `activation_bounds` are immediately active. Dormant enemies:
+- Do not run state machine updates
+- Do not process physics or AI
+- Do not sync combat hitboxes (unreachable by player)
+- Activate permanently when player enters their bounds region
+
+Note: Activation resets when loading from a campfire (enemies re-spawn dormant).
 
 ### Damage System
 

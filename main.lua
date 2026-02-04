@@ -445,7 +445,26 @@ init_level = function(level, spawn_override, player_data, options)
     end
     platforms.build()
 
+    --- Find which camera_bounds region contains a position
+    ---@param x number X position in tiles
+    ---@param y number Y position in tiles
+    ---@param camera_bounds table Array of bounds regions
+    ---@return table|nil bounds The containing region, or nil if none
+    local function find_activation_bounds(x, y, camera_bounds)
+        for _, bounds in ipairs(camera_bounds) do
+            if x >= bounds.x and x < bounds.x + bounds.width and
+               y >= bounds.y and y < bounds.y + bounds.height then
+                return bounds
+            end
+        end
+        return nil
+    end
+
     for _, enemy_data in ipairs(level_info.enemies) do
+        enemy_data.activation_bounds = find_activation_bounds(
+            enemy_data.x, enemy_data.y,
+            level_info.camera_bounds or {}
+        )
         Enemy.spawn(enemy_data.type, enemy_data.x, enemy_data.y, enemy_data)
     end
 

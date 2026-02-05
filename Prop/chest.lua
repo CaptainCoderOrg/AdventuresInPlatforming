@@ -167,14 +167,10 @@ return {
                     prop.gold_amount = 0  -- Prevent re-spawning
                 end
 
-                -- Give item to player
+                -- Give item to player via pickup dialogue (shows name and description)
                 if prop.item_id and prop.last_player then
                     local item_def = unique_item_registry[prop.item_id]
-                    if item_def and item_def.type == "no_equip" then
-                        -- Non-equippable items (keys) go directly to inventory
-                        table.insert(prop.last_player.unique_items, prop.item_id)
-                    elseif item_def then
-                        -- Equippable items show the pickup dialogue
+                    if item_def then
                         pickup_dialogue.show(prop.item_id, prop.last_player)
                     end
                     prop.item_id = nil  -- Prevent re-giving on load

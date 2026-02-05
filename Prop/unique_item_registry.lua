@@ -148,4 +148,31 @@ return {
         type = "secondary",
         static_sprite = sprites.items.shuriken_icon,
     },
+    crystal_ball = {
+        name = "Crystal Ball",
+        description = "A mysterious orb that radiates magical energy.",
+        type = "no_equip",
+        static_sprite = sprites.items.crystal_ball,
+        collect_sfx = audio.pick_up_key,
+    },
+    adept_key = {
+        name = "Adept's Key",
+        description = "A key given by the adept. Opens the chest behind him.",
+        type = "no_equip",
+        static_sprite = sprites.items.adept_key,
+        collect_sfx = audio.pick_up_key,
+    },
+    adept_apology = {
+        name = "Adept's Apology",
+        description = "A letter containing an apology to the gnomos.",
+        type = "no_equip",
+        static_sprite = sprites.items.adept_apology,
+        collect_sfx = audio.pick_up_key,
+    },
+    orb_of_teleportation = {
+        name = "Orb of Teleportation",
+        description = "A crystal ball imbued with teleportation magic that allows traveling to previously visited campfires.",
+        type = "accessory",
+        static_sprite = sprites.items.orb_of_teleportation,
+    },
 }

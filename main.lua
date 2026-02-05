@@ -616,7 +616,7 @@ local function continue_from_checkpoint(options)
         Playtime.set(data.playtime or 0)
     else
         -- No save data: respawn at adepts_house start location
-        init_level(adepts_house, nil, nil, options)
+        init_level(levels.adepts_house, nil, nil, options)
         Playtime.reset()
     end
 
@@ -638,7 +638,7 @@ local function start_new_game()
     Playtime.reset()
     Prop.clear_persistent_states()
     cleanup_level()
-    init_level(adepts_house)
+    init_level(levels.adepts_house)
     audio.play_music(audio.level1)
 end
 

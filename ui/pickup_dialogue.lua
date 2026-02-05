@@ -44,6 +44,7 @@ local focused_index = 1  -- 1 = Equip, 2 = Add to Inventory
 local current_item_id = nil
 local current_player = nil
 local on_complete_callback = nil
+local is_no_equip = false  -- True for no_equip items (single button mode)
 
 -- Input blocking (prevents jump on dialogue close)
 local block_input_frames = 0
@@ -65,9 +66,11 @@ local dialog_box = simple_dialogue.create({
 local button_metrics_cached = false
 local equip_metrics = nil
 local inventory_metrics = nil
+local ok_metrics = nil
 local button_total_width = nil
 local button_start_x = nil
 local inventory_start_x = nil
+local ok_start_x = nil
 
 -- Reusable tables for word wrapping (avoids per-frame allocation)
 local words_cache = {}
@@ -212,9 +215,11 @@ local function ensure_button_metrics()
     canvas.set_font_size(7)
     equip_metrics = canvas.get_text_metrics("Equip")
     inventory_metrics = canvas.get_text_metrics("Add to Inventory")
+    ok_metrics = canvas.get_text_metrics("OK")
     button_total_width = equip_metrics.width + BUTTON_SPACING + inventory_metrics.width
     button_start_x = (DIALOG_WIDTH - button_total_width) / 2
     inventory_start_x = button_start_x + equip_metrics.width + BUTTON_SPACING
+    ok_start_x = (DIALOG_WIDTH - ok_metrics.width) / 2
     button_metrics_cached = true
 end
 
@@ -308,6 +313,10 @@ function pickup_dialogue.show(item_id, player, on_complete)
     mouse_active = true
     state = STATE.FADING_IN
     fade_progress = 0
+
+    -- Check if this is a no_equip item (single button mode)
+    local item_def = unique_item_registry[item_id]
+    is_no_equip = item_def and item_def.type == "no_equip"
 end
 
 --- Check if the dialogue is active (not hidden)
@@ -342,6 +351,14 @@ end
 --- Process input for the dialogue
 function pickup_dialogue.input()
     if state ~= STATE.OPEN then return end
+
+    -- For no_equip items, only confirm is needed
+    if is_no_equip then
+        if controls.menu_confirm_pressed() then
+            close_dialogue(false)
+        end
+        return
+    end
 
     -- Left/Right to switch selection
     if controls.menu_left_pressed() then
@@ -418,21 +435,31 @@ function pickup_dialogue.update(dt)
             ensure_button_metrics()
             local button_height = 10
 
-            -- Check Equip button hover
-            if local_mx >= button_start_x and local_mx <= button_start_x + equip_metrics.width and
-               local_my >= BUTTON_Y and local_my <= BUTTON_Y + button_height then
-                focused_index = 1
-                if canvas.is_mouse_pressed(0) then
-                    close_dialogue(true)
+            if is_no_equip then
+                -- Check OK button hover (single centered button)
+                if local_mx >= ok_start_x and local_mx <= ok_start_x + ok_metrics.width and
+                   local_my >= BUTTON_Y and local_my <= BUTTON_Y + button_height then
+                    if canvas.is_mouse_pressed(0) then
+                        close_dialogue(false)
+                    end
                 end
-            end
+            else
+                -- Check Equip button hover
+                if local_mx >= button_start_x and local_mx <= button_start_x + equip_metrics.width and
+                   local_my >= BUTTON_Y and local_my <= BUTTON_Y + button_height then
+                    focused_index = 1
+                    if canvas.is_mouse_pressed(0) then
+                        close_dialogue(true)
+                    end
+                end
 
-            -- Check Inventory button hover
-            if local_mx >= inventory_start_x and local_mx <= inventory_start_x + inventory_metrics.width and
-               local_my >= BUTTON_Y and local_my <= BUTTON_Y + button_height then
-                focused_index = 2
-                if canvas.is_mouse_pressed(0) then
-                    close_dialogue(false)
+                -- Check Inventory button hover
+                if local_mx >= inventory_start_x and local_mx <= inventory_start_x + inventory_metrics.width and
+                   local_my >= BUTTON_Y and local_my <= BUTTON_Y + button_height then
+                    focused_index = 2
+                    if canvas.is_mouse_pressed(0) then
+                        close_dialogue(false)
+                    end
                 end
             end
         end
@@ -533,17 +560,22 @@ function pickup_dialogue.draw()
     canvas.set_text_baseline("top")
     ensure_button_metrics()
 
-    -- Draw Equip button
-    local equip_color = focused_index == 1 and "#FFFF00" or "#FFFFFF"
-    utils.draw_outlined_text("Equip", button_start_x, BUTTON_Y, equip_color)
+    if is_no_equip then
+        -- Single centered OK button for no_equip items
+        utils.draw_outlined_text("OK", ok_start_x, BUTTON_Y, "#FFFF00")
+    else
+        -- Draw Equip button
+        local equip_color = focused_index == 1 and "#FFFF00" or "#FFFFFF"
+        utils.draw_outlined_text("Equip", button_start_x, BUTTON_Y, equip_color)
 
-    -- Draw separator
-    canvas.set_color("#888888")
-    canvas.draw_text(button_start_x + equip_metrics.width + 4, BUTTON_Y, "|")
+        -- Draw separator
+        canvas.set_color("#888888")
+        canvas.draw_text(button_start_x + equip_metrics.width + 4, BUTTON_Y, "|")
 
-    -- Draw Inventory button
-    local inventory_color = focused_index == 2 and "#FFFF00" or "#FFFFFF"
-    utils.draw_outlined_text("Add to Inventory", inventory_start_x, BUTTON_Y, inventory_color)
+        -- Draw Inventory button
+        local inventory_color = focused_index == 2 and "#FFFF00" or "#FFFFFF"
+        utils.draw_outlined_text("Add to Inventory", inventory_start_x, BUTTON_Y, inventory_color)
+    end
 
     canvas.restore()
     canvas.set_global_alpha(1)

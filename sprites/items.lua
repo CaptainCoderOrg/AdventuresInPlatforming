@@ -18,6 +18,10 @@ local asset_paths = {
     item_brass_key = "sprites/items/brass-key.png",
     item_old_key = "sprites/items/old-key.png",
     item_dungeon_key = "sprites/items/dungeon-key.png",
+    item_crystal_ball = "sprites/items/crystal_ball.png",
+    item_adept_key = "sprites/items/adept_key.png",
+    item_adept_apology = "sprites/items/adept_apology.png",
+    item_orb_of_teleportation = "sprites/items/orb_of_teleportation.png",
 }
 
 for key, path in pairs(asset_paths) do
@@ -41,4 +45,8 @@ return {
     brass_key = "item_brass_key",
     old_key = "item_old_key",
     dungeon_key = "item_dungeon_key",
+    crystal_ball = "item_crystal_ball",
+    adept_key = "item_adept_key",
+    adept_apology = "item_adept_apology",
+    orb_of_teleportation = "item_orb_of_teleportation",
 }

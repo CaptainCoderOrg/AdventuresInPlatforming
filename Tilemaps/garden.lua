@@ -1013,7 +1013,10 @@ return {
           rotation = 0,
           gid = 1332,
           visible = true,
-          properties = {}
+          properties = {
+            ["gold"] = 0,
+            ["item_id"] = "crystal_ball"
+          }
         },
         {
           id = 11,

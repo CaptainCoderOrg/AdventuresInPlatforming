@@ -64,7 +64,7 @@ function manager.evaluate_condition(condition, player)
         local item_id = condition:sub(10)
         if player and player.unique_items then
             for _, item in ipairs(player.unique_items) do
-                if item.id == item_id then
+                if item == item_id then
                     return true
                 end
             end
@@ -81,18 +81,41 @@ function manager.evaluate_condition(condition, player)
         return false
     end
 
+    -- Check for "defeated_boss_" prefix
+    if condition:sub(1, 14) == "defeated_boss_" then
+        local boss_id = condition:sub(15)
+        if player and player.defeated_bosses then
+            return player.defeated_bosses[boss_id] == true
+        end
+        return false
+    end
+
     -- Default: check as dialogue flag
     return manager.get_flag(condition)
 end
 
 --- Filter options based on conditions
+--- Supports multiple conditions: condition, condition2, condition3, etc. (all must pass)
 ---@param options table Array of dialogue options
 ---@param player table Player instance
 ---@return table Filtered options that pass their conditions
 function manager.filter_options(options, player)
     local filtered = {}
     for _, option in ipairs(options) do
-        if manager.evaluate_condition(option.condition, player) then
+        local passes = true
+        -- Check primary condition
+        if not manager.evaluate_condition(option.condition, player) then
+            passes = false
+        end
+        -- Check additional conditions (condition2, condition3, etc.)
+        local i = 2
+        while passes and option["condition" .. i] do
+            if not manager.evaluate_condition(option["condition" .. i], player) then
+                passes = false
+            end
+            i = i + 1
+        end
+        if passes then
             table.insert(filtered, option)
         end
     end
@@ -123,8 +146,25 @@ function manager.execute_actions(actions, player)
             if amount and player then
                 player.gold = math.max(0, (player.gold or 0) - amount)
             end
+        elseif action:sub(1, 10) == "give_item_" then
+            local item_id = action:sub(11)
+            if player and player.unique_items then
+                table.insert(player.unique_items, item_id)
+            end
+        elseif action:sub(1, 10) == "take_item_" then
+            local item_id = action:sub(11)
+            if player and player.unique_items then
+                for i, item in ipairs(player.unique_items) do
+                    if item == item_id then
+                        table.remove(player.unique_items, i)
+                        if player.equipped_items then
+                            player.equipped_items[item_id] = nil
+                        end
+                        break
+                    end
+                end
+            end
         end
-        -- Note: give_item would require integration with inventory system
     end
 end
 

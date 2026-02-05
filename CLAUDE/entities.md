@@ -190,8 +190,10 @@ Boss encounters use a coordinator pattern for multi-entity management with share
 Enemies/Bosses/gnomo/
 ├── init.lua         -- Enemy definition, on_start trigger, on_hit routing
 ├── coordinator.lua  -- Shared state, phase transitions, health pool
+├── common.lua       -- Shared utilities, state factories, constants
 ├── cinematic.lua    -- Intro sequence (walk to position, door closes, "?" → "!!")
 ├── victory.lua      -- Defeat sequence (flying axe, collectible spawn, door opens)
+├── phase0.lua       -- Phase 0 state machine (intro attack, jump to holes)
 ├── phase1.lua       -- Phase 1 state machine (4 gnomos)
 ├── phase2.lua       -- Phase 2 state machine (3 gnomos)
 ├── phase3.lua       -- Phase 3 state machine (2 gnomos)
@@ -673,9 +675,10 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/gnomo_axe_thrower.lua` - Gnomo axe thrower enemy (ranged attacker, manages GnomoAxe projectile pool)
 - `Enemies/Bosses/gnomo/init.lua` - Gnomo boss definition (on_start trigger, on_hit routing)
 - `Enemies/Bosses/gnomo/coordinator.lua` - Gnomo boss coordinator (shared health, phase transitions)
+- `Enemies/Bosses/gnomo/common.lua` - Gnomo boss shared utilities (state factories, intangibility, lerp)
 - `Enemies/Bosses/gnomo/cinematic.lua` - Gnomo boss intro sequence (walk, door close, text effects)
 - `Enemies/Bosses/gnomo/victory.lua` - Gnomo boss defeat sequence (flying axe, collectible spawn, door open)
-- `Enemies/Bosses/gnomo/phase1-4.lua` - Phase-specific state machines
+- `Enemies/Bosses/gnomo/phase0-4.lua` - Phase-specific state machines
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

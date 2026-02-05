@@ -51,13 +51,20 @@ gnomo.animations = {
 
 --- Check if a collision shape is solid world geometry
 ---@param shape table The collision shape to check
+---@param ignore_bridges boolean|nil If true, skip one-way platforms/bridges
 ---@return boolean True if solid geometry
-local function is_solid_geometry(shape)
+local function is_solid_geometry(shape, ignore_bridges)
 	if shape.is_probe or shape.is_trigger or shape.is_hitbox then
 		return false
 	end
 	local owner = shape.owner
-	return not (owner and (owner.is_enemy or owner.is_player))
+	if owner and (owner.is_enemy or owner.is_player) then
+		return false
+	end
+	if ignore_bridges and owner and owner.is_bridge then
+		return false
+	end
+	return true
 end
 
 --- Check if there's a clear path from enemy to target position
@@ -163,6 +170,39 @@ function GnomoAxe.spawn(x, y, direction)
 	return axe
 end
 
+--- Spawn a gnomo axe with explicit velocity components (used by boss phase 1)
+--- These axes travel in a straight line (no gravity) and ignore one-way platforms.
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param vx number Horizontal velocity in tiles/sec
+---@param vy number Vertical velocity in tiles/sec
+---@return table axe The created GnomoAxe instance
+function GnomoAxe.spawn_with_velocity(x, y, vx, vy)
+	local direction = vx >= 0 and 1 or -1
+	axe_anim_opts.flipped = direction
+
+	local axe = {
+		x = x,
+		y = y,
+		vx = vx,
+		vy = vy,
+		direction = direction,
+		box = AXE_BOX,
+		animation = Animation.new(gnomo.animations.AXE, axe_anim_opts),
+		marked_for_destruction = false,
+		debug_color = "#FFFF00",  -- Yellow for projectile
+		wall_check_timer = 0,
+		no_gravity = true,        -- Straight line trajectory
+		ignore_bridges = true,    -- Pass through one-way platforms
+	}
+
+	world.add_trigger_collider(axe)
+	combat.add(axe)
+
+	GnomoAxe.all[#GnomoAxe.all + 1] = axe
+	return axe
+end
+
 --- Check if axe hit a wall
 ---@param axe table GnomoAxe instance
 ---@return boolean True if hit solid geometry
@@ -176,7 +216,7 @@ local function axe_hit_wall(axe)
 	shape:moveTo(px + axe.box.w * ts / 2, py + axe.box.h * ts / 2)
 
 	for other, _ in pairs(world.hc:collisions(shape)) do
-		if is_solid_geometry(other) then
+		if is_solid_geometry(other, axe.ignore_bridges) then
 			return true
 		end
 	end
@@ -201,8 +241,10 @@ function GnomoAxe.update_all(dt, player, level_info)
 			GnomoAxe.all[i] = GnomoAxe.all[#GnomoAxe.all]
 			GnomoAxe.all[#GnomoAxe.all] = nil
 		else
-			-- Apply gravity
-			axe.vy = math.min(AXE_MAX_FALL_SPEED, axe.vy + AXE_GRAVITY * dt)
+			-- Apply gravity (unless no_gravity flag is set)
+			if not axe.no_gravity then
+				axe.vy = math.min(AXE_MAX_FALL_SPEED, axe.vy + AXE_GRAVITY * dt)
+			end
 
 			-- Move
 			axe.x = axe.x + axe.vx * dt
@@ -479,4 +521,5 @@ return {
 	update_axes = GnomoAxe.update_all,
 	draw_axes = GnomoAxe.draw_all,
 	clear_axes = GnomoAxe.clear_all,
+	spawn_axe_with_velocity = GnomoAxe.spawn_with_velocity,
 }

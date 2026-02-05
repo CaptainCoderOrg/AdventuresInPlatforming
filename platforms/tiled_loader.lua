@@ -402,7 +402,12 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 		-- Register named spawn point if present (used for map transitions)
 		local spawn_id = merged_props.id
 		if spawn_id then
-			spawn_points[spawn_id] = { x = tx, y = ty }
+			spawn_points[spawn_id] = {
+				x = tx,
+				y = ty,
+				width = obj.width and obj.width / tile_size or nil,
+				height = obj.height and obj.height / tile_size or nil,
+			}
 		end
 
 		-- Process object based on type

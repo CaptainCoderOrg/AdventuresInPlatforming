@@ -5,7 +5,8 @@ local Animation = require('Animation')
 local sprites = require('sprites')
 local coordinator = require('Enemies/Bosses/gnomo/coordinator')
 local cinematic = require('Enemies/Bosses/gnomo/cinematic')
-local phase1 = require('Enemies/Bosses/gnomo/phase1')
+local common = require('Enemies/Bosses/gnomo/common')
+local phase0 = require('Enemies/Bosses/gnomo/phase0')
 local Effects = require('Effects')
 local audio = require('audio')
 
@@ -51,6 +52,11 @@ local function on_spawn(enemy, spawn_data)
 
     -- Register with coordinator (encounter starts on first hit)
     coordinator.register(enemy, enemy.color)
+
+    -- Claim initial platform based on spawn position
+    local platform_index = common.find_closest_platform(enemy.x, enemy.y)
+    coordinator.claim_platform(platform_index, enemy.color)
+    enemy._platform_index = platform_index
 end
 
 --- Custom on_hit handler that routes damage to shared health pool.
@@ -97,10 +103,12 @@ local function on_hit(self, _source_type, source)
     -- This may trigger die() which sets death state
     coordinator.report_damage(damage, self)
 
-    -- Transition to hit state only if not already dying
+    -- Transition to hit state only if not already dying or in hit state
     -- (report_damage may have triggered death via phase transition)
     if self.states.hit and not self.marked_for_destruction and self.shape then
-        self:set_state(self.states.hit)
+        if self.state ~= self.states.hit then
+            self:set_state(self.states.hit)
+        end
     end
 end
 
@@ -112,7 +120,7 @@ gnomo_boss.definition = {
     max_health = 10,  -- Higher than regular gnomo (5)
     damage = 1,
     loot = { xp = 12 },
-    states = phase1.states,  -- Initial states, coordinator switches these on phase change
+    states = phase0.states,  -- Initial states, coordinator switches these on phase change
     initial_state = "idle",
     on_spawn = on_spawn,
     on_hit = on_hit,

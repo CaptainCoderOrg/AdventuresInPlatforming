@@ -8,6 +8,7 @@ local common = {}
 -- Lazy-loaded to avoid circular dependency (Prop/init.lua requires this module)
 local Prop = nil
 local Effects = nil
+local unique_item_registry = nil
 
 --- Standard animation draw for props
 ---@param prop table Prop instance with animation
@@ -114,6 +115,16 @@ function common.consume_stackable_item(player, item_id, count)
     end
 
     return true
+end
+
+--- Get item definition from either unique or stackable registry
+---@param item_id string Item identifier
+---@return table|nil Item definition
+function common.get_item_def(item_id)
+    unique_item_registry = unique_item_registry or require("Prop.unique_item_registry")
+    local item_def = unique_item_registry[item_id]
+    if item_def then return item_def end
+    return stackable_item_registry[item_id]
 end
 
 --- Create a shallow copy of an array (for saving without reference issues)

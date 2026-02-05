@@ -4,6 +4,7 @@ local state = require('world_state')
 
 local world = {}
 
+-- 4 iterations handles multi-body collision cascades without infinite loops
 local MAX_ITERATIONS = 4
 local GROUND_PROBE_DISTANCE = 4 -- Pixels to probe downward for ground adhesion
 
@@ -131,21 +132,31 @@ world.hitbox_map = state.hitbox_map
 world.projectile_collider_map = state.projectile_collider_map
 world.shield_map = state.shield_map
 
---- Adds a rectangular collider for an object.
----@param obj table Object with x, y, and box properties
+--- Adds a collider for an object using a custom box.
+--- Useful when interaction hitbox differs from collision hitbox.
+---@param obj table Object with x, y properties
+---@param box table Box with x, y, w, h in tiles (defaults to obj.box)
 ---@return table The created HC shape
-function world.add_collider(obj)
+function world.add_collider_box(obj, box)
+	box = box or obj.box
 	local ts = sprites.tile_size
-	local px = (obj.x + obj.box.x) * ts
-	local py = (obj.y + obj.box.y) * ts
-	local pw = obj.box.w * ts
-	local ph = obj.box.h * ts
+	local px = (obj.x + box.x) * ts
+	local py = (obj.y + box.y) * ts
+	local pw = box.w * ts
+	local ph = box.h * ts
 
 	local shape = world.hc:rectangle(px, py, pw, ph)
 	shape.is_trigger = false
 	shape.owner = obj
 	world.shape_map[obj] = shape
 	return shape
+end
+
+--- Adds a rectangular collider for an object using obj.box.
+---@param obj table Object with x, y, and box properties
+---@return table The created HC shape
+function world.add_collider(obj)
+	return world.add_collider_box(obj, obj.box)
 end
 
 --- Adds a circle collider for an object.
@@ -276,14 +287,12 @@ function world.update_projectile_collider(owner, x, y, w, h)
 	local old_w, old_h = x2 - x1, y2 - y1
 
 	if math.abs(old_w - pw) > 0.001 or math.abs(old_h - ph) > 0.001 then
-		-- Size changed: must recreate shape
 		world.hc:remove(shape)
 		local new_shape = world.hc:rectangle(px, py, pw, ph)
 		new_shape.is_projectile_collider = true
 		new_shape.owner = owner
 		world.projectile_collider_map[owner] = new_shape
 	else
-		-- Position only: move existing shape (much cheaper)
 		shape:moveTo(px + pw / 2, py + ph / 2)
 	end
 end
@@ -589,7 +598,6 @@ function world.move_trigger(obj)
 		::continue::
 	end
 
-	-- Priority: projectile_collider > enemy > solid
 	local hit = projectile_collider_hit or enemy_hit or solid_hit
 	if hit then
 		shape:move(hit.sep.x, hit.sep.y)

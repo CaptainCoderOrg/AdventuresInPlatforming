@@ -99,6 +99,40 @@ One-way platforms that can be jumped through from below or dropped through from 
 
 **Collision Behavior:** Bridges and one-way platforms only collide in the Y direction. Players and enemies pass through them horizontally, allowing seamless movement from the sides.
 
+## World Collider Types
+
+The world module manages several collider types beyond basic physics shapes:
+
+### Shield Colliders
+Solid barriers for the player's shield that block enemy movement:
+```lua
+world.add_shield(player, shield_box)    -- Create shield collider
+world.update_shield(player, shield_box) -- Update position/direction
+world.remove_shield(player)             -- Remove shield
+```
+- Idempotent: `add_shield` removes existing shield before creating new one
+- Position based on player direction (front edge)
+- Enemies collide with shields; players pass through their own
+
+### Combat Hitboxes
+Separate from physics shapes, used for hit detection with support for rotation:
+```lua
+world.add_hitbox(obj)              -- Create combat hitbox
+world.update_hitbox(obj, y_offset) -- Update position and rotation
+world.remove_hitbox(obj)           -- Remove hitbox
+```
+- Supports slope rotation via `obj.slope_rotation`
+- Used by slope-following enemies for accurate hit detection
+
+### Projectile Colliders
+Blocks projectiles without taking damage (e.g., boss shields):
+```lua
+world.add_projectile_collider(owner, x, y, w, h)    -- Create collider
+world.update_projectile_collider(owner, x, y, w, h) -- Update (moves or recreates)
+world.remove_projectile_collider(owner)             -- Remove collider
+```
+- Optimizes position-only updates (moves shape instead of recreating)
+
 ## Key Files
 
 - `world.lua` - HC collision engine wrapper (includes raycast, probe shapes, filtering)

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="58">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="59">
  <editorsettings>
   <export target="garden.lua" format="lua"/>
  </editorsettings>
@@ -12,9 +12,9 @@
  <tileset firstgid="358" source="tileset_witch_shop.tsx"/>
  <tileset firstgid="583" source="outside_tileset.tsx"/>
  <tileset firstgid="1303" source="enemy_spawns.tsx"/>
- <tileset firstgid="1312" source="spawns.tsx"/>
- <tileset firstgid="1330" source="decorations.tsx"/>
- <tileset firstgid="1376" source="unique_items.tsx"/>
+ <tileset firstgid="1315" source="spawns.tsx"/>
+ <tileset firstgid="1334" source="decorations.tsx"/>
+ <tileset firstgid="1380" source="unique_items.tsx"/>
  <imagelayer id="5" name="Sky" locked="1" parallaxx="0.02" parallaxy="0" repeatx="1">
   <image source="../assets/Tilesets/bg_00_garden_lg.png" width="384" height="216"/>
   <properties>
@@ -638,34 +638,40 @@
     <property name="type" value="spawn"/>
    </properties>
   </object>
-  <object id="10" gid="1329" x="384" y="-64" width="16" height="16"/>
-  <object id="11" gid="1315" x="432" y="32" width="16" height="16">
+  <object id="10" gid="1332" x="384" y="-64" width="16" height="16"/>
+  <object id="11" gid="1318" x="432" y="32" width="16" height="16">
    <properties>
     <property name="name" value="Adept's Cottage"/>
    </properties>
   </object>
-  <object id="39" gid="1323" x="688" y="32" width="16" height="16">
+  <object id="39" gid="1326" x="688" y="32" width="16" height="16">
    <properties>
     <property name="text" value="Jump: {jump}"/>
    </properties>
   </object>
-  <object id="44" gid="1323" x="928" y="-48" width="16" height="16">
+  <object id="44" gid="1326" x="928" y="-48" width="16" height="16">
    <properties>
     <property name="text" value="Drop: {move_down} + {jump}"/>
    </properties>
   </object>
   <object id="47" gid="1307" x="976" y="48" width="16" height="8"/>
-  <object id="50" gid="1323" x="936" y="48" width="16" height="16">
+  <object id="50" gid="1326" x="936" y="48" width="16" height="16">
    <properties>
     <property name="text" value="Inventory: {menu}"/>
    </properties>
   </object>
   <object id="52" gid="1307" x="1088" y="32" width="16" height="8"/>
-  <object id="53" gid="1382" x="944" y="-16" width="16" height="16"/>
+  <object id="53" gid="1386" x="944" y="-16" width="16" height="16"/>
   <object id="54" gid="1307" x="1136" y="0" width="16" height="8"/>
-  <object id="57" gid="1323" x="816" y="-16" width="16" height="16">
+  <object id="57" gid="1326" x="816" y="-16" width="16" height="16">
    <properties>
     <property name="text" value="[color=#FF0000]BEWARE[/color] of [color=#FFB100]WORMS[/color]"/>
+   </properties>
+  </object>
+  <object id="58" gid="1326" x="1184" y="0" width="16" height="16">
+   <properties>
+    <property name="text">{down_arrow} Gnomo Hideout
+No Soliciting!</property>
    </properties>
   </object>
  </objectgroup>

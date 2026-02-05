@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 58,
+  nextobjectid = 59,
   properties = {
     ["id"] = "garden"
   },
@@ -52,19 +52,19 @@ return {
     },
     {
       name = "spawns",
-      firstgid = 1312,
+      firstgid = 1315,
       filename = "spawns.tsx",
       exportfilename = "spawns.lua"
     },
     {
       name = "decorations",
-      firstgid = 1330,
+      firstgid = 1334,
       filename = "decorations.tsx",
       exportfilename = "decorations.lua"
     },
     {
       name = "unique_items",
-      firstgid = 1376,
+      firstgid = 1380,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     }
@@ -1011,7 +1011,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1329,
+          gid = 1332,
           visible = true,
           properties = {}
         },
@@ -1025,7 +1025,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1315,
+          gid = 1318,
           visible = true,
           properties = {
             ["name"] = "Adept's Cottage"
@@ -1041,7 +1041,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1323,
+          gid = 1326,
           visible = true,
           properties = {
             ["text"] = "Jump: {jump}"
@@ -1057,7 +1057,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1323,
+          gid = 1326,
           visible = true,
           properties = {
             ["text"] = "Drop: {move_down} + {jump}"
@@ -1087,7 +1087,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1323,
+          gid = 1326,
           visible = true,
           properties = {
             ["text"] = "Inventory: {menu}"
@@ -1117,7 +1117,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1382,
+          gid = 1386,
           visible = true,
           properties = {}
         },
@@ -1145,10 +1145,26 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1323,
+          gid = 1326,
           visible = true,
           properties = {
             ["text"] = "[color=#FF0000]BEWARE[/color] of [color=#FFB100]WORMS[/color]"
+          }
+        },
+        {
+          id = 58,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1184,
+          y = 0,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1326,
+          visible = true,
+          properties = {
+            ["text"] = "{down_arrow} Gnomo Hideout\nNo Soliciting!"
           }
         }
       }

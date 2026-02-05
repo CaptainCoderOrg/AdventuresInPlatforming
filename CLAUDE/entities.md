@@ -540,6 +540,7 @@ common.check_lever_hit(hitbox)                 -- Check if hitbox overlaps lever
 common.player_has_item(player, item_id)        -- Check both stackable and unique items
 common.add_stackable_item(player, id, count)   -- Add stackable item to inventory
 common.consume_stackable_item(player, id, count) -- Consume stackable item, shows text effect
+common.get_item_def(item_id)                   -- Get definition from unique or stackable registry
 ```
 
 `common.damage_player()` handles the full damage pattern: touch check, invincibility check, health check, and `player:take_damage()` call.

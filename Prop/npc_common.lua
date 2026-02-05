@@ -19,6 +19,12 @@ function npc_common.set_refs(player, camera)
     camera_ref = camera
 end
 
+--- Get the camera reference
+---@return table|nil Camera instance or nil if not set
+function npc_common.get_camera()
+    return camera_ref
+end
+
 --- Create an NPC prop definition from configuration
 --- All NPCs share the same interact/update/draw patterns with different:
 ---   - Animation (sprite, frame count, timing, dimensions)

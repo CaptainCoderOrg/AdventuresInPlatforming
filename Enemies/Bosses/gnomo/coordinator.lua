@@ -9,7 +9,6 @@ local coordinator = {
     total_max_health = 16,  -- Fixed shared health pool
     total_health = 16,      -- Current shared health
     last_hit_gnomo = nil,   -- Most recently hit gnomo (dies at phase transition)
-    on_victory = nil,       -- Callback when all dead
     player = nil,           -- Player reference for defeated_bosses tracking
     boss_id = "gnomo_brothers",  -- ID for defeated_bosses tracking
     boss_name = "Gnomo Brothers",
@@ -278,9 +277,8 @@ function coordinator.trigger_victory()
     end
 
     -- Start victory sequence with last gnomo position
-    if coordinator.on_victory then
-        coordinator.on_victory(last_gnomo)
-    end
+    local victory = require("Enemies/Bosses/gnomo/victory")
+    victory.start(last_gnomo)
 end
 
 --- Hook for gnomo death events (called from phase death states).
@@ -454,8 +452,36 @@ function coordinator.get_boss_subtitle()
     return coordinator.boss_subtitle
 end
 
+--- Update all gnomo boss sequences (victory, apology path).
+--- Called from main.lua tick - centralizes gnomo-specific updates.
+---@param dt number Delta time in seconds
+function coordinator.update(dt)
+    local victory = require("Enemies/Bosses/gnomo/victory")
+    victory.update(dt)
+
+    local apology_path = require("Enemies/Bosses/gnomo/apology_path")
+    apology_path.update(dt)
+end
+
+--- Check if any ending sequence (victory or apology) is complete.
+--- Used to trigger level music after leaving boss area.
+---@return boolean True if boss encounter has concluded
+function coordinator.is_sequence_complete()
+    local victory = require("Enemies/Bosses/gnomo/victory")
+    local apology_path = require("Enemies/Bosses/gnomo/apology_path")
+    return victory.is_complete() or apology_path.is_complete()
+end
+
+--- Set references needed by sub-modules.
+--- Called from main.lua when loading a level.
+---@param player table Player instance
+---@param camera table Camera instance
+function coordinator.set_refs(player, camera)
+    local apology_path = require("Enemies/Bosses/gnomo/apology_path")
+    apology_path.set_refs(player, camera)
+end
+
 --- Reset coordinator state for level cleanup.
---- Note: on_victory callback is preserved (set once at startup, reused across resets)
 function coordinator.reset()
     coordinator.active = false
     coordinator.phase = 0
@@ -474,7 +500,6 @@ function coordinator.reset()
     coordinator.player_on_ground = true
     coordinator.bottom_gnomo = nil
     coordinator.last_bottom_gnomo = nil
-    -- on_victory is intentionally NOT reset - it's set once at startup
 
     -- Reset cinematic state (lazy load to avoid circular dependency)
     local cinematic = require("Enemies/Bosses/gnomo/cinematic")
@@ -483,6 +508,10 @@ function coordinator.reset()
     -- Reset victory sequence state
     local victory = require("Enemies/Bosses/gnomo/victory")
     victory.reset()
+
+    -- Reset apology path state
+    local apology_path = require("Enemies/Bosses/gnomo/apology_path")
+    apology_path.reset()
 
     -- Reset common module cache
     local common = require("Enemies/Bosses/gnomo/common")

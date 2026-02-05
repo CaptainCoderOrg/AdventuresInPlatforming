@@ -27,7 +27,7 @@ return {
   properties = {},
   wangsets = {
     {
-      name = "Unnamed Set",
+      name = "Dungeon Platforms",
       class = "",
       tile = -1,
       wangsettype = "corner",
@@ -84,6 +84,14 @@ return {
           tileid = 20
         },
         {
+          wangid = { 0, 2, 0, 1, 0, 1, 0, 1 },
+          tileid = 27
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 1, 0, 2 },
+          tileid = 29
+        },
+        {
           wangid = { 0, 2, 0, 2, 0, 1, 0, 2 },
           tileid = 36
         },
@@ -92,16 +100,8 @@ return {
           tileid = 38
         },
         {
-          wangid = { 0, 2, 0, 1, 0, 1, 0, 1 },
-          tileid = 54
-        },
-        {
           wangid = { 0, 2, 0, 1, 0, 1, 0, 2 },
           tileid = 55
-        },
-        {
-          wangid = { 0, 1, 0, 1, 0, 1, 0, 2 },
-          tileid = 56
         }
       }
     }

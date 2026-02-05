@@ -144,6 +144,24 @@ function Collectible.spawn_gold_burst(x, y, amount)
 	end
 end
 
+--- Spawns XP particles in a burst around the player (quest rewards).
+--- Particles spawn in all directions for a celebratory effect.
+---@param x number Center X position in tiles
+---@param y number Center Y position in tiles
+---@param amount number Total XP to award (1 particle per XP)
+function Collectible.spawn_xp_burst(x, y, amount)
+	if not amount or amount <= 0 then return end
+
+	for i = 1, amount do
+		-- Spread particles evenly in all directions (360 degree burst)
+		local angle = (i / amount) * math.pi * 2
+		local speed = 3 + math.random() * 2
+		local vx = math.cos(angle) * speed
+		local vy = math.sin(angle) * speed - 1  -- Slight upward bias
+		Collectible.spawn("xp", x, y, 1, { vx = vx, vy = vy })
+	end
+end
+
 --- Updates all collectibles: physics, homing, collection.
 ---@param dt number Delta time in seconds
 ---@param player table The player object (for collection)

@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 59,
+  nextobjectid = 60,
   properties = {
     ["id"] = "garden"
   },
@@ -884,10 +884,10 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 484.538,
-          y = -14.2197,
-          width = 22.2955,
-          height = 13.5417,
+          x = 485,
+          y = -16,
+          width = 22,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1169,6 +1169,20 @@ return {
           properties = {
             ["text"] = "{down_arrow} Gnomo Hideout\nNo Soliciting!"
           }
+        },
+        {
+          id = 59,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 496,
+          y = -16,
+          width = 16,
+          height = 8,
+          rotation = 0,
+          gid = 1307,
+          visible = true,
+          properties = {}
         }
       }
     },

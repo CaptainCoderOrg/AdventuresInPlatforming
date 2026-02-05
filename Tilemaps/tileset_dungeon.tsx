@@ -145,7 +145,7 @@
   </properties>
  </tile>
  <wangsets>
-  <wangset name="Unnamed Set" type="corner" tile="-1">
+  <wangset name="Dungeon Platforms" type="corner" tile="-1">
    <wangcolor name="Platform" color="#ff0000" tile="-1" probability="1"/>
    <wangcolor name="Not Platform" color="#00ff00" tile="-1" probability="1"/>
    <wangtile tileid="0" wangid="0,1,0,2,0,1,0,1"/>
@@ -156,11 +156,11 @@
    <wangtile tileid="11" wangid="0,1,0,1,0,2,0,2"/>
    <wangtile tileid="18" wangid="0,2,0,2,0,2,0,1"/>
    <wangtile tileid="20" wangid="0,1,0,2,0,2,0,2"/>
+   <wangtile tileid="27" wangid="0,2,0,1,0,1,0,1"/>
+   <wangtile tileid="29" wangid="0,1,0,1,0,1,0,2"/>
    <wangtile tileid="36" wangid="0,2,0,2,0,1,0,2"/>
    <wangtile tileid="38" wangid="0,2,0,1,0,2,0,2"/>
-   <wangtile tileid="54" wangid="0,2,0,1,0,1,0,1"/>
    <wangtile tileid="55" wangid="0,2,0,1,0,1,0,2"/>
-   <wangtile tileid="56" wangid="0,1,0,1,0,1,0,2"/>
   </wangset>
  </wangsets>
 </tileset>

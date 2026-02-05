@@ -129,12 +129,25 @@ gnomo_boss.definition = {
 --- Trigger handler: Starts the gnomo boss encounter cinematic.
 --- Called when player enters the boss arena trigger zone.
 --- Skipped if the boss has already been defeated.
+--- Uses peaceful apology path if player has adept_apology item.
 ---@param player table The player instance
 function gnomo_boss.on_start(player)
     -- Skip if boss already defeated
     if player.defeated_bosses and player.defeated_bosses[coordinator.boss_id] then
         return
     end
+
+    -- Check for apology item - peaceful resolution path
+    if player.unique_items then
+        for _, item in ipairs(player.unique_items) do
+            if item == "adept_apology" then
+                local apology_path = require("Enemies/Bosses/gnomo/apology_path")
+                apology_path.start(player)
+                return
+            end
+        end
+    end
+
     cinematic.start(player)
 end
 

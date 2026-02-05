@@ -49,10 +49,10 @@ local gnomo_def = require("Enemies/gnomo_axe_thrower")
 Enemy.register("gnomo_axe_thrower", gnomo_def)
 local gnomo_boss_def = require("Enemies/Bosses/gnomo")
 Enemy.register("gnomo_boss", gnomo_boss_def.definition)
+local encounter_coordinator = require("Enemies/Bosses/encounter_coordinator")
 local gnomo_coordinator = require("Enemies/Bosses/gnomo/coordinator")
-local gnomo_victory = require("Enemies/Bosses/gnomo/victory")
+encounter_coordinator.register("gnomo_brothers", gnomo_coordinator)
 boss_health_bar.set_coordinator(gnomo_coordinator)
-gnomo_coordinator.on_victory = gnomo_victory.start
 
 -- Props
 local Prop = require("Prop")
@@ -356,7 +356,7 @@ local function update(dt)
     Enemy.update(dt, player, camera)
     gnomo_def.update_axes(dt, player, level_info)
     boss_health_bar.update(dt)
-    gnomo_victory.update(dt)
+    encounter_coordinator.update(dt)
     profiler.stop("enemies")
 
     profiler.start("props")
@@ -527,9 +527,9 @@ init_level = function(level, spawn_override, player_data, options)
     if level_info.camera_bounds and #level_info.camera_bounds > 0 then
         camera:set_camera_bounds(level_info.camera_bounds)
     end
-    -- Play level music when leaving boss area after victory
+    -- Play level music when leaving boss area after victory or peaceful resolution
     camera:set_on_bounds_changed(function(_old_bounds, _new_bounds)
-        if gnomo_victory.is_complete() then
+        if encounter_coordinator.is_any_sequence_complete() then
             audio.play_music(audio.level1)
         end
     end)
@@ -545,6 +545,7 @@ init_level = function(level, spawn_override, player_data, options)
 
     hud.set_gameplay_refs(player, camera)
     npc_common.set_refs(player, camera)
+    encounter_coordinator.set_refs(player, camera)
 
     was_dead = false
 end
@@ -581,7 +582,7 @@ cleanup_level = function()
     Collectible.clear()
 
     -- Reset boss encounter state
-    gnomo_coordinator.reset()
+    encounter_coordinator.reset()
     boss_health_bar.reset()
 
     -- Final cleanup ensures no orphaned shapes in spatial hash

@@ -15,14 +15,13 @@ phase.states = {}
 --- Idle state - transitions to attack when coordinator is active.
 phase.states.idle = {
     name = "idle",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.IDLE)
         enemy.vx = 0
     end,
     update = function(enemy, dt)
         enemy_common.apply_gravity(enemy, dt)
 
-        -- Face player
         if enemy.target_player then
             enemy.direction = enemy_common.direction_to_player(enemy)
             if enemy.animation then
@@ -30,7 +29,6 @@ phase.states.idle = {
             end
         end
 
-        -- When coordinator becomes active (cinematic ended), start attack
         if coordinator.is_active() then
             enemy:set_state(phase.states.attack)
         end
@@ -51,17 +49,15 @@ end)
 --- Wait for all gnomos to finish phase 0, then coordinator transitions to phase 1.
 phase.states.wait_complete = {
     name = "wait_complete",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy.vx = 0
         enemy.vy = 0
         enemy.gravity = 0
         enemy.alpha = 0
-
-        -- Report that this gnomo finished phase 0
         coordinator.report_phase0_complete(enemy)
     end,
-    update = function(_, _) end,
-    draw = function(_) end,  -- Invisible
+    update = common.noop,
+    draw = common.noop,
 }
 
 --- Hit state - shouldn't happen in phase 0, but included for safety.

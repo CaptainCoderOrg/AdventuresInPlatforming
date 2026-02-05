@@ -483,6 +483,10 @@ function coordinator.reset()
     -- Reset victory sequence state
     local victory = require("Enemies/Bosses/gnomo/victory")
     victory.reset()
+
+    -- Reset common module cache
+    local common = require("Enemies/Bosses/gnomo/common")
+    common.reset()
 end
 
 return coordinator

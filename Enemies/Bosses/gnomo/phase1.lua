@@ -34,7 +34,7 @@ phase.states = {}
 --- Initial wait state - random delay before appearing at phase 1 start.
 phase.states.initial_wait = {
     name = "initial_wait",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy.vx = 0
         enemy.vy = 0
         enemy.gravity = 0
@@ -59,7 +59,7 @@ phase.states.initial_wait = {
 
 phase.states.idle = {
     name = "idle",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.IDLE)
         enemy.vx = 0
         enemy.idle_timer = 0
@@ -67,7 +67,6 @@ phase.states.idle = {
     update = function(enemy, dt)
         enemy_common.apply_gravity(enemy, dt)
 
-        -- Face player
         if enemy.target_player then
             enemy.direction = enemy_common.direction_to_player(enemy)
             if enemy.animation then
@@ -75,18 +74,16 @@ phase.states.idle = {
             end
         end
 
-        -- Only count idle timer after encounter has started (cinematic finished)
+        -- Skip idle timer while cinematic is playing
         if not coordinator.is_active() then
             return
         end
 
-        -- Phase transition: exit immediately
         if coordinator.transitioning_to_phase then
             enemy:set_state(phase.states.jump_exit)
             return
         end
 
-        -- After idle duration, transition to attack
         enemy.idle_timer = (enemy.idle_timer or 0) + dt
         if enemy.idle_timer >= IDLE_DURATION then
             enemy:set_state(phase.states.attack)
@@ -95,16 +92,14 @@ phase.states.idle = {
     draw = enemy_common.draw,
 }
 
--- Custom attack state with transition check
 phase.states.attack = {
     name = "attack",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.ATTACK)
         enemy.vx = 0
         enemy._axes_thrown = 0
         enemy._axe_spawned_this_anim = false
 
-        -- Get attack pattern for this platform
         local pattern = common.PLATFORM_ATTACK_PATTERNS[enemy._platform_index] or common.PLATFORM_ATTACK_PATTERNS[1]
         enemy._attack_start_angle = pattern.start
         enemy._attack_direction = pattern.direction
@@ -112,14 +107,11 @@ phase.states.attack = {
     update = function(enemy, dt)
         enemy_common.apply_gravity(enemy, dt)
 
-        -- Spawn axe on frame 5 (same as gnomo_axe_thrower)
+        -- Frame 5 is the release point in the throw animation
         if not enemy._axe_spawned_this_anim and enemy.animation.frame >= 5 then
             enemy._axe_spawned_this_anim = true
 
-            -- Calculate angle for this axe
             local angle = enemy._attack_start_angle + (enemy._axes_thrown * common.ARC_STEP * enemy._attack_direction)
-
-            -- Spawn directional axe
             common.spawn_directional_axe(enemy, angle)
 
             enemy._axes_thrown = enemy._axes_thrown + 1
@@ -127,18 +119,15 @@ phase.states.attack = {
         end
 
         if enemy.animation:is_finished() then
-            -- Phase transition: exit after current animation
             if coordinator.transitioning_to_phase then
                 enemy:set_state(phase.states.jump_exit)
                 return
             end
 
             if enemy._axes_thrown < common.AXES_PER_ATTACK then
-                -- Reset animation for next axe
                 enemy_common.set_animation(enemy, enemy.animations.ATTACK)
                 enemy._axe_spawned_this_anim = false
             else
-                -- All axes thrown, go to next state
                 enemy:set_state(phase.states.choose_exit)
             end
         end
@@ -148,7 +137,7 @@ phase.states.attack = {
 
 phase.states.choose_exit = {
     name = "choose_exit",
-    start = function(enemy, _)
+    start = function(enemy)
         if math.random() < 0.5 then
             enemy:set_state(phase.states.jump_exit)
         else
@@ -165,7 +154,7 @@ end)
 
 phase.states.floor_exit = {
     name = "floor_exit",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.RUN)
         enemy.direction = 1  -- Always run right to exit
         if enemy.animation then
@@ -232,7 +221,7 @@ phase.states.floor_exit = {
 
 phase.states.wait_state = {
     name = "wait_state",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy.vx = 0
         enemy.vy = 0
         enemy.gravity = 0
@@ -276,7 +265,7 @@ phase.states.wait_state = {
 
 phase.states.appear_state = {
     name = "appear_state",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.JUMP)
         enemy.vx = 0
         enemy.vy = 0
@@ -351,12 +340,9 @@ phase.states.appear_state = {
             -- Play landing frames briefly
             common.set_jump_frame_range(enemy, common.FRAME_LANDING_START, common.FRAME_LANDING_END)
 
-            -- Short landing delay before returning to idle
-            if enemy._lerp_timer >= 0.15 then
-                -- Restore tangibility and gravity
+            if enemy._lerp_timer >= common.LANDING_DELAY then
                 common.restore_tangible(enemy)
-                enemy.gravity = 1.5  -- Standard gnomo gravity
-
+                enemy.gravity = 1.5
                 enemy:set_state(phase.states.idle)
             end
         end
@@ -366,7 +352,7 @@ phase.states.appear_state = {
 
 phase.states.hit = {
     name = "hit",
-    start = function(enemy, _)
+    start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.HIT)
         enemy.vx = 0
     end,

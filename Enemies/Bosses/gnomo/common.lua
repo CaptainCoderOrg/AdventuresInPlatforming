@@ -14,6 +14,25 @@ local common = {}
 -- Constants
 --------------------------------------------------------------------------------
 
+-- Shared timing constants (used across multiple phases)
+common.IDLE_DURATION = 2.0
+common.FALL_DURATION = 0.4
+common.LANDING_DELAY = 0.15
+common.WAIT_MIN = 1.0
+common.WAIT_MAX = 2.0
+common.HIT_WAIT_MIN = 2.5
+common.HIT_WAIT_MAX = 3.5
+
+-- Bottom position constants
+common.BOTTOM_ENTER_DURATION = 0.4
+common.LEAVE_BOTTOM_DURATION = 0.3
+common.BOTTOM_OFFSET_X = 1
+
+-- Rapid attack constants
+common.RAPID_AXES_PER_ATTACK = 10
+common.RAPID_PAIR_STEP = 18
+common.RAPID_PAIR_SPREAD = 36
+
 -- Spawn point IDs for holes (top exits)
 common.HOLE_IDS = {
     "gnomo_boss_exit_top_left",
@@ -72,6 +91,7 @@ common.PLATFORM_TO_HOLES = {
 --------------------------------------------------------------------------------
 
 local platforms = nil
+local ground_level_spawn = nil
 
 --- Lazily load platforms module.
 ---@return table platforms module
@@ -92,8 +112,11 @@ function common.is_player_on_ground(player)
         return true
     end
 
-    local spawn_point = common.get_platforms().spawn_points["gnomo_boss_ground_level"]
-    if not spawn_point or not spawn_point.width then
+    if not ground_level_spawn then
+        ground_level_spawn = common.get_platforms().spawn_points["gnomo_boss_ground_level"]
+    end
+
+    if not ground_level_spawn or not ground_level_spawn.width then
         coordinator.update_player_ground_status(true)
         return true
     end
@@ -101,8 +124,8 @@ function common.is_player_on_ground(player)
     local px = player.x + player.box.x + player.box.w / 2
     local py = player.y + player.box.y + player.box.h / 2
 
-    local on_ground = px >= spawn_point.x and px < spawn_point.x + spawn_point.width
-        and py >= spawn_point.y and py < spawn_point.y + spawn_point.height
+    local on_ground = px >= ground_level_spawn.x and px < ground_level_spawn.x + ground_level_spawn.width
+        and py >= ground_level_spawn.y and py < ground_level_spawn.y + ground_level_spawn.height
 
     coordinator.update_player_ground_status(on_ground)
     return on_ground
@@ -172,6 +195,38 @@ end
 --------------------------------------------------------------------------------
 -- Helper functions
 --------------------------------------------------------------------------------
+
+--- No-operation function for empty state callbacks.
+function common.noop() end
+
+--- Set enemy direction and sync animation flip state.
+---@param enemy table The gnomo enemy
+---@param direction number Direction (-1 = left, 1 = right)
+function common.set_direction(enemy, direction)
+    enemy.direction = direction
+    if enemy.animation then
+        enemy.animation.flipped = direction
+    end
+end
+
+--- Check if this enemy is currently at the bottom position.
+---@param enemy table The gnomo enemy
+---@return boolean
+function common.is_at_bottom(enemy)
+    return coordinator.bottom_gnomo == enemy.color
+end
+
+--- Count how many platforms are currently occupied.
+---@return number Count of occupied platforms
+function common.count_occupied_platforms()
+    local count = 0
+    for i = 1, 4 do
+        if coordinator.occupied_platforms[i] then
+            count = count + 1
+        end
+    end
+    return count
+end
 
 --- Get spawn point position by ID.
 ---@param id string Spawn point ID
@@ -320,13 +375,12 @@ end
 function common.create_attack_state(get_next_state)
     return {
         name = "attack",
-        start = function(enemy, _)
+        start = function(enemy)
             enemy_common.set_animation(enemy, enemy.animations.ATTACK)
             enemy.vx = 0
             enemy._axes_thrown = 0
             enemy._axe_spawned_this_anim = false
 
-            -- Get attack pattern for this platform
             local pattern = common.PLATFORM_ATTACK_PATTERNS[enemy._platform_index] or common.PLATFORM_ATTACK_PATTERNS[1]
             enemy._attack_start_angle = pattern.start
             enemy._attack_direction = pattern.direction
@@ -334,14 +388,10 @@ function common.create_attack_state(get_next_state)
         update = function(enemy, dt)
             enemy_common.apply_gravity(enemy, dt)
 
-            -- Spawn axe on frame 5 (same as gnomo_axe_thrower)
             if not enemy._axe_spawned_this_anim and enemy.animation.frame >= 5 then
                 enemy._axe_spawned_this_anim = true
 
-                -- Calculate angle for this axe
                 local angle = enemy._attack_start_angle + (enemy._axes_thrown * common.ARC_STEP * enemy._attack_direction)
-
-                -- Spawn directional axe
                 common.spawn_directional_axe(enemy, angle)
 
                 enemy._axes_thrown = enemy._axes_thrown + 1
@@ -350,11 +400,9 @@ function common.create_attack_state(get_next_state)
 
             if enemy.animation:is_finished() then
                 if enemy._axes_thrown < common.AXES_PER_ATTACK then
-                    -- Reset animation for next axe
                     enemy_common.set_animation(enemy, enemy.animations.ATTACK)
                     enemy._axe_spawned_this_anim = false
                 else
-                    -- All axes thrown, go to next state
                     enemy:set_state(get_next_state())
                 end
             end
@@ -369,19 +417,17 @@ end
 function common.create_jump_exit_state(get_next_state)
     return {
         name = "jump_exit",
-        start = function(enemy, _)
+        start = function(enemy)
             enemy_common.set_animation(enemy, enemy.animations.JUMP)
             enemy.vx = 0
             enemy.vy = 0
             enemy.gravity = 0
 
-            -- Find nearest hole
             local hole_index = common.find_nearest_hole(enemy)
             enemy._exit_hole_index = hole_index
             local hole_id = common.HOLE_IDS[hole_index]
             local hx, hy = common.get_marker_position(hole_id)
 
-            -- Store start and end positions
             enemy._lerp_start_x = enemy.x
             enemy._lerp_start_y = enemy.y
             enemy._lerp_end_x = hx or enemy.x
@@ -389,13 +435,11 @@ function common.create_jump_exit_state(get_next_state)
             enemy._lerp_timer = 0
             enemy.alpha = 1
 
-            -- Release current platform
             if enemy._platform_index then
                 coordinator.release_platform(enemy._platform_index)
                 enemy._platform_index = nil
             end
 
-            -- Make intangible immediately
             common.make_intangible(enemy)
         end,
         update = function(enemy, dt)
@@ -432,7 +476,7 @@ end
 function common.create_hit_state(get_next_state)
     return {
         name = "hit",
-        start = function(enemy, _)
+        start = function(enemy)
             enemy_common.set_animation(enemy, enemy.animations.HIT)
             enemy.vx = 0
         end,
@@ -451,7 +495,7 @@ end
 function common.create_death_state()
     return {
         name = "death",
-        start = function(enemy, _)
+        start = function(enemy)
             enemy_common.set_animation(enemy, enemy.animations.DEATH)
             enemy.vx = (enemy.hit_direction or -1) * 4
             enemy.vy = 0
@@ -461,6 +505,11 @@ function common.create_death_state()
             if enemy._platform_index then
                 coordinator.release_platform(enemy._platform_index)
                 enemy._platform_index = nil
+            end
+
+            -- Release bottom position if held
+            if common.is_at_bottom(enemy) then
+                coordinator.release_bottom_position()
             end
 
             coordinator.report_death(enemy)
@@ -473,6 +522,310 @@ function common.create_death_state()
         end,
         draw = enemy_common.draw,
     }
+end
+
+--- Create an appear state that lerps enemy from hole to platform.
+---@param get_next_state function Returns the next state after landing
+---@param get_fallback_state function Returns the state when no platforms available
+---@param max_platform_gnomos number Maximum number of gnomos allowed on platforms
+---@return table Appear state definition
+function common.create_appear_state(get_next_state, get_fallback_state, max_platform_gnomos)
+    return {
+        name = "appear_state",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.JUMP)
+            enemy.vx, enemy.vy, enemy.gravity = 0, 0, 0
+
+            local available = coordinator.get_phase2_platforms()
+            if #available == 0 then
+                enemy:set_state(get_fallback_state())
+                return
+            end
+
+            local platform_index
+            if coordinator.player_on_ground then
+                platform_index = available[math.random(#available)]
+            else
+                platform_index = common.find_furthest_platform_from_player(enemy.target_player, available)
+            end
+
+            coordinator.claim_platform(platform_index, enemy.color)
+            enemy._platform_index = platform_index
+
+            local platform_id = common.PLATFORM_IDS[platform_index]
+            local px, py = common.get_marker_position(platform_id)
+            enemy._lerp_end_x = px or enemy.x
+            enemy._lerp_end_y = py or enemy.y
+
+            local holes = common.PLATFORM_TO_HOLES[platform_index]
+            local hole_index = holes[math.random(#holes)]
+            local hole_id = common.HOLE_IDS[hole_index]
+            local hx, hy = common.get_marker_position(hole_id)
+            enemy._lerp_start_x = hx or enemy._lerp_end_x
+            enemy._lerp_start_y = hy or enemy._lerp_end_y
+
+            enemy.x = enemy._lerp_start_x
+            enemy.y = enemy._lerp_start_y
+            enemy._lerp_timer = 0
+            enemy.alpha = 0
+            enemy._appear_phase = "fade_in"
+        end,
+        update = function(enemy, dt)
+            enemy._lerp_timer = enemy._lerp_timer + dt
+
+            if enemy._appear_phase == "fade_in" then
+                local fade_progress = math.min(1, enemy._lerp_timer / common.FADE_DURATION)
+                enemy.alpha = fade_progress
+                common.set_jump_frame_range(enemy, common.FRAME_DOWNWARD_START, common.FRAME_DOWNWARD_END)
+
+                if fade_progress >= 1 then
+                    enemy.alpha = 1
+                    enemy._appear_phase = "fall"
+                    enemy._lerp_timer = 0
+                end
+            elseif enemy._appear_phase == "fall" then
+                local progress = math.min(1, enemy._lerp_timer / common.FALL_DURATION)
+                local eased = common.smoothstep(progress)
+
+                enemy.x = common.lerp(enemy._lerp_start_x, enemy._lerp_end_x, eased)
+                enemy.y = common.lerp(enemy._lerp_start_y, enemy._lerp_end_y, eased)
+                common.set_jump_frame_range(enemy, common.FRAME_DOWNWARD_START, common.FRAME_DOWNWARD_END)
+
+                if progress >= 1 then
+                    enemy._appear_phase = "land"
+                    enemy._lerp_timer = 0
+                end
+            elseif enemy._appear_phase == "land" then
+                common.set_jump_frame_range(enemy, common.FRAME_LANDING_START, common.FRAME_LANDING_END)
+
+                if enemy._lerp_timer >= common.LANDING_DELAY then
+                    common.restore_tangible(enemy)
+                    enemy.gravity = 1.5
+                    enemy:set_state(get_next_state())
+                end
+            end
+        end,
+        draw = common.draw_with_alpha,
+    }
+end
+
+--- Create a rapid attack state that throws pairs of axes in an arc pattern.
+---@param get_exit_state function Returns the state to transition to after attack
+---@return table Rapid attack state definition
+function common.create_rapid_attack_state(get_exit_state)
+    return {
+        name = "rapid_attack",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.ATTACK)
+            enemy.vx = 0
+            enemy._axes_thrown = 0
+            enemy._axe_spawned_this_anim = false
+
+            local pattern = common.PLATFORM_ATTACK_PATTERNS[enemy._platform_index] or common.PLATFORM_ATTACK_PATTERNS[1]
+            enemy._attack_start_angle = pattern.start
+            enemy._attack_direction = pattern.direction
+        end,
+        update = function(enemy, dt)
+            enemy_common.apply_gravity(enemy, dt)
+
+            if not enemy._axe_spawned_this_anim and enemy.animation.frame >= 5 then
+                enemy._axe_spawned_this_anim = true
+
+                local pair_index = math.floor(enemy._axes_thrown / 2)
+                local base_angle = enemy._attack_start_angle + (pair_index * common.RAPID_PAIR_STEP * enemy._attack_direction)
+
+                common.spawn_directional_axe(enemy, base_angle)
+                common.spawn_directional_axe(enemy, base_angle + common.RAPID_PAIR_SPREAD * enemy._attack_direction)
+
+                enemy._axes_thrown = enemy._axes_thrown + 2
+                audio.play_axe_throw_sound()
+            end
+
+            if enemy.animation:is_finished() then
+                if coordinator.transitioning_to_phase then
+                    enemy:set_state(get_exit_state())
+                    return
+                end
+
+                if enemy._axes_thrown < common.RAPID_AXES_PER_ATTACK then
+                    enemy_common.set_animation(enemy, enemy.animations.ATTACK)
+                    enemy._axe_spawned_this_anim = false
+                else
+                    enemy:set_state(get_exit_state())
+                end
+            end
+        end,
+        draw = enemy_common.draw,
+    }
+end
+
+--- Create a wait state for invisible waiting between attacks.
+---@param get_next_state function Returns the state to transition to after waiting
+---@return table Wait state definition
+function common.create_wait_state(get_next_state)
+    return {
+        name = "wait_state",
+        start = function(enemy)
+            enemy.vx, enemy.vy, enemy.gravity, enemy.alpha = 0, 0, 0, 0
+            enemy.invulnerable = false
+
+            local wait_min, wait_max
+            if enemy._exited_from_hit then
+                wait_min, wait_max = common.HIT_WAIT_MIN, common.HIT_WAIT_MAX
+                enemy._exited_from_hit = false
+            else
+                wait_min, wait_max = common.WAIT_MIN, common.WAIT_MAX
+            end
+            enemy._wait_duration = wait_min + math.random() * (wait_max - wait_min)
+            enemy._wait_timer = 0
+
+            if not enemy._intangible_shape then
+                common.make_intangible(enemy)
+            end
+
+            if coordinator.transitioning_to_phase then
+                coordinator.report_transition_ready(enemy)
+            end
+        end,
+        update = function(enemy, dt)
+            if coordinator.transitioning_to_phase then
+                return
+            end
+
+            enemy._wait_timer = enemy._wait_timer + dt
+            if enemy._wait_timer >= enemy._wait_duration then
+                enemy:set_state(get_next_state())
+            end
+        end,
+        draw = common.noop,
+    }
+end
+
+--- Create a leave bottom state for exiting the bottom-right position.
+---@param get_next_state function Returns the state to transition to after leaving
+---@return table Leave bottom state definition
+function common.create_leave_bottom_state(get_next_state)
+    return {
+        name = "leave_bottom",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.RUN)
+            common.set_direction(enemy, 1)
+            enemy.vx, enemy.vy, enemy.gravity = 0, 0, 0
+
+            enemy._lerp_start_x = enemy.x
+            enemy._lerp_start_y = enemy.y
+            enemy._lerp_end_x = enemy.x + common.BOTTOM_OFFSET_X
+            enemy._lerp_end_y = enemy.y
+            enemy._lerp_timer = 0
+            enemy.alpha = 1
+
+            coordinator.release_bottom_position()
+            common.make_intangible(enemy)
+        end,
+        update = function(enemy, dt)
+            enemy._lerp_timer = enemy._lerp_timer + dt
+            local progress = math.min(1, enemy._lerp_timer / common.LEAVE_BOTTOM_DURATION)
+            local eased = common.smoothstep(progress)
+
+            enemy.x = common.lerp(enemy._lerp_start_x, enemy._lerp_end_x, eased)
+            enemy.y = common.lerp(enemy._lerp_start_y, enemy._lerp_end_y, eased)
+            enemy.alpha = 1 - progress
+
+            if progress >= 1 then
+                enemy.alpha = 0
+                enemy:set_state(get_next_state())
+            end
+        end,
+        draw = common.draw_with_alpha,
+    }
+end
+
+--- Create a bottom enter state for entering the bottom-right position.
+---@param get_next_state function Returns the state to transition to after entering
+---@return table Bottom enter state definition
+function common.create_bottom_enter_state(get_next_state)
+    return {
+        name = "bottom_enter",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.IDLE)
+            enemy.vx, enemy.vy, enemy.gravity = 0, 0, 0
+
+            coordinator.claim_bottom_position(enemy.color)
+
+            local hx, hy = common.get_marker_position("gnomo_boss_exit_bottom_right")
+            if hx and hy then
+                enemy._lerp_start_x = hx + common.BOTTOM_OFFSET_X
+                enemy._lerp_start_y = hy
+                enemy._lerp_end_x = hx
+                enemy._lerp_end_y = hy
+            else
+                enemy._lerp_start_x = enemy.x + common.BOTTOM_OFFSET_X
+                enemy._lerp_start_y = enemy.y
+                enemy._lerp_end_x = enemy.x
+                enemy._lerp_end_y = enemy.y
+            end
+
+            enemy.x = enemy._lerp_start_x
+            enemy.y = enemy._lerp_start_y
+            enemy._lerp_timer = 0
+            enemy.alpha = 0
+            common.set_direction(enemy, -1)
+
+            if not enemy._intangible_shape then
+                common.make_intangible(enemy)
+            end
+        end,
+        update = function(enemy, dt)
+            enemy._lerp_timer = enemy._lerp_timer + dt
+            local progress = math.min(1, enemy._lerp_timer / common.BOTTOM_ENTER_DURATION)
+            local eased = common.smoothstep(progress)
+
+            enemy.x = common.lerp(enemy._lerp_start_x, enemy._lerp_end_x, eased)
+            enemy.y = common.lerp(enemy._lerp_start_y, enemy._lerp_end_y, eased)
+            enemy.alpha = progress
+
+            if progress >= 1 then
+                enemy.alpha = 1
+                common.restore_tangible(enemy)
+                enemy.gravity = 1.5
+                enemy:set_state(get_next_state())
+            end
+        end,
+        draw = common.draw_with_alpha,
+    }
+end
+
+--- Create a hit state that exits to different states based on position.
+---@param get_platform_exit_state function Returns state for platform gnomo after hit
+---@param get_bottom_exit_state function Returns state for bottom gnomo after hit
+---@return table Hit state definition
+function common.create_positional_hit_state(get_platform_exit_state, get_bottom_exit_state)
+    return {
+        name = "hit",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.HIT)
+            enemy.vx = 0
+            enemy._is_bottom_attacker = common.is_at_bottom(enemy)
+        end,
+        update = function(enemy, dt)
+            enemy_common.apply_gravity(enemy, dt)
+            if enemy.animation:is_finished() then
+                enemy.invulnerable = true
+                enemy._exited_from_hit = true
+                if enemy._is_bottom_attacker then
+                    enemy:set_state(get_bottom_exit_state())
+                else
+                    enemy:set_state(get_platform_exit_state())
+                end
+            end
+        end,
+        draw = enemy_common.draw,
+    }
+end
+
+--- Reset cached data for level cleanup.
+function common.reset()
+    ground_level_spawn = nil
 end
 
 return common

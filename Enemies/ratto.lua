@@ -163,7 +163,7 @@ return {
 	box = { w = 0.9, h = 0.45, x = 0.05, y = 0.05 },
 	gravity = 1.5,
 	max_fall_speed = 20,
-	max_health = 3,
+	max_health = 2,
 	damage = 1,
 	damages_shield = true,  -- Contact damage triggers shield stamina drain
 	death_sound = "ratto",

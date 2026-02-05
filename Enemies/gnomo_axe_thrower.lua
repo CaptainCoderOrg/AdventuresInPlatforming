@@ -511,7 +511,7 @@ return {
 	box = { w = 0.775, h = 0.775, x = 0.1125, y = 0.175 },
 	gravity = 1.5,
 	max_fall_speed = 20,
-	max_health = 5,
+	max_health = 4,
 	damage = 1,
 	loot = { xp = 6, gold = { min = 3, max = 5 } },
 	states = gnomo.states,

@@ -6,8 +6,8 @@ local coordinator = {
     phase = 0,              -- 0=dormant, 1-4=active phases
     enemies = {},           -- References to all 4 gnomos (keyed by color)
     alive_count = 0,
-    total_max_health = 20,  -- Fixed shared health pool
-    total_health = 20,      -- Current shared health
+    total_max_health = 16,  -- Fixed shared health pool
+    total_health = 16,      -- Current shared health
     last_hit_gnomo = nil,   -- Most recently hit gnomo (dies at phase transition)
     on_victory = nil,       -- Callback when all dead
     player = nil,           -- Player reference for defeated_bosses tracking
@@ -461,8 +461,8 @@ function coordinator.reset()
     coordinator.phase = 0
     coordinator.enemies = {}
     coordinator.alive_count = 0
-    coordinator.total_max_health = 20  -- Fixed shared health pool
-    coordinator.total_health = 20
+    coordinator.total_max_health = 16  -- Fixed shared health pool
+    coordinator.total_health = 16
     coordinator.last_hit_gnomo = nil
     coordinator.player = nil
     coordinator.occupied_platforms = {}

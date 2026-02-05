@@ -118,8 +118,8 @@ gnomo_boss.definition = {
     gravity = 1.5,
     max_fall_speed = 20,
     max_health = 10,  -- Higher than regular gnomo (5)
-    damage = 1,
-    loot = { xp = 12 },
+    damage = 0.25,  -- Low contact damage; axes deal full damage
+    loot = { xp = 20 },
     states = phase0.states,  -- Initial states, coordinator switches these on phase change
     initial_state = "idle",
     on_spawn = on_spawn,

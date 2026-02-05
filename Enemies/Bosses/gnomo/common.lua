@@ -14,7 +14,6 @@ local common = {}
 -- Constants
 --------------------------------------------------------------------------------
 
--- Shared timing constants (used across multiple phases)
 common.IDLE_DURATION = 2.0
 common.FALL_DURATION = 0.4
 common.LANDING_DELAY = 0.15
@@ -23,7 +22,6 @@ common.WAIT_MAX = 2.0
 common.HIT_WAIT_MIN = 2.5
 common.HIT_WAIT_MAX = 3.5
 
--- Bottom position constants
 common.BOTTOM_ENTER_DURATION = 0.4
 common.LEAVE_BOTTOM_DURATION = 0.3
 common.BOTTOM_OFFSET_X = 1
@@ -61,7 +59,6 @@ common.FRAME_DOWNWARD_END = 6
 common.FRAME_LANDING_START = 7
 common.FRAME_LANDING_END = 8
 
--- Timing constants (shared across phases)
 common.JUMP_EXIT_DURATION = 0.5
 common.FADE_DURATION = 0.2
 common.FADE_START_THRESHOLD = 1 - (common.FADE_DURATION / common.JUMP_EXIT_DURATION)  -- 0.6
@@ -169,16 +166,14 @@ end
 ---@param target_x number Target X position in tiles
 ---@param target_y number Target Y position in tiles
 function common.spawn_axe_at_player(enemy, target_x, target_y)
-    -- Spawn position (center of gnomo)
+    -- Offset to sprite center so axe appears from gnomo's hands
     local spawn_x = enemy.x + 0.5
     local spawn_y = enemy.y + 0.5
 
-    -- Calculate direction to target
     local dx = target_x - spawn_x
     local dy = target_y - spawn_y
     local dist = math.sqrt(dx * dx + dy * dy)
 
-    -- Normalize and scale by axe speed
     local vx, vy
     if dist > 0.01 then
         vx = (dx / dist) * common.AXE_SPEED
@@ -248,7 +243,8 @@ function common.find_nearest_hole(enemy)
     local best_index = 1
     local best_dist_sq = math.huge
 
-    for i, hole_id in ipairs(common.HOLE_IDS) do
+    for i = 1, #common.HOLE_IDS do
+        local hole_id = common.HOLE_IDS[i]
         local hx, hy = common.get_marker_position(hole_id)
         if hx and hy then
             local dx = hx - enemy.x
@@ -273,7 +269,8 @@ function common.find_closest_platform(x, y)
     local best_index = 1
     local best_dist_sq = math.huge
 
-    for i, platform_id in ipairs(common.PLATFORM_IDS) do
+    for i = 1, #common.PLATFORM_IDS do
+        local platform_id = common.PLATFORM_IDS[i]
         local point = plat.spawn_points[platform_id]
         if point then
             local dx = point.x - x
@@ -448,20 +445,17 @@ function common.create_jump_exit_state(get_next_state)
             local progress = math.min(1, enemy._lerp_timer / common.JUMP_EXIT_DURATION)
             local eased = common.smoothstep(progress)
 
-            -- Update position
             enemy.x = common.lerp(enemy._lerp_start_x, enemy._lerp_end_x, eased)
             enemy.y = common.lerp(enemy._lerp_start_y, enemy._lerp_end_y, eased)
 
-            -- Set upward jump frames
             common.set_jump_frame_range(enemy, common.FRAME_UPWARD_START, common.FRAME_UPWARD_END)
 
-            -- Fade out in last portion
+            -- Start fade at 60% progress for smooth disappearance into hole
             if progress >= common.FADE_START_THRESHOLD then
                 local fade_progress = (progress - common.FADE_START_THRESHOLD) / (1 - common.FADE_START_THRESHOLD)
                 enemy.alpha = 1 - fade_progress
             end
 
-            -- Done - transition to next state
             if progress >= 1 then
                 enemy.alpha = 0
                 enemy:set_state(get_next_state())
@@ -704,8 +698,10 @@ end
 
 --- Create a leave bottom state for exiting the bottom-right position.
 ---@param get_next_state function Returns the state to transition to after leaving
+---@param options table|nil Optional settings: { clear_bottom_attacker = true }
 ---@return table Leave bottom state definition
-function common.create_leave_bottom_state(get_next_state)
+function common.create_leave_bottom_state(get_next_state, options)
+    options = options or {}
     return {
         name = "leave_bottom",
         start = function(enemy)
@@ -734,6 +730,9 @@ function common.create_leave_bottom_state(get_next_state)
 
             if progress >= 1 then
                 enemy.alpha = 0
+                if options.clear_bottom_attacker then
+                    enemy._is_bottom_attacker = false
+                end
                 enemy:set_state(get_next_state())
             end
         end,
@@ -821,6 +820,207 @@ function common.create_positional_hit_state(get_platform_exit_state, get_bottom_
             end
         end,
         draw = enemy_common.draw,
+    }
+end
+
+--- Create an initial wait state with configurable timing.
+---@param wait_min number Minimum wait duration
+---@param wait_max number Maximum wait duration (use same as min for fixed duration)
+---@param get_next_state function Returns the state to transition to after waiting
+---@return table Initial wait state definition
+function common.create_initial_wait_state(wait_min, wait_max, get_next_state)
+    return {
+        name = "initial_wait",
+        start = function(enemy)
+            enemy.vx, enemy.vy, enemy.gravity, enemy.alpha = 0, 0, 0, 0
+            enemy._wait_duration = wait_min + math.random() * (wait_max - wait_min)
+            enemy._wait_timer = 0
+
+            if not enemy._intangible_shape then
+                common.make_intangible(enemy)
+            end
+
+            common.is_player_on_ground(enemy.target_player)
+        end,
+        update = function(enemy, dt)
+            enemy._wait_timer = enemy._wait_timer + dt
+            if enemy._wait_timer >= enemy._wait_duration then
+                common.is_player_on_ground(enemy.target_player)
+                enemy:set_state(get_next_state())
+            end
+        end,
+        draw = common.noop,
+    }
+end
+
+--- Create a decide_role state that chooses between bottom and platform positions.
+---@param get_bottom_state function Returns state when going to bottom position
+---@param get_platform_state function Returns state when going to platform
+---@param get_fallback_state function Returns state when no position available
+---@param max_platform_gnomos number Maximum gnomos allowed on platforms (nil = no limit check)
+---@return table Decide role state definition
+function common.create_decide_role_state(get_bottom_state, get_platform_state, get_fallback_state, max_platform_gnomos)
+    return {
+        name = "decide_role",
+        start = function(enemy)
+            common.is_player_on_ground(enemy.target_player)
+
+            local go_to_bottom = not coordinator.player_on_ground
+                and coordinator.is_bottom_available()
+
+            if go_to_bottom then
+                enemy:set_state(get_bottom_state())
+            elseif not max_platform_gnomos or common.count_occupied_platforms() < max_platform_gnomos then
+                enemy:set_state(get_platform_state())
+            else
+                enemy:set_state(get_fallback_state())
+            end
+        end,
+        update = common.noop,
+        draw = common.noop,
+    }
+end
+
+--- Create an attack_player state that throws a single axe at the player.
+---@param get_next_state function(enemy) Returns the next state based on enemy context
+---@return table Attack player state definition
+function common.create_attack_player_state(get_next_state)
+    return {
+        name = "attack_player",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.ATTACK)
+            enemy.vx = 0
+            enemy._axe_spawned = false
+            enemy._is_bottom_attacker = common.is_at_bottom(enemy)
+
+            if enemy.target_player then
+                common.set_direction(enemy, enemy_common.direction_to_player(enemy))
+            end
+        end,
+        update = function(enemy, dt)
+            enemy_common.apply_gravity(enemy, dt)
+
+            if not enemy._axe_spawned and enemy.animation.frame >= 5 then
+                enemy._axe_spawned = true
+
+                local player = enemy.target_player
+                if player then
+                    local target_x = player.x + player.box.x + player.box.w / 2
+                    local target_y = player.y + player.box.y + player.box.h / 2
+                    common.spawn_axe_at_player(enemy, target_x, target_y)
+                else
+                    common.spawn_directional_axe(enemy, enemy.direction > 0 and 0 or 180)
+                end
+
+                audio.play_axe_throw_sound()
+            end
+
+            if enemy.animation:is_finished() then
+                enemy:set_state(get_next_state(enemy))
+            end
+        end,
+        draw = enemy_common.draw,
+    }
+end
+
+--- Create a platform idle state that faces the player and transitions after a duration.
+---@param idle_duration number Time to idle before transitioning
+---@param get_next_state function Returns the state to transition to
+---@param options table|nil Optional settings: { check_outer_platform = true, rapid_attack_next = state }
+---@return table Platform idle state definition
+function common.create_platform_idle_state(idle_duration, get_next_state, options)
+    options = options or {}
+    return {
+        name = "idle",
+        start = function(enemy)
+            enemy_common.set_animation(enemy, enemy.animations.IDLE)
+            enemy.vx = 0
+            enemy.idle_timer = 0
+        end,
+        update = function(enemy, dt)
+            enemy_common.apply_gravity(enemy, dt)
+
+            if enemy.target_player then
+                common.set_direction(enemy, enemy_common.direction_to_player(enemy))
+            end
+
+            if not coordinator.is_active() then
+                return
+            end
+
+            if coordinator.transitioning_to_phase then
+                enemy:set_state(options.exit_state and options.exit_state() or get_next_state())
+                return
+            end
+
+            common.is_player_on_ground(enemy.target_player)
+
+            if options.check_outer_platform then
+                local on_outer_platform = enemy._platform_index == 1 or enemy._platform_index == 4
+                if coordinator.player_on_ground and on_outer_platform then
+                    enemy:set_state(options.exit_state and options.exit_state() or get_next_state())
+                    return
+                end
+            end
+
+            enemy.idle_timer = (enemy.idle_timer or 0) + dt
+            if enemy.idle_timer >= idle_duration then
+                enemy:set_state(get_next_state())
+            end
+        end,
+        draw = enemy_common.draw,
+    }
+end
+
+--- Create a bottom_wait state for waiting after leaving the bottom position.
+---@param get_next_state function Returns the state to transition to
+---@param options table|nil Optional settings: { wait_min, wait_max, check_bottom_available }
+---@return table Bottom wait state definition
+function common.create_bottom_wait_state(get_next_state, options)
+    options = options or {}
+    local wait_min = options.wait_min
+    local wait_max = options.wait_max
+    local check_bottom = options.check_bottom_available
+
+    return {
+        name = "bottom_wait",
+        start = function(enemy)
+            enemy.vx, enemy.vy, enemy.gravity, enemy.alpha = 0, 0, 0, 0
+            enemy.invulnerable = false
+            enemy._is_bottom_attacker = false
+
+            if wait_min and wait_max then
+                enemy._wait_duration = wait_min + math.random() * (wait_max - wait_min)
+                enemy._wait_timer = 0
+            end
+
+            if not enemy._intangible_shape then
+                common.make_intangible(enemy)
+            end
+
+            if coordinator.transitioning_to_phase then
+                coordinator.report_transition_ready(enemy)
+            end
+        end,
+        update = function(enemy, dt)
+            if coordinator.transitioning_to_phase then
+                return
+            end
+
+            if wait_min and wait_max then
+                enemy._wait_timer = enemy._wait_timer + dt
+                if enemy._wait_timer >= enemy._wait_duration then
+                    common.is_player_on_ground(enemy.target_player)
+                    enemy:set_state(get_next_state())
+                end
+            elseif check_bottom then
+                common.is_player_on_ground(enemy.target_player)
+                if not coordinator.player_on_ground and coordinator.is_bottom_available() then
+                    enemy:set_state(get_next_state())
+                end
+            end
+        end,
+        draw = common.noop,
     }
 end
 

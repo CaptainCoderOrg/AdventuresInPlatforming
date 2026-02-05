@@ -21,20 +21,30 @@ local PLATFORM_WAIT_DURATION = 1.0
 -- Phase 4 only uses outer platforms (1 and 2)
 local PHASE4_PLATFORM_INDICES = { 1, 2 }
 
+-- Reusable table for get_phase4_platforms (avoids per-call allocation)
+local phase4_available_platforms = {}
+
 --------------------------------------------------------------------------------
 -- Helper Functions
 --------------------------------------------------------------------------------
 
 --- Get available outer platforms (1 and 2 only) for phase 4.
+--- Note: Returns a reusable table - do not cache the result.
 ---@return table Array of available platform indices (subset of 1, 2)
 local function get_phase4_platforms()
-    local available = {}
-    for _, idx in ipairs(PHASE4_PLATFORM_INDICES) do
+    local count = 0
+    for i = 1, #PHASE4_PLATFORM_INDICES do
+        local idx = PHASE4_PLATFORM_INDICES[i]
         if not coordinator.occupied_platforms[idx] then
-            table.insert(available, idx)
+            count = count + 1
+            phase4_available_platforms[count] = idx
         end
     end
-    return available
+    -- Clear stale entries
+    for i = count + 1, #phase4_available_platforms do
+        phase4_available_platforms[i] = nil
+    end
+    return phase4_available_platforms
 end
 
 --------------------------------------------------------------------------------
@@ -43,46 +53,17 @@ end
 
 phase.states = {}
 
-phase.states.initial_wait = {
-    name = "initial_wait",
-    start = function(enemy)
-        enemy.vx, enemy.vy, enemy.gravity, enemy.alpha = 0, 0, 0, 0
-        enemy._wait_duration = PHASE4_START_DELAY
-        enemy._wait_timer = 0
+phase.states.initial_wait = common.create_initial_wait_state(
+    PHASE4_START_DELAY, PHASE4_START_DELAY,
+    function() return phase.states.decide_role end
+)
 
-        if not enemy._intangible_shape then
-            common.make_intangible(enemy)
-        end
-
-        common.is_player_on_ground(enemy.target_player)
-    end,
-    update = function(enemy, dt)
-        enemy._wait_timer = enemy._wait_timer + dt
-        if enemy._wait_timer >= enemy._wait_duration then
-            common.is_player_on_ground(enemy.target_player)
-            enemy:set_state(phase.states.decide_role)
-        end
-    end,
-    draw = common.noop,
-}
-
-phase.states.decide_role = {
-    name = "decide_role",
-    start = function(enemy)
-        common.is_player_on_ground(enemy.target_player)
-
-        local go_to_bottom = not coordinator.player_on_ground
-            and coordinator.is_bottom_available()
-
-        if go_to_bottom then
-            enemy:set_state(phase.states.bottom_enter)
-        else
-            enemy:set_state(phase.states.appear_state)
-        end
-    end,
-    update = common.noop,
-    draw = common.noop,
-}
+phase.states.decide_role = common.create_decide_role_state(
+    function() return phase.states.bottom_enter end,
+    function() return phase.states.appear_state end,
+    function() return phase.states.appear_state end,  -- Always go to platform in phase 4
+    nil  -- No platform limit in phase 4
+)
 
 -- Custom appear state for phase 4 (only platforms 1 and 2)
 phase.states.appear_state = {
@@ -354,65 +335,15 @@ phase.states.attack_player_repeatedly = {
     draw = enemy_common.draw,
 }
 
--- Exit bottom position
-phase.states.leave_bottom = {
-    name = "leave_bottom",
-    start = function(enemy)
-        enemy_common.set_animation(enemy, enemy.animations.RUN)
-        common.set_direction(enemy, 1)
-        enemy.vx, enemy.vy, enemy.gravity = 0, 0, 0
+phase.states.leave_bottom = common.create_leave_bottom_state(
+    function() return phase.states.bottom_wait end,
+    { clear_bottom_attacker = true }
+)
 
-        enemy._lerp_start_x = enemy.x
-        enemy._lerp_start_y = enemy.y
-        enemy._lerp_end_x = enemy.x + common.BOTTOM_OFFSET_X
-        enemy._lerp_end_y = enemy.y
-        enemy._lerp_timer = 0
-        enemy.alpha = 1
-
-        coordinator.release_bottom_position()
-        common.make_intangible(enemy)
-    end,
-    update = function(enemy, dt)
-        enemy._lerp_timer = enemy._lerp_timer + dt
-        local progress = math.min(1, enemy._lerp_timer / common.LEAVE_BOTTOM_DURATION)
-        local eased = common.smoothstep(progress)
-
-        enemy.x = common.lerp(enemy._lerp_start_x, enemy._lerp_end_x, eased)
-        enemy.y = common.lerp(enemy._lerp_start_y, enemy._lerp_end_y, eased)
-        enemy.alpha = 1 - progress
-
-        if progress >= 1 then
-            enemy.alpha = 0
-            enemy._is_bottom_attacker = false
-            enemy:set_state(phase.states.bottom_wait)
-        end
-    end,
-    draw = common.draw_with_alpha,
-}
-
--- Invisible wait after leaving bottom position
-phase.states.bottom_wait = {
-    name = "bottom_wait",
-    start = function(enemy)
-        enemy.vx, enemy.vy, enemy.gravity, enemy.alpha = 0, 0, 0, 0
-        enemy.invulnerable = false
-        enemy._is_bottom_attacker = false
-        enemy._wait_duration = BOTTOM_WAIT_MIN + math.random() * (BOTTOM_WAIT_MAX - BOTTOM_WAIT_MIN)
-        enemy._wait_timer = 0
-
-        if not enemy._intangible_shape then
-            common.make_intangible(enemy)
-        end
-    end,
-    update = function(enemy, dt)
-        enemy._wait_timer = enemy._wait_timer + dt
-        if enemy._wait_timer >= enemy._wait_duration then
-            common.is_player_on_ground(enemy.target_player)
-            enemy:set_state(phase.states.decide_role)
-        end
-    end,
-    draw = common.noop,
-}
+phase.states.bottom_wait = common.create_bottom_wait_state(
+    function() return phase.states.decide_role end,
+    { wait_min = BOTTOM_WAIT_MIN, wait_max = BOTTOM_WAIT_MAX }
+)
 
 phase.states.hit = common.create_positional_hit_state(
     function() return phase.states.jump_exit end,

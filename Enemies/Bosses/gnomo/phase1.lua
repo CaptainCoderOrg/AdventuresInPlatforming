@@ -68,10 +68,7 @@ phase.states.idle = {
         enemy_common.apply_gravity(enemy, dt)
 
         if enemy.target_player then
-            enemy.direction = enemy_common.direction_to_player(enemy)
-            if enemy.animation then
-                enemy.animation.flipped = enemy.direction
-            end
+            common.set_direction(enemy, enemy_common.direction_to_player(enemy))
         end
 
         -- Skip idle timer while cinematic is playing
@@ -156,10 +153,7 @@ phase.states.floor_exit = {
     name = "floor_exit",
     start = function(enemy)
         enemy_common.set_animation(enemy, enemy.animations.RUN)
-        enemy.direction = 1  -- Always run right to exit
-        if enemy.animation then
-            enemy.animation.flipped = enemy.direction
-        end
+        common.set_direction(enemy, 1)  -- Always run right to exit
         -- Use faster speed during phase transition
         local speed = coordinator.transitioning_to_phase and FLOOR_EXIT_TRANSITION_SPEED or FLOOR_EXIT_SPEED
         enemy.vx = speed
@@ -180,7 +174,7 @@ phase.states.floor_exit = {
     update = function(enemy, dt)
         if enemy._floor_exit_phase == "running" then
             enemy_common.apply_gravity(enemy, dt)
-            -- Use faster speed during phase transition
+            -- Speed up exit during phase transition to prevent lingering after gnomo death
             enemy.vx = coordinator.transitioning_to_phase and FLOOR_EXIT_TRANSITION_SPEED or FLOOR_EXIT_SPEED
 
             -- Check if reached the hole X position
@@ -203,11 +197,9 @@ phase.states.floor_exit = {
             local progress = math.min(1, enemy._lerp_timer / common.FADE_DURATION)
             local eased = common.smoothstep(progress)
 
-            -- Lerp past hole position (through wall)
+            -- Move past hole edge so gnomo visually disappears into the wall
             enemy.x = common.lerp(enemy._lerp_start_x, enemy._lerp_end_x, eased)
             enemy.y = common.lerp(enemy._lerp_start_y, enemy._lerp_end_y, eased)
-
-            -- Fade out
             enemy.alpha = 1 - progress
 
             if progress >= 1 then

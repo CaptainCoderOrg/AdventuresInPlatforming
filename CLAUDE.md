@@ -117,7 +117,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 ### Entities
 - `Enemies/init.lua` - Enemy manager
-- `Enemies/Bosses/gnomo/` - Gnomo boss encounter (coordinator, phases 1-4)
+- `Enemies/Bosses/gnomo/` - Gnomo boss encounter (coordinator, phases 0-4, cinematic, victory)
 - `Prop/init.lua` - Prop system manager
 - `Prop/npc_common.lua` - NPC factory for dialogue NPCs
 - `Prop/unique_item_registry.lua` - Item definitions and equipment types

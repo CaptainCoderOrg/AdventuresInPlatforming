@@ -294,6 +294,7 @@ end
 function common.make_intangible(enemy)
     combat.remove(enemy)
     enemy._intangible_shape = enemy.shape
+    enemy.shape = nil  -- Clear shape so check_player_overlap won't find it
     world.shape_map[enemy] = nil
 end
 

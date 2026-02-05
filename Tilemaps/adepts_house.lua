@@ -384,7 +384,8 @@ return {
           gid = 135,
           visible = true,
           properties = {
-            ["flip"] = true
+            ["flip"] = true,
+            ["on_dialogue"] = "adept_house_dialogue"
           }
         },
         {

@@ -203,6 +203,7 @@
   <object id="2" gid="135" x="144" y="112" width="16" height="16">
    <properties>
     <property name="flip" type="bool" value="true"/>
+    <property name="on_dialogue" value="adept_house_dialogue"/>
    </properties>
   </object>
   <object id="3" gid="151" x="8" y="80" width="16" height="16"/>

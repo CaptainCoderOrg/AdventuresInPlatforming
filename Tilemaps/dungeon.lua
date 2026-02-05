@@ -2488,7 +2488,7 @@ return {
           gid = 292,
           visible = true,
           properties = {
-            ["name"] = "Depths Entrance"
+            ["name"] = "Gnomos Hideout Entrance"
           }
         },
         {
@@ -2708,7 +2708,7 @@ return {
           gid = 292,
           visible = true,
           properties = {
-            ["name"] = "Depths"
+            ["name"] = "Gnomos Hideout"
           }
         },
         {
@@ -3591,7 +3591,9 @@ return {
           rotation = 0,
           gid = 292,
           visible = true,
-          properties = {}
+          properties = {
+            ["name"] = "Gnomos Ledge"
+          }
         },
         {
           id = 146,

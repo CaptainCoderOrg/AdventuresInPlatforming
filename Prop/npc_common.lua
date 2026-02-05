@@ -2,16 +2,33 @@
 local Animation = require("Animation")
 local TextDisplay = require("TextDisplay")
 local common = require("Prop/common")
+local dialogue_screen = require("ui/dialogue_screen")
+local shop_screen = require("ui/shop_screen")
 
 local npc_common = {}
+
+-- References set by main.lua for dialogue/shop screens
+local player_ref = nil
+local camera_ref = nil
+
+--- Set references needed for dialogue/shop screens
+---@param player table Player instance
+---@param camera table Camera instance
+function npc_common.set_refs(player, camera)
+    player_ref = player
+    camera_ref = camera
+end
 
 --- Create an NPC prop definition from configuration
 --- All NPCs share the same interact/update/draw patterns with different:
 ---   - Animation (sprite, frame count, timing, dimensions)
 ---   - Collision box size
----   - Dialogue text
+---   - Dialogue text (simple fallback)
 ---   - Draw width (for text display centering)
----@param config {sprite: string, frame_count: number, ms_per_frame: number, width: number, height: number, dialogue: string, box_size: number|nil, draw_width: number|nil} NPC configuration
+--- Dialogue trees and shop IDs are specified via Tiled properties:
+---   - on_dialogue: dialogue tree ID (from dialogue/registry)
+---   - shop_id: shop inventory ID (from shop/registry)
+---@param config {sprite: string, frame_count: number, ms_per_frame: number, width: number, height: number, dialogue: string|nil, box_size: number|nil, draw_width: number|nil} NPC configuration
 ---@return table NPC prop definition
 function npc_common.create(config)
     local animation_def = Animation.create_definition(config.sprite, config.frame_count, {
@@ -25,25 +42,46 @@ function npc_common.create(config)
     local draw_width = config.draw_width or box_size
 
     return {
-        box = { x = 0, y = 0, w = box_size, h = box_size },
+        -- 1 tile x-axis padding on each side for easier interaction
+        box = { x = -1, y = 0, w = box_size + 2, h = box_size },
         debug_color = "#FF00FF",
 
         ---@param prop table The NPC prop instance
         ---@param _player table The player instance (unused)
         ---@return boolean True to indicate interaction was handled
         interact = function(prop, _player)
-            prop.dialogue_display.visible = true
-            return true
+            -- Priority: shop > dialogue tree > simple dialogue
+            -- These are set from Tiled properties in on_spawn
+            if prop.shop_id and player_ref and camera_ref then
+                shop_screen.start(prop.shop_id, player_ref, camera_ref)
+                return true
+            elseif prop.on_dialogue and player_ref and camera_ref then
+                dialogue_screen.start(prop.on_dialogue, player_ref, camera_ref)
+                return true
+            elseif prop.dialogue_display then
+                -- Fall back to simple dialogue display
+                prop.dialogue_display.visible = true
+                return true
+            end
+            return false
         end,
 
         ---@param prop table The prop instance being spawned
         ---@param _def table The NPC definition (unused)
-        ---@param _options table Spawn options (unused)
-        on_spawn = function(prop, _def, _options)
+        ---@param options table Spawn options from Tiled (on_dialogue, shop_id)
+        on_spawn = function(prop, _def, options)
             prop.animation = Animation.new(animation_def)
             prop.text_display = TextDisplay.new("Talk\n{move_up}", { anchor = "top" })
-            prop.dialogue_display = TextDisplay.new(config.dialogue, { anchor = "top" })
-            prop.dialogue_display.visible = false
+
+            -- Store Tiled properties for use in interact
+            prop.on_dialogue = options.on_dialogue
+            prop.shop_id = options.shop_id
+
+            -- Only create simple dialogue display if no dialogue tree or shop
+            if not options.on_dialogue and not options.shop_id then
+                prop.dialogue_display = TextDisplay.new(config.dialogue or "", { anchor = "top" })
+                prop.dialogue_display.visible = false
+            end
         end,
 
         ---@param prop table NPC prop instance
@@ -51,11 +89,15 @@ function npc_common.create(config)
         ---@param player table Player instance for proximity check
         update = function(prop, dt, player)
             local is_active = common.player_touching(prop, player)
-            prop.text_display:update(dt, is_active and not prop.dialogue_display.visible)
-            prop.dialogue_display:update(dt, prop.dialogue_display.visible)
+            -- Don't show "Talk" prompt during dialogue/shop
+            local in_dialogue = dialogue_screen.is_active() or shop_screen.is_active()
+            prop.text_display:update(dt, is_active and not in_dialogue and not (prop.dialogue_display and prop.dialogue_display.visible))
 
-            if not is_active then
-                prop.dialogue_display.visible = false
+            if prop.dialogue_display then
+                prop.dialogue_display:update(dt, prop.dialogue_display.visible)
+                if not is_active then
+                    prop.dialogue_display.visible = false
+                end
             end
         end,
 
@@ -63,7 +105,9 @@ function npc_common.create(config)
         draw = function(prop)
             common.draw(prop)
             prop.text_display:draw(prop.x, prop.y, draw_width)
-            prop.dialogue_display:draw(prop.x, prop.y - 1, draw_width)
+            if prop.dialogue_display then
+                prop.dialogue_display:draw(prop.x, prop.y - 1, draw_width)
+            end
         end,
     }
 end

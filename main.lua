@@ -56,6 +56,7 @@ gnomo_coordinator.on_victory = gnomo_victory.start
 
 -- Props
 local Prop = require("Prop")
+local npc_common = require("Prop/npc_common")
 Prop.register("campfire", require("Prop/campfire"))
 Prop.register("button", require("Prop/button"))
 Prop.register("spike_trap", require("Prop/spike_trap"))
@@ -175,7 +176,7 @@ local function user_input()
     end
 
     if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active()
-        or hud.is_pickup_dialogue_active() then
+        or hud.is_pickup_dialogue_active() or hud.is_dialogue_active() or hud.is_shop_active() then
         return
     end
 
@@ -236,6 +237,14 @@ local function update(dt)
     -- During rest/pause screen, only update prop animations (keep campfire flickering)
     -- Timer keeps counting
     if hud.is_rest_screen_active() then
+        Playtime.resume()
+        Playtime.update(dt)
+        Prop.update_animations(dt)
+        return
+    end
+
+    -- During dialogue/shop, pause gameplay but keep timer running
+    if hud.is_dialogue_active() or hud.is_shop_active() then
         Playtime.resume()
         Playtime.update(dt)
         Prop.update_animations(dt)
@@ -535,6 +544,7 @@ init_level = function(level, spawn_override, player_data, options)
     rest_state.camera = camera
 
     hud.set_gameplay_refs(player, camera)
+    npc_common.set_refs(player, camera)
 
     was_dead = false
 end

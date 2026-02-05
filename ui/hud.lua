@@ -11,6 +11,8 @@ local secondary_bar = require("ui/secondary_bar")
 local rest_screen = require("ui/rest_screen")
 local title_screen = require("ui/title_screen")
 local slot_screen = require("ui/slot_screen")
+local dialogue_screen = require("ui/dialogue_screen")
+local shop_screen = require("ui/shop_screen")
 
 local hud = {}
 
@@ -39,7 +41,7 @@ function hud.init()
 end
 
 --- Process HUD input for all overlay screens
---- Priority: audio dialog > controls dialog > pause/rest screen toggle > slot screen > title screen > game over > rest screen
+--- Priority: audio dialog > controls dialog > pickup dialogue > dialogue screen > shop screen > pause/rest toggle > slot screen > title screen > game over > rest screen
 function hud.input()
     -- Audio dialog blocks other input when open
     if audio_dialog.is_active() then
@@ -56,6 +58,18 @@ function hud.input()
     -- Pickup dialogue blocks other input when open
     if pickup_dialogue.is_active() then
         pickup_dialogue.input()
+        return
+    end
+
+    -- Dialogue screen blocks other input when open
+    if dialogue_screen.is_active() then
+        dialogue_screen.input()
+        return
+    end
+
+    -- Shop screen blocks other input when open
+    if shop_screen.is_active() then
+        shop_screen.input()
         return
     end
 
@@ -94,8 +108,11 @@ function hud.update(dt, player)
     audio_dialog.update(dt)
     controls_dialog.update(dt)
     pickup_dialogue.update(dt)
+    dialogue_screen.update(dt)
+    shop_screen.update(dt)
     -- Block mouse input on screens beneath active overlays
     local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active() or pickup_dialogue.is_active()
+        or dialogue_screen.is_active() or shop_screen.is_active()
     slot_screen.update(dt, dialogs_block)
     -- Title screen also blocked by slot screen
     local title_block = dialogs_block or slot_screen.is_active()
@@ -126,7 +143,9 @@ end
 --- Draw all HUD elements
 ---@param player table Player instance with max_health, damage, and projectile properties
 function hud.draw(player)
-    if not title_screen.is_active() and not slot_screen.is_active() then
+    -- Hide HUD bar during dialogue/shop screens as well as title/slot
+    if not title_screen.is_active() and not slot_screen.is_active()
+       and not dialogue_screen.is_active() and not shop_screen.is_active() then
         local slide = rest_screen.get_hud_slide()
         if slide < 1 then
             draw_hud_bar(player)
@@ -136,6 +155,9 @@ function hud.draw(player)
     rest_screen.draw()
     title_screen.draw()
     slot_screen.draw()
+    -- Dialogue and shop screens
+    dialogue_screen.draw()
+    shop_screen.draw()
     -- Dialogs drawn last so they appear on top of everything
     pickup_dialogue.draw()
     audio_dialog.draw()
@@ -152,6 +174,18 @@ end
 ---@return boolean should_block True if player input should be skipped this frame
 function hud.should_block_pickup_input()
     return pickup_dialogue.should_block_input()
+end
+
+--- Check if dialogue screen is blocking game input
+---@return boolean is_active True if dialogue screen is visible
+function hud.is_dialogue_active()
+    return dialogue_screen.is_active()
+end
+
+--- Check if shop screen is blocking game input
+---@return boolean is_active True if shop screen is visible
+function hud.is_shop_active()
+    return shop_screen.is_active()
 end
 
 --- Show the game over screen

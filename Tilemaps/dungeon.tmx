@@ -1860,7 +1860,7 @@
  <objectgroup id="8" name="Props">
   <object id="7" gid="292" x="-16" y="96" width="16" height="16">
    <properties>
-    <property name="name" value="Depths Entrance"/>
+    <property name="name" value="Gnomos Hideout Entrance"/>
    </properties>
   </object>
   <object id="8" gid="502" x="-176" y="96" width="16" height="8">
@@ -1895,7 +1895,7 @@
   <object id="40" gid="290" x="720" y="16" width="16" height="16"/>
   <object id="41" gid="292" x="1904" y="80" width="16" height="16">
    <properties>
-    <property name="name" value="Depths"/>
+    <property name="name" value="Gnomos Hideout"/>
    </properties>
   </object>
   <object id="46" gid="300" x="1768" y="-96" width="16" height="16">
@@ -1987,7 +1987,11 @@
   <object id="129" gid="526" x="3360" y="80" width="16" height="16"/>
   <object id="130" gid="527" x="3248" y="48" width="16" height="16"/>
   <object id="131" gid="528" x="3296" y="48" width="16" height="16"/>
-  <object id="133" gid="292" x="3008" y="144" width="16" height="16"/>
+  <object id="133" gid="292" x="3008" y="144" width="16" height="16">
+   <properties>
+    <property name="name" value="Gnomos Ledge"/>
+   </properties>
+  </object>
   <object id="146" gid="307" x="3072" y="144" width="32" height="32">
    <properties>
     <property name="id" value="gnomo_boss_door"/>

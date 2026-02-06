@@ -115,7 +115,7 @@ function victory.update(dt)
             player.defeated_bosses[coordinator.boss_id] = true
         end
 
-        -- Journal: record gnomo kill
+        -- Journal: record gnomo kill (written directly to avoid toast during cinematic)
         if player and player.journal then
             player.journal["killed_gnomos"] = player.journal["killed_gnomos"] or "active"
         end

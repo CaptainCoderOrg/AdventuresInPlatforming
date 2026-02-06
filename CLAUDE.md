@@ -140,10 +140,16 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
 - `ui/fast_travel_panel.lua` - Fast travel destination panel for rest screen
+- `ui/journal_panel.lua` - Quest journal panel for rest/pause screen
+- `ui/journal_toast.lua` - Toast notification for new journal entries
 
 ### Persistence
 - `SaveSlots/init.lua` - 3-slot save system
 - `Playtime/init.lua` - Session timer
+
+### Journal
+- `journal/entries.lua` - Static registry of journal entry definitions (title, description, parent, sort_order)
+- `dialogue/manager.lua` - Dialogue flag/condition system with journal_add/journal_complete actions
 
 ### World
 - `platforms/init.lua` - Level geometry loader

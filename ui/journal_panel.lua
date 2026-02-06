@@ -12,6 +12,15 @@ local journal_panel = {}
 -- 9-slice definition (same as simple_dialogue / status_panel)
 local slice = nine_slice.create(sprites.ui.simple_dialogue, 76, 37, 10, 7, 9, 7)
 
+-- Pre-built parent->children lookup from static registry (avoids full scan in has_children)
+local children_of = {}
+for id, def in pairs(entries_registry) do
+    if def.parent then
+        if not children_of[def.parent] then children_of[def.parent] = {} end
+        table.insert(children_of[def.parent], id)
+    end
+end
+
 -- Layout
 local PADDING_TOP = 7
 local PADDING_LEFT = 10
@@ -34,8 +43,9 @@ local scroll_offset = 0       -- Number of entries scrolled past
 local collapsed = {}          -- entry_id -> true if collapsed
 local visible_entries = {}    -- Built list of {id, depth, has_children, title, status}
 local panel_width = 200
-local panel_height = 200
 local max_visible_lines = 10  -- Computed from panel height
+local cached_has_unread = false
+local unread_dirty = true      -- Invalidated on show/hide/mark_entry_read
 
 --- Get the depth of an entry by walking the parent chain
 ---@param entry_id string
@@ -52,19 +62,19 @@ end
 
 --- Check if an entry has any children that exist in the journal
 ---@param entry_id string
----@return boolean
+---@return boolean has_children True if entry has children in journal
 local function has_children(entry_id)
-    for id, def in pairs(entries_registry) do
-        if def.parent == entry_id and journal_data[id] then
-            return true
-        end
+    local kids = children_of[entry_id]
+    if not kids then return false end
+    for _, kid_id in ipairs(kids) do
+        if journal_data[kid_id] then return true end
     end
     return false
 end
 
 --- Check if any ancestor of an entry is collapsed
 ---@param entry_id string
----@return boolean
+---@return boolean is_collapsed True if any ancestor is collapsed
 local function is_ancestor_collapsed(entry_id)
     local def = entries_registry[entry_id]
     if not def or not def.parent then return false end
@@ -111,7 +121,7 @@ end
 --- Build a sort key for hierarchical sorting
 --- Returns a string like "0.001.001.002" where first segment is root status (0=active, 1=complete)
 ---@param entry_id string
----@return string
+---@return string sort_key Hierarchical sort key string
 local function build_sort_key(entry_id)
     local parts = {}
     local current_id = entry_id
@@ -160,6 +170,16 @@ local function build_visible_entries()
     end
 end
 
+--- Mark the entry at the given index as read
+---@param index number Index into visible_entries
+local function mark_entry_read(index)
+    local entry = visible_entries[index]
+    if entry then
+        journal_read[entry.id] = true
+        unread_dirty = true
+    end
+end
+
 --- Show the journal panel
 ---@param data table player.journal table
 ---@param read_data table|nil player.journal_read table
@@ -171,11 +191,9 @@ function journal_panel.show(data, read_data)
     hovered_index = nil
     scroll_offset = 0
     collapsed = {}
+    unread_dirty = true
     build_visible_entries()
-    -- Mark initially selected entry as read
-    if visible_entries[selected_index] then
-        journal_read[visible_entries[selected_index].id] = true
-    end
+    mark_entry_read(selected_index)
 end
 
 --- Hide the journal panel
@@ -188,10 +206,11 @@ function journal_panel.hide()
     hovered_index = nil
     scroll_offset = 0
     collapsed = {}
+    unread_dirty = true
 end
 
 --- Check if the panel is active
----@return boolean
+---@return boolean is_active True if panel is currently shown
 function journal_panel.is_active()
     return active
 end
@@ -241,20 +260,12 @@ function journal_panel.input()
     -- Navigate entries
     if controls.menu_up_pressed() then
         selected_index = selected_index - 1
-        if selected_index < 1 then selected_index = #visible_entries end
         clamp_selection()
-        -- Mark newly selected entry as read
-        if visible_entries[selected_index] then
-            journal_read[visible_entries[selected_index].id] = true
-        end
+        mark_entry_read(selected_index)
     elseif controls.menu_down_pressed() then
         selected_index = selected_index + 1
-        if selected_index > #visible_entries then selected_index = 1 end
         clamp_selection()
-        -- Mark newly selected entry as read
-        if visible_entries[selected_index] then
-            journal_read[visible_entries[selected_index].id] = true
-        end
+        mark_entry_read(selected_index)
     end
 
     -- Confirm toggles collapse on entries with children
@@ -281,10 +292,7 @@ function journal_panel.update(_, local_mx, local_my, mouse_active)
            local_my >= item_y and local_my < item_y + LINE_HEIGHT then
             hovered_index = i + scroll_offset
             selected_index = hovered_index
-            -- Mark hovered entry as read
-            if visible_entries[hovered_index] then
-                journal_read[visible_entries[hovered_index].id] = true
-            end
+            mark_entry_read(hovered_index)
             return
         end
     end
@@ -315,18 +323,25 @@ function journal_panel.get_selected_description()
     return def.description
 end
 
---- Check if any journal entries are unread
+--- Check if any journal entries are unread (cached, invalidated on show/hide/mark_entry_read)
 ---@param data table player.journal table
 ---@param read_data table player.journal_read table
 ---@return boolean True if any entry in data is not in read_data
 function journal_panel.has_unread(data, read_data)
-    if not data or not read_data then return false end
+    if not unread_dirty then return cached_has_unread end
+    unread_dirty = false
+    if not data or not read_data then
+        cached_has_unread = false
+        return false
+    end
+    cached_has_unread = false
     for entry_id, status in pairs(data) do
         if (status == "active" or status == "complete") and not read_data[entry_id] then
-            return true
+            cached_has_unread = true
+            break
         end
     end
-    return false
+    return cached_has_unread
 end
 
 --- Draw the journal panel
@@ -337,7 +352,6 @@ end
 function journal_panel.draw(x, y, width, height)
     if not active then return end
     panel_width = width
-    panel_height = height
 
     -- Compute max visible lines from available space
     local content_height = height - PADDING_TOP - HEADER_HEIGHT - 7
@@ -379,12 +393,8 @@ function journal_panel.draw(x, y, width, height)
         local indent = entry.depth * INDENT_PX
         local is_complete = entry.status == "complete"
 
-        local is_selected = false
-        if mouse_mode then
-            is_selected = hovered_index == entry_index
-        else
-            is_selected = selected_index == entry_index
-        end
+        local active_index = mouse_mode and hovered_index or selected_index
+        local is_selected = active_index == entry_index
 
         -- Active entries: white (yellow when selected); complete entries: gray (yellow when selected)
         local color

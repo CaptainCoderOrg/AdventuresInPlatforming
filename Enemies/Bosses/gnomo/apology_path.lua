@@ -9,6 +9,7 @@ local common = require("Enemies/Bosses/gnomo/common")
 local coordinator = require("Enemies/Bosses/gnomo/coordinator")
 local dialogue_manager = require("dialogue/manager")
 local dialogue_screen = require("ui/dialogue_screen")
+local enemy_common = require("Enemies/common")
 
 -- Lazy-loaded modules
 local platforms = nil
@@ -142,7 +143,6 @@ local function setup_green_descent()
     end
 
     -- Set to jump animation (upward frame)
-    local enemy_common = require("Enemies/common")
     enemy_common.set_animation(state.green_gnomo, state.green_gnomo.animations.JUMP)
     common.set_jump_frame_range(state.green_gnomo, common.FRAME_UPWARD_START, common.FRAME_UPWARD_END)
 
@@ -200,7 +200,6 @@ local function setup_gnomo_exits()
                 }
                 -- Face right
                 common.set_direction(gnomo, 1)
-                local enemy_common = require("Enemies/common")
                 enemy_common.set_animation(gnomo, gnomo.animations.RUN)
             else
                 -- Others jump to nearest hole
@@ -211,7 +210,6 @@ local function setup_gnomo_exits()
                     x = hx or gnomo.x,
                     y = hy or gnomo.y,
                 }
-                local enemy_common = require("Enemies/common")
                 enemy_common.set_animation(gnomo, gnomo.animations.JUMP)
                 common.set_jump_frame_range(gnomo, common.FRAME_UPWARD_START, common.FRAME_UPWARD_END)
             end
@@ -542,7 +540,7 @@ function apology_path.complete()
     -- Set flag for quest completion
     dialogue_manager.set_flag("apology_delivered_to_gnomos")
 
-    -- Journal: record apology delivery
+    -- Journal: record apology delivery (written directly to avoid toast during cinematic)
     if player and player.journal then
         player.journal["apology_delivered"] = player.journal["apology_delivered"] or "active"
     end

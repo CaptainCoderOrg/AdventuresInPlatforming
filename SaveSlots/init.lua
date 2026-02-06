@@ -145,6 +145,12 @@ SaveSlots.PLAYER_STAT_KEYS = {
 ---@type string[]
 SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "charge_state" }
 
+-- Keys that need shallow table copies in copy_stat_value
+local SHALLOW_COPY_KEYS = {
+    stat_upgrades = true, equipped_items = true, stackable_items = true,
+    defeated_bosses = true, dialogue_flags = true, journal = true, journal_read = true,
+}
+
 --- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)
 ---@param key string The stat key being copied
 ---@param value any The value to copy
@@ -160,7 +166,7 @@ local function copy_stat_value(key, value)
             copy[k] = { name = v.name, level_id = v.level_id, x = v.x, y = v.y }
         end
         return copy
-    elseif key == "stat_upgrades" or key == "equipped_items" or key == "stackable_items" or key == "defeated_bosses" or key == "dialogue_flags" or key == "journal" or key == "journal_read" then
+    elseif SHALLOW_COPY_KEYS[key] then
         local copy = {}
         for k, v in pairs(value) do
             copy[k] = v

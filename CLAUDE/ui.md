@@ -60,7 +60,7 @@ slot_screen.set_back_callback(fn)   -- Callback when Back pressed
 
 - Dual mode: Rest (campfire) and Pause (ESC/START during gameplay)
 - Circular viewport effect centered on campfire (rest mode only)
-- Menu navigation with sub-panels: Status, Map, Controls, Audio, Continue, Return to Title
+- Menu navigation with sub-panels: Status, Map, Journal, Controls, Audio, Continue, Return to Title
 - Integrated audio sliders and keybind panel
 - Confirmation dialog for Return to Title
 
@@ -122,6 +122,41 @@ fast_travel_panel.update(dt, local_mx, local_my, mouse)  -- Mouse hover detectio
 fast_travel_panel.handle_click()                         -- Mouse click handling
 fast_travel_panel.draw(x, y, width, height)              -- Render in info panel area
 ```
+
+## Journal Panel (`ui/journal_panel.lua`)
+
+- Quest tracking panel shown in the rest/pause screen info area
+- Displays journal entries grouped by hierarchy (parent-child) with active entries first, then complete
+- Supports collapsible entry groups with expand/collapse icons
+- Unread indicator: golden `*` on entries not yet viewed
+- Description of selected entry shown in rest dialogue
+
+```lua
+journal_panel.show(journal_data, journal_read)  -- Open with player journal tables
+journal_panel.hide()                             -- Close panel
+journal_panel.is_active()                        -- Check if open
+journal_panel.input()                            -- Returns {action = "back"} or nil
+journal_panel.update(dt, local_mx, local_my, mouse_active)  -- Mouse hover
+journal_panel.handle_click()                     -- Mouse click (toggle collapse)
+journal_panel.draw(x, y, width, height)          -- Render in info panel area
+journal_panel.get_selected_description()         -- Get selected entry description
+journal_panel.has_unread(data, read_data)         -- Static: check for unread entries
+```
+
+## Journal Toast (`ui/journal_toast.lua`)
+
+- Passive overlay notification when new journal entries are added
+- Shows "New Journal Entry" with entry title in bottom-right corner
+- Queue system for sequential display of multiple entries
+- Pauses timer when overlay screens are active (dialogue, shop, rest, etc.)
+
+```lua
+journal_toast.push(entry_id)       -- Add entry to display queue
+journal_toast.update(dt, paused)   -- Advance state machine
+journal_toast.draw()               -- Render toast notification
+```
+
+**State machine:** `HIDDEN` -> `FADING_IN` (0.3s) -> `VISIBLE` (2.5s) -> `FADING_OUT` (0.5s) -> `HIDDEN`
 
 ## Audio Dialog (`ui/audio_dialog.lua`)
 
@@ -276,3 +311,5 @@ grid:draw()
 - `ui/inventory_grid.lua` - 5x5 item grid component for status panel
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
 - `ui/fast_travel_panel.lua` - Fast travel destination picker for rest screen
+- `ui/journal_panel.lua` - Quest journal panel with hierarchical entries and unread indicators
+- `ui/journal_toast.lua` - Toast notification for new journal entries

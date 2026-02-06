@@ -50,6 +50,11 @@ Multi-slot save system using localStorage with 3 save slots.
     active_weapon = nil,             -- Currently active weapon item_id (for quick swap)
     active_secondary = nil,          -- Currently active secondary item_id (for ability swap)
     visited_campfires = {},          -- Fast travel locations {level_id:name -> {name, level_id, x, y}}
+    defeated_bosses = {},            -- Set of defeated boss ids {boss_id -> true}
+    dialogue_flags = {},             -- Dialogue condition flags {flag_name -> true}
+    journal = {},                    -- Quest journal entries {entry_id -> "active"|"complete"}
+    journal_read = {},               -- Read tracking for journal unread indicators {entry_id -> true}
+    difficulty = "normal",           -- Difficulty setting ("normal" or "easy")
 
     -- Prop persistence (cross-level)
     prop_states = {},                -- Map of prop_key -> state_data

@@ -261,6 +261,10 @@ self.recovery = 0               -- Bonus regeneration rate
 self.stat_upgrades = {}         -- Tracks upgrade counts per stat {Health=2, Stamina=1, ...}
 self.defeated_bosses = {}       -- Set of defeated boss ids (boss_id -> true), persisted on rest
 self.visited_campfires = {}     -- Visited campfires keyed by "level_id:name" -> {name, level_id, x, y}
+self.dialogue_flags = {}        -- Dialogue condition flags (flag_name -> true), managed by dialogue/manager.lua
+self.journal = {}               -- Quest journal entries (entry_id -> "active"|"complete")
+self.journal_read = {}          -- Read tracking for journal unread indicators (entry_id -> true)
+self.difficulty = "normal"      -- Difficulty setting ("normal" or "easy")
 self.attack_state = {           -- Combo tracking
     count, next_anim_ix, remaining_time, queued, hit_enemies
 }

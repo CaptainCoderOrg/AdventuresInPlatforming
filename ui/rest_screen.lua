@@ -81,7 +81,7 @@ local ARROW_WIDTH = 4
 local ARROW_HEIGHT = 6
 local ARROW_INSET = 7  -- Inset from button right edge (accounts for text-only button centering)
 
--- Menu item descriptions (index 5 is set dynamically when mode changes)
+-- Menu item descriptions (index 6 is set dynamically when mode changes)
 local REST_CONTINUE_DESC = "Resting restores your hit points, energy, and saves your progress. Enemies also respawn when you rest."
 local PAUSE_CONTINUE_DESC = "Resume gameplay."
 local MENU_DESCRIPTIONS = {
@@ -411,6 +411,7 @@ end
 local SLIDER_WIDTH = 80
 local SLIDER_HEIGHT = 14
 local SLIDER_LABELS = { "Master Volume", "Music", "SFX" }
+local SLIDER_LABEL_METRICS = {}  -- Cached text metrics per label (lazy-initialized)
 local SLIDER_KEYS = { "master", "music", "sfx" }
 local VOLUME_SETTERS = {
     canvas.set_master_volume,
@@ -1541,7 +1542,10 @@ local function draw_audio_panel(x, y, width, height)
         local is_focused = in_settings and audio_focus_index == i
         local label_color = is_focused and "#FFFF00" or nil
 
-        local metrics = canvas.get_text_metrics(label)
+        if not SLIDER_LABEL_METRICS[i] then
+            SLIDER_LABEL_METRICS[i] = canvas.get_text_metrics(label)
+        end
+        local metrics = SLIDER_LABEL_METRICS[i]
         utils.draw_outlined_text(label, label_center_x - metrics.width / 2, offset_y + 1, label_color)
 
         -- Slider positions are set in update(), just draw here
@@ -1554,7 +1558,10 @@ local function draw_audio_panel(x, y, width, height)
 
     local diff_label = "Difficulty"
     local diff_label_color = diff_focused and "#FFFF00" or nil
-    local diff_metrics = canvas.get_text_metrics(diff_label)
+    if not SLIDER_LABEL_METRICS.difficulty then
+        SLIDER_LABEL_METRICS.difficulty = canvas.get_text_metrics(diff_label)
+    end
+    local diff_metrics = SLIDER_LABEL_METRICS.difficulty
     utils.draw_outlined_text(diff_label, label_center_x - diff_metrics.width / 2, diff_y + 1, diff_label_color)
 
     -- Draw toggle value with arrows
@@ -1566,9 +1573,15 @@ local function draw_audio_panel(x, y, width, height)
     canvas.set_text_baseline("middle")
     local arrow_left = "< "
     local arrow_right = " >"
-    local value_metrics = canvas.get_text_metrics(value_text)
-    local left_metrics = canvas.get_text_metrics(arrow_left)
-    local right_metrics = canvas.get_text_metrics(arrow_right)
+    if not SLIDER_LABEL_METRICS.arrow_left then
+        SLIDER_LABEL_METRICS.arrow_left = canvas.get_text_metrics(arrow_left)
+        SLIDER_LABEL_METRICS.arrow_right = canvas.get_text_metrics(arrow_right)
+        SLIDER_LABEL_METRICS.easy = canvas.get_text_metrics("Easy")
+        SLIDER_LABEL_METRICS.normal = canvas.get_text_metrics("Normal")
+    end
+    local value_metrics = current_difficulty == "easy" and SLIDER_LABEL_METRICS.easy or SLIDER_LABEL_METRICS.normal
+    local left_metrics = SLIDER_LABEL_METRICS.arrow_left
+    local right_metrics = SLIDER_LABEL_METRICS.arrow_right
     local total_width = left_metrics.width + value_metrics.width + right_metrics.width
     local toggle_x = label_center_x - total_width / 2
     local toggle_y = diff_y + 12
@@ -1781,7 +1794,10 @@ local function draw_submenu_prompt(dialogue)
     canvas.set_text_baseline("middle")
     canvas.set_text_align("right")
 
-    local text_metrics = canvas.get_text_metrics(text)
+    if not enter_text_metrics then
+        enter_text_metrics = canvas.get_text_metrics(text)
+    end
+    local text_metrics = enter_text_metrics
     local text_x = dialogue.x + dialogue.width - PROMPT_PADDING
     local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
 
@@ -1820,7 +1836,10 @@ local function draw_inventory_equip_prompt(dialogue)
     canvas.set_text_baseline("middle")
     canvas.set_text_align("right")
 
-    local text_metrics = canvas.get_text_metrics(text)
+    if not equip_prompt_metrics[text] then
+        equip_prompt_metrics[text] = canvas.get_text_metrics(text)
+    end
+    local text_metrics = equip_prompt_metrics[text]
     local text_x = dialogue.x + dialogue.width - PROMPT_PADDING
     local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
 
@@ -1837,7 +1856,10 @@ local function draw_inventory_equip_prompt(dialogue)
     canvas.restore()
 end
 
+-- Cached text metrics for prompts (lazy-initialized)
+local enter_text_metrics = nil
 local back_text_metrics = nil
+local equip_prompt_metrics = {}  -- "Equip"/"Unequip"/"Use" -> metrics
 
 --- Draw the map back prompt in the bottom right of the rest dialogue
 ---@param dialogue table The rest dialogue with x, y, width, height
@@ -2037,6 +2059,7 @@ function rest_screen.draw()
         draw_inventory_equip_prompt(rest_dialogue)
         draw_map_back_prompt(rest_dialogue)
 
+        local journal_has_unread = player_ref and journal_panel.has_unread(player_ref.journal, player_ref.journal_read)
         for i, btn in ipairs(buttons) do
             local is_focused = focused_index == i or hovered_index == i
             btn:draw(is_focused)
@@ -2049,7 +2072,7 @@ function rest_screen.draw()
             end
 
             -- Draw unread indicator on Journal button
-            if i == 3 and player_ref and journal_panel.has_unread(player_ref.journal, player_ref.journal_read) then
+            if i == 3 and journal_has_unread then
                 canvas.save()
                 canvas.set_font_family("menu_font")
                 canvas.set_font_size(8)

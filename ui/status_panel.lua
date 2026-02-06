@@ -185,9 +185,8 @@ function status_panel:can_level_up(available_exp)
 end
 
 --- Get the minimum upgrade cost across all non-maxed levelable stats
----@param available_exp number|nil Pre-computed available XP
 ---@return number|nil min_cost Minimum XP cost, or nil if all stats are maxed
-function status_panel:get_min_upgrade_cost(available_exp)
+function status_panel:get_min_upgrade_cost()
     if not self.player then return nil end
     local min_cost = nil
     for stat_name in pairs(LEVELABLE_STATS) do
@@ -398,7 +397,7 @@ function status_panel:build_stats_rows()
     rows[2].monospace = nil
 
     -- Row 3: Next Level
-    local min_cost = self:get_min_upgrade_cost(self._available_exp)
+    local min_cost = self:get_min_upgrade_cost()
     rows[3].label = "Required XP"
     rows[3].value = min_cost and tostring(min_cost) or "MAX"
     rows[3].suffix = nil

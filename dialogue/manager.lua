@@ -149,7 +149,16 @@ function manager.execute_actions(actions, player)
         elseif action:sub(1, 10) == "give_item_" then
             local item_id = action:sub(11)
             if player and player.unique_items then
-                table.insert(player.unique_items, item_id)
+                local already_has = false
+                for _, item in ipairs(player.unique_items) do
+                    if item == item_id then
+                        already_has = true
+                        break
+                    end
+                end
+                if not already_has then
+                    table.insert(player.unique_items, item_id)
+                end
             end
         elseif action:sub(1, 10) == "take_item_" then
             local item_id = action:sub(11)

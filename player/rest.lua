@@ -1,5 +1,6 @@
 local Animation = require('Animation')
 local audio = require('audio')
+local controls = require('controls')
 local common = require('player.common')
 local Enemy = require('Enemies')
 local hud = require('ui/hud')
@@ -95,11 +96,19 @@ function rest.input(player)
 end
 
 --- Updates rest state. Keeps player stationary until level reload from rest screen.
+--- If the rest screen has closed and the player presses a movement key, exit to run state.
 ---@param player table The player object
 ---@param dt number Delta time in seconds (unused: rest state is static, waiting for UI)
 function rest.update(player, dt)
 	player.vx = 0
 	player.vy = 0
+
+	-- Allow movement input to break out of rest when the rest screen is no longer open
+	if not hud.is_rest_screen_active() then
+		if controls.left_down() or controls.right_down() or controls.jump_pressed() then
+			player:set_state(player.states.run)
+		end
+	end
 end
 
 --- Renders the player in rest pose.

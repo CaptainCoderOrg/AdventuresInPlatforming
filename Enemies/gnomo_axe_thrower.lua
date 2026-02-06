@@ -1,7 +1,7 @@
 --- Gnomo Axe Thrower: A ground-based enemy that throws arcing axes at the player.
 --- States: idle (face player), throw (launch axes), hit (take damage),
 ---         run_away (tactical retreat), death
---- Health: 5 HP. Contact damage: 1. Axe damage: 1.
+--- Health: 4 HP. Contact damage: 1. Axe damage: 1.
 local Animation = require('Animation')
 local sprites = require('sprites')
 local canvas = require('canvas')
@@ -366,7 +366,7 @@ gnomo.states.throw = {
 		common.set_animation(enemy, gnomo.animations.ATTACK)
 		enemy.vx = 0
 		face_player(enemy)
-		enemy.axes_to_throw = math.random(3, 5)
+		enemy.axes_to_throw = 3
 		enemy.axes_thrown = 0
 		enemy.axe_spawned_this_anim = false
 	end,

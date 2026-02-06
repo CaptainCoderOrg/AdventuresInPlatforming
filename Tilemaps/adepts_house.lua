@@ -460,7 +460,8 @@ return {
           visible = true,
           properties = {
             ["gold"] = 20,
-            ["required_key"] = "old_key"
+            ["item_id"] = "dash_amulet",
+            ["required_key"] = "adept_key"
           }
         }
       }

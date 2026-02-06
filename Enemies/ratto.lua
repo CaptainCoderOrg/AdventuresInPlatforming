@@ -164,7 +164,7 @@ return {
 	gravity = 1.5,
 	max_fall_speed = 20,
 	max_health = 2,
-	damage = 1,
+	damage = 0.5,
 	damages_shield = true,  -- Contact damage triggers shield stamina drain
 	death_sound = "ratto",
 	loot = { xp = 3, gold = { min = 0, max = 5 } },

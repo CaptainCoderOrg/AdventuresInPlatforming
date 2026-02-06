@@ -17,6 +17,11 @@ local GAMEPAD_SHOULDER_SCALE = 0.75
 local KEYBOARD_SPRITE_SCALE = 0.125
 local KEYBOARD_WORD_SCALE = 0.1875
 
+-- Icon registry: maps token names to sprite + rotation for inline icon rendering
+local ICON_REGISTRY = {
+    down_arrow = { sprite = sprites.ui.level_up_icon, rotation = math.pi },
+}
+
 -- Reusable cache to avoid per-frame allocation in draw()
 local line_widths_cache = {}
 
@@ -116,7 +121,11 @@ local function parse_segments(text)
                         table.insert(segments, { type = "text", value = prefix .. ":" .. suffix })
                     end
                 else
-                    table.insert(segments, { type = "action", value = prefix })
+                    if ICON_REGISTRY[prefix] then
+                        table.insert(segments, { type = "icon", value = prefix })
+                    else
+                        table.insert(segments, { type = "action", value = prefix })
+                    end
                 end
                 pos = end_brace + 1
             else
@@ -206,6 +215,8 @@ local function get_segments_width(segments, scheme)
     for _, segment in ipairs(segments) do
         if segment.type == "text" then
             total_width = total_width + canvas.get_text_width(segment.value)
+        elseif segment.type == "icon" then
+            total_width = total_width + FONT_SIZE
         elseif segment.type == "color_start" or segment.type == "color_end" then
             -- Color tags have no width, skip
         else
@@ -254,6 +265,21 @@ local function draw_segments(segments, scheme, start_x, text_y)
             current_color = segment.value
         elseif segment.type == "color_end" then
             current_color = DEFAULT_TEXT_COLOR
+        elseif segment.type == "icon" then
+            local icon = ICON_REGISTRY[segment.value]
+            if icon then
+                local size = FONT_SIZE
+                local icon_y = text_y - FONT_SIZE + (FONT_SIZE - size) / 2
+                local cx = x + size / 2
+                local cy = icon_y + size / 2
+                canvas.save()
+                canvas.translate(cx, cy)
+                canvas.rotate(icon.rotation)
+                canvas.translate(-cx, -cy)
+                canvas.draw_image(icon.sprite, x, icon_y, size, size)
+                canvas.restore()
+                x = x + size
+            end
         elseif segment.type == "text" then
             canvas.set_color(current_color)
             canvas.draw_text(x, text_y, segment.value, {})

@@ -155,6 +155,11 @@ widget:draw(player)        -- Renders bar with equipped secondaries
 - Scales with `config.ui.SCALE` (layout constants in 1x scale)
 - X position auto-calculated based on max(health, stamina, energy) meter width
 - Only renders when at least one secondary is equipped
+- Charge display for charge-based secondaries:
+  - Grey-out (30% alpha) when all charges depleted
+  - Charge count digit overlay (white when available, red when depleted)
+  - Clockwise red recharge progress outline while recharging
+  - Uses `weapon_sync.get_charge_info()` for charge state
 
 ## Boss Health Bar (`ui/boss_health_bar.lua`)
 

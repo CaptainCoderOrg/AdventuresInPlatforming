@@ -152,6 +152,7 @@ function Player.new()
 	self.attacks = 3
 	self.attack_cooldown = 0
 	self.throw_cooldown = 0
+	self.charge_state = {}  -- Runtime charge state per secondary (populated by weapon_sync.sync)
 	self.attack_speed_multiplier = 1.0  -- For future speed upgrades
 	self.has_hammer = false             -- Legacy flag (combat now uses equipped_items)
 	self.has_axe = false
@@ -462,6 +463,7 @@ function Player:update(dt)
 	self.dash_cooldown = self.dash_cooldown - dt
 	self.attack_cooldown = self.attack_cooldown - dt
 	self.throw_cooldown = self.throw_cooldown - dt
+	weapon_sync.update_charges(self, dt)
 
 	-- Stamina regeneration (after cooldown period, reduced while blocking)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt

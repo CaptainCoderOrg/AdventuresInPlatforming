@@ -1,6 +1,7 @@
 local Animation = require('Animation')
 local common = require('player.common')
 local controls = require('controls')
+local weapon_sync = require('player.weapon_sync')
 
 --- Throw state: Player throws the selected projectile.
 --- Movement allowed during throw animation. Clears input queue on entry.
@@ -19,6 +20,7 @@ function throw.start(player)
 	-- Consume energy based on projectile's cost (clamp to max in case of race)
 	local energy_cost = player.projectile.energy_cost or 1
 	player.energy_used = math.min(player.energy_used + energy_cost, player.max_energy)
+	weapon_sync.consume_charge(player)
 	player.animation = Animation.new(common.animations.THROW)
 	player.throw_state.remaining_time = (common.animations.THROW.frame_count * common.animations.THROW.ms_per_frame) / 1000
 	player.projectile.create(player.x, player.y, player.direction, player)

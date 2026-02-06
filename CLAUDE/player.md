@@ -43,6 +43,8 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 
 **Secondary Items:** Up to 4 secondary items (throwables) can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT. When no secondaries are equipped, `player.projectile` is nil and throw inputs are silently ignored.
 
+**Charge System:** Some secondaries (e.g., throwing axe) have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges()`, `consume_charge()`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest. Non-charge secondaries (e.g., shuriken) are unaffected.
+
 ## Combat System
 
 Player combat abilities managed through state machine.
@@ -78,6 +80,13 @@ Player combat abilities managed through state machine.
      - Uses `weapon_sync.get_equipped_secondaries()` to fetch all equipped
      - Uses `weapon_sync.get_active_secondary()` to get current selection
      - Uses `weapon_sync.get_secondary_spec()` to get projectile definition
+   - **Charge System:**
+     - Some secondaries have limited charges (e.g., throwing axe: 2 charges, 2s recharge each)
+     - `weapon_sync.has_throw_charges(player)` gates throw attempts
+     - `weapon_sync.consume_charge(player)` called in `throw.start()`
+     - `weapon_sync.update_charges(player, dt)` ticks recharge timers each frame
+     - Shows "Cooldown" text when attempting throw with 0 charges
+     - Charges reset at campfires (`rest.start()`)
 
 3. **Hammer** - `player/hammer.lua`
    - Heavy stationary attack (7 frames, 150ms/frame)
@@ -273,6 +282,8 @@ self.stamina_regen_timer = 0    -- Time since last stamina use
 self.fatigue_remaining = 0      -- Seconds remaining in fatigue state (0 = not fatigued)
 self.max_energy = 3             -- Maximum energy points (for projectiles)
 self.energy_used = 0            -- Consumed energy
+self.charge_state = {}          -- Runtime charge state per secondary item
+                                -- { item_id = { used_charges, recharge_timer } }
 ```
 
 ## Animation System

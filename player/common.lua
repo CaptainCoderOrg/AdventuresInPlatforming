@@ -143,6 +143,12 @@ function common.handle_throw(player)
 	if not player.projectile then return end
 	if not player:is_projectile_unlocked(player.projectile) then return end
 
+	-- Block throw when no charges available
+	if not weapon_sync.has_throw_charges(player) then
+		Effects.create_text(player.x, player.y, "Cooldown")
+		return
+	end
+
 	-- Block throw entirely when insufficient energy (no cooldown queue needed)
 	if not has_throw_energy(player) then
 		local current_energy = player.max_energy - player.energy_used
@@ -565,7 +571,8 @@ local function try_queued_combat_action(player)
 	if player.input_queue.throw and player.throw_cooldown <= 0 then
 		player.input_queue.throw = false
 		-- Check projectile equipped, unlock and energy before attempting throw
-		if player.projectile and player:is_projectile_unlocked(player.projectile) and has_throw_energy(player) then
+		if player.projectile and player:is_projectile_unlocked(player.projectile)
+		   and weapon_sync.has_throw_charges(player) and has_throw_energy(player) then
 			if try_use_throw_stamina(player) then
 				return player.states.throw
 			end

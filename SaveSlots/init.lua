@@ -140,7 +140,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
 
 --- Transient state preserved during level transitions but reset at campfires
 ---@type string[]
-SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used" }
+SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "charge_state" }
 
 --- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)
 ---@param key string The stat key being copied
@@ -194,13 +194,28 @@ function SaveSlots.restore_player_stats(player, stats)
     end
 end
 
+--- Copy a transient value, creating deep copies for nested tables (charge_state)
+---@param key string The transient key being copied
+---@param value any The value to copy
+---@return any copy Deep copy for tables, direct value otherwise
+local function copy_transient_value(key, value)
+    if key == "charge_state" and type(value) == "table" then
+        local copy = {}
+        for item_id, state in pairs(value) do
+            copy[item_id] = { used_charges = state.used_charges, recharge_timer = state.recharge_timer }
+        end
+        return copy
+    end
+    return value
+end
+
 --- Get transient state for level transitions (not saved at campfires)
 ---@param player table Player instance
 ---@return table state Transient state values
 function SaveSlots.get_transient_state(player)
     local state = {}
     for _, key in ipairs(SaveSlots.TRANSIENT_KEYS) do
-        state[key] = player[key]
+        state[key] = copy_transient_value(key, player[key])
     end
     return state
 end
@@ -212,7 +227,7 @@ end
 function SaveSlots.restore_transient_state(player, state)
     for _, key in ipairs(SaveSlots.TRANSIENT_KEYS) do
         if state[key] ~= nil then
-            player[key] = state[key]
+            player[key] = copy_transient_value(key, state[key])
         end
     end
 end

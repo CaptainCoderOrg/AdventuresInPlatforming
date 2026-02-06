@@ -16,6 +16,8 @@ local audio = require("audio")
 ---@field animated_frames number|nil Frame count for animated sprite
 ---@field collected_frames number|nil Frame count for collected animation
 ---@field collect_sfx string|nil Sound effect on collection
+---@field max_charges number|nil Max charges for charge-based secondaries (nil = unlimited)
+---@field recharge number|nil Seconds per charge to recharge (required if max_charges is set)
 
 ---@type table<string, UniqueItemDef>
 return {
@@ -140,6 +142,8 @@ return {
         description = "A simple projectile that can be thrown. While active press {ability} to use.",
         type = "secondary",
         static_sprite = sprites.items.axe_icon,
+        max_charges = 2,
+        recharge = 2,
     },
     shuriken = {
         name = "Summon Shuriken",

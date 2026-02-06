@@ -60,7 +60,7 @@ Multi-slot save system using localStorage with 3 save slots.
 
 **Transient State** (preserved during level transitions, reset at campfires):
 ```lua
-SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used" }
+SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "charge_state" }
 ```
 
 ### Key Methods

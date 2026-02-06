@@ -57,6 +57,13 @@ function rest.start(player)
 	player.vx = 0
 	player.damage = 0
 	player.energy_used = 0
+	-- Restore all secondary charges (e.g., throwing axes) on rest
+	if player.charge_state then
+		for _, state in pairs(player.charge_state) do
+			state.used_charges = 0
+			state.recharge_timer = 0
+		end
+	end
 
 	-- Animate props back to default states
 	Prop.reset_all()

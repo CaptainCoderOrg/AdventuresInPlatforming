@@ -33,7 +33,7 @@ Projectile.animations = {
 }
 
 --- Returns the Axe projectile specification.
---- Axe has an arcing trajectory with gravity, costs 1 stamina and 0 energy to throw.
+--- Axe has an arcing trajectory with gravity, costs 2 stamina and 0 energy to throw.
 ---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, energy_cost, create
 function Projectile.get_axe()
     return {
@@ -41,7 +41,7 @@ function Projectile.get_axe()
         sprite = sprites.projectiles.axe,
         icon = sprites.projectiles.axe_icon,
         damage = 1,
-        stamina_cost = 1,
+        stamina_cost = 2,
         energy_cost = 0,
         create = Projectile.create_axe,
     }

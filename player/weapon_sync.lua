@@ -228,6 +228,81 @@ function weapon_sync.get_secondary_spec(player)
     return nil
 end
 
+--- Returns the charge definition and runtime state for an item, or nil if not charge-based.
+---@param player table The player object
+---@param item_id string|nil Item ID to look up
+---@return table|nil def Registry definition (only if charge-based)
+---@return table|nil state Runtime charge state
+local function resolve_charge(player, item_id)
+    if not item_id then return nil, nil end
+    local def = unique_item_registry[item_id]
+    if not def or not def.max_charges then return nil, nil end
+    return def, player.charge_state[item_id]
+end
+
+--- Returns true if the active secondary has charges available (or is not charge-based).
+--- Non-charge items always pass.
+---@param player table The player object
+---@return boolean True if throw is allowed by charge system
+function weapon_sync.has_throw_charges(player)
+    local sec_id = weapon_sync.get_active_secondary(player)
+    local def, state = resolve_charge(player, sec_id)
+    if not def or not state then return true end
+    return state.used_charges < def.max_charges
+end
+
+--- Consumes one charge from the active secondary and starts recharge timer.
+---@param player table The player object
+function weapon_sync.consume_charge(player)
+    local sec_id = weapon_sync.get_active_secondary(player)
+    local def, state = resolve_charge(player, sec_id)
+    if not def or not state then return end
+    state.used_charges = math.min(state.used_charges + 1, def.max_charges)
+    if state.recharge_timer == 0 then
+        state.recharge_timer = def.recharge
+    end
+end
+
+--- Ticks recharge timers for ALL equipped charge secondaries.
+--- When a timer elapses: restore 1 charge, restart timer if more charges still spent, else stop.
+---@param player table The player object
+---@param dt number Delta time in seconds
+function weapon_sync.update_charges(player, dt)
+    for item_id, state in pairs(player.charge_state) do
+        if state.recharge_timer > 0 then
+            state.recharge_timer = state.recharge_timer - dt
+            if state.recharge_timer <= 0 then
+                state.used_charges = math.max(0, state.used_charges - 1)
+                if state.used_charges > 0 then
+                    -- More charges to recover, restart timer
+                    local def = unique_item_registry[item_id]
+                    state.recharge_timer = def and def.recharge or 0
+                else
+                    state.recharge_timer = 0
+                end
+            end
+        end
+    end
+end
+
+--- Returns charge info for HUD rendering.
+---@param item_id string Secondary item ID
+---@param player table The player object
+---@return number available Available charges
+---@return number max_charges Maximum charges
+---@return number progress Recharge progress 0.0-1.0 (0 = just started, 1 = about to restore)
+function weapon_sync.get_charge_info(item_id, player)
+    local def, state = resolve_charge(player, item_id)
+    if not def then return 0, 0, 0 end
+    if not state then return def.max_charges, def.max_charges, 0 end
+    local available = def.max_charges - state.used_charges
+    local progress = 0
+    if state.recharge_timer > 0 and def.recharge > 0 then
+        progress = 1 - (state.recharge_timer / def.recharge)
+    end
+    return available, def.max_charges, progress
+end
+
 --- Syncs player ability flags from equipped_items
 --- Updates has_shield, has_axe, has_shuriken, can_dash, has_double_jump, has_wall_slide
 --- Also ensures active_weapon is valid (auto-selects first equipped weapon if needed)
@@ -261,6 +336,21 @@ function weapon_sync.sync(player)
     -- Ensure active_secondary is valid (auto-select first equipped secondary if invalid)
     if not is_valid_secondary(player, player.active_secondary) then
         player.active_secondary = weapon_sync.get_first_equipped_secondary(player)
+    end
+
+    -- Initialize charge_state entries for equipped charge-based secondaries
+    if not player.charge_state then player.charge_state = {} end
+    local secondaries = weapon_sync.get_equipped_secondaries(player)
+    for _, sec in ipairs(secondaries) do
+        if sec.def.max_charges and not player.charge_state[sec.id] then
+            player.charge_state[sec.id] = { used_charges = 0, recharge_timer = 0 }
+        end
+    end
+    -- Remove charge_state entries for unequipped secondaries
+    for item_id in pairs(player.charge_state) do
+        if not player.equipped_items[item_id] then
+            player.charge_state[item_id] = nil
+        end
     end
 
     -- Keep legacy projectile reference in sync with active_secondary

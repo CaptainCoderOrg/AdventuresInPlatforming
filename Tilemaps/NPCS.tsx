@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="NPCS" tilewidth="32" tileheight="32" tilecount="3" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="NPCS" tilewidth="64" tileheight="64" tilecount="4" columns="0">
  <editorsettings>
   <export target="NPCS.lua" format="lua"/>
  </editorsettings>
@@ -21,5 +21,8 @@
    <property name="type" value="adept_npc"/>
   </properties>
   <image source="npcs/adept2.png" width="16" height="16"/>
+ </tile>
+ <tile id="3">
+  <image source="../assets/Tilesets/house_00.png" width="64" height="64"/>
  </tile>
 </tileset>

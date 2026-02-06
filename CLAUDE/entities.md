@@ -602,7 +602,8 @@ Visual feedback system for transient effects including animations, floating text
 
 ### Architecture
 
-- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`, `state.collect_particles`, `state.flying_objects`
+- Object pool pattern with separate pools: `state.all` (animations), `state.damage_texts`, `state.status_texts`, `state.fatigue_particles`, `state.collect_particles`, `state.heal_particles`, `state.flying_objects`
+- Accumulating text trackers: `state.active_xp_text`, `state.active_gold_text`, `state.active_heal_text`
 - Factory methods for specific effects
 - Integrated into main loop via `Effects.update(dt)` and `Effects.draw()`
 - Text width cached at creation to avoid per-frame measurement
@@ -617,10 +618,12 @@ Visual feedback system for transient effects including animations, floating text
 - Damage text - Shows damage numbers above enemies (red, floats upward)
 - Status text - Shows player state messages (TIRED, Low Energy, No Energy, Locked, Perfect Block)
 - Gold/XP text - Accumulating pickup feedback that follows player
+- Heal text - Accumulating green "+X.X HP" text that follows player during channeling
 
 **Particles:**
 - Fatigue particles - Sweat droplets when stamina exhausted
 - Collect particles - Gold/yellow burst when collecting unique items
+- Heal particles - Pink/red particles that converge toward player center during channeling
 
 **Flying Objects:**
 - Flying axe - Boss defeat animation (fly up → pause → descend to target, spinning sprite, completion callback)
@@ -640,12 +643,14 @@ Effects.create_locked_text(x, y, player)      -- "Locked" for doors
 Effects.create_perfect_block_text(x, y)       -- "Perfect Block" (yellow)
 
 -- Accumulating text (follows player)
-Effects.create_gold_text(x, y, amount, player)-- Accumulating gold pickup
-Effects.create_xp_text(x, y, amount, player)  -- Accumulating XP pickup
+Effects.create_gold_text(x, y, amount, player)  -- Accumulating gold pickup
+Effects.create_xp_text(x, y, amount, player)    -- Accumulating XP pickup
+Effects.create_heal_text(x, y, amount, player)  -- Accumulating heal "+X.X HP" (green)
 
 -- Particles
-Effects.create_fatigue_particle(x, y)         -- Sweat particle
-Effects.create_collect_particles(x, y)        -- Item collection burst
+Effects.create_fatigue_particle(x, y)           -- Sweat particle
+Effects.create_collect_particles(x, y)          -- Item collection burst
+Effects.create_heal_particle(cx, cy)            -- Pink converging heal particle
 
 -- Flying objects
 Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)  -- Boss defeat axe

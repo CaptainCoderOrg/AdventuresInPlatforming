@@ -41,7 +41,9 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 
 **Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
 
-**Secondary Items:** Up to 4 secondary items (throwables) can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT. When no secondaries are equipped, `player.projectile` is nil and throw inputs are silently ignored.
+**Secondary Items:** Up to 4 secondary items can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT. Secondaries come in two types:
+- **Throwable** (e.g., throwing axe, shuriken): Press ability to launch a projectile. When no throwable is active, `player.projectile` is nil and throw inputs are silently ignored.
+- **Channeled** (e.g., minor healing): Hold ability to continuously activate. Channeling logic in `player/heal_channel.lua` runs each frame during `Player:update()`.
 
 **Charge System:** Some secondaries (e.g., throwing axe) have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges()`, `consume_charge()`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest. Non-charge secondaries (e.g., shuriken) are unaffected.
 
@@ -181,10 +183,11 @@ player:get_speed()           -- Returns speed with fatigue penalty applied
 
 ### Energy System
 
-- `max_energy = 3` - Projectile ammunition pool
-- `energy_used` - Tracks projectile consumption
-- Currently used for throw ability resource tracking
-- **Visual Feedback**: "Low Energy" or "No Energy" text appears when throw attempted with insufficient energy
+- `max_energy = 3` - Ability resource pool
+- `energy_used` - Tracks energy consumption
+- Used by throwable secondaries (1 per throw) and channeled secondaries (continuous drain)
+- **Heal Channeling**: Minor Healing converts energy to health at 1:1 ratio (1 HP/sec). Channels during idle, run, and air states. Managed by `player/heal_channel.lua`.
+- **Visual Feedback**: "Low Energy" or "No Energy" text appears when ability attempted with insufficient energy
 - **UI Flash**: `energy_flash_requested` triggers energy bar flash on failed throw
 
 ## Level Progression System
@@ -289,6 +292,9 @@ self.max_energy = 3             -- Maximum energy points (for projectiles)
 self.energy_used = 0            -- Consumed energy
 self.charge_state = {}          -- Runtime charge state per secondary item
                                 -- { item_id = { used_charges, recharge_timer } }
+self._heal_channeling = false   -- True while actively converting energy to health
+self._heal_no_energy_shown = false -- Prevents repeated "No Energy" text per button hold
+self._heal_particle_timer = 0   -- Accumulator for heal particle spawn interval
 ```
 
 ## Animation System
@@ -351,6 +357,7 @@ end
 - `player/stats.lua` - Stat percentage calculations with diminishing returns (O(1) lookup)
 - `player/attack.lua` - Combat combo system (includes weapon hitbox)
 - `player/weapon_sync.lua` - Equipped weapon management, cycling, and ability flag sync
+- `player/heal_channel.lua` - Heal channeling system (hold ability to convert energy to health)
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance

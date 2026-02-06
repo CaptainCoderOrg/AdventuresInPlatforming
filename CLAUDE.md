@@ -30,6 +30,7 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Blue boxes: Player shield collider
 - `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
+- `H` - Grant and equip Minor Healing ability (debug mode only)
 - `1`/`2` - Switch between level1/title music
 
 ## Architecture
@@ -78,7 +79,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 **Combat:**
 - Attack: Mouse Left / Gamepad WEST (combo)
-- Ability: Mouse Right / Gamepad NORTH (throw secondary)
+- Ability: Mouse Right / Gamepad NORTH (use secondary: throw or hold to channel)
 - Swap Weapon: E / Gamepad EAST (cycle equipped weapons)
 - Block: Q / Gamepad RT (hold)
 - Swap Ability: Z / Gamepad SELECT (cycle equipped secondaries)
@@ -113,6 +114,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/shield.lua` - Shield lifecycle, blocking, knockback
 - `player/stats.lua` - Stat percentage calculations (diminishing returns)
 - `player/weapon_sync.lua` - Equipped weapon/secondary management and ability sync
+- `player/heal_channel.lua` - Heal channeling system (energy-to-health conversion)
 - `Animation/init.lua` - Delta-time animation system
 
 ### Entities

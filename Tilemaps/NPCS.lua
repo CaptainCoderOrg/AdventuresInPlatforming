@@ -4,8 +4,8 @@ return {
   tiledversion = "1.11.2",
   name = "NPCS",
   class = "",
-  tilewidth = 32,
-  tileheight = 32,
+  tilewidth = 64,
+  tileheight = 64,
   spacing = 0,
   margin = 0,
   columns = 0,
@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 3,
+  tilecount = 4,
   tiles = {
     {
       id = 0,
@@ -51,6 +51,12 @@ return {
       image = "npcs/adept2.png",
       width = 16,
       height = 16
+    },
+    {
+      id = 3,
+      image = "../assets/Tilesets/house_00.png",
+      width = 64,
+      height = 64
     }
   }
 }

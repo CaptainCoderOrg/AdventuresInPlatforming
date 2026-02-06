@@ -7,7 +7,15 @@ local heal_channel = {}
 
 -- 1:1 energy-to-health ratio: full heal costs entire energy bar
 local HEAL_RATE = 1
-local PARTICLE_INTERVAL = 1 / 60
+local PARTICLE_INTERVAL = 1 / 60  -- One particle per frame at 60fps
+local MAX_PARTICLES_PER_FRAME = 5
+
+--- Resets channeling state on the player (called on any cancel condition).
+---@param player table Player instance
+local function stop_channeling(player)
+    player._heal_channeling = false
+    player._heal_particle_timer = 0
+end
 
 -- Populated on first update to avoid circular require with player states
 local CHANNEL_STATES = {}
@@ -40,8 +48,7 @@ function heal_channel.update(player, dt)
     end
 
     if not holding or not in_allowed_state or not is_minor_healing then
-        player._heal_channeling = false
-        player._heal_particle_timer = 0
+        stop_channeling(player)
         return
     end
 
@@ -49,14 +56,12 @@ function heal_channel.update(player, dt)
     local current_energy = player.max_energy - player.energy_used
 
     if current_health >= player.max_health then
-        player._heal_channeling = false
-        player._heal_particle_timer = 0
+        stop_channeling(player)
         return
     end
 
     if current_energy <= 0 then
-        player._heal_channeling = false
-        player._heal_particle_timer = 0
+        stop_channeling(player)
         if not player._heal_no_energy_shown then
             player._heal_no_energy_shown = true
             Effects.create_energy_text(player.x, player.y, 0)
@@ -75,7 +80,7 @@ function heal_channel.update(player, dt)
 
     player._heal_particle_timer = player._heal_particle_timer + dt
     local spawned = 0
-    while player._heal_particle_timer >= PARTICLE_INTERVAL and spawned < 5 do
+    while player._heal_particle_timer >= PARTICLE_INTERVAL and spawned < MAX_PARTICLES_PER_FRAME do
         player._heal_particle_timer = player._heal_particle_timer - PARTICLE_INTERVAL
         Effects.create_heal_particle(player.x + 0.5, player.y + 0.5)
         spawned = spawned + 1

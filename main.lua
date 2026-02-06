@@ -208,6 +208,7 @@ local function user_input()
         elseif canvas.is_key_pressed(canvas.keys.DIGIT_7) then
             player.has_shield = not player.has_shield
         elseif canvas.is_key_pressed(canvas.keys.H) then
+            -- Grant and equip Minor Healing ability
             if not player.equipped_items.minor_healing then
                 table.insert(player.unique_items, "minor_healing")
                 player.equipped_items.minor_healing = true

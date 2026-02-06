@@ -229,7 +229,7 @@ function Player.new()
 		cooldown = 0,          -- Time until next perfect block is allowed
 	}
 
-	-- Heal channeling state
+	-- Heal channeling state (channeling flag reserved for UI/animation use)
 	self._heal_channeling = false
 	self._heal_no_energy_shown = false
 	self._heal_particle_timer = 0

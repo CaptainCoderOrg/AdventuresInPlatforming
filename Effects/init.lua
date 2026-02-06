@@ -446,26 +446,30 @@ local function update_text_width(text)
 	text.cached_width = canvas.get_text_width(text.message)
 end
 
---- Helper: Creates or updates an accumulating status text (gold, XP, etc).
+--- Helper: Creates or updates an accumulating status text (gold, XP, heal, etc).
 ---@param tracker_key string Key in state for tracking active text (e.g. "active_gold_text")
----@param label string Display label (e.g. "gold", "XP")
+---@param label string|nil Display label (e.g. "gold", "XP"); unused when format_fn is provided
 ---@param color string Hex color for the text
 ---@param offset_y number Vertical offset above player head
 ---@param x number X position in tile coordinates
 ---@param y number Y position in tile coordinates
 ---@param amount number Amount to add
 ---@param player table|nil Optional player to follow
-local function create_accumulating_text(tracker_key, label, color, offset_y, x, y, amount, player)
+---@param format_fn fun(amount: number): string|nil Optional message formatter (default: "+{amount} {label}")
+local function create_accumulating_text(tracker_key, label, color, offset_y, x, y, amount, player, format_fn)
 	local active = state[tracker_key]
 	if active and state.status_texts[active] then
 		active.amount = active.amount + amount
-		active.message = "+" .. tostring(active.amount) .. " " .. label
 		active.elapsed = 0
-		update_text_width(active)
+		local new_message = format_fn and format_fn(active.amount) or ("+" .. tostring(active.amount) .. " " .. label)
+		if new_message ~= active.message then
+			active.message = new_message
+			update_text_width(active)
+		end
 		return
 	end
 
-	local message = "+" .. tostring(amount) .. " " .. label
+	local message = format_fn and format_fn(amount) or ("+" .. tostring(amount) .. " " .. label)
 	local start_x = player and (player.x + 0.5) or (x + 0.5)
 	local start_y = player and (player.y + offset_y) or y
 	local text = {
@@ -508,6 +512,10 @@ function Effects.create_xp_text(x, y, amount, player)
 	create_accumulating_text("active_xp_text", "XP", "#FFFFFF", -0.5, x, y, amount, player)
 end
 
+local function format_heal_hp(amount)
+	return string.format("+%.1f HP", amount)
+end
+
 --- Factory: Creates or updates floating heal text (e.g. "+0.5 HP")
 --- Accumulates fractional healing with 1 decimal place display.
 ---@param x number X position in tile coordinates
@@ -516,31 +524,7 @@ end
 ---@param player table Player to follow
 ---@return nil
 function Effects.create_heal_text(x, y, amount, player)
-	local active = state.active_heal_text
-	if active and state.status_texts[active] then
-		active.amount = active.amount + amount
-		active.message = string.format("+%.1f HP", active.amount)
-		active.elapsed = 0
-		update_text_width(active)
-		return
-	end
-
-	local text = {
-		x = player.x + 0.5,
-		y = player.y - 0.2,
-		vy = -0.5,
-		message = string.format("+%.1f HP", amount),
-		color = "#44FF44",
-		lifetime = 1.5,
-		elapsed = 0,
-		cached_width = 0,
-		amount = amount,
-		follow_player = player,
-		offset_y = -0.2,
-	}
-	update_text_width(text)
-	state.status_texts[text] = true
-	state.active_heal_text = text
+	create_accumulating_text("active_heal_text", nil, "#44FF44", -0.2, x, y, amount, player, format_heal_hp)
 end
 
 --- Factory: Creates "Locked" text above the player
@@ -654,15 +638,14 @@ local heal_colors = { "#FF6688", "#FF4466", "#FF8899", "#FFAABB", "#FF5577" }
 function Effects.create_heal_particle(cx, cy)
 	local angle = math.random() * math.pi * 2
 	local dist = 0.5 + math.random() * 1.0  -- 0.5-1.5 tiles from center
-	local spawn_x = cx + math.cos(angle) * dist
-	local spawn_y = cy + math.sin(angle) * dist
-	-- Velocity directed toward center, speed proportional to distance
+	local cos_a = math.cos(angle)
+	local sin_a = math.sin(angle)
 	local speed = dist * 1.8
 	local particle = {
-		x = spawn_x,
-		y = spawn_y,
-		vx = -math.cos(angle) * speed,
-		vy = -math.sin(angle) * speed,
+		x = cx + cos_a * dist,
+		y = cy + sin_a * dist,
+		vx = -cos_a * speed,
+		vy = -sin_a * speed,
 		color = heal_colors[math.random(#heal_colors)],
 		size = 4 + math.random() * 3,  -- 4-7 pixels
 		lifetime = 0.35 + dist * 0.2,  -- ~0.4-0.65s, longer for farther particles

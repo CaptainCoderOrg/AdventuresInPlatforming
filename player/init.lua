@@ -9,6 +9,7 @@ local Animation = require('Animation')
 local Projectile = require('Projectile')
 local controls = require('controls')
 local weapon_sync = require('player.weapon_sync')
+local heal_channel = require('player.heal_channel')
 local Effects = require('Effects')
 local audio = require('audio')
 local stats = require('player.stats')
@@ -227,6 +228,11 @@ function Player.new()
 		perfect_window = nil,  -- nil = fresh session, 0 = invalidated, >0 = active window
 		cooldown = 0,          -- Time until next perfect block is allowed
 	}
+
+	-- Heal channeling state
+	self._heal_channeling = false
+	self._heal_no_energy_shown = false
+	self._heal_particle_timer = 0
 
 	-- Centralized input queue for locked states (hit, throw, attack).
 	-- Inputs are queued during locked states and processed on state exit.
@@ -460,6 +466,7 @@ function Player:update(dt)
 	self.pressure_plate_lift = 0  -- Clear before pressure plates set it
 	self.invincible_time = math.max(0, self.invincible_time - dt)
 	self.state.update(self, dt)
+	heal_channel.update(self, dt)
 
 	self.animation.flipped = self.direction
 	self.animation:play(dt)  -- Self-managing delta-time based animation

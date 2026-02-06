@@ -110,6 +110,15 @@ function Effects.update(dt)
 	end
 	remove_from_set(state.collect_particles, particle_expired)
 
+	particle = next(state.heal_particles)
+	while particle do
+		particle.x = particle.x + particle.vx * dt
+		particle.y = particle.y + particle.vy * dt
+		particle.elapsed = particle.elapsed + dt
+		particle = next(state.heal_particles, particle)
+	end
+	remove_from_set(state.heal_particles, particle_expired)
+
 	-- Update flying objects (boss axe drop, etc.)
 	local obj = next(state.flying_objects)
 	while obj do
@@ -220,6 +229,17 @@ function Effects.draw()
 		local py = particle.y * sprites.tile_size
 		canvas.fill_rect(px, py, particle.size, particle.size)
 		particle = next(state.collect_particles, particle)
+	end
+
+	particle = next(state.heal_particles)
+	while particle do
+		local alpha = (1 - (particle.elapsed / particle.lifetime)) * 0.8
+		canvas.set_global_alpha(alpha)
+		canvas.set_fill_style(particle.color)
+		local px = particle.x * sprites.tile_size
+		local py = particle.y * sprites.tile_size
+		canvas.fill_rect(px, py, particle.size, particle.size)
+		particle = next(state.heal_particles, particle)
 	end
 
 	canvas.set_global_alpha(1)
@@ -488,6 +508,41 @@ function Effects.create_xp_text(x, y, amount, player)
 	create_accumulating_text("active_xp_text", "XP", "#FFFFFF", -0.5, x, y, amount, player)
 end
 
+--- Factory: Creates or updates floating heal text (e.g. "+0.5 HP")
+--- Accumulates fractional healing with 1 decimal place display.
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param amount number HP amount to add
+---@param player table Player to follow
+---@return nil
+function Effects.create_heal_text(x, y, amount, player)
+	local active = state.active_heal_text
+	if active and state.status_texts[active] then
+		active.amount = active.amount + amount
+		active.message = string.format("+%.1f HP", active.amount)
+		active.elapsed = 0
+		update_text_width(active)
+		return
+	end
+
+	local text = {
+		x = player.x + 0.5,
+		y = player.y - 0.2,
+		vy = -0.5,
+		message = string.format("+%.1f HP", amount),
+		color = "#44FF44",
+		lifetime = 1.5,
+		elapsed = 0,
+		cached_width = 0,
+		amount = amount,
+		follow_player = player,
+		offset_y = -0.2,
+	}
+	update_text_width(text)
+	state.status_texts[text] = true
+	state.active_heal_text = text
+end
+
 --- Factory: Creates "Locked" text above the player
 ---@param x number X position in tile coordinates
 ---@param y number Y position in tile coordinates
@@ -590,6 +645,32 @@ function Effects.create_fatigue_particle(x, y)
 	state.fatigue_particles[particle] = true
 end
 
+local heal_colors = { "#FF6688", "#FF4466", "#FF8899", "#FFAABB", "#FF5577" }
+
+--- Factory: Creates a healing particle that converges toward the player center
+---@param cx number Center X in tile coordinates (player center)
+---@param cy number Center Y in tile coordinates (player center)
+---@return nil
+function Effects.create_heal_particle(cx, cy)
+	local angle = math.random() * math.pi * 2
+	local dist = 0.5 + math.random() * 1.0  -- 0.5-1.5 tiles from center
+	local spawn_x = cx + math.cos(angle) * dist
+	local spawn_y = cy + math.sin(angle) * dist
+	-- Velocity directed toward center, speed proportional to distance
+	local speed = dist * 1.8
+	local particle = {
+		x = spawn_x,
+		y = spawn_y,
+		vx = -math.cos(angle) * speed,
+		vy = -math.sin(angle) * speed,
+		color = heal_colors[math.random(#heal_colors)],
+		size = 4 + math.random() * 3,  -- 4-7 pixels
+		lifetime = 0.35 + dist * 0.2,  -- ~0.4-0.65s, longer for farther particles
+		elapsed = 0,
+	}
+	state.heal_particles[particle] = true
+end
+
 -- Gold/yellow color palette for collect particles
 local collect_colors = { "#FFD700", "#FFEC8B", "#FFF8DC", "#FFE4B5" }
 
@@ -689,9 +770,11 @@ function Effects.clear()
 	for k in pairs(state.status_texts) do state.status_texts[k] = nil end
 	for k in pairs(state.fatigue_particles) do state.fatigue_particles[k] = nil end
 	for k in pairs(state.collect_particles) do state.collect_particles[k] = nil end
+	for k in pairs(state.heal_particles) do state.heal_particles[k] = nil end
 	for k in pairs(state.flying_objects) do state.flying_objects[k] = nil end
 	state.active_xp_text = nil
 	state.active_gold_text = nil
+	state.active_heal_text = nil
 end
 
 return Effects

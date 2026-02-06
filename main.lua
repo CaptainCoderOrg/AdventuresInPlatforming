@@ -207,6 +207,13 @@ local function user_input()
             player.has_shuriken = not player.has_shuriken
         elseif canvas.is_key_pressed(canvas.keys.DIGIT_7) then
             player.has_shield = not player.has_shield
+        elseif canvas.is_key_pressed(canvas.keys.H) then
+            if not player.equipped_items.minor_healing then
+                table.insert(player.unique_items, "minor_healing")
+                player.equipped_items.minor_healing = true
+                player.active_secondary = "minor_healing"
+                require("player.weapon_sync").sync(player)
+            end
         end
     else
         -- Normal mode: 1-2 switch music

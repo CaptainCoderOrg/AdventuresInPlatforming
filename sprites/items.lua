@@ -22,6 +22,7 @@ local asset_paths = {
     item_adept_key = "sprites/items/adept_key.png",
     item_adept_apology = "sprites/items/adept_apology.png",
     item_orb_of_teleportation = "sprites/items/orb_of_teleportation.png",
+    item_minor_healing = "sprites/icons/heart_icon.png",
 }
 
 for key, path in pairs(asset_paths) do
@@ -49,4 +50,5 @@ return {
     adept_key = "item_adept_key",
     adept_apology = "item_adept_apology",
     orb_of_teleportation = "item_orb_of_teleportation",
+    minor_healing = "item_minor_healing",
 }

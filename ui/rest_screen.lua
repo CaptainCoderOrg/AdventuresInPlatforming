@@ -1811,6 +1811,8 @@ local function draw_submenu_prompt(dialogue)
     canvas.restore()
 end
 
+local equip_prompt_metrics = {}  -- "Equip"/"Unequip"/"Use" -> metrics
+
 --- Draw the inventory equip/unequip prompt in the bottom right of the rest dialogue
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
@@ -1859,7 +1861,6 @@ end
 -- Cached text metrics for prompts (lazy-initialized)
 local enter_text_metrics = nil
 local back_text_metrics = nil
-local equip_prompt_metrics = {}  -- "Equip"/"Unequip"/"Use" -> metrics
 
 --- Draw the map back prompt in the bottom right of the rest dialogue
 ---@param dialogue table The rest dialogue with x, y, width, height

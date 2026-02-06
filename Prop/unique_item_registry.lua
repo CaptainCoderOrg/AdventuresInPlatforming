@@ -178,4 +178,10 @@ return {
         type = "usable",
         static_sprite = sprites.items.orb_of_teleportation,
     },
+    minor_healing = {
+        name = "Minor Healing",
+        description = "Hold {ability} to slowly convert energy into health.",
+        type = "secondary",
+        static_sprite = sprites.items.minor_healing,
+    },
 }

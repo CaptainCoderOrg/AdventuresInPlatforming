@@ -259,6 +259,13 @@ function controls.ability_pressed()
         or is_button_binding_pressed("ability")
 end
 
+--- Check if ability input is currently held down
+---@return boolean down True if ability binding is held
+function controls.ability_down()
+    return is_key_binding_down("ability")
+        or is_button_binding_down("ability")
+end
+
 --- Check if weapon swap input was pressed this frame
 ---@return boolean pressed True if swap_weapon binding was pressed
 function controls.swap_weapon_pressed()

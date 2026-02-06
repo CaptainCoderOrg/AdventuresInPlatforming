@@ -38,7 +38,6 @@ local states = {
 	cinematic = require('player.cinematic'),
 }
 
--- Expose states for direct reference
 Player.states = states
 
 -- Fatigue system constants
@@ -418,6 +417,7 @@ function Player:set_state(state)
 end
 
 --- Renders the player using the current state's draw function.
+--- Applies invincibility alpha blink effect when post-hit immunity is active.
 --- Also draws debug bounding box if enabled in config.
 function Player:draw()
 	if self:is_invincible() then
@@ -451,6 +451,7 @@ end
 
 --- Updates player physics, state logic, collision detection, and animation.
 --- Should be called once per frame.
+---@param dt number Delta time in seconds
 function Player:update(dt)
 	self.pressure_plate_lift = 0  -- Clear before pressure plates set it
 	self.invincible_time = math.max(0, self.invincible_time - dt)

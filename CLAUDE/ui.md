@@ -177,7 +177,7 @@ boss_health_bar.set_coordinator(boss_coordinator)
 ## Status Panel (`ui/status_panel.lua`)
 
 - Stats display with level-up functionality for rest screen
-- Shows: Level, Exp, Next Level, Gold, HP/SP/EP, DEF, Recovery, CRIT, Playtime
+- Shows: Level, Exp, Gold, HP/SP/EP, DEF, Recovery, CRIT, Playtime
 - Supports stat upgrades at campfires (see [Level Progression](player.md#level-progression-system))
 - Integrates inventory grid for equipment management
 

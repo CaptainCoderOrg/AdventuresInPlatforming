@@ -23,7 +23,7 @@ local TEXT_PADDING_LEFT = 10
 local TEXT_PADDING_RIGHT = 9
 local LINE_HEIGHT = 8
 
--- Maximum number of upgrades per stat
+-- Cap at 20 to keep diminishing returns tables bounded
 local MAX_STAT_LEVEL = 20
 
 --- Generate a fibonacci-like cost table from two starting values
@@ -39,7 +39,10 @@ local function generate_fib_table(a, b, max)
     return t
 end
 
--- Per-stat XP cost tables (fibonacci-like sequences)
+-- Per-stat XP cost tables (fibonacci-like sequences).
+-- Health/Stamina are cheap to encourage early survivability upgrades.
+-- Defence/Recovery are mid-cost since percentage bonuses scale multiplicatively.
+-- Energy/Critical are expensive as high-impact combat modifiers.
 local STAT_EXP_TABLES = {
     Health   = generate_fib_table(3,  8,  MAX_STAT_LEVEL),
     Stamina  = generate_fib_table(5,  12, MAX_STAT_LEVEL),
@@ -73,7 +76,7 @@ local STAT_DESCRIPTIONS = {
     Time = "Total time spent playing this save file.",
 }
 
--- Fixed row count for stats display (used by get_stats_layout)
+-- Must match the number of rows emitted by build_stats_rows (10 stat rows + 2 blank separators)
 local STATS_ROW_COUNT = 12
 
 --- Get suffix for levelable stats (shows point increase)
@@ -106,7 +109,7 @@ end
 
 --- Create a new status panel
 ---@param opts {x: number, y: number, width: number, height: number, player: table|nil}
----@return table status_panel
+---@return status_panel
 function status_panel.create(opts)
     local self = setmetatable({}, status_panel)
     self.x = opts.x or 0
@@ -778,10 +781,10 @@ function status_panel:draw()
                 -- Draw each character individually with fixed spacing
                 canvas.set_text_align("center")
                 local str = row.value
-                local start_x = value_right_x - (char_width * #str) + (char_width / 2)
+                local start_x = value_right_x - (self._char_width * #str) + (self._char_width / 2)
                 for i = 1, #str do
                     local char = str:sub(i, i)
-                    canvas.draw_text(start_x + (i - 1) * char_width, text_y + y_offset, char)
+                    canvas.draw_text(start_x + (i - 1) * self._char_width, text_y + y_offset, char)
                 end
             else
                 -- Draw value right-aligned within value column

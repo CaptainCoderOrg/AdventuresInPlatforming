@@ -192,14 +192,12 @@ function projectile_selector.create(opts)
 end
 
 --- Triggers energy bar flash effect for insufficient energy feedback.
----@return nil
 function projectile_selector:flash_energy()
     self.energy_flash_timer = 0.5 -- Flash duration in seconds
 end
 
 ---@param dt number Delta time in seconds
 ---@param player table Player instance with health, stamina, and energy properties
----@return nil
 function projectile_selector:update(dt, player)
     self.target_hp = player.max_health - player.damage
     self.target_stamina = player.max_stamina - player.stamina_used
@@ -224,7 +222,6 @@ function projectile_selector:update(dt, player)
 end
 
 ---@param player table Player instance with projectile, health, stamina, and energy properties
----@return nil
 function projectile_selector:draw(player)
     local scale = config.ui.SCALE
     local hud_height = config.ui.HUD_HEIGHT_PX * scale

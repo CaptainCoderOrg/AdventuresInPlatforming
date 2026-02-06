@@ -182,23 +182,20 @@ player:get_speed()           -- Returns speed with fatigue penalty applied
 
 Player leveling at campfire rest screen via stat upgrades.
 
-### Experience Requirements
+### Per-Stat XP Costs
 
-Fibonacci-like sequence: each level requires the sum of the previous two levels' XP.
+Each stat has its own fibonacci-like XP cost sequence (`ui/status_panel.lua`). Each upgrade increases player level by 1.
 
-| Level | XP Required |
-|-------|-------------|
-| 1     | 10          |
-| 2     | 20          |
-| 3     | 30          |
-| 4     | 50          |
-| 5     | 80          |
-| 6     | 130         |
-| ...   | (continues to level 100) |
+| Stat     | Seed (1st, 2nd) | First 5 costs        |
+|----------|-----------------|----------------------|
+| Health   | 3, 8            | 3, 8, 11, 19, 30    |
+| Stamina  | 5, 12           | 5, 12, 17, 29, 46   |
+| Energy   | 25, 50          | 25, 50, 75, 125, 200 |
+| Defence  | 20, 30          | 20, 30, 50, 80, 130 |
+| Recovery | 20, 40          | 20, 40, 60, 100, 160 |
+| Critical | 50, 100         | 50, 100, 150, 250, 400 |
 
 ### Levelable Stats
-
-Each stat upgrade costs XP equal to the "Next Level" requirement and increases player level by 1:
 
 | Stat     | Property Affected   | Per-Point Bonus |
 |----------|---------------------|-----------------|
@@ -211,13 +208,13 @@ Each stat upgrade costs XP equal to the "Next Level" requirement and increases p
 
 **Diminishing Returns (`player/stats.lua`):**
 
-Defence, Recovery, and Critical use per-stat progression curves where early points grant more benefit:
+Per-stat progression curves where early points grant more benefit. Default is 2.5% per point beyond the defined tiers.
 
-| Stat     | Point 1 | Point 2 | Point 3 | Point 4 | Point 5 | Point 6+ |
-|----------|---------|---------|---------|---------|---------|----------|
-| Defence  | 5%      | 5%      | 5%      | 3%      | 3%      | 3%/2.5%  |
-| Recovery | 5%      | 5%      | 5%      | 5%      | 5%      | 2.5%     |
-| Critical | 5%      | 4%      | 3%      | 2.5%    | 2.5%    | 2.5%     |
+| Stat     | Tiers (% per point)            |
+|----------|--------------------------------|
+| Defence  | 5, 5, 5, 3, 3, 3, 3, 3, 2.5   |
+| Recovery | 10, 7.5, 5, 5, 2.5, 2.5, 2.5  |
+| Critical | 2.5 (flat, no diminishing)     |
 
 ### Upgrade Flow
 
@@ -229,7 +226,7 @@ Defence, Recovery, and Critical use per-stat progression curves where early poin
 
 **Key Methods (`ui/status_panel.lua`):**
 ```lua
-panel:can_level_up()           -- True if player has enough XP for next level
+panel:can_level_up()           -- True if player can afford any stat upgrade
 panel:add_pending_upgrade()    -- Queue upgrade for highlighted stat
 panel:remove_pending_upgrade() -- Remove queued upgrade
 panel:confirm_upgrades()       -- Apply all pending upgrades
@@ -246,12 +243,11 @@ self.active_weapon = nil        -- Currently equipped weapon item_id (synced via
 self.active_secondary = nil     -- Currently active secondary item_id (for ability swap)
 self.attack_cooldown = 0        -- Countdown timer (attack)
 self.throw_cooldown = 0         -- Countdown timer (throw)
-self.level = 1                  -- Player level (progression)
-self.experience = 0             -- XP toward next level
+self.level = 0                  -- Player level (sum of all stat upgrades)
+self.experience = 0             -- XP spent on stat upgrades
 self.gold = 0                   -- Currency for purchases
 self.defense = 0                -- Reduces incoming damage
-self.strength = 5               -- Base damage multiplier
-self.critical_chance = 0        -- Percent chance for critical hit
+self.critical_chance = 2        -- Percent chance for critical hit (2 points = 5% base)
 self.recovery = 0               -- Bonus regeneration rate
 self.stat_upgrades = {}         -- Tracks upgrade counts per stat {Health=2, Stamina=1, ...}
 self.defeated_bosses = {}       -- Set of defeated boss ids (boss_id -> true), persisted on rest
@@ -269,12 +265,13 @@ self.block_state = {            -- Shield and perfect block tracking
 self.input_queue = {            -- Centralized input buffering
     jump, attack, throw         -- Boolean flags for pending inputs
 }
-self.max_stamina = 5            -- Maximum stamina points
+self.max_stamina = 3            -- Maximum stamina points
 self.stamina_used = 0           -- Consumed stamina (can exceed max for fatigue)
-self.stamina_regen_rate = 5     -- Stamina regenerated per second
+self.stamina_regen_rate = 3     -- Stamina regenerated per second
 self.stamina_regen_cooldown = 0.5  -- Seconds before regen begins after use
 self.stamina_regen_timer = 0    -- Time since last stamina use
-self.max_energy = 4             -- Maximum energy points (for projectiles)
+self.fatigue_remaining = 0      -- Seconds remaining in fatigue state (0 = not fatigued)
+self.max_energy = 3             -- Maximum energy points (for projectiles)
 self.energy_used = 0            -- Consumed energy
 ```
 

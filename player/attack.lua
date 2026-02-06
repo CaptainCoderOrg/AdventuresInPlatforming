@@ -195,12 +195,15 @@ function attack.input(player)
 			player:set_state(player.states.air)
 			return
 		end
-		-- Check projectile, unlock, charges and energy inline since we're bypassing handle_throw for queued input
+		-- Check projectile, unlock, charges, energy and stamina inline since we're bypassing handle_throw for queued input
 		if not combo_queued and player.input_queue.throw and player.projectile and player:is_projectile_unlocked(player.projectile)
 		   and weapon_sync.has_throw_charges(player) and player.energy_used < player.max_energy then
-			player.attack_cooldown = ATTACK_COOLDOWN
-			player:set_state(player.states.throw)
-			return
+			local throw_stamina = player.projectile.stamina_cost or 0
+			if throw_stamina == 0 or player:use_stamina(throw_stamina) then
+				player.attack_cooldown = ATTACK_COOLDOWN
+				player:set_state(player.states.throw)
+				return
+			end
 		end
 		if not combo_queued and (controls.left_down() or controls.right_down()) then
 			player.attack_cooldown = ATTACK_COOLDOWN

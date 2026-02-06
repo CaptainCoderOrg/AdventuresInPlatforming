@@ -4,6 +4,7 @@ local config = require("config")
 local controls = require("controls")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
+local settings_dialog = require("ui/settings_dialog")
 local game_over = require("ui/game_over")
 local pickup_dialogue = require("ui/pickup_dialogue")
 local projectile_selector = require("ui/projectile_selector")
@@ -32,6 +33,7 @@ canvas.assets.load_font("menu_font", "fonts/13px-sword.ttf")
 function hud.init()
     audio_dialog.init()
     controls_dialog.init()
+    settings_dialog.init()
     game_over.init()
     rest_screen.init()
     title_screen.init()
@@ -52,6 +54,12 @@ function hud.input()
     -- Controls dialog blocks other input when open
     if controls_dialog.is_active() then
         controls_dialog.input()
+        return
+    end
+
+    -- Settings dialog blocks other input when open
+    if settings_dialog.is_active() then
+        settings_dialog.input()
         return
     end
 
@@ -107,12 +115,13 @@ end
 function hud.update(dt, player)
     audio_dialog.update(dt)
     controls_dialog.update(dt)
+    settings_dialog.update(dt)
     pickup_dialogue.update(dt)
     dialogue_screen.update(dt)
     shop_screen.update(dt)
     -- Block mouse input on screens beneath active overlays
-    local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active() or pickup_dialogue.is_active()
-        or dialogue_screen.is_active() or shop_screen.is_active()
+    local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active() or settings_dialog.is_active()
+        or pickup_dialogue.is_active() or dialogue_screen.is_active() or shop_screen.is_active()
     slot_screen.update(dt, dialogs_block)
     -- Title screen also blocked by slot screen
     local title_block = dialogs_block or slot_screen.is_active()
@@ -162,6 +171,7 @@ function hud.draw(player)
     pickup_dialogue.draw()
     audio_dialog.draw()
     controls_dialog.draw()
+    settings_dialog.draw()
 end
 
 --- Check if pickup dialogue is blocking game input
@@ -273,6 +283,12 @@ end
 ---@param fn function Function to call when Controls is selected
 function hud.set_title_controls_callback(fn)
     title_screen.set_controls_callback(fn)
+end
+
+--- Set the settings callback for title screen
+---@param fn function Function to call when Settings is selected
+function hud.set_title_settings_callback(fn)
+    title_screen.set_settings_callback(fn)
 end
 
 --- Show the slot selection screen

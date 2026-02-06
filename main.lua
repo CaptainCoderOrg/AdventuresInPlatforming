@@ -27,6 +27,8 @@ local shield = require("player.shield")
 local hud = require("ui/hud")
 local audio_dialog = require("ui/audio_dialog")
 local controls_dialog = require("ui/controls_dialog")
+local settings_dialog = require("ui/settings_dialog")
+local settings_storage = require("settings_storage")
 local rest_screen = require("ui/rest_screen")
 local screen_fade = require("ui/screen_fade")
 local boss_health_bar = require("ui/boss_health_bar")
@@ -659,9 +661,13 @@ local function load_slot(slot_index)
         -- Existing save - continue from checkpoint
         continue_from_checkpoint()
     else
-        -- Empty slot - start new game
+        -- Empty slot - start new game, apply global default difficulty
         start_new_game()
+        player.difficulty = settings_storage.load_difficulty()
     end
+
+    -- Sync settings dialog with player's difficulty
+    settings_dialog.set_difficulty(player.difficulty)
 end
 
 --- One-time initialization on first game tick (after init_level creates player/camera)
@@ -676,6 +682,7 @@ local function on_start()
     local function return_to_title()
         active_slot = nil
         hud.show_title_screen()
+        settings_dialog.set_difficulty(settings_storage.load_difficulty())
         audio.play_music(audio.title_screen)
     end
 
@@ -688,6 +695,7 @@ local function on_start()
     hud.set_title_play_game_callback(hud.show_slot_screen)
     hud.set_title_audio_callback(audio_dialog.show)
     hud.set_title_controls_callback(controls_dialog.show)
+    hud.set_title_settings_callback(settings_dialog.show)
 
     -- Slot screen callbacks (back navigates to title which is already shown beneath)
     hud.set_slot_callback(load_slot)

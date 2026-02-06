@@ -9,6 +9,7 @@ local STORAGE_PREFIX = "platformer_"
 local VOLUMES_KEY = "volumes"
 local KEYBOARD_KEY = "keyboard_bindings"
 local GAMEPAD_KEY = "gamepad_bindings"
+local DIFFICULTY_KEY = "difficulty"
 
 -- Default volume values
 local DEFAULT_VOLUMES = {
@@ -94,6 +95,27 @@ function settings_storage.load_bindings(scheme)
     end
 
     return data
+end
+
+--- Save difficulty setting to localStorage
+---@param difficulty string "easy" or "normal"
+---@return boolean success
+function settings_storage.save_difficulty(difficulty)
+    local success, err = localstorage.set_item(DIFFICULTY_KEY, difficulty)
+    if not success then
+        print("[settings_storage] Failed to save difficulty: " .. (err or "unknown error"))
+    end
+    return success
+end
+
+--- Load difficulty setting from localStorage
+---@return string difficulty "easy" or "normal" (defaults to "normal")
+function settings_storage.load_difficulty()
+    local value = localstorage.get_item(DIFFICULTY_KEY)
+    if value == "easy" then
+        return "easy"
+    end
+    return "normal"
 end
 
 --- Save all settings (volumes and bindings)

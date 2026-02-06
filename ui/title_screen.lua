@@ -23,6 +23,7 @@ local MENU_ITEMS = {
     { id = "play_game", label = "Play Game" },
     { id = "audio", label = "Audio" },
     { id = "controls", label = "Controls" },
+    { id = "settings", label = "Settings" },
 }
 
 local state = STATE.HIDDEN
@@ -36,6 +37,7 @@ local cursor_animation = nil
 local play_game_callback = nil
 local audio_callback = nil
 local controls_callback = nil
+local settings_callback = nil
 
 -- Mouse input tracking
 local mouse_active = false
@@ -83,6 +85,12 @@ function title_screen.set_controls_callback(fn)
     controls_callback = fn
 end
 
+--- Set the settings callback function
+---@param fn function Function to call when Settings is selected
+function title_screen.set_settings_callback(fn)
+    settings_callback = fn
+end
+
 --- Show the title screen with fade-in animation
 --- Resets focus to Play Game
 ---@return nil
@@ -124,6 +132,9 @@ local function trigger_selection()
     elseif item.id == "controls" then
         -- Controls dialog opens on top of title screen, don't hide
         if controls_callback then controls_callback() end
+    elseif item.id == "settings" then
+        -- Settings dialog opens on top of title screen, don't hide
+        if settings_callback then settings_callback() end
     end
 end
 

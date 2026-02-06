@@ -98,6 +98,7 @@ function Player.new()
 	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
 	self.active_secondary = nil -- item_id of currently active secondary (for ability swap)
 	self.defeated_bosses = {}   -- Set of defeated boss ids (boss_id -> true)
+	self.difficulty = "normal"  -- Difficulty setting ("normal" or "easy")
 
 	-- Position and velocity
 	self.x = 2
@@ -372,6 +373,11 @@ function Player:take_damage(amount, source_x, source_enemy)
 	-- Apply defence reduction
 	local reduction = 1 - (self:defense_percent() / 100)
 	amount = amount * reduction
+
+	-- Easy mode halves incoming damage
+	if self.difficulty == "easy" then
+		amount = amount * 0.5
+	end
 
 	self.damage = math.min(self.damage + amount, self.max_health)
 	audio.play_squish_sound()

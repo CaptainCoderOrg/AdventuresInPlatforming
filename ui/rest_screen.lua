@@ -71,20 +71,21 @@ local REPEAT_INTERVAL = 0.08
 local VOLUME_STEP = 0.05
 
 -- Menu configuration
-local MENU_ITEM_COUNT = 5
+local MENU_ITEM_COUNT = 6
 
 -- Submenu arrow configuration
 local ARROW_WIDTH = 4
 local ARROW_HEIGHT = 6
 local ARROW_INSET = 7  -- Inset from button right edge (accounts for text-only button centering)
 
--- Menu item descriptions (index 4 is set dynamically when mode changes)
+-- Menu item descriptions (index 5 is set dynamically when mode changes)
 local REST_CONTINUE_DESC = "Resting restores your hit points, energy, and saves your progress. Enemies also respawn when you rest."
 local PAUSE_CONTINUE_DESC = "Resume gameplay."
 local MENU_DESCRIPTIONS = {
     "View your current stats and progression. You can spend experience at campfires to increase your stats.",
     "Adjust master volume, music, and sound effects.",
     "View and customize keyboard and gamepad controls.",
+    "Change game difficulty. Easy mode reduces incoming damage.",
     REST_CONTINUE_DESC,
     "Save and quit to the title screen.",
 }
@@ -143,6 +144,7 @@ local pause_continue_callback = nil
 local status_button = nil
 local audio_button = nil
 local controls_button = nil
+local settings_button = nil
 local continue_button = nil
 local return_to_title_button = nil
 local rest_dialogue = nil
@@ -209,7 +211,7 @@ local function return_to_status()
     upgrade_button_focus = nil
 
     -- Restore default rest dialogue text (already set in init_screen_state)
-    rest_dialogue.text = MENU_DESCRIPTIONS[4]
+    rest_dialogue.text = MENU_DESCRIPTIONS[5]
 end
 
 --- Create a text-only menu button with standard dimensions
@@ -329,6 +331,9 @@ local function position_buttons(menu_x, menu_y, menu_width, menu_height)
     controls_button.x = button_x
     controls_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
 
+    settings_button.x = button_x
+    settings_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
+
     -- Bottom-aligned action buttons
     continue_button.x = button_x
     continue_button.y = menu_y + menu_height - BUTTON_TOP_OFFSET - (BUTTON_HEIGHT + BUTTON_SPACING) - BUTTON_HEIGHT
@@ -379,6 +384,7 @@ function rest_screen.init()
     status_button = create_menu_button("Status")
     audio_button = create_menu_button("Audio")
     controls_button = create_menu_button("Controls")
+    settings_button = create_menu_button("Settings")
     continue_button = create_menu_button("Continue")
     return_to_title_button = create_menu_button("Return to Title")
 
@@ -439,7 +445,7 @@ function rest_screen.init()
         text = ""
     })
 
-    buttons = { status_button, audio_button, controls_button, continue_button, return_to_title_button }
+    buttons = { status_button, audio_button, controls_button, settings_button, continue_button, return_to_title_button }
 end
 
 --- Hide and reset the rest screen (used when returning to title)
@@ -562,7 +568,7 @@ local function init_screen_state(mode, player, camera, description, button_label
 
     rest_dialogue.text = description
     continue_button.label = button_label
-    MENU_DESCRIPTIONS[4] = description
+    MENU_DESCRIPTIONS[5] = description
 
     -- Initialize layout immediately for correct first-frame rendering
     init_component_layout()
@@ -675,7 +681,7 @@ function rest_screen.get_camera_offset()
 end
 
 --- Trigger the currently focused menu action based on focused_index
---- 1 = Status, 2 = Audio, 3 = Controls, 4 = Continue, 5 = Return to Title
+--- 1 = Status, 2 = Audio, 3 = Controls, 4 = Settings, 5 = Continue, 6 = Return to Title
 ---@return nil
 local function trigger_focused_action()
     if focused_index == 1 then
@@ -689,8 +695,11 @@ local function trigger_focused_action()
             controls_panel:reset_focus()
         end
     elseif focused_index == 4 then
-        rest_screen.trigger_continue()
+        nav_mode = NAV_MODE.SETTINGS
+        active_panel_index = 4
     elseif focused_index == 5 then
+        rest_screen.trigger_continue()
+    elseif focused_index == 6 then
         nav_mode = NAV_MODE.CONFIRM
         confirm_selection = 2
     end
@@ -927,6 +936,28 @@ local function handle_controls_settings_input()
     end
 end
 
+--- Handle input when in Settings panel mode (difficulty toggle)
+---@return nil
+local function handle_settings_panel_input()
+    if controls.menu_back_pressed() then
+        return_to_status()
+        return
+    end
+
+    -- Left/Right or Confirm toggles difficulty
+    if controls.menu_left_pressed() or controls.menu_right_pressed() or controls.menu_confirm_pressed() then
+        if player_ref then
+            if player_ref.difficulty == "easy" then
+                player_ref.difficulty = "normal"
+            else
+                player_ref.difficulty = "easy"
+            end
+            settings_storage.save_difficulty(player_ref.difficulty)
+            save_player_stats()
+        end
+    end
+end
+
 --- Handle input when in confirmation dialog mode
 ---@return nil
 local function handle_confirm_input()
@@ -1057,9 +1088,10 @@ local function enter_settings_mode()
         player_status_panel:reset_selection()
     elseif focused_index == 2 then
         audio_focus_index = 1
-    else
+    elseif focused_index == 3 then
         controls_panel:reset_focus()
     end
+    -- Settings panel (index 4) has no special init needed
 end
 
 --- Handle input when in menu mode (navigating between menu items)
@@ -1079,7 +1111,7 @@ local function handle_menu_input()
 
     local right_pressed = controls.menu_right_pressed()
     local confirm_pressed = controls.menu_confirm_pressed()
-    local is_submenu_item = focused_index <= 3
+    local is_submenu_item = focused_index <= 4
 
     -- Enter settings mode when pressing right/confirm on the active submenu panel
     if (right_pressed or confirm_pressed) and is_submenu_item and focused_index == active_panel_index then
@@ -1118,6 +1150,8 @@ function rest_screen.input()
             handle_audio_settings_input()
         elseif active_panel_index == 3 then
             handle_controls_settings_input()
+        elseif active_panel_index == 4 then
+            handle_settings_panel_input()
         end
     else
         handle_menu_input()
@@ -1302,6 +1336,22 @@ function rest_screen.update(dt, block_mouse)
                 local panel_y = info.y + 8
 
                 controls_panel:update(dt, local_mx - panel_x, local_my - panel_y, mouse_active and nav_mode == NAV_MODE.SETTINGS)
+            elseif active_panel_index == 4 then
+                -- Handle mouse click on difficulty toggle area
+                if mouse_active and nav_mode == NAV_MODE.SETTINGS and canvas.is_mouse_pressed(0) then
+                    local center_y = info.y + info.height / 2
+                    if local_my >= center_y - 4 and local_my <= center_y + 16 then
+                        if player_ref then
+                            if player_ref.difficulty == "easy" then
+                                player_ref.difficulty = "normal"
+                            else
+                                player_ref.difficulty = "easy"
+                            end
+                            settings_storage.save_difficulty(player_ref.difficulty)
+                            save_player_stats()
+                        end
+                    end
+                end
             end
         end
 
@@ -1364,6 +1414,48 @@ local function draw_controls_panel(x, y, width, height)
     canvas.translate(panel_x, panel_y)
     controls_panel:draw()
     canvas.restore()
+end
+
+--- Draw the settings panel (difficulty toggle)
+---@param x number Panel X position
+---@param y number Panel Y position
+---@param width number Panel width
+---@param height number Panel height
+local function draw_settings_panel(x, y, width, height)
+    simple_dialogue.draw({ x = x, y = y, width = width, height = height, text = "" })
+
+    local center_x = x + width / 2
+    local center_y = y + height / 2
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(7)
+    canvas.set_text_baseline("middle")
+
+    -- Draw "Difficulty" label
+    local label = "Difficulty"
+    local label_metrics = canvas.get_text_metrics(label)
+    utils.draw_outlined_text(label, center_x - label_metrics.width / 2, center_y - 10)
+
+    -- Draw toggle value with arrows
+    local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 4
+    local current_difficulty = player_ref and player_ref.difficulty or "normal"
+    local value_text = current_difficulty == "easy" and "Easy" or "Normal"
+    local value_color = in_settings and "#FFFF00" or "#FFFFFF"
+    local arrow_color = in_settings and "#FFFF00" or "#888888"
+
+    local arrow_left = "< "
+    local arrow_right = " >"
+    local value_metrics = canvas.get_text_metrics(value_text)
+    local left_metrics = canvas.get_text_metrics(arrow_left)
+    local right_metrics = canvas.get_text_metrics(arrow_right)
+    local total_width = left_metrics.width + value_metrics.width + right_metrics.width
+    local start_x = center_x - total_width / 2
+
+    canvas.set_color(arrow_color)
+    canvas.draw_text(start_x, center_y + 6, arrow_left)
+    utils.draw_outlined_text(value_text, start_x + left_metrics.width, center_y + 6, value_color)
+    canvas.set_color(arrow_color)
+    canvas.draw_text(start_x + left_metrics.width + value_metrics.width, center_y + 6, arrow_right)
 end
 
 --- Draw the confirmation dialog panel
@@ -1512,8 +1604,8 @@ end
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_submenu_prompt(dialogue)
-    -- Only show in menu mode for submenu items (Status, Audio, Controls)
-    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 3 then
+    -- Only show in menu mode for submenu items (Status, Audio, Controls, Settings)
+    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 4 then
         return
     end
 
@@ -1522,7 +1614,7 @@ local function draw_submenu_prompt(dialogue)
         return
     end
 
-    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 3
+    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 4
 
     -- Don't show if mouse is hovering over status panel stats
     if not mouse_on_submenu and player_status_panel:is_mouse_hover() then
@@ -1733,6 +1825,8 @@ function rest_screen.draw()
             draw_audio_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 3 then
             draw_controls_panel(info.x, info.y, info.width, info.height)
+        elseif active_panel_index == 4 then
+            draw_settings_panel(info.x, info.y, info.width, info.height)
         end
 
         simple_dialogue.draw(rest_dialogue)
@@ -1751,8 +1845,8 @@ function rest_screen.draw()
                 canvas.draw_image(sprites.ui.level_up_icon, icon_x, icon_y, LEVEL_UP_ICON_SIZE, LEVEL_UP_ICON_SIZE)
             end
 
-            -- Draw arrow for submenu items (Status, Audio, Controls)
-            if i <= 3 then
+            -- Draw arrow for submenu items (Status, Audio, Controls, Settings)
+            if i <= 4 then
                 local arrow_x = btn.x + btn.width - ARROW_INSET
                 local arrow_y = btn.y + btn.height / 2
                 draw_submenu_arrow(arrow_x, arrow_y, is_focused)

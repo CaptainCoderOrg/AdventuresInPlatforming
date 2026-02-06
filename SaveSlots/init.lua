@@ -135,6 +135,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "defense", "recovery", "critical_chance",
     "stat_upgrades", "unique_items", "stackable_items", "equipped_items", "active_weapon", "active_secondary",
     "defeated_bosses", "dialogue_flags",
+    "difficulty",
 }
 
 --- Transient state preserved during level transitions but reset at campfires

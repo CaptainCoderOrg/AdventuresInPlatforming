@@ -139,6 +139,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/pickup_dialogue.lua` - Equip/inventory dialogue for collectible items
 - `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
+- `ui/fast_travel_panel.lua` - Fast travel destination panel for rest screen
 
 ### Persistence
 - `SaveSlots/init.lua` - 3-slot save system

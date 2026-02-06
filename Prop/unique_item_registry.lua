@@ -1,6 +1,6 @@
 --- Registry of all unique items and their sprite/animation configurations
 --- Animated items have animated_sprite/collected_sprite, static items have static_sprite
---- Equipment types: "shield", "weapon", "secondary", "accessory", "no_equip"
+--- Equipment types: "shield", "weapon", "secondary", "accessory", "no_equip", "usable"
 --- Only 1 shield, weapon, or secondary can be equipped at a time. Any number of accessories allowed.
 local sprites = require("sprites")
 local audio = require("audio")
@@ -8,7 +8,7 @@ local audio = require("audio")
 ---@class UniqueItemDef
 ---@field name string Display name
 ---@field description string|nil Item description (supports {action} keybinding placeholders)
----@field type string|nil Equipment type: "shield", "weapon", "secondary", "accessory", "no_equip"
+---@field type string|nil Equipment type: "shield", "weapon", "secondary", "accessory", "no_equip", "usable"
 ---@field stats table|nil Weapon combat stats: damage, stamina_cost, attack_type, hitbox, ms_per_frame, animation, active_frames, can_hit_buttons
 ---@field static_sprite string|nil Sprite for non-animated items
 ---@field animated_sprite string|nil Sprite sheet for animated items
@@ -174,8 +174,8 @@ return {
     },
     orb_of_teleportation = {
         name = "Orb of Teleportation",
-        description = "A crystal ball imbued with teleportation magic that allows traveling to previously visited campfires.",
-        type = "accessory",
+        description = "A crystal ball imbued with magic allowing the user to teleport between previously visited campfires.",
+        type = "usable",
         static_sprite = sprites.items.orb_of_teleportation,
     },
 }

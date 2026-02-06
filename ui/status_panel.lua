@@ -139,6 +139,7 @@ function status_panel.create(opts)
     self.pending_upgrades = {} -- Track pending stat upgrades: {stat_name = count}
     self.pending_costs = {}    -- Track cost per upgrade: {stat_name = {cost1, cost2, ...}}
     self.focus_area = "stats"  -- "stats" or "inventory"
+    self.on_use_item = nil     -- Callback for usable items: fn(item_id)
     self.inventory = inventory_grid.create({ x = 0, y = 0 })
 
     -- Pre-allocate reusable tables to avoid per-frame allocations
@@ -163,6 +164,7 @@ function status_panel:set_player(player)
         self.inventory:set_items(player.unique_items)
         self.inventory:set_stackable(player.stackable_items)
         self.inventory:set_equipped(player.equipped_items, player)
+        self.inventory.on_use_item = self.on_use_item
         -- Sync player ability flags with current equipment
         weapon_sync.sync(player)
     end
@@ -518,7 +520,7 @@ function status_panel:get_inventory_description()
 end
 
 --- Check if the currently hovered inventory item is equipped
----@return boolean|nil is_equipped True if equipped, false if not, nil if nothing hovered or item is no_equip/stackable
+---@return boolean|string|nil is_equipped True if equipped, false if not, "usable" for usable items, nil if nothing hovered or item is no_equip/stackable
 function status_panel:is_hovered_item_equipped()
     local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
     if item_id then
@@ -530,6 +532,10 @@ function status_panel:is_hovered_item_equipped()
         local item_def = unique_item_registry[item_id]
         if item_def and item_def.type == "no_equip" then
             return nil
+        end
+        -- Usable items return "usable" for special prompt text
+        if item_def and item_def.type == "usable" then
+            return "usable"
         end
         return self.inventory.equipped[item_id] == true
     end

@@ -135,6 +135,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "defense", "recovery", "critical_chance",
     "stat_upgrades", "unique_items", "stackable_items", "equipped_items", "active_weapon", "active_secondary",
     "defeated_bosses", "dialogue_flags",
+    "visited_campfires",
     "difficulty",
 }
 
@@ -151,6 +152,12 @@ local function copy_stat_value(key, value)
     if key == "unique_items" then
         local prop_common = require("Prop/common")
         return prop_common.copy_array(value)
+    elseif key == "visited_campfires" then
+        local copy = {}
+        for k, v in pairs(value) do
+            copy[k] = { name = v.name, level_id = v.level_id, x = v.x, y = v.y }
+        end
+        return copy
     elseif key == "stat_upgrades" or key == "equipped_items" or key == "stackable_items" or key == "defeated_bosses" or key == "dialogue_flags" then
         local copy = {}
         for k, v in pairs(value) do

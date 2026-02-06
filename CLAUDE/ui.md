@@ -76,7 +76,7 @@ rest_screen.set_continue_callback(fn)               -- Callback after rest conti
 rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 ```
 
-**Navigation Modes:** `MENU` (main buttons), `SETTINGS` (map/controls/audio panels), `CONFIRM` (return to title dialog)
+**Navigation Modes:** `MENU` (main buttons), `SETTINGS` (map/controls/audio panels), `CONFIRM` (return to title dialog), `FAST_TRAVEL` (campfire teleport panel)
 
 **Extended States:** `HIDDEN` -> `FADING_IN` -> `OPEN` -> `FADING_OUT` -> `RELOADING` -> `FADING_BACK_IN` -> `HIDDEN`
 
@@ -239,6 +239,7 @@ grid:draw()
 - `secondary` - Up to 4 secondaries can be equipped (cycle with Swap Ability key, `player.active_secondary` tracks current)
 - `accessory` - Any number of accessories can be equipped
 - `no_equip` - Cannot be equipped (e.g., keys)
+- `usable` - Triggers `on_use_item` callback instead of equipping (e.g., Orb of Teleportation)
 
 ## Key Files
 

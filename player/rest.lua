@@ -72,8 +72,19 @@ function rest.start(player)
 	local campfire = find_current_campfire(player)
 	local campfire_name = campfire and campfire.name or "Campfire"
 
-	-- Save to active slot with full data
+	-- Register campfire for fast travel
 	local level_id = get_level_id(rest.current_level)
+	if campfire and level_id then
+		local key = level_id .. ":" .. campfire_name
+		player.visited_campfires[key] = {
+			name = campfire_name,
+			level_id = level_id,
+			x = campfire.x,
+			y = campfire.y,
+		}
+	end
+
+	-- Save to active slot with full data
 	if rest.active_slot and level_id then
 		local save_data = SaveSlots.build_player_data(player, level_id, campfire_name)
 		SaveSlots.set(rest.active_slot, save_data)

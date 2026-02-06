@@ -469,6 +469,7 @@ animation:draw(x, y - lift)
     - `secondary` - Only one equipped at a time (throwables)
     - `accessory` - Any number can be equipped
     - `no_equip` - Cannot be equipped (e.g., keys)
+    - `usable` - Triggers `on_use_item` callback instead of equipping (e.g., Orb of Teleportation)
 - **Stackable Item** - Consumable collectibles that stack in inventory (keys, etc.)
   - States: idle, collect, collected
   - Items stored in `player.stackable_items` as counts (item_id -> count)

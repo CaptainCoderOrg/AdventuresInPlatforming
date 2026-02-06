@@ -49,6 +49,7 @@ Multi-slot save system using localStorage with 3 save slots.
     equipped_items = {},             -- Set of equipped item_ids {throwing_axe=true, ...}
     active_weapon = nil,             -- Currently active weapon item_id (for quick swap)
     active_secondary = nil,          -- Currently active secondary item_id (for ability swap)
+    visited_campfires = {},          -- Fast travel locations {level_id:name -> {name, level_id, x, y}}
 
     -- Prop persistence (cross-level)
     prop_states = {},                -- Map of prop_key -> state_data

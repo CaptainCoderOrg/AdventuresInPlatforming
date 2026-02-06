@@ -635,9 +635,14 @@ local function continue_from_checkpoint(options)
 end
 
 --- Continue from rest screen (restores original camera position for smooth transition)
+--- During fast travel, skip camera restore since we're loading a new location
 ---@return nil
 local function continue_from_rest()
-    continue_from_checkpoint({ restore_camera_from_rest = true })
+    if rest_screen.is_fast_traveling() then
+        continue_from_checkpoint()
+    else
+        continue_from_checkpoint({ restore_camera_from_rest = true })
+    end
 end
 
 --- Start new game in active slot (clears slot, starts in adepts_house)

@@ -16,6 +16,7 @@ local utils = require("ui/utils")
 local sprites = require("sprites")
 local SaveSlots = require("SaveSlots")
 local map_panel = require("ui/map_panel")
+local fast_travel_panel = require("ui/fast_travel_panel")
 
 local rest_screen = {}
 
@@ -24,7 +25,7 @@ local MODE = { REST = "rest", PAUSE = "pause" }
 local current_mode = nil
 
 -- State machine constants
-local NAV_MODE = { MENU = "menu", SETTINGS = "settings", CONFIRM = "confirm" }
+local NAV_MODE = { MENU = "menu", SETTINGS = "settings", CONFIRM = "confirm", FAST_TRAVEL = "fast_travel" }
 local STATE = {
     HIDDEN = "hidden",
     FADING_IN = "fading_in",
@@ -140,6 +141,9 @@ local circle_target_x = 0
 local circle_target_y = 0
 local circle_lerp_t = 0
 
+-- Fast travel state
+local is_fast_traveling = false
+
 -- Callbacks
 local continue_callback = nil
 local return_to_title_callback = nil
@@ -204,6 +208,7 @@ local function return_to_status()
     if active_panel_index >= 2 then
         save_settings()
     end
+    fast_travel_panel.hide()
     nav_mode = NAV_MODE.MENU
     active_panel_index = 1
 
@@ -442,6 +447,17 @@ function rest_screen.init()
         height = 100,
     })
 
+    player_status_panel.on_use_item = function(item_id)
+        if item_id == "orb_of_teleportation" and current_mode == MODE.REST then
+            local current_key = (current_level_id or "") .. ":" .. campfire_name
+            fast_travel_panel.show(player_ref.visited_campfires, current_key)
+            nav_mode = NAV_MODE.FAST_TRAVEL
+            -- Deactivate status/inventory panels while fast travel is open
+            player_status_panel.active = false
+            player_status_panel.inventory.active = false
+        end
+    end
+
     menu_dialogue = simple_dialogue.create({
         x = 0,
         y = 0,
@@ -459,6 +475,7 @@ function rest_screen.hide()
     state = STATE.HIDDEN
     fade_progress = 0
     slide_progress = 0
+    fast_travel_panel.hide()
     if player_status_panel then
         player_status_panel:cancel_upgrades()
     end
@@ -497,6 +514,7 @@ local function reset_navigation_state()
     hold_direction = 0
     hold_time = 0
     hovered_index = nil
+    is_fast_traveling = false
     if controls_panel then
         controls_panel:reset_focus()
     end
@@ -543,6 +561,8 @@ local function init_component_layout()
     player_status_panel.width = info.width
     player_status_panel.height = info.height
     player_status_panel:set_player(player_ref)
+    -- Reassign use callback after set_player (which re-wires inventory)
+    player_status_panel.inventory.on_use_item = player_status_panel.on_use_item
 
     position_buttons(menu.x, menu.y, menu.width, menu.height)
 end
@@ -654,7 +674,7 @@ end
 --- Check if rest screen is in a submenu (settings or confirm dialog)
 ---@return boolean is_submenu True if in a submenu that should handle back separately
 function rest_screen.is_in_submenu()
-    return state == STATE.OPEN and (nav_mode == NAV_MODE.SETTINGS or nav_mode == NAV_MODE.CONFIRM)
+    return state == STATE.OPEN and (nav_mode == NAV_MODE.SETTINGS or nav_mode == NAV_MODE.CONFIRM or nav_mode == NAV_MODE.FAST_TRAVEL)
 end
 
 --- Get the original camera position from when rest screen was opened
@@ -1111,6 +1131,41 @@ local function enter_settings_mode()
     -- Map panel (index 2) has no special init needed
 end
 
+--- Execute fast travel to a destination campfire
+---@param dest table Destination entry {name, level_id, x, y}
+---@return nil
+local function execute_fast_travel(dest)
+    fast_travel_panel.hide()
+    is_fast_traveling = true
+    if active_save_slot and player_ref then
+        local save_data = SaveSlots.build_player_data(player_ref, dest.level_id, dest.name)
+        save_data.x = dest.x
+        save_data.y = dest.y
+        SaveSlots.set(active_save_slot, save_data)
+    end
+    rest_screen.trigger_continue()
+end
+
+--- Handle input when in Fast Travel panel mode
+---@return nil
+local function handle_fast_travel_input()
+    local result = fast_travel_panel.input()
+    if not result then return end
+    if result.action == "back" then
+        fast_travel_panel.hide()
+        nav_mode = NAV_MODE.SETTINGS
+        active_panel_index = 1
+        -- Restore status panel with inventory focused (player was in inventory before)
+        player_status_panel.active = true
+        player_status_panel.focus_area = "inventory"
+        player_status_panel.inventory.active = true
+        return
+    end
+    if result.action == "teleport" then
+        execute_fast_travel(result.destination)
+    end
+end
+
 --- Handle input when in menu mode (navigating between menu items)
 ---@return nil
 local function handle_menu_input()
@@ -1158,7 +1213,9 @@ function rest_screen.input()
         return
     end
 
-    if nav_mode == NAV_MODE.CONFIRM then
+    if nav_mode == NAV_MODE.FAST_TRAVEL then
+        handle_fast_travel_input()
+    elseif nav_mode == NAV_MODE.CONFIRM then
         handle_confirm_input()
     elseif nav_mode == NAV_MODE.SETTINGS then
         if active_panel_index == 1 then
@@ -1304,12 +1361,26 @@ function rest_screen.update(dt, block_mouse)
 
             -- Panels always receive updates
             local info = layout.info
+
+            -- Fast travel panel update and mouse click handling
+            if nav_mode == NAV_MODE.FAST_TRAVEL then
+                fast_travel_panel.update(dt, local_mx - info.x, local_my - info.y, mouse_active)
+                if mouse_active then
+                    local click_result = fast_travel_panel.handle_click()
+                    if click_result and click_result.action == "teleport" then
+                        execute_fast_travel(click_result.destination)
+                    end
+                end
+                rest_dialogue.text = "Select a destination."
+            end
+
             if active_panel_index == 1 then
                 player_status_panel.x = info.x
                 player_status_panel.y = info.y
                 player_status_panel.width = info.width
                 player_status_panel.height = info.height
                 player_status_panel:set_player(player_ref)
+                player_status_panel.inventory.on_use_item = player_status_panel.on_use_item
                 player_status_panel:update(dt, local_mx - info.x, local_my - info.y, mouse_active)
 
                 -- Handle mouse clicks for stat upgrades (only in rest mode at campfires)
@@ -1673,7 +1744,14 @@ local function draw_inventory_equip_prompt(dialogue)
     end
 
     local is_equipped = player_status_panel:is_hovered_item_equipped()
-    local text = is_equipped and "Unequip" or "Equip"
+    local text
+    if is_equipped == "usable" then
+        -- Usable items (e.g., Orb of Teleportation) only function at campfires
+        if current_mode ~= MODE.REST then return end
+        text = "Use"
+    else
+        text = is_equipped and "Unequip" or "Equip"
+    end
 
     canvas.save()
 
@@ -1873,7 +1951,9 @@ function rest_screen.draw()
         simple_dialogue.draw(menu_dialogue)
 
         local info = layout.info
-        if nav_mode == NAV_MODE.CONFIRM then
+        if nav_mode == NAV_MODE.FAST_TRAVEL then
+            fast_travel_panel.draw(info.x, info.y, info.width, info.height)
+        elseif nav_mode == NAV_MODE.CONFIRM then
             draw_confirm_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 1 then
             player_status_panel:draw()
@@ -1918,7 +1998,30 @@ function rest_screen.draw()
         canvas.restore()
     end
 
+    -- Fast travel: full-screen black fade overlay
+    if is_fast_traveling then
+        local black_alpha = 0
+        if state == STATE.FADING_OUT then
+            black_alpha = fade_progress
+        elseif state == STATE.RELOADING then
+            black_alpha = 1
+        elseif state == STATE.FADING_BACK_IN then
+            black_alpha = 1 - fade_progress
+        end
+        if black_alpha > 0 then
+            canvas.set_global_alpha(black_alpha)
+            canvas.set_fill_style("#000000")
+            canvas.fill_rect(0, 0, screen_w, screen_h)
+        end
+    end
+
     canvas.set_global_alpha(1)
+end
+
+--- Check if currently performing a fast travel (for camera restore skip)
+---@return boolean True if fast traveling
+function rest_screen.is_fast_traveling()
+    return is_fast_traveling
 end
 
 return rest_screen

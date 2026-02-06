@@ -70,6 +70,7 @@ function inventory_grid.create(opts)
     self.hovered_col = nil
     self.hovered_row = nil
     self.active = false
+    self.on_use_item = nil  -- Callback for usable items: fn(item_id)
     return self
 end
 
@@ -195,6 +196,12 @@ function inventory_grid:toggle_equipped(item_id, is_stackable)
 
     -- Prevent equipping no_equip items
     if item_type == "no_equip" then return end
+
+    -- Usable items trigger callback instead of equipping
+    if item_type == "usable" then
+        if self.on_use_item then self.on_use_item(item_id) end
+        return
+    end
 
     -- If already equipped, unequip
     if self.equipped[item_id] then

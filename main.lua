@@ -32,6 +32,7 @@ local settings_storage = require("settings_storage")
 local rest_screen = require("ui/rest_screen")
 local screen_fade = require("ui/screen_fade")
 local boss_health_bar = require("ui/boss_health_bar")
+local map_panel = require("ui/map_panel")
 
 -- Enemies
 local Enemy = require("Enemies")
@@ -272,6 +273,7 @@ local function update(dt)
 
     profiler.start("player")
     player:update(dt)
+    map_panel.mark_visited(player.x, player.y)
 
     -- Check for stairs level transition
     if player.stairs_transition_ready and player.stairs_target and not screen_fade.is_active() then
@@ -516,6 +518,12 @@ init_level = function(level, spawn_override, player_data, options)
     -- Restore persistent prop states from save data
     if player_data and player_data.prop_states then
         Prop.restore_persistent_states(player_data.prop_states)
+    end
+
+    -- Build minimap after props are spawned (campfires are cached during build)
+    map_panel.build(level_info.width, level_info.height, level_info.camera_bounds)
+    if player_data and player_data.visited_bounds then
+        map_panel.set_visited(player_data.visited_bounds)
     end
 
     camera = Camera.new(

@@ -29,7 +29,7 @@ return {
             text = "Ah, you're awake! I found you collapsed near the cliffside. Brought you inside to rest.",
             actions = { "set_flag_met_adept" },
             options = {
-                { text = "What's in that chest?", next = "about_chest" },
+                { text = "What is in that chest?", next = "about_chest" },
                 { text = "I don't remember anything.", next = "dont_remember" },
                 { text = "Where am I?", next = "where_am_i" },
                 { text = "Thank you for saving me.", next = "thanks_for_saving" },
@@ -40,7 +40,7 @@ return {
         where_am_i = {
             text = "This is my cottage, at the edge of the old woods. I've lived here for many years now, studying what remains of the ancient texts.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "Who are you?", next = "who_are_you" },
                 { text = "I don't remember how I got here.", next = "dont_remember" },
                 { text = "Leave", next = nil },
@@ -50,7 +50,7 @@ return {
         who_are_you = {
             text = "I am... well, they call me the Adept now. I was a warrior once, long ago. These days I prefer the company of books to swords.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "I don't remember anything about myself.", next = "dont_remember" },
                 { text = "What do you study?", next = "what_study" },
                 { text = "Leave", next = nil },
@@ -60,7 +60,7 @@ return {
         what_study = {
             text = "The nature of this realm. Its history. Its... peculiarities. There is much that is forgotten, much that perhaps should stay forgotten.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "I don't remember anything.", next = "dont_remember" },
                 { text = "Leave", next = nil },
             },
@@ -69,7 +69,7 @@ return {
         thanks_for_saving = {
             text = "Think nothing of it. We must help each other in these troubled times.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "I don't remember anything.", next = "dont_remember" },
                 { text = "Leave", next = nil },
             },
@@ -78,7 +78,7 @@ return {
         dont_remember = {
             text = "Memory loss? That must be frightening. Perhaps your memories will return in time. For now, focus on the present.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "Is there anything you can tell me?", next = "tell_me_more" },
                 { text = "Leave", next = nil },
             },
@@ -87,7 +87,7 @@ return {
         tell_me_more = {
             text = "I wish I could help more. When I found you, you carried no belongings, no identification. Only... a strange energy about you.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "Strange energy?", next = "strange_energy" },
                 { text = "Leave", next = nil },
             },
@@ -96,7 +96,7 @@ return {
         strange_energy = {
             text = "It's faded now. Perhaps I imagined it. Old men see many things that aren't there. Pay it no mind.",
             options = {
-                { text = "What's in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
+                { text = "What is in that chest?", next = "about_chest", condition = "not_asked_about_chest" },
                 { text = "Leave", next = nil },
             },
         },
@@ -168,7 +168,7 @@ return {
 
         -- Chest/Quest branch - simplified, no mention of contents
         about_chest = {
-            text = "I can't remember what's inside, but it's yours if you can get my crystal ball back from the gnomos.",
+            text = "I can't remember what is inside, but it's yours if you can get my crystal ball back from the gnomos.",
             actions = { "set_flag_asked_about_chest" },
             options = {
                 { text = "I'll find it!", next = "accept_quest" },
@@ -365,7 +365,7 @@ return {
             actions = { "set_flag_gnomos_wrongly_killed", "set_flag_crystal_returned", "take_item_crystal_ball" },
             options = {
                 { text = "You made a mistake. We all do.", next = "mistake_comfort" },
-                { text = "What's done is done.", next = "done_is_done" },
+                { text = "What is done is done.", next = "done_is_done" },
                 { text = "Leave", next = nil },
             },
         },

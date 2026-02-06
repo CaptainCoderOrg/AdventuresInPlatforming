@@ -389,6 +389,18 @@ function controls.menu_down_pressed()
     return check_menu_input_pressed(canvas.keys.S, canvas.keys.DOWN, canvas.buttons.DPAD_DOWN)
 end
 
+--- Check if menu up navigation is currently held (not rebindable)
+---@return boolean down True if W, UP arrow, or gamepad DPAD_UP is held
+function controls.menu_up_down()
+    return check_menu_input_down(canvas.keys.W, canvas.keys.UP, canvas.buttons.DPAD_UP)
+end
+
+--- Check if menu down navigation is currently held (not rebindable)
+---@return boolean down True if S, DOWN arrow, or gamepad DPAD_DOWN is held
+function controls.menu_down_down()
+    return check_menu_input_down(canvas.keys.S, canvas.keys.DOWN, canvas.buttons.DPAD_DOWN)
+end
+
 --- Check if menu left navigation was pressed this frame (not rebindable)
 ---@return boolean pressed True if A, LEFT arrow, or gamepad DPAD_LEFT was pressed
 function controls.menu_left_pressed()

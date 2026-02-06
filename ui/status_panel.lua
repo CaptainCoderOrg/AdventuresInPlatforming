@@ -39,13 +39,28 @@ local function generate_fib_table(a, b, max)
     return t
 end
 
+--- Generate a fibonacci-like cost table from a custom seed sequence
+---@param seeds number[] Initial cost values (must have at least 2 entries)
+---@param max number Number of entries to generate
+---@return number[] table Array of costs
+local function generate_seeded_fib_table(seeds, max)
+    local t = {}
+    for i, v in ipairs(seeds) do
+        t[i] = v
+    end
+    for i = #seeds + 1, max do
+        t[i] = t[i - 1] + t[i - 2]
+    end
+    return t
+end
+
 -- Per-stat XP cost tables (fibonacci-like sequences).
--- Health/Stamina are cheap to encourage early survivability upgrades.
+-- Health/Stamina use seeded tables for a steeper early curve.
 -- Defence/Recovery are mid-cost since percentage bonuses scale multiplicatively.
 -- Energy/Critical are expensive as high-impact combat modifiers.
 local STAT_EXP_TABLES = {
-    Health   = generate_fib_table(3,  8,  MAX_STAT_LEVEL),
-    Stamina  = generate_fib_table(5,  12, MAX_STAT_LEVEL),
+    Health   = generate_seeded_fib_table({3, 8, 20, 30}, MAX_STAT_LEVEL),
+    Stamina  = generate_seeded_fib_table({5, 15, 25},    MAX_STAT_LEVEL),
     Energy   = generate_fib_table(25, 50, MAX_STAT_LEVEL),
     Defence  = generate_fib_table(20, 30, MAX_STAT_LEVEL),
     Recovery = generate_fib_table(20, 40, MAX_STAT_LEVEL),

@@ -221,6 +221,7 @@ return {
 	max_health = 40,
 	damage = 1,
 	energy_drain = 1,  -- Drains 1 energy on contact
+	armor = 1,
 	damages_shield = true,
 	death_sound = "ratto",
 	loot = { xp = 50 },

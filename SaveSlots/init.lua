@@ -226,6 +226,7 @@ end
 function SaveSlots.build_player_data(player, level_id, campfire_name)
     local Playtime = require("Playtime")
     local Prop = require("Prop")
+    local map_panel = require("ui/map_panel")
 
     local data = SaveSlots.get_player_stats(player)
     data.x = player.x
@@ -235,6 +236,7 @@ function SaveSlots.build_player_data(player, level_id, campfire_name)
     data.campfire_name = campfire_name or "Campfire"
     data.playtime = Playtime.get()
     data.prop_states = Prop.get_persistent_states()
+    data.visited_bounds = map_panel.get_visited()
     return data
 end
 

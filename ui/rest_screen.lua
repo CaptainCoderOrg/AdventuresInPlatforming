@@ -15,6 +15,7 @@ local settings_storage = require("settings_storage")
 local utils = require("ui/utils")
 local sprites = require("sprites")
 local SaveSlots = require("SaveSlots")
+local map_panel = require("ui/map_panel")
 
 local rest_screen = {}
 
@@ -83,9 +84,9 @@ local REST_CONTINUE_DESC = "Resting restores your hit points, energy, and saves 
 local PAUSE_CONTINUE_DESC = "Resume gameplay."
 local MENU_DESCRIPTIONS = {
     "View your current stats and progression. You can spend experience at campfires to increase your stats.",
-    "Adjust master volume, music, and sound effects.",
+    "View a map of the current area.",
     "View and customize keyboard and gamepad controls.",
-    "Change game difficulty. Easy mode reduces incoming damage.",
+    "Adjust master volume, music, and sound effects.",
     REST_CONTINUE_DESC,
     "Save and quit to the title screen.",
 }
@@ -148,7 +149,7 @@ local pause_continue_callback = nil
 local status_button = nil
 local audio_button = nil
 local controls_button = nil
-local settings_button = nil
+local map_button = nil
 local continue_button = nil
 local return_to_title_button = nil
 local rest_dialogue = nil
@@ -329,14 +330,14 @@ local function position_buttons(menu_x, menu_y, menu_width, menu_height)
     status_button.x = button_x
     status_button.y = button_start_y
 
-    audio_button.x = button_x
-    audio_button.y = button_start_y + BUTTON_HEIGHT + BUTTON_SPACING
+    map_button.x = button_x
+    map_button.y = button_start_y + BUTTON_HEIGHT + BUTTON_SPACING
 
     controls_button.x = button_x
     controls_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
 
-    settings_button.x = button_x
-    settings_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
+    audio_button.x = button_x
+    audio_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
 
     -- Bottom-aligned action buttons
     continue_button.x = button_x
@@ -386,9 +387,9 @@ local VOLUME_SETTERS = {
 ---@return nil
 function rest_screen.init()
     status_button = create_menu_button("Status")
-    audio_button = create_menu_button("Audio")
+    map_button = create_menu_button("Map")
     controls_button = create_menu_button("Controls")
-    settings_button = create_menu_button("Settings")
+    audio_button = create_menu_button("Audio")
     continue_button = create_menu_button("Continue")
     return_to_title_button = create_menu_button("Return to Title")
 
@@ -449,7 +450,7 @@ function rest_screen.init()
         text = ""
     })
 
-    buttons = { status_button, audio_button, controls_button, settings_button, continue_button, return_to_title_button }
+    buttons = { status_button, map_button, controls_button, audio_button, continue_button, return_to_title_button }
 end
 
 --- Hide and reset the rest screen (used when returning to title)
@@ -685,22 +686,22 @@ function rest_screen.get_camera_offset()
 end
 
 --- Trigger the currently focused menu action based on focused_index
---- 1 = Status, 2 = Audio, 3 = Controls, 4 = Settings, 5 = Continue, 6 = Return to Title
+--- 1 = Status, 2 = Map, 3 = Controls, 4 = Audio, 5 = Continue, 6 = Return to Title
 ---@return nil
 local function trigger_focused_action()
     if focused_index == 1 then
         return_to_status()
-    elseif focused_index == 2 or focused_index == 3 then
+    elseif focused_index == 2 then
         nav_mode = NAV_MODE.SETTINGS
-        active_panel_index = focused_index
-        if focused_index == 2 then
-            audio_focus_index = 1
-        else
-            controls_panel:reset_focus()
-        end
+        active_panel_index = 2
+    elseif focused_index == 3 then
+        nav_mode = NAV_MODE.SETTINGS
+        active_panel_index = 3
+        controls_panel:reset_focus()
     elseif focused_index == 4 then
         nav_mode = NAV_MODE.SETTINGS
         active_panel_index = 4
+        audio_focus_index = 1
     elseif focused_index == 5 then
         rest_screen.trigger_continue()
     elseif focused_index == 6 then
@@ -734,9 +735,25 @@ local function handle_audio_settings_input()
     end
 
     if controls.menu_up_pressed() then
-        audio_focus_index = wrap_index(audio_focus_index, -1, 3)
+        audio_focus_index = wrap_index(audio_focus_index, -1, 4)
     elseif controls.menu_down_pressed() then
-        audio_focus_index = wrap_index(audio_focus_index, 1, 3)
+        audio_focus_index = wrap_index(audio_focus_index, 1, 4)
+    end
+
+    -- Difficulty toggle (4th item in audio panel)
+    if audio_focus_index == 4 then
+        if controls.menu_left_pressed() or controls.menu_right_pressed() or controls.menu_confirm_pressed() then
+            if player_ref then
+                if player_ref.difficulty == "easy" then
+                    player_ref.difficulty = "normal"
+                else
+                    player_ref.difficulty = "easy"
+                end
+                settings_storage.save_difficulty(player_ref.difficulty)
+                save_player_stats()
+            end
+        end
+        return
     end
 
     -- Left/Right to adjust focused slider value (with hold-to-repeat)
@@ -940,25 +957,29 @@ local function handle_controls_settings_input()
     end
 end
 
---- Handle input when in Settings panel mode (difficulty toggle)
+--- Handle input when in Map panel mode (scroll navigation)
 ---@return nil
-local function handle_settings_panel_input()
+local function handle_map_panel_input()
     if controls.menu_back_pressed() then
+        map_panel.reset_scroll()
         return_to_status()
         return
     end
 
-    -- Left/Right or Confirm toggles difficulty
-    if controls.menu_left_pressed() or controls.menu_right_pressed() or controls.menu_confirm_pressed() then
-        if player_ref then
-            if player_ref.difficulty == "easy" then
-                player_ref.difficulty = "normal"
-            else
-                player_ref.difficulty = "easy"
-            end
-            settings_storage.save_difficulty(player_ref.difficulty)
-            save_player_stats()
-        end
+    if controls.menu_confirm_pressed() then
+        map_panel.reset_scroll()
+        return
+    end
+
+    -- Scroll map with directional held input
+    local dt = canvas.get_delta()
+    local dx, dy = 0, 0
+    if controls.menu_left_down()  then dx = dx - 1 end
+    if controls.menu_right_down() then dx = dx + 1 end
+    if controls.menu_up_down()    then dy = dy - 1 end
+    if controls.menu_down_down()  then dy = dy + 1 end
+    if dx ~= 0 or dy ~= 0 then
+        map_panel.scroll(dx, dy, dt)
     end
 end
 
@@ -1082,12 +1103,12 @@ local function enter_settings_mode()
     if focused_index == 1 then
         player_status_panel.active = true
         player_status_panel:reset_selection()
-    elseif focused_index == 2 then
-        audio_focus_index = 1
     elseif focused_index == 3 then
         controls_panel:reset_focus()
+    elseif focused_index == 4 then
+        audio_focus_index = 1
     end
-    -- Settings panel (index 4) has no special init needed
+    -- Map panel (index 2) has no special init needed
 end
 
 --- Handle input when in menu mode (navigating between menu items)
@@ -1143,11 +1164,11 @@ function rest_screen.input()
         if active_panel_index == 1 then
             handle_status_settings_input()
         elseif active_panel_index == 2 then
-            handle_audio_settings_input()
+            handle_map_panel_input()
         elseif active_panel_index == 3 then
             handle_controls_settings_input()
         elseif active_panel_index == 4 then
-            handle_settings_panel_input()
+            handle_audio_settings_input()
         end
     else
         handle_menu_input()
@@ -1316,6 +1337,15 @@ function rest_screen.update(dt, block_mouse)
                     rest_dialogue.text = description
                 end
             elseif active_panel_index == 2 then
+                if nav_mode == NAV_MODE.SETTINGS then
+                    rest_dialogue.text = "{move_up}{move_down}{move_left}{move_right} Scroll\n{jump} Center"
+                end
+            elseif active_panel_index == 3 then
+                local panel_x = info.x + (info.width - controls_panel.width) / 2
+                local panel_y = info.y + 8
+
+                controls_panel:update(dt, local_mx - panel_x, local_my - panel_y, mouse_active and nav_mode == NAV_MODE.SETTINGS)
+            elseif active_panel_index == 4 then
                 local slider_x = info.x + (info.width - SLIDER_WIDTH) / 2
                 local slider_start_y = info.y + 20
                 local slider_spacing = 22
@@ -1327,16 +1357,11 @@ function rest_screen.update(dt, block_mouse)
                     s.y = offset_y
                     s:update(local_mx, local_my)
                 end
-            elseif active_panel_index == 3 then
-                local panel_x = info.x + (info.width - controls_panel.width) / 2
-                local panel_y = info.y + 8
 
-                controls_panel:update(dt, local_mx - panel_x, local_my - panel_y, mouse_active and nav_mode == NAV_MODE.SETTINGS)
-            elseif active_panel_index == 4 then
-                -- Handle mouse click on difficulty toggle area
+                -- Handle mouse click on difficulty toggle area (below sliders)
                 if mouse_active and nav_mode == NAV_MODE.SETTINGS and canvas.is_mouse_pressed(0) then
-                    local center_y = info.y + info.height / 2
-                    if local_my >= center_y - 4 and local_my <= center_y + 16 then
+                    local diff_y = slider_start_y + slider_spacing * 3
+                    if local_my >= diff_y and local_my <= diff_y + 20 then
                         if player_ref then
                             if player_ref.difficulty == "easy" then
                                 player_ref.difficulty = "normal"
@@ -1345,6 +1370,7 @@ function rest_screen.update(dt, block_mouse)
                             end
                             settings_storage.save_difficulty(player_ref.difficulty)
                             save_player_stats()
+                            audio_focus_index = 4
                         end
                     end
                 end
@@ -1380,7 +1406,7 @@ local function draw_audio_panel(x, y, width, height)
     canvas.set_font_size(7)
     canvas.set_text_baseline("bottom")
 
-    local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 2
+    local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 4
 
     for i, label in ipairs(SLIDER_LABELS) do
         local offset_y = slider_start_y + slider_spacing * (i - 1)
@@ -1393,6 +1419,37 @@ local function draw_audio_panel(x, y, width, height)
         -- Slider positions are set in update(), just draw here
         volume_sliders[SLIDER_KEYS[i]]:draw(is_focused)
     end
+
+    -- Difficulty toggle below the 3 sliders
+    local diff_y = slider_start_y + slider_spacing * 3
+    local diff_focused = in_settings and audio_focus_index == 4
+
+    local diff_label = "Difficulty"
+    local diff_label_color = diff_focused and "#FFFF00" or nil
+    local diff_metrics = canvas.get_text_metrics(diff_label)
+    utils.draw_outlined_text(diff_label, label_center_x - diff_metrics.width / 2, diff_y + 1, diff_label_color)
+
+    -- Draw toggle value with arrows
+    local current_difficulty = player_ref and player_ref.difficulty or "normal"
+    local value_text = current_difficulty == "easy" and "Easy" or "Normal"
+    local value_color = diff_focused and "#FFFF00" or "#FFFFFF"
+    local arrow_color = diff_focused and "#FFFF00" or "#888888"
+
+    canvas.set_text_baseline("middle")
+    local arrow_left = "< "
+    local arrow_right = " >"
+    local value_metrics = canvas.get_text_metrics(value_text)
+    local left_metrics = canvas.get_text_metrics(arrow_left)
+    local right_metrics = canvas.get_text_metrics(arrow_right)
+    local total_width = left_metrics.width + value_metrics.width + right_metrics.width
+    local toggle_x = label_center_x - total_width / 2
+    local toggle_y = diff_y + 12
+
+    canvas.set_color(arrow_color)
+    canvas.draw_text(toggle_x, toggle_y, arrow_left)
+    utils.draw_outlined_text(value_text, toggle_x + left_metrics.width, toggle_y, value_color)
+    canvas.set_color(arrow_color)
+    canvas.draw_text(toggle_x + left_metrics.width + value_metrics.width, toggle_y, arrow_right)
 end
 
 --- Draw the controls settings panel (keybind rows)
@@ -1412,46 +1469,13 @@ local function draw_controls_panel(x, y, width, height)
     canvas.restore()
 end
 
---- Draw the settings panel (difficulty toggle)
+--- Draw the map panel (minimap of current level)
 ---@param x number Panel X position
 ---@param y number Panel Y position
 ---@param width number Panel width
 ---@param height number Panel height
-local function draw_settings_panel(x, y, width, height)
-    simple_dialogue.draw({ x = x, y = y, width = width, height = height, text = "" })
-
-    local center_x = x + width / 2
-    local center_y = y + height / 2
-
-    canvas.set_font_family("menu_font")
-    canvas.set_font_size(7)
-    canvas.set_text_baseline("middle")
-
-    -- Draw "Difficulty" label
-    local label = "Difficulty"
-    local label_metrics = canvas.get_text_metrics(label)
-    utils.draw_outlined_text(label, center_x - label_metrics.width / 2, center_y - 10)
-
-    -- Draw toggle value with arrows
-    local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 4
-    local current_difficulty = player_ref and player_ref.difficulty or "normal"
-    local value_text = current_difficulty == "easy" and "Easy" or "Normal"
-    local value_color = in_settings and "#FFFF00" or "#FFFFFF"
-    local arrow_color = in_settings and "#FFFF00" or "#888888"
-
-    local arrow_left = "< "
-    local arrow_right = " >"
-    local value_metrics = canvas.get_text_metrics(value_text)
-    local left_metrics = canvas.get_text_metrics(arrow_left)
-    local right_metrics = canvas.get_text_metrics(arrow_right)
-    local total_width = left_metrics.width + value_metrics.width + right_metrics.width
-    local start_x = center_x - total_width / 2
-
-    canvas.set_color(arrow_color)
-    canvas.draw_text(start_x, center_y + 6, arrow_left)
-    utils.draw_outlined_text(value_text, start_x + left_metrics.width, center_y + 6, value_color)
-    canvas.set_color(arrow_color)
-    canvas.draw_text(start_x + left_metrics.width + value_metrics.width, center_y + 6, arrow_right)
+local function draw_map_panel(x, y, width, height)
+    map_panel.draw(x, y, width, height, player_ref, elapsed_time)
 end
 
 --- Draw the confirmation dialog panel
@@ -1600,7 +1624,7 @@ end
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_submenu_prompt(dialogue)
-    -- Only show in menu mode for submenu items (Status, Audio, Controls, Settings)
+    -- Only show in menu mode for submenu items (Status, Map, Controls, Audio)
     if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 4 then
         return
     end
@@ -1671,6 +1695,47 @@ local function draw_inventory_equip_prompt(dialogue)
     -- Use mouse icon if inventory has mouse hover
     local use_mouse = player_status_panel.inventory.hovered_col ~= nil
     draw_input_icon(icon_x, icon_y, use_mouse)
+
+    canvas.restore()
+end
+
+--- Draw the map back prompt in the bottom right of the rest dialogue
+---@param dialogue table The rest dialogue with x, y, width, height
+---@return nil
+local back_text_metrics = nil
+
+local function draw_map_back_prompt(dialogue)
+    if nav_mode ~= NAV_MODE.SETTINGS or active_panel_index ~= 2 then
+        return
+    end
+
+    local text = "Back"
+
+    canvas.save()
+
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(7)
+    canvas.set_text_baseline("middle")
+    canvas.set_text_align("right")
+
+    if not back_text_metrics then
+        back_text_metrics = canvas.get_text_metrics(text)
+    end
+    local text_metrics = back_text_metrics
+    local text_x = dialogue.x + dialogue.width - PROMPT_PADDING
+    local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
+
+    canvas.set_color("#FFFFFF")
+    canvas.draw_text(text_x, text_y, text)
+
+    local icon_x = text_x - text_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
+    local icon_y = text_y - PROMPT_ICON_SIZE / 2
+    local mode = controls.get_last_input_device()
+    if mode == "gamepad" then
+        sprites.controls.draw_button(canvas.buttons.EAST, icon_x, icon_y, PROMPT_BUTTON_SCALE)
+    else
+        sprites.controls.draw_key(canvas.keys.ESCAPE, icon_x, icon_y, PROMPT_KEY_SCALE)
+    end
 
     canvas.restore()
 end
@@ -1818,17 +1883,18 @@ function rest_screen.draw()
             local local_my = canvas.get_mouse_y() / scale
             draw_upgrade_buttons(info, local_mx, local_my)
         elseif active_panel_index == 2 then
-            draw_audio_panel(info.x, info.y, info.width, info.height)
+            draw_map_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 3 then
             draw_controls_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 4 then
-            draw_settings_panel(info.x, info.y, info.width, info.height)
+            draw_audio_panel(info.x, info.y, info.width, info.height)
         end
 
         simple_dialogue.draw(rest_dialogue)
         draw_level_up_prompt(rest_dialogue)
         draw_submenu_prompt(rest_dialogue)
         draw_inventory_equip_prompt(rest_dialogue)
+        draw_map_back_prompt(rest_dialogue)
 
         for i, btn in ipairs(buttons) do
             local is_focused = focused_index == i or hovered_index == i
@@ -1841,7 +1907,7 @@ function rest_screen.draw()
                 canvas.draw_image(sprites.ui.level_up_icon, icon_x, icon_y, LEVEL_UP_ICON_SIZE, LEVEL_UP_ICON_SIZE)
             end
 
-            -- Draw arrow for submenu items (Status, Audio, Controls, Settings)
+            -- Draw arrow for submenu items (Status, Map, Controls, Audio)
             if i <= 4 then
                 local arrow_x = btn.x + btn.width - ARROW_INSET
                 local arrow_y = btn.y + btn.height / 2

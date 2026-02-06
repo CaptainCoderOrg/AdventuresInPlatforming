@@ -89,7 +89,7 @@ return {
         animated_frames = 12,
         stats = {
             damage = 1,
-            stamina_cost = 1.25,
+            stamina_cost = 1.5,
             attack_type = "combo",
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 60,
@@ -97,7 +97,7 @@ return {
     },
     longsword = {
         name = "Longsword",
-        description = "The blade of choice for most fighters. Slower than shortsword and uses more stamina but deals more damage and has a longer reach. Press {swap_weapon} to swap between equipped weapons.",
+        description = "The blade of choice for most fighters. Slower than shortsword and uses more stamina but deals more damage. Press {swap_weapon} to swap between equipped weapons.",
         type = "weapon",
         static_sprite = sprites.items.longsword,
         stats = {

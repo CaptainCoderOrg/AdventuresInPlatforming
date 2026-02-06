@@ -101,11 +101,13 @@ function map_panel.build(width, height, camera_bounds)
     -- Cache campfire positions with pre-computed bounds index
     campfire_positions = {}
     local campfires = Prop.get_all_of_type("campfire")
+    local cn = 0
     for i = 1, #campfires do
         local fire = campfires[i]
         local bi = has_bounds and find_bounds_index(fire.x, fire.y) or nil
         if not has_bounds or bi then
-            campfire_positions[#campfire_positions + 1] = { x = fire.x, y = fire.y, bi = bi }
+            cn = cn + 1
+            campfire_positions[cn] = { x = fire.x, y = fire.y, bi = bi }
         end
     end
 end

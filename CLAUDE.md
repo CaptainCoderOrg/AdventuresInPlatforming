@@ -138,6 +138,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/secondary_bar.lua` - Secondary abilities HUD widget
 - `ui/pickup_dialogue.lua` - Equip/inventory dialogue for collectible items
 - `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
+- `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
 
 ### Persistence
 - `SaveSlots/init.lua` - 3-slot save system

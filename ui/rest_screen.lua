@@ -198,7 +198,7 @@ local function save_player_stats()
 end
 
 --- Return to menu mode showing the status panel
---- Saves settings when exiting Audio or Controls panels
+--- Saves dirty settings on panel exit (no-op if nothing changed)
 ---@return nil
 local function return_to_status()
     if active_panel_index >= 2 then
@@ -1699,11 +1699,11 @@ local function draw_inventory_equip_prompt(dialogue)
     canvas.restore()
 end
 
+local back_text_metrics = nil
+
 --- Draw the map back prompt in the bottom right of the rest dialogue
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
-local back_text_metrics = nil
-
 local function draw_map_back_prompt(dialogue)
     if nav_mode ~= NAV_MODE.SETTINGS or active_panel_index ~= 2 then
         return

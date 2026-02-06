@@ -60,7 +60,7 @@ slot_screen.set_back_callback(fn)   -- Callback when Back pressed
 
 - Dual mode: Rest (campfire) and Pause (ESC/START during gameplay)
 - Circular viewport effect centered on campfire (rest mode only)
-- Menu navigation with sub-panels: Status, Audio, Controls, Continue, Return to Title
+- Menu navigation with sub-panels: Status, Map, Controls, Audio, Continue, Return to Title
 - Integrated audio sliders and keybind panel
 - Confirmation dialog for Return to Title
 
@@ -76,7 +76,7 @@ rest_screen.set_continue_callback(fn)               -- Callback after rest conti
 rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 ```
 
-**Navigation Modes:** `MENU` (main buttons), `SETTINGS` (audio/controls panels), `CONFIRM` (return to title dialog)
+**Navigation Modes:** `MENU` (main buttons), `SETTINGS` (map/controls/audio panels), `CONFIRM` (return to title dialog)
 
 **Extended States:** `HIDDEN` -> `FADING_IN` -> `OPEN` -> `FADING_OUT` -> `RELOADING` -> `FADING_BACK_IN` -> `HIDDEN`
 
@@ -86,6 +86,24 @@ rest_screen.set_return_to_title_callback(fn)        -- Callback for title return
 - Radial gradient vignette
 - Sine wave pulse (2 Hz, +/-8% radius variation)
 - Glow ring with orange/yellow gradient
+
+## Map Panel (`ui/map_panel.lua`)
+
+- Minimap overlay shown in the rest/pause screen Map sub-panel
+- Renders wall outlines as 3x3px rects, campfires as 4x4 sprites, player as blinking green dot
+- Player-centered view with WASD/DPad scrolling support
+- Fog-of-war: only visited camera_bounds regions are rendered
+- Visited state persisted in save data (`visited_bounds` array)
+
+```lua
+map_panel.build(width, height, camera_bounds)  -- Cache wall/campfire data (call after props spawn)
+map_panel.mark_visited(px, py)                 -- Track exploration (called per-frame in main.lua)
+map_panel.get_visited()                        -- Get visited indices for save
+map_panel.set_visited(visited_indices)          -- Restore from save data
+map_panel.scroll(dx, dy, dt)                   -- Pan map view
+map_panel.reset_scroll()                       -- Re-center on player
+map_panel.draw(x, y, w, h, player, elapsed)   -- Render minimap in panel
+```
 
 ## Audio Dialog (`ui/audio_dialog.lua`)
 
@@ -232,3 +250,4 @@ grid:draw()
 - `ui/secondary_bar.lua` - Secondary abilities HUD widget (equipped throwables)
 - `ui/status_panel.lua` - Player stats panel for rest screen
 - `ui/inventory_grid.lua` - 5x5 item grid component for status panel
+- `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen

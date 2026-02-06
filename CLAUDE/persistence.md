@@ -52,6 +52,9 @@ Multi-slot save system using localStorage with 3 save slots.
 
     -- Prop persistence (cross-level)
     prop_states = {},                -- Map of prop_key -> state_data
+
+    -- Map exploration
+    visited_bounds = {},             -- Array of visited camera_bounds indices (fog-of-war)
 }
 ```
 

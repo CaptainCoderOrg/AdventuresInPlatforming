@@ -256,6 +256,29 @@ local cached_layout_scale = nil
 local cached_layout_width = nil
 local cached_layout_height = nil
 
+-- Reusable table for simple_dialogue.draw() calls with no text (avoids per-frame allocation)
+local empty_dialogue_rect = { x = 0, y = 0, width = 0, height = 0, text = "" }
+
+-- Cached text metrics for confirm dialog (computed on first use)
+local confirm_yes_metrics = nil
+local confirm_sep_metrics = nil
+local confirm_no_metrics = nil
+local confirm_question_metrics = nil
+
+--- Get cached confirm dialog text metrics (lazy-initialized)
+---@return table, table, table, table yes, sep, no, question metrics
+local function get_confirm_metrics()
+    if not confirm_yes_metrics then
+        canvas.set_font_family("menu_font")
+        canvas.set_font_size(7)
+        confirm_yes_metrics = canvas.get_text_metrics("Yes")
+        confirm_sep_metrics = canvas.get_text_metrics("   /   ")
+        confirm_no_metrics = canvas.get_text_metrics("No")
+        confirm_question_metrics = canvas.get_text_metrics("Quit and return to title?")
+    end
+    return confirm_yes_metrics, confirm_sep_metrics, confirm_no_metrics, confirm_question_metrics
+end
+
 -- Cached glow gradient colors to avoid per-frame string allocations
 local glow_color_cache = {}
 
@@ -452,6 +475,7 @@ function rest_screen.init()
             local current_key = (current_level_id or "") .. ":" .. campfire_name
             fast_travel_panel.show(player_ref.visited_campfires, current_key)
             nav_mode = NAV_MODE.FAST_TRAVEL
+            rest_dialogue.text = "Select a destination."
             -- Deactivate status/inventory panels while fast travel is open
             player_status_panel.active = false
             player_status_panel.inventory.active = false
@@ -561,8 +585,6 @@ local function init_component_layout()
     player_status_panel.width = info.width
     player_status_panel.height = info.height
     player_status_panel:set_player(player_ref)
-    -- Reassign use callback after set_player (which re-wires inventory)
-    player_status_panel.inventory.on_use_item = player_status_panel.on_use_item
 
     position_buttons(menu.x, menu.y, menu.width, menu.height)
 end
@@ -1330,16 +1352,12 @@ function rest_screen.update(dt, block_mouse)
                     local center_x = info.x + info.width / 2
                     local center_y = info.y + info.height / 2
 
-                    canvas.set_font_family("menu_font")
-                    canvas.set_font_size(7)
-                    local yes_metrics = canvas.get_text_metrics("Yes")
-                    local sep_metrics = canvas.get_text_metrics("   /   ")
-                    local no_metrics = canvas.get_text_metrics("No")
-                    local total_width = yes_metrics.width + sep_metrics.width + no_metrics.width
+                    local yes_m, sep_m, no_m = get_confirm_metrics()
+                    local total_width = yes_m.width + sep_m.width + no_m.width
                     local start_x = center_x - total_width / 2
                     local button_y = center_y + 10
 
-                    if local_mx >= start_x and local_mx <= start_x + yes_metrics.width and
+                    if local_mx >= start_x and local_mx <= start_x + yes_m.width and
                        local_my >= button_y - 6 and local_my <= button_y + 6 then
                         confirm_selection = 1
                         if canvas.is_mouse_pressed(0) then
@@ -1348,8 +1366,8 @@ function rest_screen.update(dt, block_mouse)
                         end
                     end
 
-                    local no_x = start_x + yes_metrics.width + sep_metrics.width
-                    if local_mx >= no_x and local_mx <= no_x + no_metrics.width and
+                    local no_x = start_x + yes_m.width + sep_m.width
+                    if local_mx >= no_x and local_mx <= no_x + no_m.width and
                        local_my >= button_y - 6 and local_my <= button_y + 6 then
                         confirm_selection = 2
                         if canvas.is_mouse_pressed(0) then
@@ -1371,7 +1389,6 @@ function rest_screen.update(dt, block_mouse)
                         execute_fast_travel(click_result.destination)
                     end
                 end
-                rest_dialogue.text = "Select a destination."
             end
 
             if active_panel_index == 1 then
@@ -1379,8 +1396,9 @@ function rest_screen.update(dt, block_mouse)
                 player_status_panel.y = info.y
                 player_status_panel.width = info.width
                 player_status_panel.height = info.height
-                player_status_panel:set_player(player_ref)
-                player_status_panel.inventory.on_use_item = player_status_panel.on_use_item
+                if player_status_panel.player ~= player_ref then
+                    player_status_panel:set_player(player_ref)
+                end
                 player_status_panel:update(dt, local_mx - info.x, local_my - info.y, mouse_active)
 
                 -- Handle mouse clicks for stat upgrades (only in rest mode at campfires)
@@ -1467,7 +1485,11 @@ end
 ---@param width number Panel width
 ---@param height number Panel height
 local function draw_audio_panel(x, y, width, height)
-    simple_dialogue.draw({ x = x, y = y, width = width, height = height, text = "" })
+    empty_dialogue_rect.x = x
+    empty_dialogue_rect.y = y
+    empty_dialogue_rect.width = width
+    empty_dialogue_rect.height = height
+    simple_dialogue.draw(empty_dialogue_rect)
 
     local slider_start_y = y + 20
     local slider_spacing = 22
@@ -1529,7 +1551,11 @@ end
 ---@param width number Panel width
 ---@param height number Panel height
 local function draw_controls_panel(x, y, width, height)
-    simple_dialogue.draw({ x = x, y = y, width = width, height = height, text = "" })
+    empty_dialogue_rect.x = x
+    empty_dialogue_rect.y = y
+    empty_dialogue_rect.width = width
+    empty_dialogue_rect.height = height
+    simple_dialogue.draw(empty_dialogue_rect)
 
     local panel_x = x + (width - controls_panel.width) / 2
     local panel_y = y + 8
@@ -1555,7 +1581,11 @@ end
 ---@param width number Panel width
 ---@param height number Panel height
 local function draw_confirm_panel(x, y, width, height)
-    simple_dialogue.draw({ x = x, y = y, width = width, height = height, text = "" })
+    empty_dialogue_rect.x = x
+    empty_dialogue_rect.y = y
+    empty_dialogue_rect.width = width
+    empty_dialogue_rect.height = height
+    simple_dialogue.draw(empty_dialogue_rect)
 
     local center_x = x + width / 2
     local center_y = y + height / 2
@@ -1564,22 +1594,17 @@ local function draw_confirm_panel(x, y, width, height)
     canvas.set_font_size(7)
     canvas.set_text_baseline("middle")
 
-    local question = "Quit and return to title?"
-    local question_metrics = canvas.get_text_metrics(question)
-    utils.draw_outlined_text(question, center_x - question_metrics.width / 2, center_y - 12)
+    local yes_m, sep_m, no_m, question_m = get_confirm_metrics()
+    utils.draw_outlined_text("Quit and return to title?", center_x - question_m.width / 2, center_y - 12)
 
     local yes_color = confirm_selection == 1 and "#FFFF00" or "#FFFFFF"
     local no_color = confirm_selection == 2 and "#FFFF00" or "#FFFFFF"
 
-    local yes_metrics = canvas.get_text_metrics("Yes")
-    local sep_metrics = canvas.get_text_metrics("   /   ")
-    local no_metrics = canvas.get_text_metrics("No")
-    local total_width = yes_metrics.width + sep_metrics.width + no_metrics.width
-
+    local total_width = yes_m.width + sep_m.width + no_m.width
     local start_x = center_x - total_width / 2
     utils.draw_outlined_text("Yes", start_x, center_y + 10, yes_color)
-    utils.draw_outlined_text("   /   ", start_x + yes_metrics.width, center_y + 10, "#888888")
-    utils.draw_outlined_text("No", start_x + yes_metrics.width + sep_metrics.width, center_y + 10, no_color)
+    utils.draw_outlined_text("   /   ", start_x + yes_m.width, center_y + 10, "#888888")
+    utils.draw_outlined_text("No", start_x + yes_m.width + sep_m.width, center_y + 10, no_color)
 end
 
 -- Icon scales for prompt icons
@@ -1641,9 +1666,9 @@ local function draw_level_up_prompt(dialogue)
 
     local text
     if can_afford then
-        text = "Spend " .. cost .. " XP to increase"
+        text = string.format("Spend %d XP to increase", cost)
     else
-        text = "Not enough XP (" .. cost .. " required)"
+        text = string.format("Not enough XP (%d required)", cost)
     end
     local text_color = can_afford and "#FFFFFF" or "#888888"
 
@@ -1947,7 +1972,6 @@ function rest_screen.draw()
         rest_dialogue.y = layout.rest.y
         rest_dialogue.width = layout.rest.width
 
-        position_buttons(menu.x, menu.y, menu.width, menu.height)
         simple_dialogue.draw(menu_dialogue)
 
         local info = layout.info

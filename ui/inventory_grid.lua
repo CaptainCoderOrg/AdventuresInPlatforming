@@ -116,28 +116,41 @@ end
 
 --- Build the unified display list combining unique and stackable items
 --- Unique items come first, followed by stackable items
+--- Reuses existing entry tables to avoid per-call allocations
 function inventory_grid:build_display_list()
-    self.display_list = {}
+    local list = self.display_list
+    local idx = 0
 
     -- Add unique items first
     for _, item_id in ipairs(self.items) do
-        table.insert(self.display_list, {
-            item_id = item_id,
-            count = 1,
-            is_stackable = false
-        })
+        idx = idx + 1
+        local entry = list[idx]
+        if not entry then
+            entry = {}
+            list[idx] = entry
+        end
+        entry.item_id = item_id
+        entry.count = 1
+        entry.is_stackable = false
     end
 
     -- Add stackable items
     for item_id, count in pairs(self.stackable) do
         if count > 0 then
-            table.insert(self.display_list, {
-                item_id = item_id,
-                count = count,
-                is_stackable = true
-            })
+            idx = idx + 1
+            local entry = list[idx]
+            if not entry then
+                entry = {}
+                list[idx] = entry
+            end
+            entry.item_id = item_id
+            entry.count = count
+            entry.is_stackable = true
         end
     end
+
+    -- Clear stale entries from previous builds
+    for i = idx + 1, #list do list[i] = nil end
 end
 
 --- Get item at grid position

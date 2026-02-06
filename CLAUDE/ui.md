@@ -105,6 +105,24 @@ map_panel.reset_scroll()                       -- Re-center on player
 map_panel.draw(x, y, w, h, player, elapsed)   -- Render minimap in panel
 ```
 
+## Fast Travel Panel (`ui/fast_travel_panel.lua`)
+
+- Destination picker shown when using Orb of Teleportation at a campfire
+- Displays all previously visited campfires (excluding the current one)
+- Supports keyboard/gamepad navigation and mouse hover/click
+- Grouped by level with display name mapping
+- Only available in REST mode (not pause mode)
+
+```lua
+fast_travel_panel.show(visited_campfires, current_key)  -- Open with campfire data
+fast_travel_panel.hide()                                 -- Close panel
+fast_travel_panel.is_active()                            -- Check if open
+fast_travel_panel.input()                                -- Returns {action, destination} or nil
+fast_travel_panel.update(dt, local_mx, local_my, mouse)  -- Mouse hover detection
+fast_travel_panel.handle_click()                         -- Mouse click handling
+fast_travel_panel.draw(x, y, width, height)              -- Render in info panel area
+```
+
 ## Audio Dialog (`ui/audio_dialog.lua`)
 
 - Standalone dialog for volume settings (Master, Music, SFX sliders)
@@ -257,3 +275,4 @@ grid:draw()
 - `ui/status_panel.lua` - Player stats panel for rest screen
 - `ui/inventory_grid.lua` - 5x5 item grid component for status panel
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
+- `ui/fast_travel_panel.lua` - Fast travel destination picker for rest screen

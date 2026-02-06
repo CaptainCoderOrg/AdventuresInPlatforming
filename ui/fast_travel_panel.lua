@@ -27,15 +27,16 @@ local LEVEL_DISPLAY_NAMES = {
 }
 
 local active = false
-local destinations = {}  -- Sorted array of {key, name, level_id, x, y, display_level}
+---@type {key: string, name: string, level_id: string, x: number, y: number, display_level: string}[]
+local destinations = {}
 local selected_index = 1
 local hovered_index = nil
 local panel_width = 200  -- Updated by draw() to match actual layout width
 
 --- Sort destinations alphabetically by level_id then name
----@param a table
----@param b table
----@return boolean
+---@param a {level_id: string, name: string} First destination entry
+---@param b {level_id: string, name: string} Second destination entry
+---@return boolean less_than True if a should sort before b
 local function sort_destinations(a, b)
     if a.level_id ~= b.level_id then
         return a.level_id < b.level_id
@@ -75,7 +76,7 @@ function fast_travel_panel.hide()
 end
 
 --- Check if the panel is active
----@return boolean
+---@return boolean is_active True if the fast travel panel is currently showing
 function fast_travel_panel.is_active()
     return active
 end
@@ -194,17 +195,11 @@ function fast_travel_panel.draw(x, y, width, height)
 
         local color = is_selected and "#FFFF00" or "#FFFFFF"
         canvas.set_text_align("left")
+        utils.draw_outlined_text(dest.name, x + PADDING_LEFT, item_y, color)
 
-        -- Draw campfire name
-        local display_name = dest.name
-        utils.draw_outlined_text(display_name, x + PADDING_LEFT, item_y, color)
-
-        -- Draw level name right-aligned as a subtitle
         canvas.set_text_align("right")
-        local level_label = dest.display_level
-        local label_color = is_selected and "#CCCC00" or "#888888"
-        canvas.set_color(label_color)
-        canvas.draw_text(x + width - PADDING_RIGHT, item_y, level_label)
+        canvas.set_color(is_selected and "#CCCC00" or "#888888")
+        canvas.draw_text(x + width - PADDING_RIGHT, item_y, dest.display_level)
     end
 
     canvas.restore()

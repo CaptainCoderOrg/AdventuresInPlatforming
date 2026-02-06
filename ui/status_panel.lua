@@ -528,14 +528,10 @@ function status_panel:is_hovered_item_equipped()
         if is_stackable then
             return nil
         end
-        -- Don't show equip option for no_equip items
         local item_def = unique_item_registry[item_id]
-        if item_def and item_def.type == "no_equip" then
-            return nil
-        end
-        -- Usable items return "usable" for special prompt text
-        if item_def and item_def.type == "usable" then
-            return "usable"
+        if item_def then
+            if item_def.type == "no_equip" then return nil end
+            if item_def.type == "usable" then return "usable" end
         end
         return self.inventory.equipped[item_id] == true
     end

@@ -25,8 +25,8 @@ common.AIR_JUMP_VELOCITY = common.GRAVITY * 11
 common.MAX_COYOTE_TIME = 6 / 60
 common.MAX_FALL_SPEED = 20
 
--- Stamina costs (balanced against max_stamina=5)
--- Attack costs 2: allows 2 full attacks before fatigue
+-- Stamina costs (balanced against max_stamina=3)
+-- Attack costs 2: allows 1 full attack before fatigue risk
 common.ATTACK_STAMINA_COST = 2
 -- Hammer costs 5: single use depletes bar, high-risk/high-reward
 common.HAMMER_STAMINA_COST = 5
@@ -36,6 +36,8 @@ common.AIR_JUMP_STAMINA_COST = 1
 common.DASH_STAMINA_COST = 2.5
 -- Wall jump costs 1: matches air jump cost
 common.WALL_JUMP_STAMINA_COST = 1
+-- Fixed fatigue duration in seconds (normal regen continues during fatigue)
+common.FATIGUE_DURATION = 1.5
 -- Block move speed: 35% of normal speed for slow defensive movement
 common.BLOCK_MOVE_SPEED_MULTIPLIER = 0.35
 

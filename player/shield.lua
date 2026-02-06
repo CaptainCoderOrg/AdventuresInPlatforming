@@ -1,6 +1,7 @@
 local Animation = require('Animation')
 local audio = require('audio')
 local canvas = require('canvas')
+local common = require('player.common')
 local config = require('config')
 local sprites = require('sprites')
 local world = require('world')
@@ -98,6 +99,10 @@ function shield.try_block(player, damage, source_x)
 		local stamina_cost = damage * shield.STAMINA_COST_PER_DAMAGE * reduction
 		player.stamina_used = player.stamina_used + stamina_cost
 		player.stamina_regen_timer = 0
+		-- Trigger fatigue if shield drain pushed past max stamina
+		if player.stamina_used > player.max_stamina and not player:is_fatigued() then
+			player.fatigue_remaining = common.FATIGUE_DURATION
+		end
 
 		-- Knockback away from source
 		shield.apply_knockback(player, source_x)

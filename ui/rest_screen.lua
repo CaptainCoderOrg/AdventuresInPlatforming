@@ -94,6 +94,10 @@ local MENU_DESCRIPTIONS = {
 local LEVEL_UP_ICON_SIZE = 10
 local LEVEL_UP_ICON_INSET = 6  -- Inset from button left edge (accounts for text-only button centering)
 
+-- Upgrade button dimensions
+local UPGRADE_BTN_HEIGHT = 16
+local UPGRADE_BTN_GAP = 4
+
 -- Screen state
 local state = STATE.HIDDEN
 local fade_progress = 0
@@ -1004,38 +1008,27 @@ local function draw_upgrade_buttons(info, local_mx, local_my)
 
     canvas.save()
 
-    -- Position below stats area (left side of panel)
+    -- Position below stats area, spanning full left-side width
     local stats_layout = player_status_panel:get_stats_layout()
+    local area_x = info.x + stats_layout.x
+    local area_width = stats_layout.width
     local button_y = info.y + stats_layout.bottom + 6
-    local button_x = info.x + stats_layout.x
-    local button_spacing = 12
-
-    canvas.set_font_family("menu_font")
-    canvas.set_font_size(7)
-    canvas.set_text_baseline("top")
-
-    local confirm_text = "Spend XP"
-    local cancel_text = "Cancel"
-    local confirm_metrics = canvas.get_text_metrics(confirm_text)
-    local cancel_metrics = canvas.get_text_metrics(cancel_text)
-
-    local confirm_x = button_x
-    local cancel_x = confirm_x + confirm_metrics.width + button_spacing
+    local btn_width = math.floor((area_width - UPGRADE_BTN_GAP) / 2)
+    local confirm_x = area_x
+    local cancel_x = area_x + btn_width + UPGRADE_BTN_GAP
 
     -- Check hover state (mouse)
     upgrade_confirm_hovered = false
     upgrade_cancel_hovered = false
 
     if mouse_active then
-        local btn_height = 10
-
-        if local_my >= button_y and local_my <= button_y + btn_height then
-            if local_mx >= confirm_x and local_mx <= confirm_x + confirm_metrics.width then
+        if local_my >= button_y and local_my <= button_y + UPGRADE_BTN_HEIGHT then
+            if local_mx >= confirm_x and local_mx <= confirm_x + btn_width then
                 upgrade_confirm_hovered = true
-                upgrade_button_focus = "confirm"  -- Sync mouse hover with focus
-            elseif local_mx >= cancel_x and local_mx <= cancel_x + cancel_metrics.width then
+                upgrade_button_focus = "confirm"
+            elseif local_mx >= cancel_x and local_mx <= cancel_x + btn_width then
                 upgrade_cancel_hovered = true
-                upgrade_button_focus = "cancel"  -- Sync mouse hover with focus
+                upgrade_button_focus = "cancel"
             end
         end
     end
@@ -1044,16 +1037,19 @@ local function draw_upgrade_buttons(info, local_mx, local_my)
     local confirm_focused = upgrade_button_focus == "confirm" or upgrade_confirm_hovered
     local cancel_focused = upgrade_button_focus == "cancel" or upgrade_cancel_hovered
 
-    -- Draw confirm button
+    -- Draw confirm button text
+    canvas.set_font_family("menu_font")
+    canvas.set_font_size(9)
+    canvas.set_text_baseline("middle")
+    canvas.set_text_align("center")
     local confirm_color = confirm_focused and "#88FF88" or "#FFFFFF"
     canvas.set_color(confirm_color)
-    canvas.set_text_align("left")
-    canvas.draw_text(confirm_x, button_y, confirm_text)
+    canvas.draw_text(confirm_x + btn_width / 2, button_y + UPGRADE_BTN_HEIGHT / 2, "Spend XP")
 
-    -- Draw cancel button
+    -- Draw cancel button text
     local cancel_color = cancel_focused and "#FF8888" or "#AAAAAA"
     canvas.set_color(cancel_color)
-    canvas.draw_text(cancel_x, button_y, cancel_text)
+    canvas.draw_text(cancel_x + btn_width / 2, button_y + UPGRADE_BTN_HEIGHT / 2, "Cancel")
 
     canvas.restore()
 end

@@ -44,10 +44,8 @@ Player.states = states
 -- Fatigue system constants
 -- 75% speed is noticeable but still allows escape/repositioning
 local FATIGUE_SPEED_MULTIPLIER = 0.75
--- 1/4 regen rate creates ~4 second recovery window as punishment for overcommitting
-local FATIGUE_REGEN_MULTIPLIER = 0.25
--- Extra debt ensures player can't immediately attack again after recovering
-local FATIGUE_ENTRY_PENALTY = 1
+-- 75% regen while blocking: mild penalty for passive defense (same value as speed, tuned independently)
+local BLOCK_REGEN_MULTIPLIER = 0.75
 -- Seconds between sweat particle spawns (50ms = rapid dripping effect)
 local FATIGUE_PARTICLE_INTERVAL = 0.05
 
@@ -65,10 +63,11 @@ function Player.new()
 	-- Consumed by attacks and abilities, regenerates gradually after delay
 	self.max_stamina = 3
 	self.stamina_used = 0
-	self.stamina_regen_rate = 5       -- Stamina regenerated per second
+	self.stamina_regen_rate = 3       -- Stamina regenerated per second
 	self.stamina_regen_cooldown = 0.5 -- Seconds before regen begins after use
 	self.stamina_regen_timer = 0      -- Time since last stamina use (seconds)
 	self.was_fatigued = false         -- Tracks previous fatigue state for transition detection
+	self.fatigue_remaining = 0        -- Seconds remaining in fatigue state (0 = not fatigued)
 	self.fatigue_particle_timer = 0   -- Timer for spawning fatigue particles
 
 	-- Player Energy
@@ -78,7 +77,7 @@ function Player.new()
 	self.energy_flash_requested = false  -- Flag for UI to trigger energy bar flash
 
 	-- Progression / RPG Stats
-	self.level = 1              -- Player level, gates content and affects base stats
+	self.level = 0              -- Player level (sum of all stat upgrades)
 	self.experience = 0         -- XP toward next level
 	self.gold = 0               -- Currency for purchases
 	self.defense = 0            -- Reduces incoming damage (points, diminishing returns)
@@ -278,37 +277,34 @@ function Player:is_invincible()
 end
 
 --- Attempts to consume stamina for an ability.
---- Allows use as long as available stamina >= 0 (can push into fatigue).
---- Blocks use when already fatigued (available < 0).
---- Adds 1 extra stamina penalty when entering fatigue state.
+--- Allows use as long as not currently fatigued (can push into fatigue).
+--- Blocks use when already fatigued (fatigue timer active).
+--- Triggers fatigue timer when stamina_used exceeds max_stamina.
 --- Resets regen timer on successful use.
 ---@param amount number Amount of stamina to consume
 ---@return boolean True if stamina was consumed, false if fatigued
 function Player:use_stamina(amount)
-	local available = self.max_stamina - self.stamina_used
-
-	-- Block stamina use while fatigued (available < 0)
-	if available < 0 then
+	-- Block stamina use while fatigued
+	if self:is_fatigued() then
 		return false
 	end
 
 	-- Consume stamina (can push into fatigue)
 	self.stamina_used = self.stamina_used + amount
 
-	-- Entry penalty stacks with overspend (e.g., 4 used + 2 attack + 1 penalty = 7 debt)
-	-- This scales punishment: bigger overspends = longer recovery
+	-- Start fatigue timer if overspent
 	if self.stamina_used > self.max_stamina then
-		self.stamina_used = self.stamina_used + FATIGUE_ENTRY_PENALTY
+		self.fatigue_remaining = common.FATIGUE_DURATION
 	end
 
 	self.stamina_regen_timer = 0
 	return true
 end
 
---- Returns whether player is currently fatigued (stamina debt).
----@return boolean True if stamina_used > max_stamina
+--- Returns whether player is currently fatigued (fatigue timer active).
+---@return boolean True if fatigue_remaining > 0
 function Player:is_fatigued()
-	return self.stamina_used > self.max_stamina
+	return self.fatigue_remaining > 0
 end
 
 --- Returns effective movement speed, accounting for fatigue penalty.
@@ -466,20 +462,18 @@ function Player:update(dt)
 	self.attack_cooldown = self.attack_cooldown - dt
 	self.throw_cooldown = self.throw_cooldown - dt
 
-	-- Stamina regeneration (after cooldown period, reduced while fatigued or blocking)
+	-- Stamina regeneration (after cooldown period, reduced while blocking)
 	self.stamina_regen_timer = self.stamina_regen_timer + dt
 	local is_blocking = self.state == self.states.block or self.state == self.states.block_move
 	if self.stamina_regen_timer >= self.stamina_regen_cooldown and self.stamina_used > 0 then
-		local is_fatigued = self:is_fatigued()
-		local is_slowed = is_fatigued or is_blocking
-		local regen_multiplier = is_slowed and FATIGUE_REGEN_MULTIPLIER or 1
-		-- Recovery bonus doubled while fatigued (helps escape fatigue faster)
-		local recovery_percent = self:recovery_percent()
-		if is_fatigued then
-			recovery_percent = recovery_percent * 2
-		end
-		local recovery_bonus = 1 + (recovery_percent / 100)
+		local regen_multiplier = is_blocking and BLOCK_REGEN_MULTIPLIER or 1
+		local recovery_bonus = 1 + (self:recovery_percent() / 100)
 		self.stamina_used = math.max(0, self.stamina_used - self.stamina_regen_rate * regen_multiplier * recovery_bonus * dt)
+	end
+
+	-- Fatigue timer countdown
+	if self.fatigue_remaining > 0 then
+		self.fatigue_remaining = math.max(0, self.fatigue_remaining - dt)
 	end
 
 	-- Perfect block cooldown decrement (only outside block states)

@@ -138,10 +138,11 @@ Resource management for abilities with fatigue mechanic.
 
 ### Stamina Properties
 
-- `max_stamina = 5` - Maximum stamina pool
+- `max_stamina = 3` - Maximum stamina pool
 - `stamina_used` - Tracks consumption (can exceed max for fatigue)
-- `stamina_regen_rate = 5` - Regeneration per second (normal)
+- `stamina_regen_rate = 3` - Regeneration per second
 - `stamina_regen_cooldown = 0.5s` - Delay before regen starts
+- `fatigue_remaining` - Seconds remaining in fatigue state (0 = not fatigued)
 
 ### Stamina Costs (`player/common.lua`)
 
@@ -155,22 +156,23 @@ WALL_JUMP_STAMINA_COST = 1   -- Wall jump
 
 ### Fatigue System
 
-Triggered when `stamina_used > max_stamina`:
-- **Entry Penalty**: +1 stamina debt added on entering fatigue
+Triggered when `stamina_used > max_stamina` (timer-based, 1.5s fixed duration):
+- **Duration**: 1.5 seconds (`common.FATIGUE_DURATION` in `player/common.lua`)
 - **Speed Penalty**: 75% movement speed while fatigued
-- **Regen Penalty**: 25% regeneration rate (1.25/second vs 5/second)
+- **Stamina Lock**: Cannot use stamina-costing abilities while fatigued
+- **Regen**: Normal stamina regeneration continues during fatigue
 - **Visual Feedback**: TIRED effect, sweat particles, pulsing orange/red meter
 
 **Key Methods:**
 ```lua
-player:use_stamina(amount)   -- Consume stamina, returns false if fatigued
-player:is_fatigued()         -- True if stamina_used > max_stamina
+player:use_stamina(amount)   -- Consume stamina, returns false if fatigued; triggers fatigue if overspent
+player:is_fatigued()         -- True if fatigue_remaining > 0 (timer active)
 player:get_speed()           -- Returns speed with fatigue penalty applied
 ```
 
 ### Energy System
 
-- `max_energy = 4` - Projectile ammunition pool
+- `max_energy = 3` - Projectile ammunition pool
 - `energy_used` - Tracks projectile consumption
 - Currently used for throw ability resource tracking
 - **Visual Feedback**: "Low Energy" or "No Energy" text appears when throw attempted with insufficient energy

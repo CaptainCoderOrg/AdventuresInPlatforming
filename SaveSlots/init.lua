@@ -65,7 +65,7 @@ local function migrate_old_data()
             campfire_name = "Campfire",  -- Default name for migrated data
             playtime = 0,
             max_health = 3,
-            level = 1,
+            level = 0,
         }
 
         -- Save to slot 1
@@ -182,6 +182,15 @@ function SaveSlots.restore_player_stats(player, stats)
         if stats[key] ~= nil then
             player[key] = copy_stat_value(key, stats[key])
         end
+    end
+
+    -- Recompute level as sum of stat upgrades (handles migration from old saves)
+    if player.stat_upgrades then
+        local total = 0
+        for _, v in pairs(player.stat_upgrades) do
+            total = total + v
+        end
+        player.level = total
     end
 end
 

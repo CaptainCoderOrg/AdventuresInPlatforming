@@ -23,22 +23,33 @@ local TEXT_PADDING_LEFT = 10
 local TEXT_PADDING_RIGHT = 9
 local LINE_HEIGHT = 8
 
--- Experience required for each level (Fibonacci-like: level 1 = 3, level 2 = 5, level N = level(N-1) + level(N-2))
--- Precomputed table for levels 1-100 (max level)
-local MAX_LEVEL = 100
-local EXP_TABLE = { [1] = 3, [2] = 5 }
-for i = 3, MAX_LEVEL do
-    EXP_TABLE[i] = EXP_TABLE[i - 1] + EXP_TABLE[i - 2]
+-- Maximum number of upgrades per stat
+local MAX_STAT_LEVEL = 20
+
+--- Generate a fibonacci-like cost table from two starting values
+---@param a number First cost
+---@param b number Second cost
+---@param max number Number of entries to generate
+---@return number[] table Array of costs
+local function generate_fib_table(a, b, max)
+    local t = { [1] = a, [2] = b }
+    for i = 3, max do
+        t[i] = t[i - 1] + t[i - 2]
+    end
+    return t
 end
 
----@param level number Player level to query
----@return number Experience required for the specified level
-local function exp_for_next_level(level)
-    local clamped_level = math.max(1, math.min(level, MAX_LEVEL))
-    return EXP_TABLE[clamped_level]
-end
+-- Per-stat XP cost tables (fibonacci-like sequences)
+local STAT_EXP_TABLES = {
+    Health   = generate_fib_table(3,  8,  MAX_STAT_LEVEL),
+    Stamina  = generate_fib_table(5,  12, MAX_STAT_LEVEL),
+    Energy   = generate_fib_table(25, 50, MAX_STAT_LEVEL),
+    Defence  = generate_fib_table(20, 30, MAX_STAT_LEVEL),
+    Recovery = generate_fib_table(20, 40, MAX_STAT_LEVEL),
+    Critical = generate_fib_table(50, 100, MAX_STAT_LEVEL),
+}
 
--- Stats that can be leveled up and their costs
+-- Stats that can be leveled up
 local LEVELABLE_STATS = {
     Health = true,
     Stamina = true,
@@ -48,20 +59,10 @@ local LEVELABLE_STATS = {
     Critical = true,
 }
 
---- Returns the XP cost for the next stat upgrade.
---- Cost is the "Next Level" XP requirement based on player level + pending upgrades.
----@param player_level number Current player level
----@param total_pending_upgrades number Number of pending stat upgrades
----@return number XP cost for the next upgrade
-local function stat_level_cost(player_level, total_pending_upgrades)
-    return exp_for_next_level(player_level + total_pending_upgrades)
-end
-
 -- Stat descriptions for the info panel
 local STAT_DESCRIPTIONS = {
     Level = "Your current level. Gain experience to level up and increase your stats.",
-    Experience = "Points earned by defeating enemies. Accumulate enough to reach the next level.",
-    ["Next Level"] = "Experience needed to reach the next level.",
+    Experience = "Points earned by defeating enemies. Spend XP to upgrade individual stats.",
     Gold = "Currency used to purchase items and equipment from merchants.",
     Health = "Your maximum hit points. When health reaches zero, you are defeated.",
     Stamina = "Used for blocking attacks. Regenerates over time when not blocking.",
@@ -73,7 +74,7 @@ local STAT_DESCRIPTIONS = {
 }
 
 -- Fixed row count for stats display (used by get_stats_layout)
-local STATS_ROW_COUNT = 13
+local STATS_ROW_COUNT = 12
 
 --- Get suffix for levelable stats (shows point increase)
 ---@param panel table The status_panel instance
@@ -128,7 +129,7 @@ function status_panel.create(opts)
         self._cached_rows[i] = {}
     end
     self._selectable_pool = {}
-    for i = 1, 11 do  -- Max 11 selectable rows (all non-blank rows)
+    for i = 1, 10 do  -- Max 10 selectable rows (all non-blank rows)
         self._selectable_pool[i] = { label = nil, visual_index = nil }
     end
 
@@ -149,13 +150,17 @@ function status_panel:set_player(player)
     end
 end
 
---- Check if player has enough experience to level up
----@return boolean can_level True if player can afford at least one level up
-function status_panel:can_level_up()
+--- Check if player can afford to upgrade any stat
+---@param available_exp number|nil Pre-computed available XP
+---@return boolean can_level True if player can afford at least one stat upgrade
+function status_panel:can_level_up(available_exp)
     if not self.player then return false end
-    local pending_level_ups = self:get_total_pending_upgrades()
-    local exp_needed = exp_for_next_level(self.player.level + pending_level_ups)
-    return self.player.experience >= exp_needed
+    for stat_name in pairs(LEVELABLE_STATS) do
+        if self:can_afford_upgrade(stat_name, available_exp) then
+            return true
+        end
+    end
+    return false
 end
 
 --- Get the total pending XP cost
@@ -195,20 +200,31 @@ end
 
 --- Get cost for next upgrade of a stat
 ---@param stat_name string The stat label
----@return number cost XP cost for next upgrade
+---@return number cost XP cost for next upgrade (math.huge if at cap)
 function status_panel:get_next_upgrade_cost(stat_name)
     if not self.player then return 0 end
-    local total_pending = self:get_total_pending_upgrades()
-    return stat_level_cost(self.player.level, total_pending)
+    local current = self.player.stat_upgrades[stat_name] or 0
+    local pending = self.pending_upgrades[stat_name] or 0
+    local next_index = current + pending + 1
+    local exp_table = STAT_EXP_TABLES[stat_name]
+    if not exp_table or next_index > MAX_STAT_LEVEL then
+        return math.huge
+    end
+    return exp_table[next_index]
 end
 
 --- Check if player can afford to upgrade a stat
 ---@param stat_name string The stat label
----@return boolean can_afford True if player has enough XP
-function status_panel:can_afford_upgrade(stat_name)
+---@param available_exp number|nil Pre-computed available XP (avoids recomputing total pending cost)
+---@return boolean can_afford True if player has enough XP and stat is not at cap
+function status_panel:can_afford_upgrade(stat_name, available_exp)
     if not self.player then return false end
+    if not STAT_EXP_TABLES[stat_name] then return false end
+    local current = self.player.stat_upgrades[stat_name] or 0
+    local pending = self.pending_upgrades[stat_name] or 0
+    if current + pending >= MAX_STAT_LEVEL then return false end
     local cost = self:get_next_upgrade_cost(stat_name)
-    local available_exp = self.player.experience - self:get_total_pending_cost()
+    available_exp = available_exp or (self.player.experience - self:get_total_pending_cost())
     return available_exp >= cost
 end
 
@@ -273,10 +289,6 @@ function status_panel:confirm_upgrades()
     -- Deduct experience
     self.player.experience = self.player.experience - total_cost
 
-    -- Increase player level (each stat upgrade = 1 level)
-    local total_upgrades = self:get_total_pending_upgrades()
-    self.player.level = self.player.level + total_upgrades
-
     -- Apply stat increases and track upgrades
     for stat_name, count in pairs(self.pending_upgrades) do
         -- Update the actual stat
@@ -297,6 +309,13 @@ function status_panel:confirm_upgrades()
         -- Track the upgrade count for potential refunds
         self.player.stat_upgrades[stat_name] = (self.player.stat_upgrades[stat_name] or 0) + count
     end
+
+    -- Recompute level as sum of all stat upgrades
+    local total_level = 0
+    for _, v in pairs(self.player.stat_upgrades) do
+        total_level = total_level + v
+    end
+    self.player.level = total_level
 
     -- Clear pending
     self:cancel_upgrades()
@@ -319,9 +338,7 @@ function status_panel:build_stats_rows()
     local rows = self._cached_rows
     local total_pending_cost = self:get_total_pending_cost()
     local pending_level_ups = self:get_total_pending_upgrades()
-
-    local exp_needed = exp_for_next_level(player.level + pending_level_ups)
-    local can_level_up = player.experience >= exp_needed
+    self._available_exp = player.experience - total_pending_cost
 
     local exp_suffix = total_pending_cost > 0 and "(-" .. total_pending_cost .. ")" or nil
     local level_suffix = pending_level_ups > 0 and "(+" .. pending_level_ups .. ")" or nil
@@ -339,96 +356,88 @@ function status_panel:build_stats_rows()
     rows[2].value = tostring(player.experience)
     rows[2].suffix = exp_suffix
     rows[2].suffix_color = "#FF8888"
-    rows[2].value_color = can_level_up and "#88FF88" or nil
+    rows[2].value_color = self:can_level_up(self._available_exp) and "#88FF88" or nil
     rows[2].monospace = nil
 
-    -- Row 3: Next Level
-    rows[3].label = "Next Level"
-    rows[3].value = tostring(exp_needed)
+    -- Row 3: Gold
+    rows[3].label = "Gold"
+    rows[3].value = tostring(player.gold)
     rows[3].suffix = nil
     rows[3].suffix_color = nil
     rows[3].value_color = nil
     rows[3].monospace = nil
 
-    -- Row 4: Gold
-    rows[4].label = "Gold"
-    rows[4].value = tostring(player.gold)
+    -- Row 4: Blank
+    rows[4].label = nil
+    rows[4].value = nil
     rows[4].suffix = nil
     rows[4].suffix_color = nil
     rows[4].value_color = nil
     rows[4].monospace = nil
 
-    -- Row 5: Blank
-    rows[5].label = nil
-    rows[5].value = nil
-    rows[5].suffix = nil
-    rows[5].suffix_color = nil
+    -- Row 5: Health
+    rows[5].label = "Health"
+    rows[5].value = tostring(player.max_health)
+    rows[5].suffix = get_stat_suffix(self, "Health")
+    rows[5].suffix_color = "#88FF88"
     rows[5].value_color = nil
     rows[5].monospace = nil
 
-    -- Row 6: Health
-    rows[6].label = "Health"
-    rows[6].value = tostring(player.max_health)
-    rows[6].suffix = get_stat_suffix(self, "Health")
+    -- Row 6: Stamina
+    rows[6].label = "Stamina"
+    rows[6].value = tostring(player.max_stamina)
+    rows[6].suffix = get_stat_suffix(self, "Stamina")
     rows[6].suffix_color = "#88FF88"
     rows[6].value_color = nil
     rows[6].monospace = nil
 
-    -- Row 7: Stamina
-    rows[7].label = "Stamina"
-    rows[7].value = tostring(player.max_stamina)
-    rows[7].suffix = get_stat_suffix(self, "Stamina")
+    -- Row 7: Energy
+    rows[7].label = "Energy"
+    rows[7].value = tostring(player.max_energy)
+    rows[7].suffix = get_stat_suffix(self, "Energy")
     rows[7].suffix_color = "#88FF88"
     rows[7].value_color = nil
     rows[7].monospace = nil
 
-    -- Row 8: Energy
-    rows[8].label = "Energy"
-    rows[8].value = tostring(player.max_energy)
-    rows[8].suffix = get_stat_suffix(self, "Energy")
+    -- Row 8: Defence
+    rows[8].label = "Defence"
+    rows[8].value = string.format("%.1f%%", player:defense_percent())
+    rows[8].suffix = get_percent_suffix(self, "Defence", player.defense)
     rows[8].suffix_color = "#88FF88"
     rows[8].value_color = nil
     rows[8].monospace = nil
 
-    -- Row 9: Defence
-    rows[9].label = "Defence"
-    rows[9].value = string.format("%.1f%%", player:defense_percent())
-    rows[9].suffix = get_percent_suffix(self, "Defence", player.defense)
+    -- Row 9: Recovery
+    rows[9].label = "Recovery"
+    rows[9].value = string.format("%.1f%%", player:recovery_percent())
+    rows[9].suffix = get_percent_suffix(self, "Recovery", player.recovery)
     rows[9].suffix_color = "#88FF88"
     rows[9].value_color = nil
     rows[9].monospace = nil
 
-    -- Row 10: Recovery
-    rows[10].label = "Recovery"
-    rows[10].value = string.format("%.1f%%", player:recovery_percent())
-    rows[10].suffix = get_percent_suffix(self, "Recovery", player.recovery)
+    -- Row 10: Critical
+    rows[10].label = "Critical"
+    rows[10].value = string.format("%.1f%%", player:critical_percent())
+    rows[10].suffix = get_percent_suffix(self, "Critical", player.critical_chance)
     rows[10].suffix_color = "#88FF88"
     rows[10].value_color = nil
     rows[10].monospace = nil
 
-    -- Row 11: Critical
-    rows[11].label = "Critical"
-    rows[11].value = string.format("%.1f%%", player:critical_percent())
-    rows[11].suffix = get_percent_suffix(self, "Critical", player.critical_chance)
-    rows[11].suffix_color = "#88FF88"
+    -- Row 11: Blank
+    rows[11].label = nil
+    rows[11].value = nil
+    rows[11].suffix = nil
+    rows[11].suffix_color = nil
     rows[11].value_color = nil
     rows[11].monospace = nil
 
-    -- Row 12: Blank
-    rows[12].label = nil
-    rows[12].value = nil
+    -- Row 12: Time
+    rows[12].label = "Time"
+    rows[12].value = SaveSlots.format_playtime(Playtime.get())
     rows[12].suffix = nil
     rows[12].suffix_color = nil
     rows[12].value_color = nil
-    rows[12].monospace = nil
-
-    -- Row 13: Time
-    rows[13].label = "Time"
-    rows[13].value = SaveSlots.format_playtime(Playtime.get())
-    rows[13].suffix = nil
-    rows[13].suffix_color = nil
-    rows[13].value_color = nil
-    rows[13].monospace = true
+    rows[12].monospace = true
 
     return rows
 end
@@ -516,13 +525,15 @@ function status_panel:is_highlighted_levelable()
 end
 
 --- Get the cost to level up the currently highlighted stat
----@return number|nil cost The XP cost, or nil if not levelable
+---@return number|nil cost The XP cost, or nil if not levelable or at cap
 function status_panel:get_level_cost()
     if not self:is_highlighted_levelable() then
         return nil
     end
     local stat = self:get_highlighted_stat()
-    return self:get_next_upgrade_cost(stat)
+    local cost = self:get_next_upgrade_cost(stat)
+    if cost == math.huge then return nil end
+    return cost
 end
 
 --- Check if selection is from mouse hover on stats (vs keyboard/gamepad)
@@ -723,20 +734,21 @@ function status_panel:draw()
         end
     end
 
-    -- Find widest label to position columns
-    local max_label_width = 0
-    for _, row in ipairs(rows) do
-        if row.label then
-            local label_width = canvas.get_text_width(row.label)
-            if label_width > max_label_width then
-                max_label_width = label_width
+    -- Compute label widths once (font must be active)
+    if not self._max_label_width then
+        self._max_label_width = 0
+        for _, row in ipairs(rows) do
+            if row.label then
+                local label_width = canvas.get_text_width(row.label)
+                if label_width > self._max_label_width then
+                    self._max_label_width = label_width
+                end
             end
         end
+        self._char_width = canvas.get_text_width("0")
     end
-
-    -- Use fixed reference width for value column to prevent layout shift from time
-    local char_width = canvas.get_text_width("0")
-    local max_value_width = char_width * 8  -- "00:00:00" = 8 characters
+    local max_label_width = self._max_label_width
+    local max_value_width = self._char_width * 8  -- "00:00:00" = 8 characters
 
     -- Value column right edge: 20px gap after widest label, plus widest value
     local value_right_x = text_x + max_label_width + 20 + max_value_width
@@ -782,6 +794,14 @@ function status_panel:draw()
                 canvas.set_text_align("left")
                 canvas.set_color(row.suffix_color or "#FFFFFF")
                 canvas.draw_text(suffix_x, text_y + y_offset, row.suffix)
+            end
+
+            -- Draw per-stat up-arrow icon for affordable levelable stats
+            if LEVELABLE_STATS[row.label] and self:can_afford_upgrade(row.label, self._available_exp) then
+                local icon_size = 7
+                local icon_x = suffix_x + (row.suffix and canvas.get_text_width(row.suffix) + 2 or 0)
+                local icon_y = text_y + y_offset + (LINE_HEIGHT - icon_size) / 2
+                canvas.draw_image(sprites.ui.level_up_icon, icon_x, icon_y, icon_size, icon_size)
             end
         end
         y_offset = y_offset + LINE_HEIGHT

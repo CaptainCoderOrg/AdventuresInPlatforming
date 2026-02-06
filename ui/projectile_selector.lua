@@ -144,61 +144,34 @@ local function draw_stamina_segment(alpha, y, x_offset, width, color, is_animati
     end
 end
 
---- Draws the stamina meter with fatigue support (debt shown as pulsing orange/red bar).
+--- Draws the stamina meter. Uses pulsing orange/red while fatigued, green otherwise.
 --- Shows animating portion at reduced opacity so player can see final value immediately.
 ---@param alpha number Widget alpha for shine calculation
 ---@param y number Y position of the meter
 ---@param player table Player instance with stamina properties
----@param displayed_stamina number Current displayed stamina value (can be negative)
+---@param displayed_stamina number Current displayed stamina value
 ---@param fatigue_timer number Timer for fatigue color pulsing
 local function draw_stamina_meter(alpha, y, player, displayed_stamina, fatigue_timer)
     local meter_width = player.max_stamina * PX_PER_UNIT
-    local target_stamina = player.max_stamina - player.stamina_used
-    local fatigue_color = get_fatigue_color(fatigue_timer)
+    local is_fatigued = player.fatigue_remaining > 0
+    local bar_color = is_fatigued and get_fatigue_color(fatigue_timer) or "#00FF00"
 
     canvas.draw_image(sprites.ui.meter_background, METER_X, y, meter_width, METER_HEIGHT)
 
-    -- Determine what to draw based on current state
-    local target_in_fatigue = target_stamina < 0
-    local displayed_in_fatigue = displayed_stamina < 0
-
-    if not target_in_fatigue and not displayed_in_fatigue then
-        -- Normal: both positive, draw green bar with animation
-        local target_w = target_stamina * PX_PER_UNIT
-        local displayed_w = displayed_stamina * PX_PER_UNIT
-        draw_stamina_segment(alpha, y, 0, target_w, "#00FF00", false)
-        if displayed_w > target_w then
-            draw_stamina_segment(alpha, y, target_w, displayed_w - target_w, "#00FF00", true)
-        elseif displayed_w < target_w then
-            draw_stamina_segment(alpha, y, displayed_w, target_w - displayed_w, "#00FF00", true)
-        end
-    elseif target_in_fatigue and displayed_in_fatigue then
-        -- Both in fatigue: draw fatigue bar with animation
-        local target_debt_w = math.abs(target_stamina) * PX_PER_UNIT
-        local displayed_debt_w = math.abs(displayed_stamina) * PX_PER_UNIT
-        draw_stamina_segment(alpha, y, 0, target_debt_w, fatigue_color, false)
-        if displayed_debt_w > target_debt_w then
-            draw_stamina_segment(alpha, y, target_debt_w, displayed_debt_w - target_debt_w, fatigue_color, true)
-        end
-    elseif target_in_fatigue then
-        -- Transitioning into fatigue: target is fatigue, displayed still positive
-        local target_debt_w = math.abs(target_stamina) * PX_PER_UNIT
-        local displayed_w = displayed_stamina * PX_PER_UNIT
-        draw_stamina_segment(alpha, y, 0, target_debt_w, fatigue_color, false)
-        draw_stamina_segment(alpha, y, 0, displayed_w, "#00FF00", true)
-    else
-        -- Recovering from fatigue: target is positive, displayed still in fatigue
-        local target_w = target_stamina * PX_PER_UNIT
-        local displayed_debt_w = math.abs(displayed_stamina) * PX_PER_UNIT
-        draw_stamina_segment(alpha, y, 0, target_w, "#00FF00", false)
-        draw_stamina_segment(alpha, y, 0, displayed_debt_w, fatigue_color, true)
+    local target_w = math.max(0, player.max_stamina - player.stamina_used) * PX_PER_UNIT
+    local displayed_w = math.max(0, displayed_stamina) * PX_PER_UNIT
+    draw_stamina_segment(alpha, y, 0, target_w, bar_color, false)
+    if displayed_w > target_w then
+        draw_stamina_segment(alpha, y, target_w, displayed_w - target_w, bar_color, true)
+    elseif displayed_w < target_w then
+        draw_stamina_segment(alpha, y, displayed_w, target_w - displayed_w, bar_color, true)
     end
 
     canvas.set_global_alpha(alpha * SHINE_OPACITY)
     canvas.draw_image(sprites.ui.meter_shine, METER_X + 1, y, meter_width - 2, METER_HEIGHT)
     canvas.set_global_alpha(alpha)
 
-    local cap_sprite = target_in_fatigue and sprites.ui.meter_cap_red or sprites.ui.meter_cap_green
+    local cap_sprite = is_fatigued and sprites.ui.meter_cap_red or sprites.ui.meter_cap_green
     canvas.draw_image(cap_sprite, METER_X + meter_width, y)
 end
 
@@ -228,13 +201,13 @@ end
 ---@param player table Player instance with health, stamina, and energy properties
 ---@return nil
 function projectile_selector:update(dt, player)
-    local target_hp = player.max_health - player.damage
-    local target_stamina = player.max_stamina - player.stamina_used
-    local target_energy = player.max_energy - player.energy_used
+    self.target_hp = player.max_health - player.damage
+    self.target_stamina = player.max_stamina - player.stamina_used
+    self.target_energy = player.max_energy - player.energy_used
 
-    self.displayed_hp = lerp_toward(self.displayed_hp, target_hp, LERP_SPEED, dt)
-    self.displayed_stamina = lerp_toward(self.displayed_stamina, target_stamina, LERP_SPEED, dt)
-    self.displayed_energy = lerp_toward(self.displayed_energy, target_energy, LERP_SPEED, dt)
+    self.displayed_hp = lerp_toward(self.displayed_hp, self.target_hp, LERP_SPEED, dt)
+    self.displayed_stamina = lerp_toward(self.displayed_stamina, self.target_stamina, LERP_SPEED, dt)
+    self.displayed_energy = lerp_toward(self.displayed_energy, self.target_energy, LERP_SPEED, dt)
 
     self.fatigue_pulse_timer = self.fatigue_pulse_timer + dt
 
@@ -275,11 +248,9 @@ function projectile_selector:draw(player)
         control_icon.draw("attack", ATTACK_ICON_OFFSET_X, ATTACK_ICON_OFFSET_Y, CONTROL_ICON_SIZE)
     end
 
-    local target_hp = player.max_health - player.damage
-    local target_energy = player.max_energy - player.energy_used
-    draw_meter(self.alpha, METER_Y, player.max_health, target_hp, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
+    draw_meter(self.alpha, METER_Y, player.max_health, self.target_hp, self.displayed_hp, "#FF0000", sprites.ui.meter_cap_red)
     draw_stamina_meter(self.alpha, METER_Y + METER_HEIGHT, player, self.displayed_stamina, self.fatigue_pulse_timer)
-    draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, target_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
+    draw_meter(self.alpha, METER_Y + METER_HEIGHT * 2, player.max_energy, self.target_energy, self.displayed_energy, "#0088FF", sprites.ui.meter_cap_blue)
 
     -- Energy flash overlay (flickering rectangle over the meter)
     if self.energy_flash_timer > 0 then

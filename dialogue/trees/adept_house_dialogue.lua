@@ -12,7 +12,8 @@ return {
                 -- First meeting path
                 { text = "Hello?", next = "introduction", condition = "not_met_adept" },
                 -- Returning visitor paths
-                { text = "I found your crystal ball.", next = "crystal_found_roof", condition = "met_adept", condition2 = "has_item_crystal_ball" },
+                { text = "I found your crystal ball.", next = "crystal_found_roof", condition = "met_adept", condition2 = "has_item_crystal_ball", condition3 = "not_has_item_adept_apology" },
+                { text = "About the apology letter...", next = "apology_reminder", condition = "has_item_adept_apology", condition2 = "not_apology_delivered_to_gnomos" },
                 { text = "The gnomos are dead.", next = "gnomos_defeated_check", condition = "met_adept", condition2 = "defeated_boss_gnomo_brothers", condition3 = "not_crystal_returned" },
                 { text = "I delivered your apology.", next = "apology_delivered", condition = "apology_delivered_to_gnomos", condition2 = "not_received_orb" },
                 { text = "What can you tell me about myself?", next = "memory_loss", condition = "met_adept" },
@@ -276,6 +277,23 @@ return {
 
         deliver_apology_accept = {
             text = "Thank you. The gnomo brothers dwell in the caves below the valley. They're hostile, but perhaps if you approach peacefully with the letter... be careful.",
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- Reminder for players who have the apology but haven't delivered it
+        apology_reminder = {
+            text = "You still have my letter? Please, take it to the gnomo brothers in the caves below the valley. I need to make amends for my false accusations.",
+            options = {
+                { text = "I'll deliver it.", next = nil },
+                { text = "Where are the gnomos again?", next = "apology_directions" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        apology_directions = {
+            text = "The caves below the valley. They're hostile creatures, but perhaps if you approach peacefully with my letter, they'll hear you out. Please be careful.",
             options = {
                 { text = "Leave", next = nil },
             },

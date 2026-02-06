@@ -83,16 +83,15 @@ return {
     },
     sword = {
         name = "Shortsword",
-        description = "A fast lightweight blade that uses little stamina but has a short reach. Press {attack} to attack.",
+        description = "A fast lightweight blade that uses little stamina but deals little damage. Press {attack} to attack.",
         type = "weapon",
         animated_sprite = sprites.items.sword,
         animated_frames = 12,
         stats = {
             damage = 1,
-            stamina_cost = 1.5,
+            stamina_cost = 1.25,
             attack_type = "combo",
-            animation = "short",
-            hitbox = { width = 0.7, height = 1.1, y_offset = -0.1 },
+            hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 60,
         },
     },
@@ -102,7 +101,7 @@ return {
         type = "weapon",
         static_sprite = sprites.items.longsword,
         stats = {
-            damage = 2,
+            damage = 2.5,
             stamina_cost = 2.5,
             attack_type = "combo",
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
@@ -115,11 +114,11 @@ return {
         type = "weapon",
         static_sprite = sprites.items.elven_blade,
         stats = {
-            damage = 2,
+            damage = 2.5,
             stamina_cost = 1.5,
             attack_type = "combo",
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
-            ms_per_frame = 70,
+            ms_per_frame = 60,
         },
     },
     great_sword = {

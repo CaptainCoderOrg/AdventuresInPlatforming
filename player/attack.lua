@@ -35,8 +35,8 @@ end
 
 -- Default hitbox dimensions (used if weapon has no hitbox stats)
 local DEFAULT_WIDTH = 1.15
-local DEFAULT_HEIGHT = 1.1
-local DEFAULT_Y_OFFSET = -0.1
+local DEFAULT_HEIGHT = 1.3
+local DEFAULT_Y_OFFSET = -0.2
 
 -- Reusable state for filters (avoids closure allocation per frame)
 local filter_player = nil
@@ -57,8 +57,8 @@ end
 ---@param stats table|nil Pre-fetched weapon stats (avoids redundant lookup)
 ---@return table|nil Hitbox {x, y, w, h} in tiles, or nil if weapon not active
 local function get_weapon_hitbox(player, stats)
-	local min_frame = 2
-	local max_frame = player.animation.definition.frame_count - 2
+	local min_frame = 1
+	local max_frame = player.animation.definition.frame_count - 1
 
 	if player.animation.frame < min_frame or player.animation.frame > max_frame then
 		return nil

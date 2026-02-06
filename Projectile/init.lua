@@ -29,7 +29,7 @@ Projectile.animations = {
     SHURIKEN = Animation.create_definition(sprites.projectiles.shuriken, 5, {
         width = 8,
         height = 8,
-    })
+    }),
 }
 
 --- Returns the Axe projectile specification.
@@ -106,6 +106,14 @@ function Projectile.update(dt, level_info)
             end
         end
 
+        -- Expire projectiles with a time-to-live (after collision so last frame still collides)
+        if projectile.ttl then
+            projectile.ttl = projectile.ttl - dt
+            if projectile.ttl <= 0 then
+                projectile.marked_for_destruction = true
+            end
+        end
+
         if projectile.marked_for_destruction then
             to_remove[#to_remove + 1] = projectile
         end
@@ -114,7 +122,7 @@ function Projectile.update(dt, level_info)
 
     for i = 1, #to_remove do
         local p = to_remove[i]
-        world.remove_collider(p)
+        world.remove_trigger_collider(p)
         Projectile.all[p] = nil
     end
 end
@@ -178,15 +186,18 @@ end
 ---@param effect_callback function|nil Effect spawner on collision (defaults to Effects.create_hit)
 ---@param damage number|nil Damage dealt to enemies (defaults to 1)
 ---@param owner table|nil Player who threw this projectile (for critical hits)
+---@param options table|nil Optional overrides: box_w, box_h, ttl, reverse
 ---@return table Projectile instance
-function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage, owner)
+function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direction, effect_callback, damage, owner, options)
+	options = options or {}
 	local self = setmetatable({}, Projectile)
     self.create_effect = effect_callback or Effects.create_hit
 	self.id = name .. "_" .. Projectile.next_id
 	Projectile.next_id = Projectile.next_id + 1
+	local reverse = options.reverse == nil and true or options.reverse
 	self.animation = Animation.new(animation_def, {
 		flipped = direction > 0 and 1 or -1,
-		reverse = true  -- Always play in reverse for correct spin direction
+		reverse = reverse,
 	})
 	self.x = x
 	self.y = y
@@ -195,7 +206,8 @@ function Projectile.new(name, animation_def, x, y, vx, vy, gravity_scale, direct
 	self.gravity_scale = gravity_scale
 	self.damage = damage or 1
 	self.owner = owner
-	self.box = { w = 0.5, h = 0.5, x = 0, y = 0 }
+	self.box = { w = options.box_w or 0.5, h = options.box_h or 0.5, x = 0, y = 0 }
+	self.ttl = options.ttl
 	self.is_projectile = true
 	self.marked_for_destruction = false
 	self.shape = world.add_trigger_collider(self)

@@ -14,8 +14,8 @@ local hammer = { name = "hammer" }
 
 -- Default hitbox dimensions (used if weapon has no hitbox stats)
 local DEFAULT_WIDTH = 1.15
-local DEFAULT_HEIGHT = 1.1
-local DEFAULT_Y_OFFSET = -0.1
+local DEFAULT_HEIGHT = 1.3
+local DEFAULT_Y_OFFSET = -0.2
 
 -- Default active frames for hammer hitbox (impact frames)
 -- Hammer has 7 frames (0-6) at 150ms each

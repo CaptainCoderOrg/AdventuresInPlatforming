@@ -14,6 +14,7 @@ local title_screen = require("ui/title_screen")
 local slot_screen = require("ui/slot_screen")
 local dialogue_screen = require("ui/dialogue_screen")
 local shop_screen = require("ui/shop_screen")
+local journal_toast = require("ui/journal_toast")
 
 local hud = {}
 
@@ -128,6 +129,11 @@ function hud.update(dt, player)
     title_screen.update(dt, title_block)
     game_over.update(dt)
     rest_screen.update(dt, dialogs_block)
+    -- Pause toast timer while overlay screens are active (so it shows after dialogue closes)
+    local toast_paused = dialogue_screen.is_active() or shop_screen.is_active()
+        or rest_screen.is_active() or game_over.is_active()
+        or title_screen.is_active() or slot_screen.is_active()
+    journal_toast.update(dt, toast_paused)
     selector_widget:update(dt, player)
     secondary_widget:update(dt, player)
 end
@@ -159,6 +165,9 @@ function hud.draw(player)
         if slide < 1 then
             draw_hud_bar(player)
         end
+    end
+    if not title_screen.is_active() and not slot_screen.is_active() then
+        journal_toast.draw()
     end
     game_over.draw()
     rest_screen.draw()

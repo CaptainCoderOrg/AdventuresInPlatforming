@@ -17,6 +17,7 @@ local sprites = require("sprites")
 local SaveSlots = require("SaveSlots")
 local map_panel = require("ui/map_panel")
 local fast_travel_panel = require("ui/fast_travel_panel")
+local journal_panel = require("ui/journal_panel")
 
 local rest_screen = {}
 
@@ -44,7 +45,7 @@ local RELOAD_PAUSE = 0.1
 local FADE_BACK_IN_DURATION = 0.4
 
 -- Circle viewport configuration
-local CIRCLE_RADIUS = 40
+local CIRCLE_RADIUS = 36
 local PULSE_SPEED = 2
 local PULSE_AMOUNT = 0.08
 local CIRCLE_EDGE_PADDING = 8
@@ -61,8 +62,8 @@ end
 -- Layout constants (at 1x scale)
 local BUTTON_WIDTH = 70
 local BUTTON_HEIGHT = 12
-local BUTTON_SPACING = 4
-local BUTTON_TOP_OFFSET = 10
+local BUTTON_SPACING = 3
+local BUTTON_TOP_OFFSET = 8
 local DIALOGUE_HEIGHT = 42
 local DIALOGUE_PADDING = 8
 local DIALOGUE_GAP = 8
@@ -73,7 +74,7 @@ local REPEAT_INTERVAL = 0.08
 local VOLUME_STEP = 0.05
 
 -- Menu configuration
-local MENU_ITEM_COUNT = 6
+local MENU_ITEM_COUNT = 7
 
 -- Submenu arrow configuration
 local ARROW_WIDTH = 4
@@ -86,6 +87,7 @@ local PAUSE_CONTINUE_DESC = "Resume gameplay."
 local MENU_DESCRIPTIONS = {
     "View your current stats and progression. You can spend experience at campfires to increase your stats.",
     "View a map of the current area.",
+    "Track your progress and quest objectives.",
     "View and customize keyboard and gamepad controls.",
     "Adjust master volume, music, and sound effects.",
     REST_CONTINUE_DESC,
@@ -154,6 +156,7 @@ local status_button = nil
 local audio_button = nil
 local controls_button = nil
 local map_button = nil
+local journal_button = nil
 local continue_button = nil
 local return_to_title_button = nil
 local rest_dialogue = nil
@@ -209,6 +212,7 @@ local function return_to_status()
         save_settings()
     end
     fast_travel_panel.hide()
+    journal_panel.hide()
     nav_mode = NAV_MODE.MENU
     active_panel_index = 1
 
@@ -221,7 +225,7 @@ local function return_to_status()
     upgrade_button_focus = nil
 
     -- Restore default rest dialogue text (already set in init_screen_state)
-    rest_dialogue.text = MENU_DESCRIPTIONS[5]
+    rest_dialogue.text = MENU_DESCRIPTIONS[6]
 end
 
 --- Create a text-only menu button with standard dimensions
@@ -361,11 +365,14 @@ local function position_buttons(menu_x, menu_y, menu_width, menu_height)
     map_button.x = button_x
     map_button.y = button_start_y + BUTTON_HEIGHT + BUTTON_SPACING
 
+    journal_button.x = button_x
+    journal_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
+
     controls_button.x = button_x
-    controls_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
+    controls_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
 
     audio_button.x = button_x
-    audio_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
+    audio_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 4
 
     -- Bottom-aligned action buttons
     continue_button.x = button_x
@@ -416,6 +423,7 @@ local VOLUME_SETTERS = {
 function rest_screen.init()
     status_button = create_menu_button("Status")
     map_button = create_menu_button("Map")
+    journal_button = create_menu_button("Journal")
     controls_button = create_menu_button("Controls")
     audio_button = create_menu_button("Audio")
     continue_button = create_menu_button("Continue")
@@ -490,7 +498,7 @@ function rest_screen.init()
         text = ""
     })
 
-    buttons = { status_button, map_button, controls_button, audio_button, continue_button, return_to_title_button }
+    buttons = { status_button, map_button, journal_button, controls_button, audio_button, continue_button, return_to_title_button }
 end
 
 --- Hide and reset the rest screen (used when returning to title)
@@ -500,6 +508,7 @@ function rest_screen.hide()
     fade_progress = 0
     slide_progress = 0
     fast_travel_panel.hide()
+    journal_panel.hide()
     if player_status_panel then
         player_status_panel:cancel_upgrades()
     end
@@ -615,7 +624,7 @@ local function init_screen_state(mode, player, camera, description, button_label
 
     rest_dialogue.text = description
     continue_button.label = button_label
-    MENU_DESCRIPTIONS[5] = description
+    MENU_DESCRIPTIONS[6] = description
 
     -- Initialize layout immediately for correct first-frame rendering
     init_component_layout()
@@ -728,7 +737,7 @@ function rest_screen.get_camera_offset()
 end
 
 --- Trigger the currently focused menu action based on focused_index
---- 1 = Status, 2 = Map, 3 = Controls, 4 = Audio, 5 = Continue, 6 = Return to Title
+--- 1 = Status, 2 = Map, 3 = Journal, 4 = Controls, 5 = Audio, 6 = Continue, 7 = Return to Title
 ---@return nil
 local function trigger_focused_action()
     if focused_index == 1 then
@@ -739,14 +748,18 @@ local function trigger_focused_action()
     elseif focused_index == 3 then
         nav_mode = NAV_MODE.SETTINGS
         active_panel_index = 3
-        controls_panel:reset_focus()
+        journal_panel.show(player_ref and player_ref.journal or {}, player_ref and player_ref.journal_read or {})
     elseif focused_index == 4 then
         nav_mode = NAV_MODE.SETTINGS
         active_panel_index = 4
-        audio_focus_index = 1
+        controls_panel:reset_focus()
     elseif focused_index == 5 then
-        rest_screen.trigger_continue()
+        nav_mode = NAV_MODE.SETTINGS
+        active_panel_index = 5
+        audio_focus_index = 1
     elseif focused_index == 6 then
+        rest_screen.trigger_continue()
+    elseif focused_index == 7 then
         nav_mode = NAV_MODE.CONFIRM
         confirm_selection = 2
     end
@@ -1145,12 +1158,12 @@ local function enter_settings_mode()
     if focused_index == 1 then
         player_status_panel.active = true
         player_status_panel:reset_selection()
-    elseif focused_index == 3 then
-        controls_panel:reset_focus()
     elseif focused_index == 4 then
+        controls_panel:reset_focus()
+    elseif focused_index == 5 then
         audio_focus_index = 1
     end
-    -- Map panel (index 2) has no special init needed
+    -- Map panel (index 2) and Journal panel (index 3) have no special init needed
 end
 
 --- Execute fast travel to a destination campfire
@@ -1166,6 +1179,17 @@ local function execute_fast_travel(dest)
         SaveSlots.set(active_save_slot, save_data)
     end
     rest_screen.trigger_continue()
+end
+
+--- Handle input when in Journal panel mode
+---@return nil
+local function handle_journal_panel_input()
+    local result = journal_panel.input()
+    if not result then return end
+    if result.action == "back" then
+        journal_panel.hide()
+        return_to_status()
+    end
 end
 
 --- Handle input when in Fast Travel panel mode
@@ -1205,7 +1229,7 @@ local function handle_menu_input()
 
     local right_pressed = controls.menu_right_pressed()
     local confirm_pressed = controls.menu_confirm_pressed()
-    local is_submenu_item = focused_index <= 4
+    local is_submenu_item = focused_index <= 5
 
     -- Enter settings mode when pressing right/confirm on the active submenu panel
     if (right_pressed or confirm_pressed) and is_submenu_item and focused_index == active_panel_index then
@@ -1245,8 +1269,10 @@ function rest_screen.input()
         elseif active_panel_index == 2 then
             handle_map_panel_input()
         elseif active_panel_index == 3 then
-            handle_controls_settings_input()
+            handle_journal_panel_input()
         elseif active_panel_index == 4 then
+            handle_controls_settings_input()
+        elseif active_panel_index == 5 then
             handle_audio_settings_input()
         end
     else
@@ -1430,11 +1456,20 @@ function rest_screen.update(dt, block_mouse)
                     rest_dialogue.text = "{move_up}{move_down}{move_left}{move_right} Scroll\n{jump} Center"
                 end
             elseif active_panel_index == 3 then
+                journal_panel.update(dt, local_mx - info.x, local_my - info.y, mouse_active)
+                if mouse_active then
+                    journal_panel.handle_click()
+                end
+                local desc = journal_panel.get_selected_description()
+                if desc then
+                    rest_dialogue.text = desc
+                end
+            elseif active_panel_index == 4 then
                 local panel_x = info.x + (info.width - controls_panel.width) / 2
                 local panel_y = info.y + 8
 
                 controls_panel:update(dt, local_mx - panel_x, local_my - panel_y, mouse_active and nav_mode == NAV_MODE.SETTINGS)
-            elseif active_panel_index == 4 then
+            elseif active_panel_index == 5 then
                 local slider_x = info.x + (info.width - SLIDER_WIDTH) / 2
                 local slider_start_y = info.y + 20
                 local slider_spacing = 22
@@ -1499,7 +1534,7 @@ local function draw_audio_panel(x, y, width, height)
     canvas.set_font_size(7)
     canvas.set_text_baseline("bottom")
 
-    local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 4
+    local in_settings = nav_mode == NAV_MODE.SETTINGS and active_panel_index == 5
 
     for i, label in ipairs(SLIDER_LABELS) do
         local offset_y = slider_start_y + slider_spacing * (i - 1)
@@ -1720,8 +1755,8 @@ end
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_submenu_prompt(dialogue)
-    -- Only show in menu mode for submenu items (Status, Map, Controls, Audio)
-    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 4 then
+    -- Only show in menu mode for submenu items (Status, Map, Journal, Controls, Audio)
+    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 5 then
         return
     end
 
@@ -1730,7 +1765,7 @@ local function draw_submenu_prompt(dialogue)
         return
     end
 
-    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 4
+    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 5
 
     -- Don't show if mouse is hovering over status panel stats
     if not mouse_on_submenu and player_status_panel:is_mouse_hover() then
@@ -1808,7 +1843,7 @@ local back_text_metrics = nil
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_map_back_prompt(dialogue)
-    if nav_mode ~= NAV_MODE.SETTINGS or active_panel_index ~= 2 then
+    if nav_mode ~= NAV_MODE.SETTINGS or (active_panel_index ~= 2 and active_panel_index ~= 3) then
         return
     end
 
@@ -1989,8 +2024,10 @@ function rest_screen.draw()
         elseif active_panel_index == 2 then
             draw_map_panel(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 3 then
-            draw_controls_panel(info.x, info.y, info.width, info.height)
+            journal_panel.draw(info.x, info.y, info.width, info.height)
         elseif active_panel_index == 4 then
+            draw_controls_panel(info.x, info.y, info.width, info.height)
+        elseif active_panel_index == 5 then
             draw_audio_panel(info.x, info.y, info.width, info.height)
         end
 
@@ -2011,8 +2048,20 @@ function rest_screen.draw()
                 canvas.draw_image(sprites.ui.level_up_icon, icon_x, icon_y, LEVEL_UP_ICON_SIZE, LEVEL_UP_ICON_SIZE)
             end
 
-            -- Draw arrow for submenu items (Status, Map, Controls, Audio)
-            if i <= 4 then
+            -- Draw unread indicator on Journal button
+            if i == 3 and player_ref and journal_panel.has_unread(player_ref.journal, player_ref.journal_read) then
+                canvas.save()
+                canvas.set_font_family("menu_font")
+                canvas.set_font_size(8)
+                canvas.set_text_baseline("middle")
+                canvas.set_text_align("left")
+                canvas.set_color("#FFD700")
+                canvas.draw_text(btn.x + LEVEL_UP_ICON_INSET, btn.y + btn.height / 2, "*")
+                canvas.restore()
+            end
+
+            -- Draw arrow for submenu items (Status, Map, Journal, Controls, Audio)
+            if i <= 5 then
                 local arrow_x = btn.x + btn.width - ARROW_INSET
                 local arrow_y = btn.y + btn.height / 2
                 draw_submenu_arrow(arrow_x, arrow_y, is_focused)

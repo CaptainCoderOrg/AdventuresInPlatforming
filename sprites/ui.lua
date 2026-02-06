@@ -23,6 +23,8 @@ local ui = {
 	secondary_left_end = "secondary_left_end",
 	secondary_right_end = "secondary_right_end",
 	boss_health_bar = "boss_health_bar",
+	icon_expand = "icon_expand",
+	icon_collapse = "icon_collapse",
 }
 
 canvas.assets.load_image(ui.heart, "sprites/ui/heart.png")
@@ -45,5 +47,7 @@ canvas.assets.load_image(ui.secondary_container_selected, "sprites/ui/hud-second
 canvas.assets.load_image(ui.secondary_left_end, "sprites/ui/hud-secondary-left-end.png")
 canvas.assets.load_image(ui.secondary_right_end, "sprites/ui/hud-secondary-right-end.png")
 canvas.assets.load_image(ui.boss_health_bar, "sprites/ui/boss_health_bar.png")
+canvas.assets.load_image(ui.icon_expand, "sprites/icons/expand.png")
+canvas.assets.load_image(ui.icon_collapse, "sprites/icons/collapse.png")
 
 return ui

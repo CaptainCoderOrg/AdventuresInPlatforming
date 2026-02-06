@@ -97,6 +97,8 @@ function Player.new()
 	self.active_secondary = nil -- item_id of currently active secondary (for ability swap)
 	self.defeated_bosses = {}   -- Set of defeated boss ids (boss_id -> true)
 	self.visited_campfires = {} -- Keyed by "level_id:name" -> {name, level_id, x, y}
+	self.journal = { awakening = "active" }  -- Quest journal entries (entry_id -> "active"|"complete")
+	self.journal_read = {}  -- Tracks which journal entries the player has viewed (entry_id -> true)
 	self.difficulty = "normal"  -- Difficulty setting ("normal" or "easy")
 
 	-- Position and velocity

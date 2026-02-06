@@ -136,6 +136,8 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "stat_upgrades", "unique_items", "stackable_items", "equipped_items", "active_weapon", "active_secondary",
     "defeated_bosses", "dialogue_flags",
     "visited_campfires",
+    "journal",
+    "journal_read",
     "difficulty",
 }
 
@@ -158,7 +160,7 @@ local function copy_stat_value(key, value)
             copy[k] = { name = v.name, level_id = v.level_id, x = v.x, y = v.y }
         end
         return copy
-    elseif key == "stat_upgrades" or key == "equipped_items" or key == "stackable_items" or key == "defeated_bosses" or key == "dialogue_flags" then
+    elseif key == "stat_upgrades" or key == "equipped_items" or key == "stackable_items" or key == "defeated_bosses" or key == "dialogue_flags" or key == "journal" or key == "journal_read" then
         local copy = {}
         for k, v in pairs(value) do
             copy[k] = v

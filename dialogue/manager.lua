@@ -1,5 +1,7 @@
 --- Dialogue state tracking and condition evaluation
 --- Flags are stored directly on the player object for persistence
+local journal_toast = require("ui/journal_toast")
+
 local manager = {}
 
 -- Reference to current player for flag storage
@@ -123,7 +125,8 @@ function manager.filter_options(options, player)
 end
 
 --- Execute actions from a dialogue node
---- Actions: set_flag_X, clear_flag_X, give_gold_X, take_gold_X, give_item_X
+--- Actions: set_flag_X, clear_flag_X, give_gold_X, take_gold_X,
+--- give_item_X, take_item_X, journal_add_X, journal_complete_X
 ---@param actions table|nil Array of action strings
 ---@param player table Player instance
 function manager.execute_actions(actions, player)
@@ -172,6 +175,21 @@ function manager.execute_actions(actions, player)
                         break
                     end
                 end
+            end
+        elseif action:sub(1, 12) == "journal_add_" then
+            local entry_id = action:sub(13)
+            if player then
+                player.journal = player.journal or {}
+                if not player.journal[entry_id] then
+                    player.journal[entry_id] = "active"
+                    journal_toast.push(entry_id)
+                end
+            end
+        elseif action:sub(1, 17) == "journal_complete_" then
+            local entry_id = action:sub(18)
+            if player then
+                player.journal = player.journal or {}
+                player.journal[entry_id] = "complete"
             end
         end
     end

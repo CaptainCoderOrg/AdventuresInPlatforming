@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="157">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="158">
  <editorsettings>
   <export target="dungeon.lua" format="lua"/>
  </editorsettings>
@@ -2002,6 +2002,11 @@
   <object id="153" gid="507" x="384" y="80" width="16" height="16"/>
   <object id="154" gid="500" x="48" y="352" width="16" height="8"/>
   <object id="155" gid="500" x="768" y="272" width="16" height="8"/>
+  <object id="157" gid="300" x="1840" y="80" width="16" height="16">
+   <properties>
+    <property name="text" value="Press {menu} to access [color=#00AA00]MAP[/color]"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="6" name="Locations">
   <object id="4" x="15" y="-47" width="16" height="16">

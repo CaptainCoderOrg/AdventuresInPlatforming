@@ -80,19 +80,20 @@ local LEVELABLE_STATS = {
 -- Stat descriptions for the info panel
 local STAT_DESCRIPTIONS = {
     Level = "Your current level. Gain experience to level up and increase your stats.",
-    Experience = "Points earned by defeating enemies. Spend XP to upgrade individual stats.",
+    Experience = "Points earned by defeating enemies. Spend experience at campfires to increase your level.",
     Gold = "Currency used to purchase items and equipment from merchants.",
     Health = "Your maximum hit points. When health reaches zero, you are defeated.",
-    Stamina = "Used for blocking attacks. Regenerates over time when not blocking.",
-    Energy = "Consumed when using special attacks like throwing weapons and hammer strikes.",
-    Defence = "Reduces damage taken from enemy attacks.",
+    Stamina = "Used for attacks and physical abilities. Depleting stamina leaves you vulnerable until you recover.",
+    Energy = "Used by magical abilities. Rest at a campfire to restore.",
+    Defence = "Reduces incoming damage from enemy attacks.",
     Recovery = "Increases the rate at which stamina regenerates.",
     Critical = "Chance to deal extra damage with each attack.",
+    ["Required XP"] = "Experience required for next level.",
     Time = "Total time spent playing this save file.",
 }
 
--- Must match the number of rows emitted by build_stats_rows (10 stat rows + 2 blank separators)
-local STATS_ROW_COUNT = 12
+-- Must match the number of rows emitted by build_stats_rows (11 stat rows + 2 blank separators)
+local STATS_ROW_COUNT = 13
 
 --- Get suffix for levelable stats (shows point increase)
 ---@param panel table The status_panel instance
@@ -148,7 +149,7 @@ function status_panel.create(opts)
         self._cached_rows[i] = {}
     end
     self._selectable_pool = {}
-    for i = 1, 10 do  -- Max 10 selectable rows (all non-blank rows)
+    for i = 1, 11 do  -- Max 11 selectable rows (all non-blank rows)
         self._selectable_pool[i] = { label = nil, visual_index = nil }
     end
 
@@ -181,6 +182,23 @@ function status_panel:can_level_up(available_exp)
         end
     end
     return false
+end
+
+--- Get the minimum upgrade cost across all non-maxed levelable stats
+---@param available_exp number|nil Pre-computed available XP
+---@return number|nil min_cost Minimum XP cost, or nil if all stats are maxed
+function status_panel:get_min_upgrade_cost(available_exp)
+    if not self.player then return nil end
+    local min_cost = nil
+    for stat_name in pairs(LEVELABLE_STATS) do
+        local cost = self:get_next_upgrade_cost(stat_name)
+        if cost ~= math.huge then
+            if not min_cost or cost < min_cost then
+                min_cost = cost
+            end
+        end
+    end
+    return min_cost
 end
 
 --- Get the total pending XP cost
@@ -379,85 +397,94 @@ function status_panel:build_stats_rows()
     rows[2].value_color = self:can_level_up(self._available_exp) and "#88FF88" or nil
     rows[2].monospace = nil
 
-    -- Row 3: Gold
-    rows[3].label = "Gold"
-    rows[3].value = tostring(player.gold)
+    -- Row 3: Next Level
+    local min_cost = self:get_min_upgrade_cost(self._available_exp)
+    rows[3].label = "Required XP"
+    rows[3].value = min_cost and tostring(min_cost) or "MAX"
     rows[3].suffix = nil
     rows[3].suffix_color = nil
-    rows[3].value_color = nil
+    rows[3].value_color = (min_cost and self._available_exp >= min_cost) and "#88FF88" or nil
     rows[3].monospace = nil
 
-    -- Row 4: Blank
-    rows[4].label = nil
-    rows[4].value = nil
+    -- Row 4: Gold
+    rows[4].label = "Gold"
+    rows[4].value = tostring(player.gold)
     rows[4].suffix = nil
     rows[4].suffix_color = nil
     rows[4].value_color = nil
     rows[4].monospace = nil
 
-    -- Row 5: Health
-    rows[5].label = "Health"
-    rows[5].value = tostring(player.max_health)
-    rows[5].suffix = get_stat_suffix(self, "Health")
-    rows[5].suffix_color = "#88FF88"
+    -- Row 5: Blank
+    rows[5].label = nil
+    rows[5].value = nil
+    rows[5].suffix = nil
+    rows[5].suffix_color = nil
     rows[5].value_color = nil
     rows[5].monospace = nil
 
-    -- Row 6: Stamina
-    rows[6].label = "Stamina"
-    rows[6].value = tostring(player.max_stamina)
-    rows[6].suffix = get_stat_suffix(self, "Stamina")
+    -- Row 6: Health
+    rows[6].label = "Health"
+    rows[6].value = tostring(player.max_health)
+    rows[6].suffix = get_stat_suffix(self, "Health")
     rows[6].suffix_color = "#88FF88"
     rows[6].value_color = nil
     rows[6].monospace = nil
 
-    -- Row 7: Energy
-    rows[7].label = "Energy"
-    rows[7].value = tostring(player.max_energy)
-    rows[7].suffix = get_stat_suffix(self, "Energy")
+    -- Row 7: Stamina
+    rows[7].label = "Stamina"
+    rows[7].value = tostring(player.max_stamina)
+    rows[7].suffix = get_stat_suffix(self, "Stamina")
     rows[7].suffix_color = "#88FF88"
     rows[7].value_color = nil
     rows[7].monospace = nil
 
-    -- Row 8: Defence
-    rows[8].label = "Defence"
-    rows[8].value = string.format("%.1f%%", player:defense_percent())
-    rows[8].suffix = get_percent_suffix(self, "Defence", player.defense)
+    -- Row 8: Energy
+    rows[8].label = "Energy"
+    rows[8].value = tostring(player.max_energy)
+    rows[8].suffix = get_stat_suffix(self, "Energy")
     rows[8].suffix_color = "#88FF88"
     rows[8].value_color = nil
     rows[8].monospace = nil
 
-    -- Row 9: Recovery
-    rows[9].label = "Recovery"
-    rows[9].value = string.format("%.1f%%", player:recovery_percent())
-    rows[9].suffix = get_percent_suffix(self, "Recovery", player.recovery)
+    -- Row 9: Defence
+    rows[9].label = "Defence"
+    rows[9].value = string.format("%.1f%%", player:defense_percent())
+    rows[9].suffix = get_percent_suffix(self, "Defence", player.defense)
     rows[9].suffix_color = "#88FF88"
     rows[9].value_color = nil
     rows[9].monospace = nil
 
-    -- Row 10: Critical
-    rows[10].label = "Critical"
-    rows[10].value = string.format("%.1f%%", player:critical_percent())
-    rows[10].suffix = get_percent_suffix(self, "Critical", player.critical_chance)
+    -- Row 10: Recovery
+    rows[10].label = "Recovery"
+    rows[10].value = string.format("%.1f%%", player:recovery_percent())
+    rows[10].suffix = get_percent_suffix(self, "Recovery", player.recovery)
     rows[10].suffix_color = "#88FF88"
     rows[10].value_color = nil
     rows[10].monospace = nil
 
-    -- Row 11: Blank
-    rows[11].label = nil
-    rows[11].value = nil
-    rows[11].suffix = nil
-    rows[11].suffix_color = nil
+    -- Row 11: Critical
+    rows[11].label = "Critical"
+    rows[11].value = string.format("%.1f%%", player:critical_percent())
+    rows[11].suffix = get_percent_suffix(self, "Critical", player.critical_chance)
+    rows[11].suffix_color = "#88FF88"
     rows[11].value_color = nil
     rows[11].monospace = nil
 
-    -- Row 12: Time
-    rows[12].label = "Time"
-    rows[12].value = SaveSlots.format_playtime(Playtime.get())
+    -- Row 12: Blank
+    rows[12].label = nil
+    rows[12].value = nil
     rows[12].suffix = nil
     rows[12].suffix_color = nil
     rows[12].value_color = nil
-    rows[12].monospace = true
+    rows[12].monospace = nil
+
+    -- Row 13: Time
+    rows[13].label = "Time"
+    rows[13].value = SaveSlots.format_playtime(Playtime.get())
+    rows[13].suffix = nil
+    rows[13].suffix_color = nil
+    rows[13].value_color = nil
+    rows[13].monospace = true
 
     return rows
 end

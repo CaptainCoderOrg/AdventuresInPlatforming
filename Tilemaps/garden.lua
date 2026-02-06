@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 61,
+  nextobjectid = 62,
   properties = {
     ["id"] = "garden"
   },
@@ -1226,6 +1226,22 @@ return {
           visible = true,
           properties = {
             ["text"] = "Nothing over here yet. Go back."
+          }
+        },
+        {
+          id = 61,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 352,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1326,
+          visible = true,
+          properties = {
+            ["text"] = "Journal: {menu}"
           }
         }
       }

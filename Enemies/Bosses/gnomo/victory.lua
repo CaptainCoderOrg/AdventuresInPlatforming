@@ -115,6 +115,11 @@ function victory.update(dt)
             player.defeated_bosses[coordinator.boss_id] = true
         end
 
+        -- Journal: record gnomo kill
+        if player and player.journal then
+            player.journal["killed_gnomos"] = player.journal["killed_gnomos"] or "active"
+        end
+
         local door = Prop.find_by_id("gnomo_boss_door")
         if door and not door.marked_for_destruction then
             Prop.set_state(door, "opening")

@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 157,
+  nextobjectid = 158,
   properties = {
     ["id"] = "dungeon"
   },
@@ -3680,6 +3680,22 @@ return {
           gid = 500,
           visible = true,
           properties = {}
+        },
+        {
+          id = 157,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 1840,
+          y = 80,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 300,
+          visible = true,
+          properties = {
+            ["text"] = "Press {menu} to access [color=#00AA00]MAP[/color]"
+          }
         }
       }
     },

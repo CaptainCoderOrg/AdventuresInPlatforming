@@ -12,7 +12,7 @@ return {
                 -- First meeting path
                 { text = "Hello?", next = "introduction", condition = "not_met_adept" },
                 -- Returning visitor paths
-                { text = "I found your crystal ball.", next = "crystal_found_roof", condition = "met_adept", condition2 = "has_item_crystal_ball", condition3 = "not_has_item_adept_apology" },
+                { text = "I found your crystal ball.", next = "crystal_found_roof", condition = "met_adept", condition2 = "has_item_crystal_ball", condition3 = "not_has_item_adept_apology", condition4 = "not_crystal_returned" },
                 { text = "About the apology letter...", next = "apology_reminder", condition = "has_item_adept_apology", condition2 = "not_apology_delivered_to_gnomos" },
                 { text = "The gnomos are dead.", next = "gnomos_defeated_check", condition = "met_adept", condition2 = "defeated_boss_gnomo_brothers", condition3 = "not_crystal_returned" },
                 { text = "I delivered your apology.", next = "apology_delivered", condition = "apology_delivered_to_gnomos", condition2 = "not_received_orb" },
@@ -27,7 +27,7 @@ return {
         -- First meeting introduction - immediately explains finding player
         introduction = {
             text = "Ah, you're awake! I found you collapsed near the cliffside. Brought you inside to rest.",
-            actions = { "set_flag_met_adept" },
+            actions = { "set_flag_met_adept", "journal_add_the_adept", "journal_add_spoke_with_adept" },
             options = {
                 { text = "What is in that chest?", next = "about_chest" },
                 { text = "I don't remember anything.", next = "dont_remember" },
@@ -169,7 +169,7 @@ return {
         -- Chest/Quest branch - simplified, no mention of contents
         about_chest = {
             text = "I can't remember what is inside, but it's yours if you can get my crystal ball back from the gnomos.",
-            actions = { "set_flag_asked_about_chest" },
+            actions = { "set_flag_asked_about_chest", "journal_add_find_crystal_ball" },
             options = {
                 { text = "I'll find it!", next = "accept_quest" },
                 { text = "Crystal ball?", next = "crystal_ball_info" },
@@ -240,9 +240,10 @@ return {
 
         roof_revelation = {
             text = "The roof? But... but I was so certain... Oh no. Oh dear. The gnomos... I accused them wrongfully. I've been saying terrible things about them to everyone who passes through.",
+            actions = { "journal_add_crystal_found_roof" },
             options = {
                 { text = "They're still alive. You could apologize.", next = "gnomos_alive_path", condition = "not_defeated_boss_gnomo_brothers" },
-                { text = "About the gnomos...", next = "gnomos_dead_revelation", condition = "defeated_boss_gnomo_brothers" },
+                { text = "About the gnomos...", next = "gnomos_dead_revelation", condition = "defeated_boss_gnomo_brothers", condition2 = "not_apology_delivered_to_gnomos" },
                 { text = "Leave", next = nil },
             },
         },
@@ -250,7 +251,7 @@ return {
         -- Path A: Gnomos alive, can deliver apology
         gnomos_alive_path = {
             text = "You're right. I should make amends. Here, take this letter. It contains my sincerest apology. If you could deliver it to them... and please, give them back the crystal ball as a peace offering.",
-            actions = { "give_item_adept_apology", "set_flag_crystal_returned" },
+            actions = { "give_item_adept_apology", "set_flag_crystal_returned", "journal_add_apology_letter" },
             options = {
                 { text = "I'll deliver it.", next = "deliver_apology_accept" },
                 { text = "You want me to give them the crystal ball?", next = "give_ball_explanation" },
@@ -372,7 +373,7 @@ return {
 
         mistake_comfort = {
             text = "A mistake that cost lives. Here, take the key. And the crystal ball... keep it. I cannot bear to look at it. Perhaps you can imbue it with better memories than mine.",
-            actions = { "give_item_adept_key" },
+            actions = { "give_item_adept_key", "journal_complete_find_crystal_ball" },
             options = {
                 { text = "I could use its power to help others.", next = "imbue_crystal" },
                 { text = "Are you sure you want me to have it?", next = "sure_keep_ball" },
@@ -382,7 +383,7 @@ return {
 
         done_is_done = {
             text = "Cold comfort, but true. Take the key. And the crystal ball - I cannot keep it. Every time I look at it, I'll see their faces.",
-            actions = { "give_item_adept_key" },
+            actions = { "give_item_adept_key", "journal_complete_find_crystal_ball" },
             options = {
                 { text = "The ball could still do good.", next = "imbue_crystal" },
                 { text = "I'll take it.", next = "receive_orb" },
@@ -401,6 +402,7 @@ return {
         -- Apology delivered (set by gnomo dialogue)
         apology_delivered = {
             text = "You delivered my letter? And they... accepted it? Truly?",
+            actions = { "journal_add_apology_delivered" },
             options = {
                 { text = "They did. They forgave you.", next = "forgiveness_relief" },
                 { text = "It wasn't easy, but yes.", next = "forgiveness_relief" },
@@ -446,7 +448,7 @@ return {
 
         receive_orb = {
             text = "Use it well. And... thank you. For everything.",
-            actions = { "give_item_orb_of_teleportation", "set_flag_received_orb" },
+            actions = { "give_item_orb_of_teleportation", "set_flag_received_orb", "journal_add_received_orb", "journal_complete_find_crystal_ball" },
             options = {
                 { text = "Farewell, Adept.", next = nil },
             },

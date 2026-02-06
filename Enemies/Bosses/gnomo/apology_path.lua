@@ -542,6 +542,11 @@ function apology_path.complete()
     -- Set flag for quest completion
     dialogue_manager.set_flag("apology_delivered_to_gnomos")
 
+    -- Journal: record apology delivery
+    if player and player.journal then
+        player.journal["apology_delivered"] = player.journal["apology_delivered"] or "active"
+    end
+
     -- Open the door
     local door = Prop.find_by_id("gnomo_boss_door")
     if door and not door.marked_for_destruction then

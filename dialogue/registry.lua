@@ -5,6 +5,7 @@ local registry = {}
 -- Static requires for all dialogue trees
 registry.adept_house_dialogue = require("dialogue/trees/adept_house_dialogue")
 registry.gnomo_apology = require("dialogue/trees/gnomo_apology")
+registry.zabarbra = require("dialogue/trees/zabarbra")
 
 --- Get a dialogue tree by ID
 ---@param tree_id string Dialogue tree identifier

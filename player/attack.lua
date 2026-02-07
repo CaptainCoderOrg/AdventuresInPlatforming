@@ -7,6 +7,7 @@ local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local shield = require('player.shield')
 local weapon_sync = require('player.weapon_sync')
+local upgrade_effects = require('upgrade/effects')
 
 
 --- Attack state: Player performs melee combo attacks.
@@ -90,7 +91,8 @@ local function check_attack_hits(player, hitbox, stats)
 		return
 	end
 
-	local damage = stats and stats.damage or 1
+	local base_damage = stats and stats.damage or 1
+	local damage = upgrade_effects.get_weapon_damage(player, player.active_weapon, base_damage)
 	filter_player = player
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
 	local crit_threshold = player:critical_percent()

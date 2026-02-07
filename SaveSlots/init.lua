@@ -138,6 +138,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "visited_campfires",
     "journal",
     "journal_read",
+    "upgrade_tiers",
     "difficulty",
 }
 
@@ -149,6 +150,7 @@ SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "charge_st
 local SHALLOW_COPY_KEYS = {
     stat_upgrades = true, equipped_items = true, stackable_items = true,
     defeated_bosses = true, dialogue_flags = true, journal = true, journal_read = true,
+    upgrade_tiers = true,
 }
 
 --- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)

@@ -56,6 +56,10 @@ local original_viewport_height = nil
 local original_camera_y = nil
 local target_camera_y = nil
 
+-- On-close callback (invoked after fade-out completes)
+local on_close_callback = nil
+local keep_camera_on_close = false
+
 -- Mouse support
 local mouse_active = false
 local last_mouse_x, last_mouse_y = 0, 0
@@ -263,7 +267,8 @@ end
 ---@param tree_id string Dialogue tree identifier
 ---@param player table Player instance
 ---@param camera table Camera instance
-function dialogue_screen.start(tree_id, player, camera)
+---@param start_node string|nil Optional node to start at (overrides tree.start_node)
+function dialogue_screen.start(tree_id, player, camera, start_node)
     local tree = dialogue_registry.get(tree_id)
     if not tree then
         return
@@ -292,13 +297,21 @@ function dialogue_screen.start(tree_id, player, camera)
     -- Adding 1 tile to account for player sprite height (head to feet)
     target_camera_y = player.y - (viewport_tiles - margin_tiles) + 1
 
+    on_close_callback = nil
+    keep_camera_on_close = false
     state = STATE.FADING_IN
     fade_progress = 0
-    set_node(tree.start_node)
+    set_node(start_node or tree.start_node)
 
     -- Reset mouse state
     mouse_active = false
     option_positions = {}
+end
+
+--- Set a callback to invoke when dialogue closes (after fade-out)
+---@param fn function|nil Callback receiving (player, camera) or nil to clear
+function dialogue_screen.set_on_close(fn)
+    on_close_callback = fn
 end
 
 --- Check if dialogue screen is currently active
@@ -329,6 +342,9 @@ function dialogue_screen.input()
             -- Execute option-specific actions
             if option.actions then
                 dialogue_manager.execute_actions(option.actions, player_ref)
+            end
+            if option.keep_camera then
+                keep_camera_on_close = true
             end
             set_node(option.next)
         end
@@ -365,6 +381,9 @@ function dialogue_screen.update(dt)
                             if option.actions then
                                 dialogue_manager.execute_actions(option.actions, player_ref)
                             end
+                            if option.keep_camera then
+                                keep_camera_on_close = true
+                            end
                             set_node(option.next)
                         end
                     end
@@ -391,9 +410,15 @@ function dialogue_screen.update(dt)
         if fade_progress >= 1 then
             fade_progress = 1
             state = STATE.HIDDEN
-            -- Restore camera
-            if camera_ref then
-                camera_ref:set_y(original_camera_y)
+            -- Save refs before cleanup for callback
+            local saved_player = player_ref
+            local saved_camera = camera_ref
+            local saved_original_y = original_camera_y
+            -- Restore camera unless an option requested keeping it
+            if not keep_camera_on_close then
+                if camera_ref then
+                    camera_ref:set_y(original_camera_y)
+                end
             end
             -- Clean up
             current_tree = nil
@@ -401,12 +426,19 @@ function dialogue_screen.update(dt)
             filtered_options = nil
             player_ref = nil
             camera_ref = nil
+            -- Invoke on-close callback with original camera Y for smooth transitions
+            local cb = on_close_callback
+            on_close_callback = nil
+            keep_camera_on_close = false
+            if cb then cb(saved_player, saved_camera, saved_original_y) end
         else
-            -- Restore camera during fade out
-            if camera_ref and target_camera_y then
-                local t = 1 - fade_progress
-                local new_y = original_camera_y + (target_camera_y - original_camera_y) * t
-                camera_ref:set_y(new_y)
+            -- Animate camera during fade out unless an option requested keeping it
+            if not keep_camera_on_close then
+                if camera_ref and target_camera_y then
+                    local t = 1 - fade_progress
+                    local new_y = original_camera_y + (target_camera_y - original_camera_y) * t
+                    camera_ref:set_y(new_y)
+                end
             end
         end
     end

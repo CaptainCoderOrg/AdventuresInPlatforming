@@ -76,7 +76,9 @@ Prop.register("lever", require("Prop/lever"))
 Prop.register("appearing_bridge", require("Prop/appearing_bridge"))
 Prop.register("stairs", require("Prop/stairs"))
 Prop.register("decoy_painting", require("Prop/decoy_painting"))
-Prop.register("witch_npc", require("Prop/witch_npc"))
+local witch_def = require("Prop/witch_npc")
+Prop.register("witch_npc", witch_def)
+Prop.register("witch_merchant", witch_def)
 Prop.register("explorer_npc", require("Prop/explorer_npc"))
 Prop.register("adept_npc", require("Prop/adept_npc"))
 Prop.register("interactable", require("Prop/interactable"))
@@ -179,7 +181,8 @@ local function user_input()
     end
 
     if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active()
-        or hud.is_pickup_dialogue_active() or hud.is_dialogue_active() or hud.is_shop_active() then
+        or hud.is_pickup_dialogue_active() or hud.is_dialogue_active() or hud.is_shop_active()
+        or hud.is_upgrade_active() then
         return
     end
 
@@ -254,8 +257,8 @@ local function update(dt)
         return
     end
 
-    -- During dialogue/shop, pause gameplay but keep timer running
-    if hud.is_dialogue_active() or hud.is_shop_active() then
+    -- During dialogue/shop/upgrade, pause gameplay but keep timer running
+    if hud.is_dialogue_active() or hud.is_shop_active() or hud.is_upgrade_active() then
         Playtime.resume()
         Playtime.update(dt)
         Prop.update_animations(dt)

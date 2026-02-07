@@ -14,6 +14,7 @@ local title_screen = require("ui/title_screen")
 local slot_screen = require("ui/slot_screen")
 local dialogue_screen = require("ui/dialogue_screen")
 local shop_screen = require("ui/shop_screen")
+local upgrade_screen = require("ui/upgrade_screen")
 local journal_toast = require("ui/journal_toast")
 
 local hud = {}
@@ -82,6 +83,12 @@ function hud.input()
         return
     end
 
+    -- Upgrade screen blocks other input when open
+    if upgrade_screen.is_active() then
+        upgrade_screen.input()
+        return
+    end
+
     -- Handle ESC/START for pause screen toggle
     if controls.settings_pressed() then
         if rest_screen.is_pause_mode() and not rest_screen.is_in_submenu() then
@@ -120,9 +127,11 @@ function hud.update(dt, player)
     pickup_dialogue.update(dt)
     dialogue_screen.update(dt)
     shop_screen.update(dt)
+    upgrade_screen.update(dt)
     -- Block mouse input on screens beneath active overlays
     local dialogs_block = audio_dialog.is_active() or controls_dialog.is_active() or settings_dialog.is_active()
         or pickup_dialogue.is_active() or dialogue_screen.is_active() or shop_screen.is_active()
+        or upgrade_screen.is_active()
     slot_screen.update(dt, dialogs_block)
     -- Title screen also blocked by slot screen
     local title_block = dialogs_block or slot_screen.is_active()
@@ -131,7 +140,7 @@ function hud.update(dt, player)
     rest_screen.update(dt, dialogs_block)
     -- Pause toast timer while overlay screens are active (so it shows after dialogue closes)
     local toast_paused = dialogue_screen.is_active() or shop_screen.is_active()
-        or rest_screen.is_active() or game_over.is_active()
+        or upgrade_screen.is_active() or rest_screen.is_active() or game_over.is_active()
         or title_screen.is_active() or slot_screen.is_active()
     journal_toast.update(dt, toast_paused)
     selector_widget:update(dt, player)
@@ -158,9 +167,10 @@ end
 --- Draw all HUD elements
 ---@param player table Player instance with max_health, damage, and projectile properties
 function hud.draw(player)
-    -- Hide HUD bar during dialogue/shop screens as well as title/slot
+    -- Hide HUD bar during dialogue/shop/upgrade screens as well as title/slot
     if not title_screen.is_active() and not slot_screen.is_active()
-       and not dialogue_screen.is_active() and not shop_screen.is_active() then
+       and not dialogue_screen.is_active() and not shop_screen.is_active()
+       and not upgrade_screen.is_active() then
         local slide = rest_screen.get_hud_slide()
         if slide < 1 then
             draw_hud_bar(player)
@@ -173,9 +183,10 @@ function hud.draw(player)
     rest_screen.draw()
     title_screen.draw()
     slot_screen.draw()
-    -- Dialogue and shop screens
+    -- Dialogue, shop, and upgrade screens
     dialogue_screen.draw()
     shop_screen.draw()
+    upgrade_screen.draw()
     -- Dialogs drawn last so they appear on top of everything
     pickup_dialogue.draw()
     audio_dialog.draw()
@@ -205,6 +216,12 @@ end
 ---@return boolean is_active True if shop screen is visible
 function hud.is_shop_active()
     return shop_screen.is_active()
+end
+
+--- Check if upgrade screen is blocking game input
+---@return boolean is_active True if upgrade screen is visible
+function hud.is_upgrade_active()
+    return upgrade_screen.is_active()
 end
 
 --- Show the game over screen

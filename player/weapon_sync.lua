@@ -2,6 +2,7 @@
 --- Bridges the gap between equipped_items (UI/persistence) and combat behavior
 
 local unique_item_registry = require("Prop.unique_item_registry")
+local upgrade_effects = require("upgrade/effects")
 
 local weapon_sync = {}
 
@@ -259,7 +260,7 @@ function weapon_sync.consume_charge(player)
     if not def or not state then return end
     state.used_charges = math.min(state.used_charges + 1, def.max_charges)
     if state.recharge_timer == 0 then
-        state.recharge_timer = def.recharge
+        state.recharge_timer = upgrade_effects.get_recharge(player, sec_id, def.recharge)
     end
 end
 
@@ -276,7 +277,7 @@ function weapon_sync.update_charges(player, dt)
                 if state.used_charges > 0 then
                     -- More charges to recover, restart timer
                     local def = unique_item_registry[item_id]
-                    state.recharge_timer = def and def.recharge or 0
+                    state.recharge_timer = def and upgrade_effects.get_recharge(player, item_id, def.recharge) or 0
                 else
                     state.recharge_timer = 0
                 end
@@ -297,8 +298,9 @@ function weapon_sync.get_charge_info(item_id, player)
     if not state then return def.max_charges, def.max_charges, 0 end
     local available = def.max_charges - state.used_charges
     local progress = 0
-    if state.recharge_timer > 0 and def.recharge > 0 then
-        progress = 1 - (state.recharge_timer / def.recharge)
+    local effective_recharge = upgrade_effects.get_recharge(player, item_id, def.recharge)
+    if state.recharge_timer > 0 and effective_recharge > 0 then
+        progress = 1 - (state.recharge_timer / effective_recharge)
     end
     return available, def.max_charges, progress
 end

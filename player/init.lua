@@ -100,6 +100,7 @@ function Player.new()
 	self.visited_campfires = {} -- Keyed by "level_id:name" -> {name, level_id, x, y}
 	self.journal = { awakening = "active" }  -- Quest journal entries (entry_id -> "active"|"complete")
 	self.journal_read = {}  -- Tracks which journal entries the player has viewed (entry_id -> true)
+	self.upgrade_tiers = {} -- Equipment upgrade tiers purchased (item_id -> tier_number)
 	self.difficulty = "normal"  -- Difficulty setting ("normal" or "easy")
 
 	-- Position and velocity

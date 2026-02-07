@@ -2,6 +2,7 @@
 --- Continuously converts energy into health while the ability button is held.
 local controls = require("controls")
 local Effects = require("Effects")
+local upgrade_effects = require("upgrade/effects")
 
 local heal_channel = {}
 
@@ -42,9 +43,10 @@ function heal_channel.update(player, dt)
     local in_allowed_state = CHANNEL_STATES[player.state]
     local is_minor_healing = player.active_secondary == "minor_healing"
 
-    -- Allows "No Energy" text to show again on next press
+    -- Allows text popups to show again on next press
     if not holding then
         player._heal_no_energy_shown = false
+        player._heal_full_health_shown = false
     end
 
     if not holding or not in_allowed_state or not is_minor_healing then
@@ -56,6 +58,11 @@ function heal_channel.update(player, dt)
     local current_energy = player.max_energy - player.energy_used
 
     if current_health >= player.max_health then
+        -- Only show "Full Health" on fresh press, not when channeling healed to full
+        if not player._heal_channeling and not player._heal_full_health_shown then
+            player._heal_full_health_shown = true
+            Effects.create_text(player.x, player.y, "Full Health")
+        end
         stop_channeling(player)
         return
     end
@@ -70,11 +77,14 @@ function heal_channel.update(player, dt)
     end
 
     player._heal_channeling = true
-    local heal_amount = HEAL_RATE * dt
+    local heal_rate = upgrade_effects.get_heal_rate(player)
+    local energy_ratio = upgrade_effects.get_energy_ratio(player)
+    local heal_amount = heal_rate * dt
     local missing_health = player.max_health - current_health
-    heal_amount = math.min(heal_amount, current_energy, missing_health)
+    local max_from_energy = current_energy / energy_ratio
+    heal_amount = math.min(heal_amount, max_from_energy, missing_health)
 
-    player.energy_used = player.energy_used + heal_amount
+    player.energy_used = player.energy_used + (heal_amount * energy_ratio)
     player.damage = math.max(0, player.damage - heal_amount)
     Effects.create_heal_text(player.x, player.y, heal_amount, player)
 

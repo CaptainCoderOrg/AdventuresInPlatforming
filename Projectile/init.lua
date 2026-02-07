@@ -223,7 +223,9 @@ end
 ---@return table The created projectile instance
 function Projectile.create_axe(x, y, direction, owner)
     audio.play_axe_throw_sound()
-    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, 1, owner)
+    local upgrade_effects = require("upgrade/effects")
+    local damage = upgrade_effects.get_projectile_damage(owner, "throwing_axe", 1)
+    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, damage, owner)
 end
 
 --- Creates and spawns a shuriken projectile with straight trajectory.

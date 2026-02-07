@@ -184,4 +184,22 @@ return {
         type = "secondary",
         static_sprite = sprites.items.minor_healing,
     },
+    minotaur_blood = {
+        name = "Minotaur Blood",
+        description = "Blood from a fearsome minotaur.",
+        type = "no_equip",
+        static_sprite = sprites.items.minotaur_blood,
+    },
+    mending_root = {
+        name = "Mending Root",
+        description = "A root with restorative properties.",
+        type = "no_equip",
+        static_sprite = sprites.items.mending_root,
+    },
+    chunk_of_iron = {
+        name = "Chunk of Iron",
+        description = "A dense chunk of pure iron.",
+        type = "no_equip",
+        static_sprite = sprites.items.chunk_of_iron,
+    },
 }

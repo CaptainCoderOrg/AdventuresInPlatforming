@@ -3,7 +3,6 @@
 --- Supports optional helper text that appears when player is nearby.
 local canvas = require("canvas")
 local config = require("config")
-local platform_common = require("platforms/common")
 local prop_common = require("Prop/common")
 local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
@@ -57,11 +56,10 @@ return {
         if render_info.image then
             -- Collection tile (individual image)
             local scale = config.ui.SCALE
-            local height_offset = (render_info.height / platform_common.BASE_TILE - 1) * ts
             local width_scaled = render_info.width * scale
             local height_scaled = render_info.height * scale
             local draw_x = prop.x * ts
-            local draw_y = prop.y * ts - height_offset
+            local draw_y = prop.y * ts
 
             if has_transform then
                 canvas.save()

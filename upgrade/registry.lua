@@ -30,6 +30,19 @@ registry.minor_healing = {
     },
 }
 
+registry.longsword = {
+    label = "Enchant",
+    description = "Enchant longsword to increase its power.",
+    tiers = {
+        { gold = 50,  effects = { weapon_damage_add = 0.5, stamina_cost_add = -0.25 },
+          result = "The blade feels lighter and strikes harder." },
+        { gold = 200, effects = { weapon_damage_add = 0.5, ms_per_frame = 70 },
+          result = "The enchantment quickens the blade's swing." },
+        { gold = 500, material = "sharpening_stone", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
+          result = "A masterwork edge. Swift, deadly, and effortless." },
+    },
+}
+
 registry.throwing_axe = {
     label = "Enchant",
     description = "Imbue throwing axes to increase their power.",
@@ -43,8 +56,21 @@ registry.throwing_axe = {
     },
 }
 
+registry.shuriken = {
+    label = "Enchant",
+    description = "Imbue shurikens with arcane power.",
+    tiers = {
+        { gold = 50,  effects = { max_charges_add = 2, projectile_damage = 3 },
+          result = "The shurikens multiply and strike with greater force." },
+        { gold = 200, effects = { max_charges_add = 2, energy_cost = 0.5 },
+          result = "The summoning requires less energy now." },
+        { gold = 500, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 4, energy_cost = 0 },
+          result = "Pure arcane energy. Infinite shurikens at no cost." },
+    },
+}
+
 --- Stable display order for upgrade UI
-registry.DISPLAY_ORDER = { "sword", "minor_healing", "throwing_axe" }
+registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken" }
 
 -- Lookup set built from DISPLAY_ORDER (prevents get() from returning non-upgrade keys)
 local VALID_ITEMS = {}

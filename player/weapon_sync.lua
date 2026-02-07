@@ -229,7 +229,8 @@ function weapon_sync.has_throw_charges(player, slot)
     local sec_id = weapon_sync.get_slot_secondary(player, slot)
     local def, state = resolve_charge(player, sec_id)
     if not def or not state then return true end
-    return state.used_charges < def.max_charges
+    local max = upgrade_effects.get_max_charges(player, sec_id, def.max_charges)
+    return state.used_charges < max
 end
 
 --- Consumes one charge from the active ability slot's secondary and starts recharge timer.
@@ -238,7 +239,8 @@ function weapon_sync.consume_charge(player)
     local sec_id = weapon_sync.get_slot_secondary(player)
     local def, state = resolve_charge(player, sec_id)
     if not def or not state then return end
-    state.used_charges = math.min(state.used_charges + 1, def.max_charges)
+    local max = upgrade_effects.get_max_charges(player, sec_id, def.max_charges)
+    state.used_charges = math.min(state.used_charges + 1, max)
     if state.recharge_timer == 0 then
         local recharge = upgrade_effects.get_recharge(player, sec_id, def.recharge)
         state.recharge_timer = recharge
@@ -279,14 +281,15 @@ end
 function weapon_sync.get_charge_info(item_id, player)
     local def, state = resolve_charge(player, item_id)
     if not def then return 0, 0, 0 end
-    if not state then return def.max_charges, def.max_charges, 0 end
-    local available = def.max_charges - state.used_charges
+    local max = upgrade_effects.get_max_charges(player, item_id, def.max_charges)
+    if not state then return max, max, 0 end
+    local available = max - state.used_charges
     local progress = 0
     local effective_recharge = state.effective_recharge or def.recharge
     if state.recharge_timer > 0 and effective_recharge > 0 then
         progress = 1 - (state.recharge_timer / effective_recharge)
     end
-    return available, def.max_charges, progress
+    return available, max, progress
 end
 
 --- Syncs player ability flags from equipped_items

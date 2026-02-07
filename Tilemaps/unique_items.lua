@@ -151,7 +151,7 @@ return {
       id = 12,
       properties = {
         ["item_id"] = "brass_key",
-        ["type"] = "unique_item"
+        ["type"] = "stackable_item"
       },
       image = "../assets/sprites/items/brass-key.png",
       width = 16,

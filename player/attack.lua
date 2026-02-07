@@ -126,7 +126,8 @@ end
 local function next_animation(player, stats)
 	local attack_animations = get_attack_animations(stats)
 	local animation = attack_animations[player.attack_state.next_anim_ix]
-	local override_ms = stats and stats.ms_per_frame
+	local base_ms = stats and stats.ms_per_frame
+	local override_ms = base_ms and upgrade_effects.get_attack_speed(player, player.active_weapon, base_ms)
 	player.animation = Animation.new(animation, { ms_per_frame = override_ms })
 	-- Use override for remaining_time calculation
 	local effective_ms = override_ms or animation.ms_per_frame
@@ -203,14 +204,18 @@ function attack.input(player)
 		if not combo_queued and queued_slot then
 			local spec = weapon_sync.get_secondary_spec(player, queued_slot)
 			if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
-			   and weapon_sync.has_throw_charges(player, queued_slot)
-			   and player.energy_used + (spec.energy_cost or 1) <= player.max_energy then
-				local throw_stamina = spec.stamina_cost or 0
-				if throw_stamina == 0 or player:use_stamina(throw_stamina) then
-					player.active_ability_slot = queued_slot
-					player.attack_cooldown = ATTACK_COOLDOWN
-					player:set_state(player.states.throw)
-					return
+			   and weapon_sync.has_throw_charges(player, queued_slot) then
+				local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
+				local base_energy = spec.energy_cost or 1
+				local eff_energy = sec_id and upgrade_effects.get_energy_cost(player, sec_id, base_energy) or base_energy
+				if player.energy_used + eff_energy <= player.max_energy then
+					local throw_stamina = spec.stamina_cost or 0
+					if throw_stamina == 0 or player:use_stamina(throw_stamina) then
+						player.active_ability_slot = queued_slot
+						player.attack_cooldown = ATTACK_COOLDOWN
+						player:set_state(player.states.throw)
+						return
+					end
 				end
 			end
 		end
@@ -241,7 +246,8 @@ function attack.update(player, dt)
 	player.vy = 0
 	player.attack_state.remaining_time = player.attack_state.remaining_time - dt
 	if player.attack_state.remaining_time <= 0 then
-		local stamina_cost = stats and stats.stamina_cost or common.ATTACK_STAMINA_COST
+		local base_stamina = stats and stats.stamina_cost or common.ATTACK_STAMINA_COST
+		local stamina_cost = upgrade_effects.get_stamina_cost(player, player.active_weapon, base_stamina)
 		if player.attack_state.queued and player:use_stamina(stamina_cost) then
 			player.attack_state.count = player.attack_state.count + 1
 			next_animation(player, stats)

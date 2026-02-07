@@ -26,6 +26,8 @@ local asset_paths = {
     item_minotaur_blood = "sprites/items/minotaur_blood.png",
     item_mending_root = "sprites/items/mending_root.png",
     item_chunk_of_iron = "sprites/items/chunk_of_iron.png",
+    item_sharpening_stone = "sprites/items/sharpening_stone.png",
+    item_arcane_shard = "sprites/items/arcane_shard.png",
 }
 
 for key, path in pairs(asset_paths) do
@@ -57,4 +59,6 @@ return {
     minotaur_blood = "item_minotaur_blood",
     mending_root = "item_mending_root",
     chunk_of_iron = "item_chunk_of_iron",
+    sharpening_stone = "item_sharpening_stone",
+    arcane_shard = "item_arcane_shard",
 }

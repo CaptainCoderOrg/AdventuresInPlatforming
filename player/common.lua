@@ -8,6 +8,7 @@ local Effects = require('Effects')
 local Prop = require('Prop')
 local sprites = require('sprites')
 local weapon_sync = require('player.weapon_sync')
+local upgrade_effects = require('upgrade/effects')
 
 local common = {}
 
@@ -87,9 +88,11 @@ end
 --- Checks if the player has enough energy for the given projectile's energy cost.
 ---@param player table The player object
 ---@param spec table The projectile spec
+---@param sec_id string|nil Secondary item ID for upgrade lookup
 ---@return boolean True if player has sufficient energy to throw
-local function has_throw_energy(player, spec)
-	local energy_cost = spec.energy_cost or 1
+local function has_throw_energy(player, spec, sec_id)
+	local base_cost = spec.energy_cost or 1
+	local energy_cost = sec_id and upgrade_effects.get_energy_cost(player, sec_id, base_cost) or base_cost
 	return player.energy_used + energy_cost <= player.max_energy
 end
 
@@ -152,7 +155,8 @@ function common.handle_ability(player)
 	end
 
 	-- Block ability when insufficient energy (no cooldown queue needed)
-	if not has_throw_energy(player, spec) then
+	local sec_id = weapon_sync.get_slot_secondary(player, slot)
+	if not has_throw_energy(player, spec, sec_id) then
 		local current_energy = player.max_energy - player.energy_used
 		Effects.create_energy_text(player.x, player.y, current_energy)
 		player.energy_flash_requested = true
@@ -187,7 +191,8 @@ function common.handle_attack(player)
 	end
 
 	if player.attack_cooldown <= 0 then
-		if player:use_stamina(stats.stamina_cost) then
+		local stamina_cost = upgrade_effects.get_stamina_cost(player, player.active_weapon, stats.stamina_cost)
+		if player:use_stamina(stamina_cost) then
 			-- Invalidate perfect block window when attacking from block
 			shield = shield or require('player.shield')
 			shield.clear_perfect_window(player)
@@ -568,11 +573,14 @@ local function try_queued_combat_action(player)
 	if player.input_queue.attack and player.attack_cooldown <= 0 then
 		player.input_queue.attack = false
 		local stats = weapon_sync.get_weapon_stats(player)
-		if stats and player:use_stamina(stats.stamina_cost) then
-			if stats.attack_type == "heavy" then
-				return player.states.hammer
-			else
-				return player.states.attack
+		if stats then
+			local stamina_cost = upgrade_effects.get_stamina_cost(player, player.active_weapon, stats.stamina_cost)
+			if player:use_stamina(stamina_cost) then
+				if stats.attack_type == "heavy" then
+					return player.states.hammer
+				else
+					return player.states.attack
+				end
 			end
 		end
 	end
@@ -580,8 +588,9 @@ local function try_queued_combat_action(player)
 	if queued_slot and player.throw_cooldown <= 0 then
 		player.input_queue.ability_slot = nil
 		local spec = weapon_sync.get_secondary_spec(player, queued_slot)
+		local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
 		if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
-		   and weapon_sync.has_throw_charges(player, queued_slot) and has_throw_energy(player, spec) then
+		   and weapon_sync.has_throw_charges(player, queued_slot) and has_throw_energy(player, spec, sec_id) then
 			if try_use_throw_stamina(player, spec) then
 				player.active_ability_slot = queued_slot
 				return player.states.throw

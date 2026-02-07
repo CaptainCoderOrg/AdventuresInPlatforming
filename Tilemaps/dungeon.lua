@@ -47,13 +47,13 @@ return {
     },
     {
       name = "unique_items",
-      firstgid = 510,
+      firstgid = 512,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     },
     {
       name = "gnomo_boss",
-      firstgid = 525,
+      firstgid = 527,
       filename = "gnomo_boss.tsx",
       exportfilename = "gnomo_boss.lua"
     }
@@ -2621,7 +2621,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 524,
+          gid = 526,
           visible = true,
           properties = {}
         },
@@ -2737,7 +2737,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 524,
+          gid = 526,
           visible = true,
           properties = {}
         },
@@ -3061,7 +3061,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 514,
+          gid = 516,
           visible = true,
           properties = {}
         },
@@ -3533,7 +3533,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 525,
+          gid = 527,
           visible = true,
           properties = {}
         },
@@ -3547,7 +3547,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 526,
+          gid = 528,
           visible = true,
           properties = {}
         },
@@ -3561,7 +3561,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 527,
+          gid = 529,
           visible = true,
           properties = {}
         },
@@ -3575,7 +3575,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 528,
+          gid = 530,
           visible = true,
           properties = {}
         },

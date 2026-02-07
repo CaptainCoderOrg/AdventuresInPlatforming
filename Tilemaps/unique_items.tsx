@@ -91,7 +91,7 @@
  <tile id="12">
   <properties>
    <property name="item_id" value="brass_key"/>
-   <property name="type" value="unique_item"/>
+   <property name="type" value="stackable_item"/>
   </properties>
   <image source="../assets/sprites/items/brass-key.png" width="16" height="16"/>
  </tile>

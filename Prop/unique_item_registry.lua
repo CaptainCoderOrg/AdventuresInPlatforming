@@ -150,6 +150,8 @@ return {
         description = "Spend energy to summon a magic shuriken. Assign to an ability slot to use.",
         type = "secondary",
         static_sprite = sprites.items.shuriken_icon,
+        max_charges = 2,
+        recharge = 5,
     },
     crystal_ball = {
         name = "Crystal Ball",
@@ -201,5 +203,17 @@ return {
         description = "A dense chunk of pure iron.",
         type = "no_equip",
         static_sprite = sprites.items.chunk_of_iron,
+    },
+    sharpening_stone = {
+        name = "Sharpening Stone",
+        description = "A fine-grained stone used to hone blades to a razor edge.",
+        type = "no_equip",
+        static_sprite = sprites.items.sharpening_stone,
+    },
+    arcane_shard = {
+        name = "Arcane Shard",
+        description = "A crystallized fragment of pure magical energy.",
+        type = "no_equip",
+        static_sprite = sprites.items.arcane_shard,
     },
 }

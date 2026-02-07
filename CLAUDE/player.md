@@ -45,7 +45,7 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 - **Throwable** (e.g., throwing axe, shuriken): Press the slot's ability key to launch a projectile. `weapon_sync.get_secondary_spec(player, slot)` returns the projectile spec, or nil for non-throwable secondaries.
 - **Channeled** (e.g., minor healing): Hold the slot's ability key to continuously activate. Channeling logic in `player/heal_channel.lua` loops all 4 slots each frame during `Player:update()`.
 
-**Charge System:** Some secondaries (e.g., throwing axe) have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges(player, slot)`, `consume_charge(player)`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest. Non-charge secondaries (e.g., shuriken) are unaffected.
+**Charge System:** Throwable secondaries have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges(player, slot)`, `consume_charge(player)`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest.
 
 ## Combat System
 
@@ -81,7 +81,7 @@ Player combat abilities managed through state machine.
      - Uses `weapon_sync.get_slot_secondary(player, slot)` for slot lookup
      - Uses `weapon_sync.get_secondary_spec(player, slot)` for projectile definition
    - **Charge System:**
-     - Some secondaries have limited charges (e.g., throwing axe: 2 charges, 2s recharge each)
+     - Throwable secondaries have limited charges (e.g., throwing axe: 2 charges, 2s recharge; shuriken: 2 charges, 5s recharge)
      - `weapon_sync.has_throw_charges(player, slot)` gates throw attempts
      - `weapon_sync.consume_charge(player)` called in `throw.start()` (uses `player.active_ability_slot`)
      - `weapon_sync.update_charges(player, dt)` ticks recharge timers each frame

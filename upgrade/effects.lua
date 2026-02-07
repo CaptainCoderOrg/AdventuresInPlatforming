@@ -11,6 +11,13 @@ local effects = {}
 local _empty = {}
 local _result = {}
 
+-- Lookup set for additive keys (avoids string allocation from sub() each call)
+local ADDITIVE_KEYS = {
+    weapon_damage_add = true,
+    stamina_cost_add = true,
+    max_charges_add = true,
+}
+
 --- Collect all effects from purchased tiers for an item
 ---@param player table Player instance
 ---@param item_id string Item identifier
@@ -29,7 +36,7 @@ local function collect_effects(player, item_id)
         local tier = def.tiers[i]
         if tier.effects then
             for key, value in pairs(tier.effects) do
-                if key:sub(-4) == "_add" then
+                if ADDITIVE_KEYS[key] then
                     _result[key] = (_result[key] or 0) + value
                 else
                     _result[key] = value
@@ -67,6 +74,46 @@ end
 function effects.get_projectile_damage(player, item_id, base_damage)
     local fx = collect_effects(player, item_id)
     return fx.projectile_damage or base_damage
+end
+
+--- Get effective weapon stamina cost (base + additive bonuses from upgrades)
+---@param player table Player instance
+---@param weapon_id string Weapon item ID
+---@param base_cost number Base stamina cost from weapon stats
+---@return number Effective stamina cost
+function effects.get_stamina_cost(player, weapon_id, base_cost)
+    local fx = collect_effects(player, weapon_id)
+    return base_cost + (fx.stamina_cost_add or 0)
+end
+
+--- Get effective weapon attack speed (override ms_per_frame from upgrades, or base)
+---@param player table Player instance
+---@param weapon_id string Weapon item ID
+---@param base_ms number Base ms_per_frame from weapon stats
+---@return number Effective ms_per_frame
+function effects.get_attack_speed(player, weapon_id, base_ms)
+    local fx = collect_effects(player, weapon_id)
+    return fx.ms_per_frame or base_ms
+end
+
+--- Get effective energy cost (override from upgrades, or base)
+---@param player table Player instance
+---@param item_id string Secondary item ID
+---@param base_cost number Base energy cost
+---@return number Effective energy cost
+function effects.get_energy_cost(player, item_id, base_cost)
+    local fx = collect_effects(player, item_id)
+    return fx.energy_cost or base_cost
+end
+
+--- Get effective max charges (base + additive bonuses from upgrades)
+---@param player table Player instance
+---@param item_id string Secondary item ID
+---@param base_max number Base max charges
+---@return number Effective max charges
+function effects.get_max_charges(player, item_id, base_max)
+    local fx = collect_effects(player, item_id)
+    return base_max + (fx.max_charges_add or 0)
 end
 
 --- Get effective recharge time (override from upgrades, or base)

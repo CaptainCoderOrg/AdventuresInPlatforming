@@ -151,7 +151,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 ### Upgrade
 - `upgrade/registry.lua` - Upgrade tier definitions (costs, materials, effects per item)
-- `upgrade/effects.lua` - Centralized stat lookups for upgrade bonuses (weapon damage, heal rate, recharge)
+- `upgrade/effects.lua` - Centralized stat lookups for upgrade bonuses (weapon damage, stamina cost, attack speed, projectile damage, energy cost, max charges, heal rate, recharge)
 - `upgrade/transactions.lua` - Purchase validation and execution for equipment upgrades
 
 ### Persistence

@@ -228,7 +228,8 @@ end
 ---@return table The created projectile instance
 function Projectile.create_shuriken(x, y, direction, owner)
     audio.play_shuriken_throw_sound()
-    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, 2, owner)
+    local damage = upgrade_effects.get_projectile_damage(owner, "shuriken", 2)
+    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, damage, owner)
 end
 
 -- Initialize cached projectile specs (after create functions are defined)

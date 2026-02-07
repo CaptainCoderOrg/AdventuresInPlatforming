@@ -878,6 +878,12 @@ local function handle_status_settings_input()
             return
         end
 
+        -- Confirm toggles equipped state (equip/unequip/assign ability slot)
+        if controls.menu_confirm_pressed() then
+            player_status_panel:toggle_hovered_equipped()
+            return
+        end
+
         -- Let status panel handle inventory navigation
         player_status_panel:input()
         return

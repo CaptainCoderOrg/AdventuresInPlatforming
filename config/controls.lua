@@ -16,11 +16,13 @@ controls_config.actions = {
     { id = "move_down",   label = "Down" },
     { id = "jump",        label = "Jump" },
     { id = "attack",      label = "Attack" },
-    { id = "ability",     label = "Ability" },
+    { id = "ability_1",   label = "Ability 1" },
+    { id = "ability_2",   label = "Ability 2" },
+    { id = "ability_3",   label = "Ability 3" },
+    { id = "ability_4",   label = "Ability 4" },
     { id = "swap_weapon", label = "Swap Weapon" },
     { id = "dash",        label = "Dash" },
     { id = "block",       label = "Block" },
-    { id = "swap_ability", label = "Swap Ability" },
 }
 
 -- Default keyboard bindings (action_id -> canvas.keys.* constant)
@@ -32,10 +34,12 @@ controls_config.keyboard_defaults = {
     jump        = canvas.keys.SPACE,
     dash        = canvas.keys.SHIFT,
     attack      = controls_config.MOUSE_LEFT,
-    ability     = controls_config.MOUSE_RIGHT,
+    ability_1   = controls_config.MOUSE_RIGHT,
+    ability_2   = canvas.keys.DIGIT_2,
+    ability_3   = canvas.keys.DIGIT_3,
+    ability_4   = canvas.keys.DIGIT_4,
     swap_weapon = canvas.keys.E,
     block       = canvas.keys.Q,
-    swap_ability = canvas.keys.Z,
 }
 
 -- Default gamepad bindings (action_id -> canvas.buttons.* constant)
@@ -47,10 +51,12 @@ controls_config.gamepad_defaults = {
     jump        = canvas.buttons.SOUTH,
     dash        = canvas.buttons.RB,
     attack      = canvas.buttons.WEST,
-    ability     = canvas.buttons.NORTH,
-    swap_weapon = canvas.buttons.EAST,
+    ability_1   = canvas.buttons.NORTH,
+    ability_2   = canvas.buttons.EAST,
+    ability_3   = canvas.buttons.LB,
+    ability_4   = canvas.buttons.LT,
+    swap_weapon = canvas.buttons.SELECT,
     block       = canvas.buttons.RT,
-    swap_ability = canvas.buttons.SELECT,
 }
 
 -- Human-readable display names for keyboard keys

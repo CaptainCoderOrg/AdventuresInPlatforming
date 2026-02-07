@@ -133,19 +133,20 @@ function common.handle_weapon_swap(player)
 end
 
 --- Checks for ability input and transitions to throw state or queues if on cooldown.
---- Queries weapon_sync for the active secondary's projectile spec.
+--- Queries weapon_sync for the pressed slot's projectile spec.
 --- Non-projectile secondaries (e.g., minor_healing) return nil spec and are skipped here.
 ---@param player table The player object
 function common.handle_ability(player)
-	if not controls.ability_pressed() then return end
+	local slot = controls.any_ability_pressed()
+	if not slot then return end
 
-	-- Get projectile spec from active secondary (nil for non-projectile abilities)
-	local spec = weapon_sync.get_secondary_spec(player)
+	-- Get projectile spec from the pressed slot (nil for non-projectile abilities)
+	local spec = weapon_sync.get_secondary_spec(player, slot)
 	if not spec then return end
-	if not weapon_sync.is_secondary_unlocked(player) then return end
+	if not weapon_sync.is_secondary_unlocked(player, slot) then return end
 
 	-- Block ability when no charges available
-	if not weapon_sync.has_throw_charges(player) then
+	if not weapon_sync.has_throw_charges(player, slot) then
 		Effects.create_text(player.x, player.y, "Cooldown")
 		return
 	end
@@ -160,10 +161,11 @@ function common.handle_ability(player)
 
 	if player.throw_cooldown <= 0 then
 		if try_use_throw_stamina(player, spec) then
+			player.active_ability_slot = slot
 			player:set_state(player.states.throw)
 		end
 	else
-		common.queue_input(player, "ability")
+		common.queue_input(player, "ability", slot)
 	end
 end
 
@@ -528,8 +530,13 @@ end
 --- Queues an input for later execution.
 ---@param player table The player object
 ---@param input_name string The input to queue ("jump", "attack", or "ability")
-function common.queue_input(player, input_name)
-	player.input_queue[input_name] = true
+---@param slot number|nil Ability slot (1-4) when input_name is "ability"
+function common.queue_input(player, input_name, slot)
+	if input_name == "ability" then
+		player.input_queue.ability_slot = slot
+	else
+		player.input_queue[input_name] = true
+	end
 end
 
 --- Clears all queued inputs.
@@ -537,7 +544,7 @@ end
 function common.clear_input_queue(player)
 	player.input_queue.jump = false
 	player.input_queue.attack = false
-	player.input_queue.ability = false
+	player.input_queue.ability_slot = nil
 end
 
 --- Transitions to a state, restarting if already in that state.
@@ -569,12 +576,14 @@ local function try_queued_combat_action(player)
 			end
 		end
 	end
-	if player.input_queue.ability and player.throw_cooldown <= 0 then
-		player.input_queue.ability = false
-		local spec = weapon_sync.get_secondary_spec(player)
-		if spec and weapon_sync.is_secondary_unlocked(player)
-		   and weapon_sync.has_throw_charges(player) and has_throw_energy(player, spec) then
+	local queued_slot = player.input_queue.ability_slot
+	if queued_slot and player.throw_cooldown <= 0 then
+		player.input_queue.ability_slot = nil
+		local spec = weapon_sync.get_secondary_spec(player, queued_slot)
+		if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
+		   and weapon_sync.has_throw_charges(player, queued_slot) and has_throw_energy(player, spec) then
 			if try_use_throw_stamina(player, spec) then
+				player.active_ability_slot = queued_slot
 				return player.states.throw
 			end
 		end
@@ -616,8 +625,9 @@ function common.queue_inputs(player)
 	if controls.attack_pressed() then
 		common.queue_input(player, "attack")
 	end
-	if controls.ability_pressed() then
-		common.queue_input(player, "ability")
+	local slot = controls.any_ability_pressed()
+	if slot then
+		common.queue_input(player, "ability", slot)
 	end
 end
 

@@ -37,17 +37,26 @@ function heal_channel.update(player, dt)
         init_states(player.states)
     end
 
-    local holding = controls.ability_down()
     local in_allowed_state = CHANNEL_STATES[player.state]
-    local is_minor_healing = player.active_secondary == "minor_healing"
+
+    -- Find if any held ability slot has minor_healing
+    local healing_held = false
+    if in_allowed_state and player.ability_slots then
+        for slot = 1, 4 do
+            if controls.ability_down(slot) and player.ability_slots[slot] == "minor_healing" then
+                healing_held = true
+                break
+            end
+        end
+    end
 
     -- Allows text popups to show again on next press
-    if not holding then
+    if not healing_held then
         player._heal_no_energy_shown = false
         player._heal_full_health_shown = false
     end
 
-    if not holding or not in_allowed_state or not is_minor_healing then
+    if not healing_held or not in_allowed_state then
         stop_channeling(player)
         return
     end

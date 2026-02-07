@@ -12,8 +12,8 @@ local THROW_COOLDOWN = 0.2
 --- Called when entering throw state. Creates projectile and clears input queue.
 ---@param player table The player object
 function throw.start(player)
-	-- Get spec from weapon_sync (single source of truth)
-	local spec = weapon_sync.get_secondary_spec(player)
+	-- Get spec from weapon_sync using the active ability slot
+	local spec = weapon_sync.get_secondary_spec(player, player.active_ability_slot)
 	if not spec then
 		player:set_state(player.states.idle)
 		return

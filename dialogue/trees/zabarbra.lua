@@ -41,7 +41,7 @@ return {
         },
 
         offer_healing = {
-            text = "Every traveler needs to know how to mend themselves. Here - I'll teach you Minor Healing. Consider it a free sample. Hold {ability} to channel energy into health.",
+            text = "Every traveler needs to know how to mend themselves. Here - I'll teach you Minor Healing. Consider it a free sample. Assign it to an ability slot, then hold the key to channel energy into health.",
             options = {
                 { text = "Thank you!", next = nil },
                 { text = "What's the catch?", next = "the_catch" },

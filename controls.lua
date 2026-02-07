@@ -245,25 +245,49 @@ local function is_trigger_binding_down(action_id)
     return check_gamepad_binding(action_id, TRIGGER_THRESHOLD)
 end
 
---- Check if ability swap input was pressed this frame
----@return boolean pressed True if swap_ability binding was pressed
-function controls.swap_ability_pressed()
-    return is_key_binding_pressed("swap_ability")
-        or is_button_binding_pressed("swap_ability")
+-- Ability slot action IDs (indexed 1-4)
+local ABILITY_ACTION_IDS = { "ability_1", "ability_2", "ability_3", "ability_4" }
+
+--- Check if a specific ability slot input was pressed this frame
+---@param slot number Ability slot (1-4)
+---@return boolean pressed True if ability slot binding was pressed
+function controls.ability_pressed(slot)
+    local action_id = ABILITY_ACTION_IDS[slot]
+    if not action_id then return false end
+    return is_key_binding_pressed(action_id)
+        or is_button_binding_pressed(action_id)
 end
 
---- Check if ability input was pressed this frame
----@return boolean pressed True if ability binding was pressed
-function controls.ability_pressed()
-    return is_key_binding_pressed("ability")
-        or is_button_binding_pressed("ability")
+--- Check if a specific ability slot input is currently held down
+---@param slot number Ability slot (1-4)
+---@return boolean down True if ability slot binding is held
+function controls.ability_down(slot)
+    local action_id = ABILITY_ACTION_IDS[slot]
+    if not action_id then return false end
+    return is_key_binding_down(action_id)
+        or is_trigger_binding_down(action_id)
 end
 
---- Check if ability input is currently held down
----@return boolean down True if ability binding is held
-function controls.ability_down()
-    return is_key_binding_down("ability")
-        or is_button_binding_down("ability")
+--- Check if any ability slot was pressed this frame
+---@return number|nil slot The first pressed slot (1-4), or nil if none
+function controls.any_ability_pressed()
+    for slot = 1, 4 do
+        if controls.ability_pressed(slot) then
+            return slot
+        end
+    end
+    return nil
+end
+
+--- Check if any ability slot is currently held down
+---@return number|nil slot The first held slot (1-4), or nil if none
+function controls.any_ability_down()
+    for slot = 1, 4 do
+        if controls.ability_down(slot) then
+            return slot
+        end
+    end
+    return nil
 end
 
 --- Check if weapon swap input was pressed this frame

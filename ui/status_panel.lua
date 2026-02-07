@@ -7,6 +7,7 @@ local Playtime = require("Playtime")
 local SaveSlots = require("SaveSlots")
 local stats = require("player.stats")
 local inventory_grid = require("ui/inventory_grid")
+local ability_slots_component = require("ui/ability_slots")
 local unique_item_registry = require("Prop.unique_item_registry")
 local stackable_item_registry = require("Prop.stackable_item_registry")
 local weapon_sync = require("player.weapon_sync")
@@ -25,6 +26,9 @@ local LINE_HEIGHT = 8
 
 -- Cap at 20 to keep diminishing returns tables bounded
 local MAX_STAT_LEVEL = 20
+
+-- Must match ROWS in inventory_grid (for navigating to ability slots)
+local INVENTORY_ROWS = 3
 
 --- Generate a fibonacci-like cost table from two starting values
 ---@param a number First cost
@@ -140,9 +144,18 @@ function status_panel.create(opts)
     self.hovered_index = nil   -- Mouse hover index (separate from keyboard selection)
     self.pending_upgrades = {} -- Track pending stat upgrades: {stat_name = count}
     self.pending_costs = {}    -- Track cost per upgrade: {stat_name = {cost1, cost2, ...}}
-    self.focus_area = "stats"  -- "stats" or "inventory"
+    self.focus_area = "stats"  -- "stats", "inventory", or "ability_slots"
     self.on_use_item = nil     -- Callback for usable items: fn(item_id)
     self.inventory = inventory_grid.create({ x = 0, y = 0 })
+    self.ability_slots = ability_slots_component.create({ x = 0, y = 0 })
+
+    -- Wire secondary equip callback: inventory delegates to ability slot assignment
+    self.inventory.on_equip_secondary = function(item_id)
+        self.focus_area = "ability_slots"
+        self.ability_slots.active = true
+        self.inventory.active = false
+        self.ability_slots:begin_assign(item_id)
+    end
 
     -- Pre-allocate reusable tables to avoid per-frame allocations
     self._cached_rows = {}
@@ -163,10 +176,18 @@ end
 function status_panel:set_player(player)
     self.player = player
     if player then
+        self.inventory:set_equipped(player.equipped_items, player)
+        self.ability_slots:set_player(player)
         self.inventory:set_items(player.unique_items)
         self.inventory:set_stackable(player.stackable_items)
-        self.inventory:set_equipped(player.equipped_items, player)
         self.inventory.on_use_item = self.on_use_item
+        -- Re-wire on_equip_secondary callback (set_equipped resets inventory internals)
+        self.inventory.on_equip_secondary = function(item_id)
+            self.focus_area = "ability_slots"
+            self.ability_slots.active = true
+            self.inventory.active = false
+            self.ability_slots:begin_assign(item_id)
+        end
         -- Sync player ability flags with current equipment
         weapon_sync.sync(player)
     end
@@ -534,9 +555,21 @@ function status_panel:get_highlighted_stat()
     return selectable and selectable.label
 end
 
---- Get the description for the currently hovered inventory item
+--- Get the description for the currently hovered inventory item or ability slot
 ---@return string|nil description Item name and description, or nil if nothing hovered
 function status_panel:get_inventory_description()
+    -- Check ability slots first
+    local slot_item = self.ability_slots:get_hovered_item()
+    if slot_item then
+        local item_def = unique_item_registry[slot_item]
+        if item_def then
+            if item_def.description and item_def.description ~= "" then
+                return item_def.name .. ": " .. item_def.description
+            end
+            return item_def.name
+        end
+    end
+
     local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
     if not item_id then
         return nil
@@ -555,8 +588,14 @@ function status_panel:get_inventory_description()
 end
 
 --- Check if the currently hovered inventory item is equipped
----@return boolean|string|nil is_equipped True if equipped, false if not, "usable" for usable items, nil if nothing hovered or item is no_equip/stackable
+---@return boolean|string|nil is_equipped True if equipped, false if not, "usable" for usable items, "ability_slot" for ability slot items, nil if nothing hovered or item is no_equip/stackable
 function status_panel:is_hovered_item_equipped()
+    -- Check ability slots hover
+    local slot_item = self.ability_slots:get_hovered_item()
+    if slot_item then
+        return "ability_slot"
+    end
+
     local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
     if item_id then
         -- Don't show equip option for stackable items
@@ -597,10 +636,10 @@ function status_panel:is_mouse_hover()
     return self.hovered_index ~= nil
 end
 
---- Check if any area (stats or inventory) has mouse hover
----@return boolean has_hover True if mouse is hovering over stats or inventory
+--- Check if any area (stats, inventory, or ability slots) has mouse hover
+---@return boolean has_hover True if mouse is hovering over stats, inventory, or ability slots
 function status_panel:has_any_mouse_hover()
-    return self.hovered_index ~= nil or self.inventory.hovered_col ~= nil
+    return self.hovered_index ~= nil or self.inventory.hovered_col ~= nil or self.ability_slots.hovered_slot ~= nil
 end
 
 --- Reset selection to first item
@@ -610,12 +649,15 @@ function status_panel:reset_selection()
     self.focus_area = "stats"
     self.inventory.active = false
     self.inventory:reset_selection()
+    self.ability_slots.active = false
+    self.ability_slots:reset_selection()
+    self.ability_slots:cancel_assign()
 end
 
---- Check if inventory grid is currently focused
+--- Check if inventory grid or ability slots is currently focused
 ---@return boolean is_inventory_focused
 function status_panel:is_inventory_focused()
-    return self.focus_area == "inventory"
+    return self.focus_area == "inventory" or self.focus_area == "ability_slots"
 end
 
 --- Switch focus back to stats from inventory
@@ -623,14 +665,57 @@ end
 function status_panel:focus_stats()
     self.focus_area = "stats"
     self.inventory.active = false
+    self.ability_slots.active = false
+    self.ability_slots:cancel_assign()
 end
 
---- Toggle equipped state for the currently hovered inventory item
+--- Toggle equipped state for the currently hovered inventory item or ability slot
 ---@return boolean toggled True if an item was toggled
 function status_panel:toggle_hovered_equipped()
+    -- Handle ability slot assignment mode
+    if self.ability_slots.assigning then
+        local new_item = self.ability_slots.assign_item_id
+        local displaced = self.ability_slots:confirm_assign()
+        if self.player then
+            -- Equip the newly assigned item
+            if new_item then
+                self.player.equipped_items[new_item] = true
+            end
+            -- Unequip displaced item (swap back to inventory)
+            if displaced and displaced ~= new_item then
+                self.player.equipped_items[displaced] = nil
+            end
+            weapon_sync.sync(self.player)
+        end
+        -- Rebuild inventory to reflect slot changes
+        self.inventory:build_display_list()
+        -- Return focus to inventory
+        self.focus_area = "inventory"
+        self.ability_slots.active = false
+        self.inventory.active = true
+        return true
+    end
+
+    -- Handle unequip from ability slot (direct click when not assigning)
+    if self.focus_area == "ability_slots" or self.ability_slots:get_hovered_item() then
+        local slot = self.ability_slots:get_effective_slot()
+        if slot then
+            local removed = self.ability_slots:unequip_slot(slot)
+            if removed and self.player then
+                self.player.equipped_items[removed] = nil
+                weapon_sync.sync(self.player)
+            end
+            -- Rebuild inventory to show the removed item again
+            self.inventory:build_display_list()
+            return removed ~= nil
+        end
+    end
+
     local item_id, _, is_stackable = self.inventory:get_hovered_item_info()
     if item_id then
         self.inventory:toggle_equipped(item_id, is_stackable)
+        -- Rebuild if a secondary was unequipped (cleared from ability slot)
+        self.inventory:build_display_list()
         return true
     end
     return false
@@ -652,6 +737,13 @@ function status_panel:update(dt, local_mx, local_my, mouse_active)
     self.inventory.y = inv_y
     self.inventory:update(dt, local_mx - inv_x, local_my - inv_y, mouse_active)
 
+    -- Update ability slots position and hover (below inventory)
+    local slots_x = inv_x
+    local slots_y = inv_y + self.inventory:get_height() + 4
+    self.ability_slots.x = slots_x
+    self.ability_slots.y = slots_y
+    self.ability_slots:update(dt, local_mx - slots_x, local_my - slots_y, mouse_active)
+
     if not mouse_active then return end
 
     -- Check if mouse is over inventory cells (not header)
@@ -661,8 +753,14 @@ function status_panel:update(dt, local_mx, local_my, mouse_active)
     local over_inventory = local_mx >= inv_x and local_mx < inv_x + inv_width and
                            local_my >= inv_cells_y and local_my < inv_cells_y + inv_cells_height
 
-    if over_inventory then
-        -- Mouse is over inventory cells, don't highlight stats
+    -- Check if mouse is over ability slots
+    local slots_width = self.ability_slots:get_width()
+    local slots_height = self.ability_slots:get_height()
+    local over_ability_slots = local_mx >= slots_x and local_mx < slots_x + slots_width and
+                               local_my >= slots_y and local_my < slots_y + slots_height
+
+    if over_inventory or over_ability_slots then
+        -- Mouse is over inventory/slots, don't highlight stats
         return
     end
 
@@ -711,7 +809,7 @@ end
 --- Handle keyboard/gamepad input for navigation
 ---@return nil
 function status_panel:input()
-    -- Handle navigation between stats and inventory
+    -- Handle navigation between stats, inventory, and ability_slots
     if self.focus_area == "stats" then
         if controls.menu_up_pressed() then
             self.selected_index = self.selected_index - 1
@@ -728,11 +826,36 @@ function status_panel:input()
             self.focus_area = "inventory"
             self.inventory.active = true
         end
+    elseif self.focus_area == "ability_slots" then
+        -- Ability slots is focused
+        if controls.menu_up_pressed() then
+            -- Move from ability slots up to inventory
+            self.focus_area = "inventory"
+            self.inventory.active = true
+            self.ability_slots.active = false
+            if self.ability_slots.assigning then
+                self.ability_slots:cancel_assign()
+            end
+        elseif controls.menu_left_pressed() and self.ability_slots.selected_slot == 1 then
+            -- At left edge of ability slots, switch back to stats
+            self.focus_area = "stats"
+            self.ability_slots.active = false
+            if self.ability_slots.assigning then
+                self.ability_slots:cancel_assign()
+            end
+        else
+            self.ability_slots:input()
+        end
     else
-        -- Inventory is focused, delegate to inventory grid
+        -- Inventory is focused
         if controls.menu_left_pressed() and self.inventory.selected_col == 1 then
             -- At left edge of inventory, switch back to stats
             self.focus_area = "stats"
+            self.inventory.active = false
+        elseif controls.menu_down_pressed() and self.inventory.selected_row == INVENTORY_ROWS then
+            -- At bottom of inventory, move to ability slots
+            self.focus_area = "ability_slots"
+            self.ability_slots.active = true
             self.inventory.active = false
         else
             self.inventory:input()
@@ -780,7 +903,7 @@ function status_panel:draw()
     -- Get the visual index of the highlighted row (selected if active and focused on stats, or hovered)
     -- Don't highlight stats when inventory is focused or has mouse hover
     local highlighted_visual_index = nil
-    local inventory_has_hover = self.inventory.hovered_col ~= nil
+    local inventory_has_hover = self.inventory.hovered_col ~= nil or self.ability_slots.hovered_slot ~= nil
     if not inventory_has_hover then
         if self.active and self.focus_area == "stats" and self.selectable_rows[self.selected_index] then
             highlighted_visual_index = self.selectable_rows[self.selected_index].visual_index
@@ -868,6 +991,11 @@ function status_panel:draw()
     self.inventory.x = self.x + inv_x
     self.inventory.y = self.y + inv_y
     self.inventory:draw()
+
+    -- Draw ability slots below inventory
+    self.ability_slots.x = self.x + inv_x
+    self.ability_slots.y = self.y + inv_y + self.inventory:get_height() + 4
+    self.ability_slots:draw()
 
     canvas.restore()
 end

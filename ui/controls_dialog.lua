@@ -11,7 +11,7 @@ local controls_dialog = {}
 
 -- Dialog dimensions at 1x scale
 local base_width = 180
-local base_height = 140
+local base_height = 136
 local button_height = 12
 
 -- Dialog box instance (created in init after base dimensions are set)

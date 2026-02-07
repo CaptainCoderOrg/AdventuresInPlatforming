@@ -95,7 +95,8 @@ function Player.new()
 	self.stackable_items = {}   -- Consumable stackable items (item_id -> count)
 	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
 	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
-	self.active_secondary = nil -- item_id of currently active secondary (for ability swap)
+	self.ability_slots = { nil, nil, nil, nil } -- 4 ability slots, each holds item_id or nil
+	self.active_ability_slot = nil -- which slot (1-4) triggered current throw/heal
 	self.defeated_bosses = {}   -- Set of defeated boss ids (boss_id -> true)
 	self.visited_campfires = {} -- Keyed by "level_id:name" -> {name, level_id, x, y}
 	self.journal = { awakening = "active" }  -- Quest journal entries (entry_id -> "active"|"complete")
@@ -240,7 +241,7 @@ function Player.new()
 	self.input_queue = {
 		jump = false,
 		attack = false,
-		ability = false
+		ability_slot = nil  -- slot number (1-4) or nil
 	}
 
 	-- Register with collision system
@@ -253,12 +254,6 @@ function Player.new()
 	self:set_state(states.idle)
 
 	return self
-end
-
---- Cycles to the next equipped secondary ability.
----@return string|nil name The new active secondary's display name, or nil if not switched
-function Player:next_secondary()
-	return weapon_sync.cycle_secondary(self)
 end
 
 --- Returns whether player is currently invincible (post-hit immunity frames).
@@ -432,13 +427,6 @@ end
 --- Processes player input by delegating to the current state's input handler.
 function Player:input()
 	self.state.input(self)
-	if controls.swap_ability_pressed() then
-		local name = self:next_secondary()
-		if name then
-			audio.play_swap_sound()
-			Effects.create_text(self.x, self.y, name)
-		end
-	end
 end
 
 --- Updates player physics, state logic, collision detection, and animation.

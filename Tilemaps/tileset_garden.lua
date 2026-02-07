@@ -25,7 +25,107 @@ return {
     height = 16
   },
   properties = {},
-  wangsets = {},
+  wangsets = {
+    {
+      name = "Garden",
+      class = "",
+      tile = -1,
+      wangsettype = "corner",
+      properties = {},
+      colors = {
+        {
+          color = { 255, 0, 0 },
+          name = "Platform",
+          class = "",
+          probability = 1,
+          tile = -1,
+          properties = {}
+        },
+        {
+          color = { 0, 255, 0 },
+          name = "Not Platform",
+          class = "",
+          probability = 1,
+          tile = -1,
+          properties = {}
+        }
+      },
+      wangtiles = {
+        {
+          wangid = { 0, 1, 0, 2, 0, 1, 0, 1 },
+          tileid = 0
+        },
+        {
+          wangid = { 0, 1, 0, 2, 0, 2, 0, 1 },
+          tileid = 1
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 2, 0, 1 },
+          tileid = 2
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 1, 0, 1 },
+          tileid = 24
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 2, 0, 2 },
+          tileid = 25
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 2, 0, 2 },
+          tileid = 26
+        },
+        {
+          wangid = { 0, 2, 0, 1, 0, 1, 0, 1 },
+          tileid = 48
+        },
+        {
+          wangid = { 0, 2, 0, 1, 0, 1, 0, 2 },
+          tileid = 49
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 1, 0, 2 },
+          tileid = 50
+        },
+        {
+          wangid = { 0, 2, 0, 1, 0, 2, 0, 2 },
+          tileid = 96
+        },
+        {
+          wangid = { 0, 2, 0, 1, 0, 1, 0, 2 },
+          tileid = 97
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 1, 0, 2 },
+          tileid = 98
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 2, 0, 2 },
+          tileid = 120
+        },
+        {
+          wangid = { 0, 1, 0, 1, 0, 1, 0, 1 },
+          tileid = 121
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 1, 0, 1 },
+          tileid = 122
+        },
+        {
+          wangid = { 0, 1, 0, 2, 0, 2, 0, 2 },
+          tileid = 144
+        },
+        {
+          wangid = { 0, 1, 0, 2, 0, 2, 0, 1 },
+          tileid = 145
+        },
+        {
+          wangid = { 0, 2, 0, 2, 0, 2, 0, 1 },
+          tileid = 146
+        }
+      }
+    }
+  },
   tilecount = 288,
   tiles = {
     {

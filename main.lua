@@ -195,27 +195,35 @@ local function user_input()
         config.bounding_boxes = not config.bounding_boxes
         config.debug = not config.debug
     elseif config.debug then
-        -- Debug mode: 1-7 toggle ability flags
-        if canvas.is_key_pressed(canvas.keys.DIGIT_1) then
+        -- Debug mode: F1-F7 toggle ability flags (avoids conflict with ability key bindings)
+        if canvas.is_key_pressed(canvas.keys.F1) then
             player.has_double_jump = not player.has_double_jump
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
+        elseif canvas.is_key_pressed(canvas.keys.F2) then
             player.can_dash = not player.can_dash
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_3) then
+        elseif canvas.is_key_pressed(canvas.keys.F3) then
             player.has_wall_slide = not player.has_wall_slide
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_4) then
+        elseif canvas.is_key_pressed(canvas.keys.F4) then
             player.has_hammer = not player.has_hammer
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_5) then
+        elseif canvas.is_key_pressed(canvas.keys.F5) then
             player.has_axe = not player.has_axe
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_6) then
+        elseif canvas.is_key_pressed(canvas.keys.F6) then
             player.has_shuriken = not player.has_shuriken
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_7) then
+        elseif canvas.is_key_pressed(canvas.keys.F7) then
             player.has_shield = not player.has_shield
         elseif canvas.is_key_pressed(canvas.keys.H) then
             -- Grant and equip Minor Healing ability
             if not player.equipped_items.minor_healing then
                 table.insert(player.unique_items, "minor_healing")
                 player.equipped_items.minor_healing = true
-                player.active_secondary = "minor_healing"
+                -- Assign to first empty ability slot
+                if player.ability_slots then
+                    for i = 1, 4 do
+                        if not player.ability_slots[i] then
+                            player.ability_slots[i] = "minor_healing"
+                            break
+                        end
+                    end
+                end
                 require("player.weapon_sync").sync(player)
             end
         end

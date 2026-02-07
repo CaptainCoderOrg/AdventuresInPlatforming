@@ -22,10 +22,13 @@ local COLUMN_GAP = 22
 local COLUMN_X = { [1] = 0, [2] = COLUMN_WIDTH + COLUMN_GAP }
 
 -- Layout: { column (1=left, 2=right), row_within_column }
--- Actions 1-4 (directional) -> right column, Actions 5-11 (abilities) -> left column
+-- Left column: jump, attack, swap weapon, dash, block, ability 1-2
+-- Right column: up, left, down, right, ability 3-4
 local COLUMN_LAYOUT = {
-    { 2, 1 }, { 2, 2 }, { 2, 3 }, { 2, 4 },              -- Directional (right)
-    { 1, 1 }, { 1, 2 }, { 1, 3 }, { 1, 4 }, { 1, 5 }, { 1, 6 }, { 1, 7 }  -- Abilities (left)
+    { 2, 2 }, { 2, 4 }, { 2, 1 }, { 2, 3 },              -- Left, Right, Up, Down (right col)
+    { 1, 1 }, { 1, 2 },                                    -- Jump, Attack (left col)
+    { 1, 6 }, { 1, 7 }, { 2, 6 }, { 2, 7 },              -- Ability 1-2 (left), Ability 3-4 (right, gap after Right)
+    { 1, 3 }, { 1, 4 }, { 1, 5 },                          -- Swap weapon, Dash, Block (left col)
 }
 
 -- Max rows in the taller column (left column has 7 rows)

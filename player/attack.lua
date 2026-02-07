@@ -180,13 +180,14 @@ function attack.input(player)
 		player.attack_state.queued = true
 		-- Clear jump/ability queues when combo is queued (combo takes priority)
 		player.input_queue.jump = false
-		player.input_queue.ability = false
+		player.input_queue.ability_slot = nil
 	end
 	if controls.jump_pressed() then
 		common.queue_input(player, "jump")
 	end
-	if controls.ability_pressed() then
-		common.queue_input(player, "ability")
+	local slot = controls.any_ability_pressed()
+	if slot then
+		common.queue_input(player, "ability", slot)
 	end
 
 	if can_cancel(player) then
@@ -198,12 +199,14 @@ function attack.input(player)
 			return
 		end
 		-- Check secondary spec, unlock, charges, energy and stamina inline since we're bypassing handle_ability for queued input
-		local spec = weapon_sync.get_secondary_spec(player)
-		if not combo_queued and player.input_queue.ability and spec and weapon_sync.is_secondary_unlocked(player)
-		   and weapon_sync.has_throw_charges(player)
+		local queued_slot = player.input_queue.ability_slot
+		local spec = weapon_sync.get_secondary_spec(player, queued_slot)
+		if not combo_queued and queued_slot and spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
+		   and weapon_sync.has_throw_charges(player, queued_slot)
 		   and player.energy_used + (spec.energy_cost or 1) <= player.max_energy then
 			local throw_stamina = spec.stamina_cost or 0
 			if throw_stamina == 0 or player:use_stamina(throw_stamina) then
+				player.active_ability_slot = queued_slot
 				player.attack_cooldown = ATTACK_COOLDOWN
 				player:set_state(player.states.throw)
 				return

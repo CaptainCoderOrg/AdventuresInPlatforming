@@ -170,52 +170,27 @@ function weapon_sync.get_equipped_secondaries(player)
     return secondaries
 end
 
---- Returns the active secondary id and definition from player's equipped_items
---- Uses player.active_secondary if set and valid, otherwise falls back to first equipped secondary
+--- Returns the secondary id and definition for a specific ability slot
 ---@param player table The player object
----@return string|nil secondary_id The active secondary's item_id, or nil if none
----@return table|nil secondary_def The secondary's definition from unique_item_registry, or nil if none
-function weapon_sync.get_active_secondary(player)
-    if not player.equipped_items then return nil, nil end
-
-    -- Return active_secondary if valid, otherwise fall back to first equipped secondary
-    if is_valid_secondary(player, player.active_secondary) then
-        return player.active_secondary, unique_item_registry[player.active_secondary]
-    end
-    return weapon_sync.get_first_equipped_secondary(player)
+---@param slot number Ability slot index (1-4)
+---@return string|nil secondary_id The secondary's item_id, or nil if slot is empty/invalid
+---@return table|nil secondary_def The secondary's definition from unique_item_registry, or nil
+function weapon_sync.get_slot_secondary(player, slot)
+    if not slot or not player.ability_slots then return nil, nil end
+    local item_id = player.ability_slots[slot]
+    if not item_id then return nil, nil end
+    if not is_valid_secondary(player, item_id) then return nil, nil end
+    return item_id, unique_item_registry[item_id]
 end
 
---- Cycles to the next equipped secondary
---- Returns the new active secondary's name if switched, nil if no other secondaries
----@param player table The player object
----@return string|nil secondary_name The new active secondary's display name, or nil if not switched
-function weapon_sync.cycle_secondary(player)
-    local secondaries = weapon_sync.get_equipped_secondaries(player)
-    if #secondaries <= 1 then return nil end  -- Need at least 2 secondaries to cycle
-
-    -- Find current active secondary index
-    local current_index = 1
-    for i, sec in ipairs(secondaries) do
-        if sec.id == player.active_secondary then
-            current_index = i
-            break
-        end
-    end
-
-    -- Advance to next secondary (wrap around)
-    local next_index = (current_index % #secondaries) + 1
-    local next_secondary = secondaries[next_index]
-
-    player.active_secondary = next_secondary.id
-    return next_secondary.def.name
-end
-
---- Returns the projectile spec for the currently active secondary
+--- Returns the projectile spec for a specific ability slot (or active_ability_slot as fallback)
 --- Maps secondary item_id to the corresponding projectile definition
 ---@param player table The player object
+---@param slot number|nil Ability slot (1-4), falls back to player.active_ability_slot
 ---@return table|nil spec The projectile spec, or nil if no secondary equipped
-function weapon_sync.get_secondary_spec(player)
-    local secondary_id = weapon_sync.get_active_secondary(player)
+function weapon_sync.get_secondary_spec(player, slot)
+    slot = slot or player.active_ability_slot
+    local secondary_id = weapon_sync.get_slot_secondary(player, slot)
     if not secondary_id then return nil end
 
     -- Map secondary item IDs to projectile specs
@@ -229,13 +204,15 @@ function weapon_sync.get_secondary_spec(player)
     return nil
 end
 
---- Returns whether the active secondary ability is unlocked.
+--- Returns whether a secondary ability in the given slot is unlocked.
 --- Throwable secondaries check has_axe/has_shuriken flags.
 --- Non-throwable secondaries (e.g., minor_healing) are always unlocked (gated by equip logic).
 ---@param player table The player object
----@return boolean True if the active secondary is unlocked
-function weapon_sync.is_secondary_unlocked(player)
-    local secondary_id = weapon_sync.get_active_secondary(player)
+---@param slot number|nil Ability slot (1-4), falls back to player.active_ability_slot
+---@return boolean True if the secondary is unlocked
+function weapon_sync.is_secondary_unlocked(player, slot)
+    slot = slot or player.active_ability_slot
+    local secondary_id = weapon_sync.get_slot_secondary(player, slot)
     if not secondary_id then return false end
     if secondary_id == "throwing_axe" then return player.has_axe end
     if secondary_id == "shuriken" then return player.has_shuriken end
@@ -254,21 +231,23 @@ local function resolve_charge(player, item_id)
     return def, player.charge_state[item_id]
 end
 
---- Returns true if the active secondary has charges available (or is not charge-based).
+--- Returns true if the secondary in the given slot has charges available (or is not charge-based).
 --- Non-charge items always pass.
 ---@param player table The player object
+---@param slot number|nil Ability slot (1-4), falls back to player.active_ability_slot
 ---@return boolean True if throw is allowed by charge system
-function weapon_sync.has_throw_charges(player)
-    local sec_id = weapon_sync.get_active_secondary(player)
+function weapon_sync.has_throw_charges(player, slot)
+    slot = slot or player.active_ability_slot
+    local sec_id = weapon_sync.get_slot_secondary(player, slot)
     local def, state = resolve_charge(player, sec_id)
     if not def or not state then return true end
     return state.used_charges < def.max_charges
 end
 
---- Consumes one charge from the active secondary and starts recharge timer.
+--- Consumes one charge from the active ability slot's secondary and starts recharge timer.
 ---@param player table The player object
 function weapon_sync.consume_charge(player)
-    local sec_id = weapon_sync.get_active_secondary(player)
+    local sec_id = weapon_sync.get_slot_secondary(player, player.active_ability_slot)
     local def, state = resolve_charge(player, sec_id)
     if not def or not state then return end
     state.used_charges = math.min(state.used_charges + 1, def.max_charges)
@@ -352,9 +331,13 @@ function weapon_sync.sync(player)
         player.active_weapon = weapon_sync.get_first_equipped_weapon(player)
     end
 
-    -- Ensure active_secondary is valid (auto-select first equipped secondary if invalid)
-    if not is_valid_secondary(player, player.active_secondary) then
-        player.active_secondary = weapon_sync.get_first_equipped_secondary(player)
+    -- Validate ability_slots: clear any slot with an invalid/unequipped secondary
+    if player.ability_slots then
+        for i = 1, 4 do
+            if player.ability_slots[i] and not is_valid_secondary(player, player.ability_slots[i]) then
+                player.ability_slots[i] = nil
+            end
+        end
     end
 
     -- Initialize charge_state entries for equipped charge-based secondaries

@@ -139,7 +139,7 @@ return {
     },
     throwing_axe = {
         name = "Throwing Axe",
-        description = "A simple projectile that can be thrown. While active press {ability} to use.",
+        description = "A simple projectile that can be thrown. Assign to an ability slot, then press the slot's key to throw.",
         type = "secondary",
         static_sprite = sprites.items.axe_icon,
         max_charges = 2,
@@ -147,7 +147,7 @@ return {
     },
     shuriken = {
         name = "Summon Shuriken",
-        description = "Spend energy to summon a magic shuriken. Press {swap_ability} to swap between equipped abilities.",
+        description = "Spend energy to summon a magic shuriken. Assign to an ability slot to use.",
         type = "secondary",
         static_sprite = sprites.items.shuriken_icon,
     },
@@ -180,7 +180,7 @@ return {
     },
     minor_healing = {
         name = "Minor Healing",
-        description = "Hold {ability} to slowly convert energy into health.",
+        description = "Hold the assigned ability key to slowly convert energy into health.",
         type = "secondary",
         static_sprite = sprites.items.minor_healing,
     },

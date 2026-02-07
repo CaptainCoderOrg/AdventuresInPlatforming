@@ -133,7 +133,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "max_health", "max_stamina", "max_energy",
     "level", "experience", "gold",
     "defense", "recovery", "critical_chance",
-    "stat_upgrades", "unique_items", "stackable_items", "equipped_items", "active_weapon", "active_secondary",
+    "stat_upgrades", "unique_items", "stackable_items", "equipped_items", "active_weapon", "ability_slots",
     "defeated_bosses", "dialogue_flags",
     "visited_campfires",
     "journal",
@@ -151,7 +151,7 @@ SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "charge_st
 local SHALLOW_COPY_KEYS = {
     stat_upgrades = true, equipped_items = true, stackable_items = true,
     defeated_bosses = true, dialogue_flags = true, journal = true, journal_read = true,
-    upgrade_tiers = true,
+    upgrade_tiers = true, ability_slots = true,
 }
 
 --- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)
@@ -209,6 +209,11 @@ function SaveSlots.restore_player_stats(player, stats)
             total = total + v
         end
         player.level = total
+    end
+
+    -- Migrate old active_secondary to ability_slots (pre-ability-slots saves)
+    if stats.active_secondary and not player.ability_slots then
+        player.ability_slots = { stats.active_secondary, nil, nil, nil }
     end
 end
 

@@ -34,8 +34,8 @@ local DESC_Y = ICON_PADDING + ICON_SIZE + 4
 local BUTTON_Y = 62
 local BUTTON_SPACING = 20
 
--- Maximum number of secondary items that can be equipped
-local MAX_SECONDARY_EQUIPPED = 4
+-- Number of ability slots for secondary items
+local ABILITY_SLOT_COUNT = 4
 
 -- State
 local state = STATE.HIDDEN
@@ -276,11 +276,21 @@ local function equip_item(player, item_id)
         end
     end
 
-    -- For secondaries, check max limit
+    -- For secondaries, assign to first empty ability slot
     if item_type == "secondary" then
-        local count = count_equipped_by_type(player, "secondary")
-        if count >= MAX_SECONDARY_EQUIPPED then
-            -- Cannot equip, just add to inventory without equipping
+        if not player.ability_slots then
+            player.ability_slots = { nil, nil, nil, nil }
+        end
+        local assigned = false
+        for i = 1, ABILITY_SLOT_COUNT do
+            if not player.ability_slots[i] then
+                player.ability_slots[i] = item_id
+                assigned = true
+                break
+            end
+        end
+        if not assigned then
+            -- All ability slots full, just add to inventory without equipping
             return
         end
     end
@@ -288,11 +298,9 @@ local function equip_item(player, item_id)
     -- Equip the item
     player.equipped_items[item_id] = true
 
-    -- Set as active weapon/secondary for first of type
+    -- Set as active weapon for first of type
     if item_type == "weapon" then
         player.active_weapon = item_id
-    elseif item_type == "secondary" then
-        player.active_secondary = item_id
     end
 
     -- Sync player ability flags

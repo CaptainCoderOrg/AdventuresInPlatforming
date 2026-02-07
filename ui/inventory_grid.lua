@@ -1,4 +1,4 @@
---- Inventory grid component for displaying items in a 5x5 grid
+--- Inventory grid component for displaying items in a 5x3 grid
 local canvas = require("canvas")
 local sprites = require("sprites")
 local controls = require("controls")
@@ -13,7 +13,7 @@ inventory_grid.__index = inventory_grid
 local CELL_SIZE = 24
 local CELL_SPACING = 1
 local COLS = 5
-local ROWS = 5
+local ROWS = 3
 local SELECTION_ALPHA = 0.3
 
 -- Sprite frame positions (24px frames, no spacing in sprite sheet)
@@ -30,28 +30,10 @@ local HEADER_TEXT = "Inventory"
 
 -- Equipment types that only allow one item equipped at a time
 -- Note: weapon removed to allow multiple weapons equipped (quick swap system)
--- Note: secondary removed to allow up to 4 equipped (active secondary system)
+-- Note: secondary handled via ability_slots component
 local EXCLUSIVE_TYPES = {
     shield = true,
 }
-
--- Maximum number of secondary items that can be equipped at once
-local MAX_SECONDARY_EQUIPPED = 4
-
---- Counts how many items of a given type are currently equipped
----@param grid table The inventory_grid instance
----@param item_type string The type to count (e.g., "secondary")
----@return number count Number of equipped items of that type
-local function count_equipped_by_type(grid, item_type)
-    local count = 0
-    for _, item_id in ipairs(grid.items) do
-        local def = unique_item_registry[item_id]
-        if def and def.type == item_type and grid.equipped[item_id] then
-            count = count + 1
-        end
-    end
-    return count
-end
 
 --- Create a new inventory grid
 ---@param opts {x: number, y: number, items: table, equipped: table, player: table|nil}
@@ -71,6 +53,7 @@ function inventory_grid.create(opts)
     self.hovered_row = nil
     self.active = false
     self.on_use_item = nil  -- Callback for usable items: fn(item_id)
+    self.on_equip_secondary = nil  -- Callback for secondary equip: fn(item_id)
     return self
 end
 
@@ -114,24 +97,38 @@ function inventory_grid:set_equipped(equipped, player)
     self.player = player
 end
 
+--- Check if an item is assigned to an ability slot
+---@param item_id string
+---@return boolean
+function inventory_grid:is_in_ability_slot(item_id)
+    if not self.player or not self.player.ability_slots then return false end
+    for i = 1, 4 do
+        if self.player.ability_slots[i] == item_id then return true end
+    end
+    return false
+end
+
 --- Build the unified display list combining unique and stackable items
 --- Unique items come first, followed by stackable items
+--- Items assigned to ability slots are excluded
 --- Reuses existing entry tables to avoid per-call allocations
 function inventory_grid:build_display_list()
     local list = self.display_list
     local idx = 0
 
-    -- Add unique items first
+    -- Add unique items first (skip items in ability slots)
     for _, item_id in ipairs(self.items) do
-        idx = idx + 1
-        local entry = list[idx]
-        if not entry then
-            entry = {}
-            list[idx] = entry
+        if not self:is_in_ability_slot(item_id) then
+            idx = idx + 1
+            local entry = list[idx]
+            if not entry then
+                entry = {}
+                list[idx] = entry
+            end
+            entry.item_id = item_id
+            entry.count = 1
+            entry.is_stackable = false
         end
-        entry.item_id = item_id
-        entry.count = 1
-        entry.is_stackable = false
     end
 
     -- Add stackable items
@@ -220,10 +217,26 @@ function inventory_grid:toggle_equipped(item_id, is_stackable)
     if self.equipped[item_id] then
         self.equipped[item_id] = nil
 
-        -- If unequipping the active weapon, weapon_sync.sync will auto-select another
+        -- For secondaries, also clear from ability_slots
+        if item_type == "secondary" and self.player and self.player.ability_slots then
+            for i = 1, 4 do
+                if self.player.ability_slots[i] == item_id then
+                    self.player.ability_slots[i] = nil
+                end
+            end
+        end
+
         -- Sync player ability flags with equipment
         if self.player then
             weapon_sync.sync(self.player)
+        end
+        return
+    end
+
+    -- For secondary items, delegate to callback (ability slot assignment flow)
+    if item_type == "secondary" then
+        if self.on_equip_secondary then
+            self.on_equip_secondary(item_id)
         end
         return
     end
@@ -240,26 +253,12 @@ function inventory_grid:toggle_equipped(item_id, is_stackable)
         end
     end
 
-    -- For secondary items, check max limit before equipping
-    if item_type == "secondary" then
-        local count = count_equipped_by_type(self, "secondary")
-        if count >= MAX_SECONDARY_EQUIPPED then
-            -- Cannot equip more than 4 secondaries
-            return
-        end
-    end
-
     -- Equip the item
     self.equipped[item_id] = true
 
     -- Equipping a weapon makes it the active weapon immediately
     if item_type == "weapon" and self.player then
         self.player.active_weapon = item_id
-    end
-
-    -- Equipping a secondary makes it the active secondary immediately
-    if item_type == "secondary" and self.player then
-        self.player.active_secondary = item_id
     end
 
     -- Sync player ability flags with equipment

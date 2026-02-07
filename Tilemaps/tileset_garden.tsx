@@ -174,4 +174,28 @@
    <property name="type" value="wall"/>
   </properties>
  </tile>
+ <wangsets>
+  <wangset name="Garden" type="corner" tile="-1">
+   <wangcolor name="Platform" color="#ff0000" tile="-1" probability="1"/>
+   <wangcolor name="Not Platform" color="#00ff00" tile="-1" probability="1"/>
+   <wangtile tileid="0" wangid="0,1,0,2,0,1,0,1"/>
+   <wangtile tileid="1" wangid="0,1,0,2,0,2,0,1"/>
+   <wangtile tileid="2" wangid="0,1,0,1,0,2,0,1"/>
+   <wangtile tileid="24" wangid="0,2,0,2,0,1,0,1"/>
+   <wangtile tileid="25" wangid="0,2,0,2,0,2,0,2"/>
+   <wangtile tileid="26" wangid="0,1,0,1,0,2,0,2"/>
+   <wangtile tileid="48" wangid="0,2,0,1,0,1,0,1"/>
+   <wangtile tileid="49" wangid="0,2,0,1,0,1,0,2"/>
+   <wangtile tileid="50" wangid="0,1,0,1,0,1,0,2"/>
+   <wangtile tileid="96" wangid="0,2,0,1,0,2,0,2"/>
+   <wangtile tileid="97" wangid="0,2,0,1,0,1,0,2"/>
+   <wangtile tileid="98" wangid="0,2,0,2,0,1,0,2"/>
+   <wangtile tileid="120" wangid="0,1,0,1,0,2,0,2"/>
+   <wangtile tileid="121" wangid="0,1,0,1,0,1,0,1"/>
+   <wangtile tileid="122" wangid="0,2,0,2,0,1,0,1"/>
+   <wangtile tileid="144" wangid="0,1,0,2,0,2,0,2"/>
+   <wangtile tileid="145" wangid="0,1,0,2,0,2,0,1"/>
+   <wangtile tileid="146" wangid="0,2,0,2,0,2,0,1"/>
+  </wangset>
+ </wangsets>
 </tileset>

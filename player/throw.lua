@@ -45,7 +45,7 @@ function throw.update(player, dt)
 end
 
 --- Handles input while throwing. Allows movement and immediate jump.
---- Queues attack/throw for execution after animation completes.
+--- Queues attack/ability for execution after animation completes.
 ---@param player table The player object
 function throw.input(player)
 	if controls.left_down() then

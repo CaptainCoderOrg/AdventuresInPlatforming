@@ -144,13 +144,13 @@ function common.handle_ability(player)
 	if not spec then return end
 	if not weapon_sync.is_secondary_unlocked(player) then return end
 
-	-- Block throw when no charges available
+	-- Block ability when no charges available
 	if not weapon_sync.has_throw_charges(player) then
 		Effects.create_text(player.x, player.y, "Cooldown")
 		return
 	end
 
-	-- Block throw entirely when insufficient energy (no cooldown queue needed)
+	-- Block ability when insufficient energy (no cooldown queue needed)
 	if not has_throw_energy(player, spec) then
 		local current_energy = player.max_energy - player.energy_used
 		Effects.create_energy_text(player.x, player.y, current_energy)
@@ -623,7 +623,7 @@ end
 
 --- Checks for queued attack or ability that were waiting on cooldown.
 --- Also checks stamina for attack and energy/stamina for ability.
---- Call this in input() of states that allow attacking/throwing (idle, run, air).
+--- Call this in input() of states that allow attacking/ability use (idle, run, air).
 ---@param player table The player object
 ---@return boolean True if a state transition occurred
 function common.check_cooldown_queues(player)

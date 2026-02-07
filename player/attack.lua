@@ -167,7 +167,7 @@ local function can_cancel(player)
 	return on_last_frame or in_hold_time
 end
 
---- Handles input during attack. Queues combo continuation, jump, or throw.
+--- Handles input during attack. Queues combo continuation, jump, or ability.
 --- Allows direction change and early state cancels during hold window.
 ---@param player table The player object
 function attack.input(player)

@@ -371,7 +371,6 @@ function weapon_sync.sync(player)
             player.charge_state[item_id] = nil
         end
     end
-
 end
 
 return weapon_sync

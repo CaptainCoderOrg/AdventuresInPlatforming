@@ -2,7 +2,7 @@
 
 <!-- QUICK REFERENCE
 - State machine: start(), input(), update(dt), draw()
-- States: idle, run, dash, air, wall_slide, wall_jump, climb, attack, throw, hammer, block, hit, death, rest
+- States: idle, run, dash, air, wall_slide, wall_jump, climb, attack, throw, hammer, block, block_move, hit, death, rest, stairs_up, stairs_down, cinematic
 - Key file: player/init.lua, player/common.lua
 - Stamina costs in player/common.lua
 -->
@@ -21,7 +21,7 @@ state = {
 }
 ```
 
-**States:** idle, run, dash, air, wall_slide, wall_jump, climb, attack, throw, hammer, block, hit, death, rest
+**States:** idle, run, dash, air, wall_slide, wall_jump, climb, attack, throw, hammer, block, block_move, hit, death, rest, stairs_up, stairs_down, cinematic
 
 States are registered in `player/init.lua`. Common utilities (gravity, jump, collision checks, ability handlers) are in `player/common.lua`.
 
@@ -120,10 +120,10 @@ Player combat abilities managed through state machine.
 
 Centralized input buffering for locked states (hit, throw, hammer, attack).
 
-- **Queue Storage**: `player.input_queue` tracks pending inputs (jump, attack, throw)
+- **Queue Storage**: `player.input_queue` tracks pending inputs (jump, attack, ability)
 - **During Locked States**: `common.queue_inputs(player)` captures button presses
 - **On State Exit**: `common.process_input_queue(player)` executes queued actions
-- **Priority Order**: Attack > Throw > Jump
+- **Priority Order**: Attack > Ability > Jump
 - **Cooldown Handling**: Attack/throw persist in queue until cooldown expires
 - **Cooldown Check**: `common.check_cooldown_queues(player)` in idle/run/air states
 
@@ -198,14 +198,14 @@ Player leveling at campfire rest screen via stat upgrades.
 
 Each stat has its own fibonacci-like XP cost sequence (`ui/status_panel.lua`). Each upgrade increases player level by 1.
 
-| Stat     | Seed (1st, 2nd) | First 5 costs        |
-|----------|-----------------|----------------------|
-| Health   | 3, 8            | 3, 8, 11, 19, 30    |
-| Stamina  | 5, 12           | 5, 12, 17, 29, 46   |
-| Energy   | 25, 50          | 25, 50, 75, 125, 200 |
-| Defence  | 20, 30          | 20, 30, 50, 80, 130 |
-| Recovery | 20, 40          | 20, 40, 60, 100, 160 |
-| Critical | 50, 100         | 50, 100, 150, 250, 400 |
+| Stat     | Seeds             | First 5 costs         |
+|----------|-------------------|-----------------------|
+| Health   | 3, 8, 20, 30     | 3, 8, 20, 30, 50     |
+| Stamina  | 5, 15, 25        | 5, 15, 25, 40, 65    |
+| Energy   | 25, 50           | 25, 50, 75, 125, 200 |
+| Defence  | 20, 30           | 20, 30, 50, 80, 130  |
+| Recovery | 20, 40           | 20, 40, 60, 100, 160 |
+| Critical | 50, 100          | 50, 100, 150, 250, 400 |
 
 ### Levelable Stats
 
@@ -280,7 +280,7 @@ self.block_state = {            -- Shield and perfect block tracking
     cooldown,                   -- Time until next perfect block allowed
 }
 self.input_queue = {            -- Centralized input buffering
-    jump, attack, throw         -- Boolean flags for pending inputs
+    jump, attack, ability       -- Boolean flags for pending inputs
 }
 self.max_stamina = 3            -- Maximum stamina points
 self.stamina_used = 0           -- Consumed stamina (can exceed max for fatigue)

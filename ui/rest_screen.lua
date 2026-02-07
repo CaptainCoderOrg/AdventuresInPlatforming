@@ -1667,6 +1667,10 @@ local PROMPT_ICON_SIZE = 8
 local PROMPT_PADDING = 6
 local PROMPT_ICON_SPACING = 4
 
+-- Cached text metrics for prompts (lazy-initialized)
+local enter_text_metrics = nil
+local back_text_metrics = nil
+
 --- Draw an input icon (mouse, keyboard, or gamepad) at the given position
 ---@param x number Icon X position
 ---@param y number Icon Y position
@@ -1819,6 +1823,7 @@ end
 local equip_prompt_metrics = {}  -- "Equip"/"Unequip"/"Use" -> metrics
 
 --- Draw the inventory equip/unequip prompt in the bottom right of the rest dialogue
+
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_inventory_equip_prompt(dialogue)
@@ -1862,10 +1867,6 @@ local function draw_inventory_equip_prompt(dialogue)
 
     canvas.restore()
 end
-
--- Cached text metrics for prompts (lazy-initialized)
-local enter_text_metrics = nil
-local back_text_metrics = nil
 
 --- Draw the map back prompt in the bottom right of the rest dialogue
 ---@param dialogue table The rest dialogue with x, y, width, height

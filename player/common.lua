@@ -80,7 +80,7 @@ common.animations = {
 ---@param player table The player object
 ---@param spec table The projectile spec
 ---@return boolean True if throw is allowed (no cost or stamina consumed)
-local function try_use_throw_stamina(player, spec)
+function common.try_use_throw_stamina(player, spec)
 	local stamina_cost = spec.stamina_cost or 0
 	return stamina_cost == 0 or player:use_stamina(stamina_cost)
 end
@@ -90,7 +90,7 @@ end
 ---@param spec table The projectile spec
 ---@param sec_id string|nil Secondary item ID for upgrade lookup
 ---@return boolean True if player has sufficient energy to throw
-local function has_throw_energy(player, spec, sec_id)
+function common.has_throw_energy(player, spec, sec_id)
 	local base_cost = spec.energy_cost or 1
 	local energy_cost = sec_id and upgrade_effects.get_energy_cost(player, sec_id, base_cost) or base_cost
 	return player.energy_used + energy_cost <= player.max_energy
@@ -156,7 +156,7 @@ function common.handle_ability(player)
 
 	-- Block ability when insufficient energy (no cooldown queue needed)
 	local sec_id = weapon_sync.get_slot_secondary(player, slot)
-	if not has_throw_energy(player, spec, sec_id) then
+	if not common.has_throw_energy(player, spec, sec_id) then
 		local current_energy = player.max_energy - player.energy_used
 		Effects.create_energy_text(player.x, player.y, current_energy)
 		player.energy_flash_requested = true
@@ -164,7 +164,7 @@ function common.handle_ability(player)
 	end
 
 	if player.throw_cooldown <= 0 then
-		if try_use_throw_stamina(player, spec) then
+		if common.try_use_throw_stamina(player, spec) then
 			player.active_ability_slot = slot
 			player:set_state(player.states.throw)
 		end
@@ -590,8 +590,8 @@ local function try_queued_combat_action(player)
 		local spec = weapon_sync.get_secondary_spec(player, queued_slot)
 		local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
 		if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
-		   and weapon_sync.has_throw_charges(player, queued_slot) and has_throw_energy(player, spec, sec_id) then
-			if try_use_throw_stamina(player, spec) then
+		   and weapon_sync.has_throw_charges(player, queued_slot) and common.has_throw_energy(player, spec, sec_id) then
+			if common.try_use_throw_stamina(player, spec) then
 				player.active_ability_slot = queued_slot
 				return player.states.throw
 			end

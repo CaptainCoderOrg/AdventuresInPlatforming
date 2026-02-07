@@ -47,7 +47,7 @@ function run.input(player)
 	player.run_state.previous_direction = new_direction
 
 	common.handle_weapon_swap(player)
-	common.handle_throw(player)
+	common.handle_ability(player)
 	common.handle_block(player)
 	common.handle_attack(player)
 	common.handle_dash(player)

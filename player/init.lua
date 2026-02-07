@@ -101,6 +101,7 @@ function Player.new()
 	self.journal = { awakening = "active" }  -- Quest journal entries (entry_id -> "active"|"complete")
 	self.journal_read = {}  -- Tracks which journal entries the player has viewed (entry_id -> true)
 	self.upgrade_tiers = {} -- Equipment upgrade tiers purchased (item_id -> tier_number)
+	self.deaths = 0             -- Total death count (persisted across reloads)
 	self.difficulty = "normal"  -- Difficulty setting ("normal" or "easy")
 
 	-- Position and velocity
@@ -177,9 +178,6 @@ function Player.new()
 	self.state = nil
 	self.states = states  -- Reference for state transitions
 
-	-- Active projectile spec (synced by weapon_sync from active_secondary)
-	self.projectile = nil
-
 	-- Footstep sound timing (shared across states that play footsteps)
 	self.footstep_cooldown = 0
 
@@ -237,12 +235,12 @@ function Player.new()
 
 	-- Centralized input queue for locked states (hit, throw, attack).
 	-- Inputs are queued during locked states and processed on state exit.
-	-- Attack/throw entries persist across state transitions until cooldown expires,
+	-- Attack/ability entries persist across state transitions until cooldown expires,
 	-- allowing check_cooldown_queues() to execute them in idle/run/air states.
 	self.input_queue = {
 		jump = false,
 		attack = false,
-		throw = false
+		ability = false
 	}
 
 	-- Register with collision system
@@ -257,27 +255,10 @@ function Player.new()
 	return self
 end
 
---- Returns whether a projectile type is unlocked (legacy check based on ability flags).
----@param proj table Projectile definition
----@return boolean True if unlocked
-function Player:is_projectile_unlocked(proj)
-	if proj.name == "Axe" then return self.has_axe end
-	if proj.name == "Shuriken" then return self.has_shuriken end
-	return true  -- Unknown projectile types default to unlocked
-end
-
 --- Cycles to the next equipped secondary ability.
---- Uses the active_secondary system from weapon_sync.
---- Updates self.projectile to maintain compatibility with throw state.
 ---@return string|nil name The new active secondary's display name, or nil if not switched
-function Player:next_projectile()
-	local name = weapon_sync.cycle_secondary(self)
-	-- Keep legacy projectile reference in sync
-	local spec = weapon_sync.get_secondary_spec(self)
-	if spec then
-		self.projectile = spec
-	end
-	return name
+function Player:next_secondary()
+	return weapon_sync.cycle_secondary(self)
 end
 
 --- Returns whether player is currently invincible (post-hit immunity frames).
@@ -452,7 +433,7 @@ end
 function Player:input()
 	self.state.input(self)
 	if controls.swap_ability_pressed() then
-		local name = self:next_projectile()
+		local name = self:next_secondary()
 		if name then
 			audio.play_swap_sound()
 			Effects.create_text(self.x, self.y, name)

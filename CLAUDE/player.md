@@ -36,13 +36,13 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 | Hammer | `has_hammer` | `handle_hammer()` |
 | Shield/Block | `has_shield` | `handle_block()` |
 | Dash | `can_dash` | `handle_dash()` |
-| Axe Throw | `has_axe` | `is_projectile_unlocked()` |
-| Shuriken | `has_shuriken` | `is_projectile_unlocked()` |
+| Axe Throw | `has_axe` | `weapon_sync.is_secondary_unlocked()` |
+| Shuriken | `has_shuriken` | `weapon_sync.is_secondary_unlocked()` |
 
 **Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
 
 **Secondary Items:** Up to 4 secondary items can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT. Secondaries come in two types:
-- **Throwable** (e.g., throwing axe, shuriken): Press ability to launch a projectile. When no throwable is active, `player.projectile` is nil and throw inputs are silently ignored.
+- **Throwable** (e.g., throwing axe, shuriken): Press ability to launch a projectile. `weapon_sync.get_secondary_spec(player)` returns the projectile spec, or nil for non-throwable secondaries.
 - **Channeled** (e.g., minor healing): Hold ability to continuously activate. Channeling logic in `player/heal_channel.lua` runs each frame during `Player:update()`.
 
 **Charge System:** Some secondaries (e.g., throwing axe) have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges()`, `consume_charge()`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest. Non-charge secondaries (e.g., shuriken) are unaffected.

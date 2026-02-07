@@ -12,18 +12,19 @@ local THROW_COOLDOWN = 0.2
 --- Called when entering throw state. Creates projectile and clears input queue.
 ---@param player table The player object
 function throw.start(player)
-	-- Defensive guard: if no projectile equipped, return to idle
-	if not player.projectile then
+	-- Get spec from weapon_sync (single source of truth)
+	local spec = weapon_sync.get_secondary_spec(player)
+	if not spec then
 		player:set_state(player.states.idle)
 		return
 	end
 	-- Consume energy based on projectile's cost (clamp to max in case of race)
-	local energy_cost = player.projectile.energy_cost or 1
+	local energy_cost = spec.energy_cost or 1
 	player.energy_used = math.min(player.energy_used + energy_cost, player.max_energy)
 	weapon_sync.consume_charge(player)
 	player.animation = Animation.new(common.animations.THROW)
 	player.throw_state.remaining_time = (common.animations.THROW.frame_count * common.animations.THROW.ms_per_frame) / 1000
-	player.projectile.create(player.x, player.y, player.direction, player)
+	spec.create(player.x, player.y, player.direction, player)
 	common.clear_input_queue(player)
 end
 

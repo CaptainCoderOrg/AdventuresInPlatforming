@@ -229,6 +229,19 @@ function weapon_sync.get_secondary_spec(player)
     return nil
 end
 
+--- Returns whether the active secondary ability is unlocked.
+--- Throwable secondaries check has_axe/has_shuriken flags.
+--- Non-throwable secondaries (e.g., minor_healing) are always unlocked (gated by equip logic).
+---@param player table The player object
+---@return boolean True if the active secondary is unlocked
+function weapon_sync.is_secondary_unlocked(player)
+    local secondary_id = weapon_sync.get_active_secondary(player)
+    if not secondary_id then return false end
+    if secondary_id == "throwing_axe" then return player.has_axe end
+    if secondary_id == "shuriken" then return player.has_shuriken end
+    return true
+end
+
 --- Returns the charge definition and runtime state for an item, or nil if not charge-based.
 ---@param player table The player object
 ---@param item_id string|nil Item ID to look up
@@ -359,13 +372,6 @@ function weapon_sync.sync(player)
         end
     end
 
-    -- Keep legacy projectile reference in sync with active_secondary
-    local spec = weapon_sync.get_secondary_spec(player)
-    if spec then
-        player.projectile = spec
-    else
-        player.projectile = nil
-    end
 end
 
 return weapon_sync

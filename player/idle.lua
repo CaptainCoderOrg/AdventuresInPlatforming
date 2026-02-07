@@ -28,7 +28,7 @@ function idle.input(player)
 		player:set_state(player.states.run)
 	end
 	common.handle_weapon_swap(player)
-	common.handle_throw(player)
+	common.handle_ability(player)
 	common.handle_block(player)
 	common.handle_attack(player)
 	common.handle_dash(player)

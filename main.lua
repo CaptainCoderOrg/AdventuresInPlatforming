@@ -399,6 +399,15 @@ local function update(dt)
     -- (was_dead prevents retriggering each frame while dead)
     if player.is_dead and not was_dead then
         was_dead = true
+        -- Increment death count and preserve playtime so they aren't lost on reload
+        player.deaths = (player.deaths or 0) + 1
+        if active_slot then
+            local save_data = SaveSlots.get(active_slot)
+            if save_data then
+                save_data.playtime = Playtime.get()
+                SaveSlots.set(active_slot, save_data)
+            end
+        end
         hud.show_game_over()
     end
 end

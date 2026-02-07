@@ -582,7 +582,7 @@ Projectiles only collide with solid world geometry (walls, platforms, slopes). F
 
 - Player can toggle between projectile types (0 key or Gamepad SELECT)
 - Available: `Projectile.get_axe()`, `Projectile.get_shuriken()`
-- Current projectile stored in `player.projectile`
+- Current projectile spec retrieved via `weapon_sync.get_secondary_spec(player)`
 
 ### Current Projectiles
 

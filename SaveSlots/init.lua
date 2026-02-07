@@ -140,6 +140,7 @@ SaveSlots.PLAYER_STAT_KEYS = {
     "journal_read",
     "upgrade_tiers",
     "difficulty",
+    "deaths",
 }
 
 --- Transient state preserved during level transitions but reset at campfires

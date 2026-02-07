@@ -1325,6 +1325,11 @@ function rest_screen.update(dt, block_mouse)
     elseif state == STATE.RELOADING then
         fade_progress = fade_progress + dt / RELOAD_PAUSE
         if fade_progress >= 1 then
+            -- Save player stats before reloading to persist equipment changes made during rest
+            -- (fast travel already saves with destination coords in execute_fast_travel)
+            if not is_fast_traveling then
+                save_player_stats()
+            end
             if continue_callback then
                 continue_callback()
             end

@@ -74,22 +74,22 @@ common.animations = {
 	REST = Animation.create_definition(sprites.player.rest, 1, { ms_per_frame = 1000, loop = false }),
 }
 
---- Attempts to consume throw stamina cost from the player's current projectile.
+--- Attempts to consume throw stamina cost from the given projectile spec.
 --- Returns true if no cost required or if stamina was successfully consumed.
---- Precondition: player.projectile must be non-nil (caller must guard).
 ---@param player table The player object
+---@param spec table The projectile spec
 ---@return boolean True if throw is allowed (no cost or stamina consumed)
-local function try_use_throw_stamina(player)
-	local stamina_cost = player.projectile.stamina_cost or 0
+local function try_use_throw_stamina(player, spec)
+	local stamina_cost = spec.stamina_cost or 0
 	return stamina_cost == 0 or player:use_stamina(stamina_cost)
 end
 
---- Checks if the player has enough energy for the current projectile's energy cost.
---- Precondition: player.projectile must be non-nil (caller must guard).
+--- Checks if the player has enough energy for the given projectile's energy cost.
 ---@param player table The player object
+---@param spec table The projectile spec
 ---@return boolean True if player has sufficient energy to throw
-local function has_throw_energy(player)
-	local energy_cost = player.projectile.energy_cost or 1
+local function has_throw_energy(player, spec)
+	local energy_cost = spec.energy_cost or 1
 	return player.energy_used + energy_cost <= player.max_energy
 end
 
@@ -132,16 +132,17 @@ function common.handle_weapon_swap(player)
 	end
 end
 
---- Checks for throw input and transitions to throw state or queues if on cooldown.
---- Requires the current projectile type to be unlocked.
---- Requires sufficient energy and stamina (based on projectile costs) to throw.
+--- Checks for ability input and transitions to throw state or queues if on cooldown.
+--- Queries weapon_sync for the active secondary's projectile spec.
+--- Non-projectile secondaries (e.g., minor_healing) return nil spec and are skipped here.
 ---@param player table The player object
-function common.handle_throw(player)
+function common.handle_ability(player)
 	if not controls.ability_pressed() then return end
 
-	-- Block throw if no projectile equipped or current projectile type is locked
-	if not player.projectile then return end
-	if not player:is_projectile_unlocked(player.projectile) then return end
+	-- Get projectile spec from active secondary (nil for non-projectile abilities)
+	local spec = weapon_sync.get_secondary_spec(player)
+	if not spec then return end
+	if not weapon_sync.is_secondary_unlocked(player) then return end
 
 	-- Block throw when no charges available
 	if not weapon_sync.has_throw_charges(player) then
@@ -150,7 +151,7 @@ function common.handle_throw(player)
 	end
 
 	-- Block throw entirely when insufficient energy (no cooldown queue needed)
-	if not has_throw_energy(player) then
+	if not has_throw_energy(player, spec) then
 		local current_energy = player.max_energy - player.energy_used
 		Effects.create_energy_text(player.x, player.y, current_energy)
 		player.energy_flash_requested = true
@@ -158,11 +159,11 @@ function common.handle_throw(player)
 	end
 
 	if player.throw_cooldown <= 0 then
-		if try_use_throw_stamina(player) then
+		if try_use_throw_stamina(player, spec) then
 			player:set_state(player.states.throw)
 		end
 	else
-		common.queue_input(player, "throw")
+		common.queue_input(player, "ability")
 	end
 end
 
@@ -526,7 +527,7 @@ end
 
 --- Queues an input for later execution.
 ---@param player table The player object
----@param input_name string The input to queue ("jump", "attack", or "throw")
+---@param input_name string The input to queue ("jump", "attack", or "ability")
 function common.queue_input(player, input_name)
 	player.input_queue[input_name] = true
 end
@@ -536,7 +537,7 @@ end
 function common.clear_input_queue(player)
 	player.input_queue.jump = false
 	player.input_queue.attack = false
-	player.input_queue.throw = false
+	player.input_queue.ability = false
 end
 
 --- Transitions to a state, restarting if already in that state.
@@ -552,7 +553,7 @@ local function transition_or_restart(player, state)
 	end
 end
 
---- Attempts to process queued attack or throw input.
+--- Attempts to process queued attack or ability input.
 --- Clears queue entry when cooldown ready, returns target state on successful stamina use.
 ---@param player table The player object
 ---@return table|nil Target state if action succeeded, nil otherwise
@@ -568,12 +569,12 @@ local function try_queued_combat_action(player)
 			end
 		end
 	end
-	if player.input_queue.throw and player.throw_cooldown <= 0 then
-		player.input_queue.throw = false
-		-- Check projectile equipped, unlock and energy before attempting throw
-		if player.projectile and player:is_projectile_unlocked(player.projectile)
-		   and weapon_sync.has_throw_charges(player) and has_throw_energy(player) then
-			if try_use_throw_stamina(player) then
+	if player.input_queue.ability and player.throw_cooldown <= 0 then
+		player.input_queue.ability = false
+		local spec = weapon_sync.get_secondary_spec(player)
+		if spec and weapon_sync.is_secondary_unlocked(player)
+		   and weapon_sync.has_throw_charges(player) and has_throw_energy(player, spec) then
+			if try_use_throw_stamina(player, spec) then
 				return player.states.throw
 			end
 		end
@@ -581,7 +582,7 @@ local function try_queued_combat_action(player)
 	return nil
 end
 
---- Processes queued inputs with priority (attack > throw > jump).
+--- Processes queued inputs with priority (attack > ability > jump).
 --- Called when exiting locked states (throw, hammer, hit) to chain actions.
 --- Respects cooldowns and resource costs. Queued actions are cleared once cooldown
 --- is ready, regardless of stamina availability, to prevent infinite retry loops.
@@ -616,12 +617,12 @@ function common.queue_inputs(player)
 		common.queue_input(player, "attack")
 	end
 	if controls.ability_pressed() then
-		common.queue_input(player, "throw")
+		common.queue_input(player, "ability")
 	end
 end
 
---- Checks for queued attack or throw that were waiting on cooldown.
---- Also checks stamina for attack and energy/stamina for throw.
+--- Checks for queued attack or ability that were waiting on cooldown.
+--- Also checks stamina for attack and energy/stamina for ability.
 --- Call this in input() of states that allow attacking/throwing (idle, run, air).
 ---@param player table The player object
 ---@return boolean True if a state transition occurred

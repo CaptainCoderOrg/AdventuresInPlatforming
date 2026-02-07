@@ -178,15 +178,15 @@ function attack.input(player)
 	end
 	if controls.attack_pressed() then
 		player.attack_state.queued = true
-		-- Clear jump/throw queues when combo is queued (combo takes priority)
+		-- Clear jump/ability queues when combo is queued (combo takes priority)
 		player.input_queue.jump = false
-		player.input_queue.throw = false
+		player.input_queue.ability = false
 	end
 	if controls.jump_pressed() then
 		common.queue_input(player, "jump")
 	end
 	if controls.ability_pressed() then
-		common.queue_input(player, "throw")
+		common.queue_input(player, "ability")
 	end
 
 	if can_cancel(player) then
@@ -197,10 +197,12 @@ function attack.input(player)
 			player:set_state(player.states.air)
 			return
 		end
-		-- Check projectile, unlock, charges, energy and stamina inline since we're bypassing handle_throw for queued input
-		if not combo_queued and player.input_queue.throw and player.projectile and player:is_projectile_unlocked(player.projectile)
-		   and weapon_sync.has_throw_charges(player) and player.energy_used < player.max_energy then
-			local throw_stamina = player.projectile.stamina_cost or 0
+		-- Check secondary spec, unlock, charges, energy and stamina inline since we're bypassing handle_ability for queued input
+		local spec = weapon_sync.get_secondary_spec(player)
+		if not combo_queued and player.input_queue.ability and spec and weapon_sync.is_secondary_unlocked(player)
+		   and weapon_sync.has_throw_charges(player)
+		   and player.energy_used + (spec.energy_cost or 1) <= player.max_energy then
+			local throw_stamina = spec.stamina_cost or 0
 			if throw_stamina == 0 or player:use_stamina(throw_stamina) then
 				player.attack_cooldown = ATTACK_COOLDOWN
 				player:set_state(player.states.throw)

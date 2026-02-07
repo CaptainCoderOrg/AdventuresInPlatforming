@@ -89,11 +89,12 @@ local STAT_DESCRIPTIONS = {
     Recovery = "Increases the rate at which stamina regenerates.",
     Critical = "Chance to deal extra damage with each attack.",
     ["Required XP"] = "Experience required for next level.",
+    Deaths = "Number of times you have been defeated.",
     Time = "Total time spent playing this save file.",
 }
 
--- Must match the number of rows emitted by build_stats_rows (11 stat rows + 2 blank separators)
-local STATS_ROW_COUNT = 13
+-- Must match the number of rows emitted by build_stats_rows (12 stat rows + 2 blank separators)
+local STATS_ROW_COUNT = 14
 
 --- Get suffix for levelable stats (shows point increase)
 ---@param panel table The status_panel instance
@@ -149,7 +150,7 @@ function status_panel.create(opts)
         self._cached_rows[i] = {}
     end
     self._selectable_pool = {}
-    for i = 1, 11 do  -- Max 11 selectable rows (all non-blank rows)
+    for i = 1, 12 do  -- Max 12 selectable rows (all non-blank rows)
         self._selectable_pool[i] = { label = nil, visual_index = nil }
     end
 
@@ -477,13 +478,21 @@ function status_panel:build_stats_rows()
     rows[12].value_color = nil
     rows[12].monospace = nil
 
-    -- Row 13: Time
-    rows[13].label = "Time"
-    rows[13].value = SaveSlots.format_playtime(Playtime.get())
+    -- Row 13: Deaths
+    rows[13].label = "Deaths"
+    rows[13].value = tostring(player.deaths or 0)
     rows[13].suffix = nil
     rows[13].suffix_color = nil
     rows[13].value_color = nil
-    rows[13].monospace = true
+    rows[13].monospace = nil
+
+    -- Row 14: Time
+    rows[14].label = "Time"
+    rows[14].value = SaveSlots.format_playtime(Playtime.get())
+    rows[14].suffix = nil
+    rows[14].suffix_color = nil
+    rows[14].value_color = nil
+    rows[14].monospace = true
 
     return rows
 end

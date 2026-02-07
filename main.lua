@@ -44,6 +44,8 @@ Enemy.register("zombie", require("Enemies/zombie"))
 Enemy.register("ghost_painting", require("Enemies/ghost_painting"))
 local magician_def = require("Enemies/magician")
 Enemy.register("magician", magician_def)
+Enemy.register("magician_blue", require("Enemies/magician_blue"))
+Enemy.register("magician_purple", require("Enemies/magician_purple"))
 Enemy.register("guardian", require("Enemies/guardian"))
 Enemy.register("flaming_skull", require("Enemies/flaming_skull"))
 Enemy.register("blue_slime", require("Enemies/blue_slime"))
@@ -97,6 +99,7 @@ local levels = {
     shop = tilemap_registry.shop,
     adepts_house = tilemap_registry.adepts_house,
     dungeon = tilemap_registry.dungeon,
+    viking_lair = tilemap_registry.viking_lair,
 }
 
 -- Preload assets for all Tiled levels to ensure they're available during transitions
@@ -535,7 +538,13 @@ init_level = function(level, spawn_override, player_data, options)
     end
 
     Prop.clear()
+    -- Resolve level name for prop warning messages
+    local level_name
+    for name, lvl in pairs(levels) do
+        if lvl == level then level_name = name; break end
+    end
     for _, prop_data in ipairs(level_info.props) do
+        prop_data.map = level_name
         local prop_def = Prop.types[prop_data.type]
         -- Props spawn by default; only skip if should_spawn explicitly returns false
         local spawn_check = prop_def and prop_def.should_spawn
@@ -547,6 +556,21 @@ init_level = function(level, spawn_override, player_data, options)
     -- Restore persistent prop states from save data
     if player_data and player_data.prop_states then
         Prop.restore_persistent_states(player_data.prop_states)
+    end
+
+    -- Resolve spawn position from campfire's current map location (handles moved campfires)
+    if player_data and player_data.campfire_name then
+        local found = false
+        for prop in pairs(Prop.all) do
+            if prop.type_key == "campfire" and prop.name == player_data.campfire_name then
+                player:set_position(prop.x, prop.y)
+                found = true
+                break
+            end
+        end
+        if not found and level_info.spawn then
+            player:set_position(level_info.spawn.x, level_info.spawn.y)
+        end
     end
 
     -- Build minimap after props are spawned (campfires are cached during build)

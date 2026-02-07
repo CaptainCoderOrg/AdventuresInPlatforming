@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 12,
+  tilecount = 14,
   tiles = {
     {
       id = 0,
@@ -163,6 +163,30 @@ return {
         ["type"] = "enemy"
       },
       image = "../assets/sprites/enemies/gnomo/gnomo.png",
+      x = 0,
+      y = 0,
+      width = 16,
+      height = 16
+    },
+    {
+      id = 12,
+      properties = {
+        ["key"] = "magician_blue",
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/magician/magician_blue.png",
+      x = 0,
+      y = 0,
+      width = 16,
+      height = 16
+    },
+    {
+      id = 13,
+      properties = {
+        ["key"] = "magician_purple",
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/magician/magician_puprle.png",
       x = 0,
       y = 0,
       width = 16,

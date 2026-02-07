@@ -193,7 +193,6 @@ function GnomoAxe.spawn_with_velocity(x, y, vx, vy)
 		debug_color = "#FFFF00",  -- Yellow for projectile
 		wall_check_timer = 0,
 		no_gravity = true,        -- Straight line trajectory
-		ignore_bridges = true,    -- Pass through one-way platforms
 	}
 
 	world.add_trigger_collider(axe)
@@ -216,7 +215,7 @@ local function axe_hit_wall(axe)
 	shape:moveTo(px + axe.box.w * ts / 2, py + axe.box.h * ts / 2)
 
 	for other, _ in pairs(world.hc:collisions(shape)) do
-		if is_solid_geometry(other, axe.ignore_bridges) then
+		if is_solid_geometry(other, true) then
 			return true
 		end
 	end

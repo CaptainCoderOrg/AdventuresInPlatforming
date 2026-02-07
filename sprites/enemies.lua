@@ -47,6 +47,16 @@ local enemies = {
 		projectile = "magician_projectile",
 		projectile_hit = "magician_projectile_hit",
 	},
+	magician_blue = {
+		sheet = "magician_blue_sheet",
+		projectile = "magician_projectile_yellow",
+		projectile_hit = "magician_projectile_yellow_hit",
+	},
+	magician_purple = {
+		sheet = "magician_purple_sheet",
+		projectile = "magician_projectile_green",
+		projectile_hit = "magician_projectile_green_hit",
+	},
 	guardian = {
 		idle = "guardian_idle",
 		alert = "guardian_alert",
@@ -121,6 +131,14 @@ canvas.assets.load_image(enemies.ghost_painting.death, "sprites/enemies/ghost_pa
 canvas.assets.load_image(enemies.magician.sheet, "sprites/enemies/magician/magician_red.png")
 canvas.assets.load_image(enemies.magician.projectile, "sprites/enemies/magician/magician_projectile.png")
 canvas.assets.load_image(enemies.magician.projectile_hit, "sprites/enemies/magician/magician_projectile_hit.png")
+
+canvas.assets.load_image(enemies.magician_blue.sheet, "sprites/enemies/magician/magician_blue.png")
+canvas.assets.load_image(enemies.magician_blue.projectile, "sprites/enemies/magician/magician_projectile_yellow.png")
+canvas.assets.load_image(enemies.magician_blue.projectile_hit, "sprites/enemies/magician/magician_projectile_yellow_hit.png")
+
+canvas.assets.load_image(enemies.magician_purple.sheet, "sprites/enemies/magician/magician_purple.png")
+canvas.assets.load_image(enemies.magician_purple.projectile, "sprites/enemies/magician/magician_projectile_green.png")
+canvas.assets.load_image(enemies.magician_purple.projectile_hit, "sprites/enemies/magician/magician_projectile_green_hit.png")
 
 canvas.assets.load_image(enemies.guardian.idle, "sprites/enemies/guardian/guardian_idle.png")
 canvas.assets.load_image(enemies.guardian.alert, "sprites/enemies/guardian/guardian_alerted.png")

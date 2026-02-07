@@ -114,6 +114,8 @@ function common.has_line_of_sight(enemy)
 			if owner.is_enemy then goto continue end
 			-- Skip player
 			if owner.is_player then goto continue end
+			-- Skip one-way platforms (bridges)
+			if owner.is_bridge then goto continue end
 		end
 
 		-- Any other solid geometry blocks line of sight

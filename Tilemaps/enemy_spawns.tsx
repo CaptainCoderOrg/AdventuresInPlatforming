@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="12" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="14" columns="0">
  <editorsettings>
   <export target="enemy_spawns.lua" format="lua"/>
  </editorsettings>
@@ -102,5 +102,19 @@
    <property name="type" value="enemy"/>
   </properties>
   <image source="../assets/sprites/enemies/gnomo/gnomo.png" width="144" height="96"/>
+ </tile>
+ <tile id="12" x="0" y="0" width="16" height="16">
+  <properties>
+   <property name="key" value="magician_blue"/>
+   <property name="type" value="enemy"/>
+  </properties>
+  <image source="../assets/sprites/enemies/magician/magician_blue.png" width="176" height="80"/>
+ </tile>
+ <tile id="13" x="0" y="0" width="16" height="16">
+  <properties>
+   <property name="key" value="magician_purple"/>
+   <property name="type" value="enemy"/>
+  </properties>
+  <image source="../assets/sprites/enemies/magician/magician_puprle.png" width="176" height="80"/>
  </tile>
 </tileset>

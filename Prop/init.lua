@@ -59,13 +59,17 @@ end
 ---@param options table|nil Optional spawn parameters (callbacks, groups, etc.)
 ---@return table|nil prop The created prop instance or nil if type not found
 function Prop.spawn(type_key, x, y, options)
+    options = options or {}
     local definition = Prop.types[type_key]
     if not definition then
-        print("[Prop] Warning: Unknown prop type '" .. tostring(type_key) .. "'")
+        local tx = options.tiled_x or x
+        local ty = options.tiled_y or y
+        local loc = " at tiled (" .. tostring(tx) .. ", " .. tostring(ty) .. ")"
+        if options.tiled_id then loc = loc .. " id=" .. tostring(options.tiled_id) end
+        if options.map then loc = loc .. " in " .. tostring(options.map) end
+        print("[Prop] Warning: Unknown prop type '" .. tostring(type_key) .. "'" .. loc)
         return nil
     end
-
-    options = options or {}
 
     local prop = {
         id = state.next_id,

@@ -21,4 +21,6 @@ return {
     adepts_house = require("Tilemaps/adepts_house"),
     caves_tileset = require("Tilemaps/caves_tileset"),
     gnomo_boss = require("Tilemaps/gnomo_boss"),
+    viking_lair = require("Tilemaps/viking_lair"),
+    tombstones = require("Tilemaps/tombstones"),
 }

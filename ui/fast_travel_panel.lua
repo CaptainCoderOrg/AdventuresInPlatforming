@@ -24,6 +24,7 @@ local HEADER_HEIGHT = 14
 local LEVEL_DISPLAY_NAMES = {
     dungeon = "Gnomos Hideout",
     garden = "Garden",
+    viking_lair = "Valkyrie's Lair",
 }
 
 local active = false

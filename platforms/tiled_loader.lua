@@ -499,6 +499,9 @@ local function process_object_layer(layer, spawn, enemies, props, tile_size, off
 				y = py,
 				width = obj.width and obj.width / tile_size,
 				height = obj.height and obj.height / tile_size,
+				tiled_id = obj.id,
+				tiled_x = obj.x / tile_size,
+				tiled_y = obj.y / tile_size,
 			}
 			for k, v in pairs(merged_props) do
 				if k ~= "type" and k ~= "offset_x" and k ~= "offset_y" then

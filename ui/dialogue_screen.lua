@@ -309,7 +309,7 @@ function dialogue_screen.start(tree_id, player, camera, start_node)
 end
 
 --- Set a callback to invoke when dialogue closes (after fade-out)
----@param fn function|nil Callback receiving (player, camera) or nil to clear
+---@param fn fun(player: table, camera: table, original_camera_y: number)|nil Callback after fade-out, or nil to clear
 function dialogue_screen.set_on_close(fn)
     on_close_callback = fn
 end

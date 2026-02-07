@@ -144,6 +144,12 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/fast_travel_panel.lua` - Fast travel destination panel for rest screen
 - `ui/journal_panel.lua` - Quest journal panel for rest/pause screen
 - `ui/journal_toast.lua` - Toast notification for new journal entries
+- `ui/upgrade_screen.lua` - Equipment upgrade workshop UI (split-screen with NPC)
+
+### Upgrade
+- `upgrade/registry.lua` - Upgrade tier definitions (costs, materials, effects per item)
+- `upgrade/effects.lua` - Centralized stat lookups for upgrade bonuses (weapon damage, heal rate, recharge)
+- `upgrade/transactions.lua` - Purchase validation and execution for equipment upgrades
 
 ### Persistence
 - `SaveSlots/init.lua` - 3-slot save system

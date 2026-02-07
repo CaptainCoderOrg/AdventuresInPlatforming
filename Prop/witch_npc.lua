@@ -6,6 +6,7 @@ local common = require("Prop/common")
 local sprites = require("sprites")
 local dialogue_screen = require("ui/dialogue_screen")
 local pickup_dialogue = require("ui/pickup_dialogue")
+local upgrade_screen = require("ui/upgrade_screen")
 local npc_common = require("Prop/npc_common")
 
 local animation_def = Animation.create_definition(sprites.npcs.witch_merchant_idle, 10, {
@@ -54,7 +55,6 @@ return {
             -- Check for open_upgrades flag (keep_camera option held camera in place)
             if saved_player.dialogue_flags and saved_player.dialogue_flags.open_upgrades then
                 saved_player.dialogue_flags.open_upgrades = nil
-                local upgrade_screen = require("ui/upgrade_screen")
                 upgrade_screen.start(saved_player, saved_camera, saved_original_y)
             end
         end)
@@ -77,9 +77,7 @@ return {
         -- Cache player ref for interact() (npc_common refs may not be set yet)
         prop._player_ref = player
         local is_active = common.player_touching(prop, player)
-        local in_dialogue = dialogue_screen.is_active()
-        local upgrade_screen = require("ui/upgrade_screen")
-        local in_overlay = in_dialogue or upgrade_screen.is_active()
+        local in_overlay = dialogue_screen.is_active() or upgrade_screen.is_active()
         prop.text_display:update(dt, is_active and not in_overlay)
     end,
 

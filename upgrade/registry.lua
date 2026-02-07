@@ -46,11 +46,17 @@ registry.throwing_axe = {
 --- Stable display order for upgrade UI
 registry.DISPLAY_ORDER = { "sword", "minor_healing", "throwing_axe" }
 
+-- Lookup set built from DISPLAY_ORDER (prevents get() from returning non-upgrade keys)
+local VALID_ITEMS = {}
+for _, id in ipairs(registry.DISPLAY_ORDER) do
+    VALID_ITEMS[id] = true
+end
+
 --- Get upgrade definition for an item
 ---@param item_id string Item identifier
 ---@return table|nil Upgrade definition or nil if no upgrades exist
 function registry.get(item_id)
-    if item_id == "sword" or item_id == "minor_healing" or item_id == "throwing_axe" then
+    if VALID_ITEMS[item_id] then
         return registry[item_id]
     end
     return nil

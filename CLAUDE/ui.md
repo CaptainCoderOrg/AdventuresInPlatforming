@@ -17,11 +17,15 @@ All screens use identical states: `HIDDEN`, `FADING_IN`, `OPEN`, `FADING_OUT`
 
 ## Input Priority (highest to lowest)
 
-1. Audio/Controls dialogs
-2. Slot screen
-3. Title screen
-4. Game over screen
-5. Rest screen (includes pause mode)
+1. Audio/Controls/Settings dialogs
+2. Pickup dialogue
+3. Dialogue screen
+4. Shop screen
+5. Upgrade screen
+6. Pause toggle (ESC/START)
+7. Slot screen
+8. Title screen
+9. Game over / Rest screen
 
 ## Title Screen (`ui/title_screen.lua`)
 

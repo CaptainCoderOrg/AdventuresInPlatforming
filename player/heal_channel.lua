@@ -6,8 +6,6 @@ local upgrade_effects = require("upgrade/effects")
 
 local heal_channel = {}
 
--- 1:1 energy-to-health ratio: full heal costs entire energy bar
-local HEAL_RATE = 1
 local PARTICLE_INTERVAL = 1 / 60  -- One particle per frame at 60fps
 local MAX_PARTICLES_PER_FRAME = 5
 
@@ -77,8 +75,7 @@ function heal_channel.update(player, dt)
     end
 
     player._heal_channeling = true
-    local heal_rate = upgrade_effects.get_heal_rate(player)
-    local energy_ratio = upgrade_effects.get_energy_ratio(player)
+    local heal_rate, energy_ratio = upgrade_effects.get_heal_params(player)
     local heal_amount = heal_rate * dt
     local missing_health = player.max_health - current_health
     local max_from_energy = current_energy / energy_ratio

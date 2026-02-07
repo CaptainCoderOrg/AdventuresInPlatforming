@@ -84,12 +84,41 @@ local function refresh_items()
     end
 end
 
+--- Get current fade alpha based on state
+---@return number alpha 0.0 to 1.0
+local function get_alpha()
+    if state == STATE.FADING_IN then return fade_progress end
+    if state == STATE.OPEN then return 1 end
+    if state == STATE.FADING_OUT then return 1 - fade_progress end
+    return 0
+end
+
+--- Attempt to purchase the upgrade at the given index
+---@param index number Index into upgradeable_items
+local function try_purchase(index)
+    local entry = upgradeable_items[index]
+    if not entry then return end
+
+    local can_buy, reason = upgrade_transactions.can_purchase(player_ref, entry.id)
+    if can_buy then
+        local success, result = upgrade_transactions.purchase(player_ref, entry.id)
+        if success then
+            npc_message = result
+            message_reveal = 0
+            refresh_items()
+        end
+    else
+        npc_message = reason or "Cannot upgrade"
+        message_reveal = 0
+    end
+end
+
 --- Roman numeral helper (1-9)
 ---@param n number Integer 1-9
 ---@return string Roman numeral
+local ROMAN_NUMERALS = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" }
 local function to_roman(n)
-    local numerals = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX" }
-    return numerals[n] or tostring(n)
+    return ROMAN_NUMERALS[n] or tostring(n)
 end
 
 --- Draw close hint with ESC/B icon at bottom-right of box (call inside scaled context)
@@ -180,23 +209,7 @@ function upgrade_screen.input()
             selected_item = selected_item + 1
         end
     elseif controls.menu_confirm_pressed() then
-        -- Attempt purchase
-        if upgradeable_items[selected_item] then
-            local entry = upgradeable_items[selected_item]
-            local can_buy, reason = upgrade_transactions.can_purchase(player_ref, entry.id)
-
-            if can_buy then
-                local success, result = upgrade_transactions.purchase(player_ref, entry.id)
-                if success then
-                    npc_message = result
-                    message_reveal = 0
-                    refresh_items()
-                end
-            else
-                npc_message = reason or "Cannot upgrade"
-                message_reveal = 0
-            end
-        end
+        try_purchase(selected_item)
     elseif controls.menu_back_pressed() then
         close_screen()
     end
@@ -229,22 +242,7 @@ function upgrade_screen.update(dt)
                     selected_item = i
 
                     if canvas.is_mouse_pressed(0) then
-                        if upgradeable_items[selected_item] then
-                            local entry = upgradeable_items[selected_item]
-                            local can_buy, reason = upgrade_transactions.can_purchase(player_ref, entry.id)
-
-                            if can_buy then
-                                local success, result = upgrade_transactions.purchase(player_ref, entry.id)
-                                if success then
-                                    npc_message = result
-                                    message_reveal = 0
-                                    refresh_items()
-                                end
-                            else
-                                npc_message = reason or "Cannot upgrade"
-                                message_reveal = 0
-                            end
-                        end
+                        try_purchase(selected_item)
                     end
                     break
                 end
@@ -291,16 +289,7 @@ function upgrade_screen.draw()
     local scale = config.ui.SCALE
     local screen_w = canvas.get_width()
     local screen_h = canvas.get_height()
-
-    -- Calculate alpha
-    local alpha = 0
-    if state == STATE.FADING_IN then
-        alpha = fade_progress
-    elseif state == STATE.OPEN then
-        alpha = 1
-    elseif state == STATE.FADING_OUT then
-        alpha = 1 - fade_progress
-    end
+    local alpha = get_alpha()
 
     local map_view_height = MAP_VIEW_HEIGHT * scale
     local dialogue_area_y = map_view_height
@@ -311,7 +300,7 @@ function upgrade_screen.draw()
     canvas.set_fill_style("#000000")
     canvas.fill_rect(0, dialogue_area_y, screen_w, screen_h - dialogue_area_y)
 
-    if #upgradeable_items > 0 and alpha > 0 then
+    if alpha > 0 then
         canvas.save()
         canvas.scale(scale, scale)
 
@@ -322,147 +311,121 @@ function upgrade_screen.draw()
         local box_y = base_h - BOX_MARGIN_BOTTOM - BOX_HEIGHT
         local box_h = BOX_HEIGHT
 
-        -- Draw 9-slice background
         nine_slice.draw(slice, box_x, box_y, box_w, box_h)
 
-        -- Set up text rendering
         canvas.set_font_family("menu_font")
         canvas.set_font_size(FONT_SIZE)
         canvas.set_text_baseline("bottom")
 
-        local text_x = box_x + TEXT_PADDING_LEFT
-        local text_y = box_y + TEXT_PADDING_TOP
+        if #upgradeable_items > 0 then
+            local text_x = box_x + TEXT_PADDING_LEFT
+            local text_y = box_y + TEXT_PADDING_TOP
 
-        -- Draw title
-        canvas.set_color("#FFCC00")
-        canvas.draw_text(text_x, text_y + FONT_SIZE, "Zabarbra's Brewtique")
+            -- Draw title
+            canvas.set_color("#FFCC00")
+            canvas.draw_text(text_x, text_y + FONT_SIZE, "Zabarbra's Brewtique")
 
-        -- Draw gold amount
-        local gold_text = GOLD_LABEL .. tostring(player_ref and player_ref.gold or 0)
-        canvas.set_color("#FFD700")
-        canvas.set_text_align("right")
-        canvas.draw_text(box_x + box_w - TEXT_PADDING_RIGHT, text_y + FONT_SIZE, gold_text)
-        canvas.set_text_align("left")
-
-        -- Draw NPC message (typewriter reveal)
-        if npc_message then
-            local visible = string.sub(npc_message, 1, math.floor(message_reveal))
-            canvas.set_color("#AAAAAA")
-            canvas.draw_text(text_x, text_y + LINE_HEIGHT + FONT_SIZE, "\"" .. visible .. "\"")
-        end
-
-        -- Draw items (below NPC message area)
-        item_positions = {}
-        local item_y = text_y + LINE_HEIGHT * 2
-
-        for i, entry in ipairs(upgradeable_items) do
-            local draw_y = item_y + FONT_SIZE
-            local item_x = text_x + ITEM_INDENT
-
-            item_positions[i] = {
-                y = draw_y * scale,
-                x_start = (item_x + SELECTOR_OFFSET_X) * scale,
-                x_end = (box_x + box_w - TEXT_PADDING_RIGHT) * scale,
-            }
-
-            local item_def = unique_item_registry[entry.id]
-            local item_name = item_def and item_def.name or entry.id
-            local upgrade_def = entry.def
-            local current_tier = (player_ref.upgrade_tiers and player_ref.upgrade_tiers[entry.id]) or 0
-            local max_tier = #upgrade_def.tiers
-            local is_maxed = current_tier >= max_tier
-
-            local can_buy, reason = upgrade_transactions.can_purchase(player_ref, entry.id)
-
-            -- Draw selection indicator
-            if i == selected_item then
-                canvas.set_color("#FFCC00")
-                canvas.draw_text(item_x + SELECTOR_OFFSET_X, draw_y, SELECTOR_CHAR)
-            end
-
-            -- Build label: "Enchant Shortsword (I/III)"
-            local tier_text = to_roman(current_tier) .. "/" .. to_roman(max_tier)
-            local label = upgrade_def.label .. " " .. item_name .. " (" .. tier_text .. ")"
-
-            -- Color based on state
-            if is_maxed then
-                canvas.set_color("#888888")
-            elseif not can_buy then
-                if reason and reason:sub(1, 4) == "Need" then
-                    canvas.set_color("#AA5555")
-                else
-                    canvas.set_color("#AA5555")
-                end
-            elseif i == selected_item then
-                canvas.set_color("#FFFFFF")
-            else
-                canvas.set_color("#CCCCCC")
-            end
-
-            canvas.draw_text(item_x, draw_y, label)
-
-            -- Draw price
-            local price_text
-            if is_maxed then
-                price_text = "MAXED"
-            else
-                local next_tier = upgrade_def.tiers[current_tier + 1]
-                price_text = tostring(next_tier.gold) .. "g"
-            end
+            -- Draw gold amount
+            local gold_text = GOLD_LABEL .. tostring(player_ref and player_ref.gold or 0)
+            canvas.set_color("#FFD700")
             canvas.set_text_align("right")
-            canvas.draw_text(box_x + box_w - TEXT_PADDING_RIGHT, draw_y, price_text)
+            canvas.draw_text(box_x + box_w - TEXT_PADDING_RIGHT, text_y + FONT_SIZE, gold_text)
             canvas.set_text_align("left")
 
-            item_y = item_y + LINE_HEIGHT
-        end
+            -- Draw NPC message (typewriter reveal)
+            if npc_message then
+                local visible = string.sub(npc_message, 1, math.floor(message_reveal))
+                canvas.set_color("#AAAAAA")
+                canvas.draw_text(text_x, text_y + LINE_HEIGHT + FONT_SIZE, "\"" .. visible .. "\"")
+            end
 
-        -- Draw selected item description or material requirement
-        if upgradeable_items[selected_item] then
-            local entry = upgradeable_items[selected_item]
-            local current_tier = (player_ref.upgrade_tiers and player_ref.upgrade_tiers[entry.id]) or 0
-            local is_maxed = current_tier >= #entry.def.tiers
+            -- Draw items (below NPC message area)
+            item_positions = {}
+            local item_y = text_y + LINE_HEIGHT * 2
 
-            if not is_maxed then
-                local next_tier = entry.def.tiers[current_tier + 1]
-                local desc = entry.def.description
-                -- Show material requirement if present
-                if next_tier.material then
-                    local mat_def = unique_item_registry[next_tier.material]
-                    local mat_name = mat_def and mat_def.name or next_tier.material
-                    desc = desc .. " (Requires: " .. mat_name .. ")"
+            for i, entry in ipairs(upgradeable_items) do
+                local draw_y = item_y + FONT_SIZE
+                local item_x = text_x + ITEM_INDENT
+
+                item_positions[i] = {
+                    y = draw_y * scale,
+                    x_start = (item_x + SELECTOR_OFFSET_X) * scale,
+                    x_end = (box_x + box_w - TEXT_PADDING_RIGHT) * scale,
+                }
+
+                local item_def = unique_item_registry[entry.id]
+                local item_name = item_def and item_def.name or entry.id
+                local upgrade_def = entry.def
+                local current_tier = (player_ref.upgrade_tiers and player_ref.upgrade_tiers[entry.id]) or 0
+                local max_tier = #upgrade_def.tiers
+                local is_maxed = current_tier >= max_tier
+
+                local can_buy = upgrade_transactions.can_purchase(player_ref, entry.id)
+
+                -- Draw selection indicator
+                if i == selected_item then
+                    canvas.set_color("#FFCC00")
+                    canvas.draw_text(item_x + SELECTOR_OFFSET_X, draw_y, SELECTOR_CHAR)
                 end
-                if desc then
+
+                -- Build label: "Enchant Shortsword (I/III)"
+                local tier_text = to_roman(current_tier) .. "/" .. to_roman(max_tier)
+                local label = upgrade_def.label .. " " .. item_name .. " (" .. tier_text .. ")"
+
+                -- Color based on purchase state
+                if is_maxed then
+                    canvas.set_color("#888888")
+                elseif not can_buy then
+                    canvas.set_color("#AA5555")
+                elseif i == selected_item then
+                    canvas.set_color("#FFFFFF")
+                else
+                    canvas.set_color("#CCCCCC")
+                end
+
+                canvas.draw_text(item_x, draw_y, label)
+
+                -- Draw price
+                local price_text
+                if is_maxed then
+                    price_text = "MAXED"
+                else
+                    local next_tier = upgrade_def.tiers[current_tier + 1]
+                    price_text = tostring(next_tier.gold) .. "g"
+                end
+                canvas.set_text_align("right")
+                canvas.draw_text(box_x + box_w - TEXT_PADDING_RIGHT, draw_y, price_text)
+                canvas.set_text_align("left")
+
+                item_y = item_y + LINE_HEIGHT
+            end
+
+            -- Draw selected item description and material requirement
+            if upgradeable_items[selected_item] then
+                local entry = upgradeable_items[selected_item]
+                local current_tier = (player_ref.upgrade_tiers and player_ref.upgrade_tiers[entry.id]) or 0
+                local is_maxed = current_tier >= #entry.def.tiers
+
+                if not is_maxed then
+                    local next_tier = entry.def.tiers[current_tier + 1]
+                    local desc = entry.def.description
+                    if next_tier.material then
+                        local mat_def = unique_item_registry[next_tier.material]
+                        local mat_name = mat_def and mat_def.name or next_tier.material
+                        desc = desc .. " (Requires: " .. mat_name .. ")"
+                    end
                     canvas.set_color("#AAAAAA")
                     local desc_y = box_y + box_h - TEXT_PADDING_TOP - LINE_HEIGHT
                     canvas.draw_text(text_x, desc_y, desc)
                 end
             end
+        else
+            -- No upgradeable items
+            canvas.set_color("#AAAAAA")
+            canvas.set_text_align("center")
+            canvas.draw_text(box_x + box_w / 2, box_y + box_h / 2, "You have nothing I can work with.")
+            canvas.set_text_align("left")
         end
-
-        -- Draw close hint (bottom-right with icon)
-        draw_close_hint(box_x, box_w, box_y, box_h)
-
-        canvas.restore()
-    elseif alpha > 0 then
-        -- No upgradeable items
-        canvas.save()
-        canvas.scale(scale, scale)
-        local base_w = screen_w / scale
-        local base_h = screen_h / scale
-        local box_x = BOX_MARGIN_X
-        local box_w = base_w - BOX_MARGIN_X * 2
-        local box_y = base_h - BOX_MARGIN_BOTTOM - BOX_HEIGHT
-        local box_h = BOX_HEIGHT
-
-        nine_slice.draw(slice, box_x, box_y, box_w, box_h)
-
-        canvas.set_font_family("menu_font")
-        canvas.set_font_size(FONT_SIZE)
-        canvas.set_text_baseline("bottom")
-        canvas.set_color("#AAAAAA")
-        canvas.set_text_align("center")
-        canvas.draw_text(box_x + box_w / 2, box_y + box_h / 2, "You have nothing I can work with.")
-        canvas.set_text_align("left")
 
         draw_close_hint(box_x, box_w, box_y, box_h)
         canvas.restore()
@@ -476,20 +439,7 @@ end
 ---@return number offset_y Y offset in pixels (0 when not active)
 function upgrade_screen.get_camera_offset_y()
     if state == STATE.HIDDEN then return 0 end
-
-    local scale = config.ui.SCALE
-    local dialogue_area_height = DIALOGUE_AREA_HEIGHT * scale
-
-    local alpha = 0
-    if state == STATE.FADING_IN then
-        alpha = fade_progress
-    elseif state == STATE.OPEN then
-        alpha = 1
-    elseif state == STATE.FADING_OUT then
-        alpha = 1 - fade_progress
-    end
-
-    return dialogue_area_height * alpha
+    return DIALOGUE_AREA_HEIGHT * config.ui.SCALE * get_alpha()
 end
 
 return upgrade_screen

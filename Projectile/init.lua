@@ -6,6 +6,7 @@ local config = require('config')
 local Effects = require("Effects")
 local audio = require('audio')
 local prop_common = require('Prop.common')
+local upgrade_effects = require('upgrade/effects')
 
 local Projectile = {}
 
@@ -223,7 +224,6 @@ end
 ---@return table The created projectile instance
 function Projectile.create_axe(x, y, direction, owner)
     audio.play_axe_throw_sound()
-    local upgrade_effects = require("upgrade/effects")
     local damage = upgrade_effects.get_projectile_damage(owner, "throwing_axe", 1)
     return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, damage, owner)
 end

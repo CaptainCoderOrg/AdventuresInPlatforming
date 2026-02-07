@@ -54,6 +54,7 @@ Multi-slot save system using localStorage with 3 save slots.
     dialogue_flags = {},             -- Dialogue condition flags {flag_name -> true}
     journal = {},                    -- Quest journal entries {entry_id -> "active"|"complete"}
     journal_read = {},               -- Read tracking for journal unread indicators {entry_id -> true}
+    upgrade_tiers = {},              -- Equipment upgrade tiers purchased {item_id -> tier_number}
     difficulty = "normal",           -- Difficulty setting ("normal" or "easy")
 
     -- Prop persistence (cross-level)

@@ -35,7 +35,7 @@ local BUTTON_Y = 62
 local BUTTON_SPACING = 20
 
 -- Number of ability slots for secondary items
-local ABILITY_SLOT_COUNT = 4
+local ABILITY_SLOT_COUNT = controls.ABILITY_SLOT_COUNT
 
 -- State
 local state = STATE.HIDDEN
@@ -232,23 +232,6 @@ end
 
 --- Count equipped items of a specific type
 ---@param player table Player instance
----@param item_type string Equipment type to count
----@return number count
-local function count_equipped_by_type(player, item_type)
-    local count = 0
-    if player.equipped_items then
-        for item_id, equipped in pairs(player.equipped_items) do
-            if equipped then
-                local def = unique_item_registry[item_id]
-                if def and def.type == item_type then
-                    count = count + 1
-                end
-            end
-        end
-    end
-    return count
-end
-
 --- Equip the current item to the player
 --- Handles exclusive types (shields), secondary limits, and active weapon/secondary tracking
 ---@param player table Player instance

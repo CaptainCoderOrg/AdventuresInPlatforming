@@ -200,16 +200,18 @@ function attack.input(player)
 		end
 		-- Check secondary spec, unlock, charges, energy and stamina inline since we're bypassing handle_ability for queued input
 		local queued_slot = player.input_queue.ability_slot
-		local spec = weapon_sync.get_secondary_spec(player, queued_slot)
-		if not combo_queued and queued_slot and spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
-		   and weapon_sync.has_throw_charges(player, queued_slot)
-		   and player.energy_used + (spec.energy_cost or 1) <= player.max_energy then
-			local throw_stamina = spec.stamina_cost or 0
-			if throw_stamina == 0 or player:use_stamina(throw_stamina) then
-				player.active_ability_slot = queued_slot
-				player.attack_cooldown = ATTACK_COOLDOWN
-				player:set_state(player.states.throw)
-				return
+		if not combo_queued and queued_slot then
+			local spec = weapon_sync.get_secondary_spec(player, queued_slot)
+			if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
+			   and weapon_sync.has_throw_charges(player, queued_slot)
+			   and player.energy_used + (spec.energy_cost or 1) <= player.max_energy then
+				local throw_stamina = spec.stamina_cost or 0
+				if throw_stamina == 0 or player:use_stamina(throw_stamina) then
+					player.active_ability_slot = queued_slot
+					player.attack_cooldown = ATTACK_COOLDOWN
+					player:set_state(player.states.throw)
+					return
+				end
 			end
 		end
 		if not combo_queued and (controls.left_down() or controls.right_down()) then

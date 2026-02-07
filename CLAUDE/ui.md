@@ -193,25 +193,23 @@ widget:flash_energy()      -- Manually trigger energy bar flash
 
 ## Secondary Bar Widget (`ui/secondary_bar.lua`)
 
-- Bottom HUD widget showing all equipped secondary items (abilities)
-- Displays 1-4 secondary abilities in a horizontal bar with end caps
-- Selection highlight shows currently active secondary (via `player.active_secondary`)
-- Shows ability control icon on active secondary slot
-- Shows "Swap:" hint with control icon when multiple secondaries equipped
+- Bottom HUD widget showing 4 fixed ability slots in a horizontal bar with end caps
+- Each slot shows the assigned ability icon and per-slot keybind label via `control_icon`
+- Empty slots rendered at 30% alpha
+- Always renders (even with no abilities assigned)
 - Position calculated dynamically: 8px margin after resource meters, 1px from HUD top
 
 ```lua
 local widget = secondary_bar.create()
 widget:update(dt, player)  -- No-op (prepared for future animation)
-widget:draw(player)        -- Renders bar with equipped secondaries
+widget:draw(player)        -- Renders bar with 4 ability slots
 ```
 
 **Key Features:**
-- Uses `weapon_sync.get_equipped_secondaries()` to fetch all equipped secondaries
+- Reads directly from `player.ability_slots[1..4]` to display 4 fixed slots
 - Shows item icons from `unique_item_registry` (static_sprite or first frame of animated_sprite)
 - Scales with `config.ui.SCALE` (layout constants in 1x scale)
 - X position auto-calculated based on max(health, stamina, energy) meter width
-- Only renders when at least one secondary is equipped
 - Charge display for charge-based secondaries:
   - Grey-out (30% alpha) when all charges depleted
   - Charge count digit overlay (white when available, red when depleted)
@@ -274,10 +272,11 @@ panel:draw()                    -- Render stats text
 
 ## Inventory Grid (`ui/inventory_grid.lua`)
 
-- 5x5 grid for displaying collected unique items
+- 5x3 grid for displaying collected unique items
+- Items assigned to ability slots are excluded from the grid display
 - Supports mouse hover and keyboard/gamepad navigation
-- Equipment toggling with exclusive types (shield: 1 max, secondary: 4 max)
-- Auto-activates secondary when equipped (sets `player.active_secondary`)
+- Equipment toggling with exclusive types (shield: 1 max)
+- Secondary items delegate to ability slot assignment flow via `on_equip_secondary` callback
 - Integrated into status_panel for rest screen display
 
 ```lua
@@ -293,7 +292,7 @@ grid:draw()
 **Equipment Types:**
 - `shield` - Only one shield equipped at a time
 - `weapon` - Multiple weapons can be equipped (cycle with Swap Weapon key)
-- `secondary` - Up to 4 secondaries can be equipped (cycle with Swap Ability key, `player.active_secondary` tracks current)
+- `secondary` - Assigned to ability slots (1-4) via status_panel assignment flow
 - `accessory` - Any number of accessories can be equipped
 - `no_equip` - Cannot be equipped (e.g., keys)
 - `usable` - Triggers `on_use_item` callback instead of equipping (e.g., Orb of Teleportation)
@@ -310,9 +309,10 @@ grid:draw()
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
 - `ui/control_icon.lua` - Shared control icon rendering utility for HUD widgets
 - `ui/projectile_selector.lua` - Resource meters HUD widget (HP/SP/EP)
-- `ui/secondary_bar.lua` - Secondary abilities HUD widget (equipped throwables)
+- `ui/secondary_bar.lua` - Secondary abilities HUD widget (4 fixed ability slots)
 - `ui/status_panel.lua` - Player stats panel for rest screen
-- `ui/inventory_grid.lua` - 5x5 item grid component for status panel
+- `ui/ability_slots.lua` - Ability slot assignment component for status panel
+- `ui/inventory_grid.lua` - 5x3 item grid component for status panel
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
 - `ui/fast_travel_panel.lua` - Fast travel destination picker for rest screen
 - `ui/journal_panel.lua` - Quest journal panel with hierarchical entries and unread indicators

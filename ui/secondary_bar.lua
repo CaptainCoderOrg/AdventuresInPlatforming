@@ -2,6 +2,7 @@
 local canvas = require("canvas")
 local sprites = require("sprites")
 local config = require("config")
+local controls = require("controls")
 local weapon_sync = require("player.weapon_sync")
 local control_icon = require("ui.control_icon")
 local unique_item_registry = require("Prop.unique_item_registry")
@@ -11,7 +12,7 @@ local secondary_bar = {}
 secondary_bar.__index = secondary_bar
 
 -- Layout constants (sprite dimensions in 1x scale)
-local SLOT_COUNT = 4
+local SLOT_COUNT = controls.ABILITY_SLOT_COUNT
 local CONTAINER_WIDTH = 26    -- Width of each slot container
 local END_WIDTH = 7           -- Width of left/right end caps
 local ICON_SIZE = 16          -- Item icon size
@@ -34,7 +35,7 @@ local EMPTY_SLOT_ALPHA = 0.3   -- Alpha for empty slot containers
 local DIGIT_STR = { [0] = "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" }
 
 -- Ability action IDs per slot (for keybind display)
-local ABILITY_ACTION_IDS = { "ability_1", "ability_2", "ability_3", "ability_4" }
+local ABILITY_ACTION_IDS = controls.ABILITY_ACTION_IDS
 
 -- Position constants matching projectile_selector layout
 local SELECTOR_X = 8          -- projectile_selector x position
@@ -88,6 +89,7 @@ function secondary_bar.create()
     return self
 end
 
+--- Update the secondary bar (no-op, reserved for future animation)
 ---@param _dt number Delta time in seconds (unused, for API consistency)
 ---@param _player table Player instance (unused, for API consistency)
 ---@return nil

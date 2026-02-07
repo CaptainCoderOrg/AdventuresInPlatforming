@@ -17,6 +17,7 @@ Projectile.next_id = 1
 -- Module-level tables to avoid allocation each frame
 local to_remove = {}
 local lever_hitbox = { x = 0, y = 0, w = 0, h = 0 }
+local _projectile_hit_source = { damage = 0, vx = 0, is_crit = false }
 
 -- Debug color constant (avoid string allocation each frame)
 local DEBUG_COLOR_YELLOW = "#FFFF00"
@@ -33,34 +34,22 @@ Projectile.animations = {
     }),
 }
 
---- Returns the Axe projectile specification.
+-- Cached projectile specs (populated after create functions are defined below)
+local _axe_spec
+local _shuriken_spec
+
+--- Returns the cached Axe projectile specification.
 --- Axe has an arcing trajectory with gravity, costs 2 stamina and 0 energy to throw.
 ---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, energy_cost, create
 function Projectile.get_axe()
-    return {
-        name = "Axe",
-        sprite = sprites.projectiles.axe,
-        icon = sprites.projectiles.axe_icon,
-        damage = 1,
-        stamina_cost = 2,
-        energy_cost = 0,
-        create = Projectile.create_axe,
-    }
+    return _axe_spec
 end
 
---- Returns the Shuriken projectile specification.
+--- Returns the cached Shuriken projectile specification.
 --- Shuriken travels in a straight line with no gravity, costs no stamina and 1 energy.
 ---@return table Projectile spec with name, sprite, icon, damage, stamina_cost, energy_cost, create
 function Projectile.get_shuriken()
-    return {
-        name = "Shuriken",
-        sprite = sprites.projectiles.shuriken,
-        icon = sprites.projectiles.shuriken_icon,
-        damage = 2,
-        stamina_cost = 0,
-        energy_cost = 1,
-        create = Projectile.create_shuriken,
-    }
+    return _shuriken_spec
 end
 
 --- Check if projectile hits a lever using combat spatial index
@@ -166,7 +155,10 @@ function Projectile:on_collision(collision)
         -- Roll for critical hit if owner (player) exists (multiplier applied after armor by enemy)
         local crit_chance = self.owner and self.owner.critical_percent and self.owner:critical_percent() or 0
         local is_crit = math.random() * 100 < crit_chance
-        enemy:on_hit("projectile", { damage = self.damage, vx = self.vx, is_crit = is_crit })
+        _projectile_hit_source.damage = self.damage
+        _projectile_hit_source.vx = self.vx
+        _projectile_hit_source.is_crit = is_crit
+        enemy:on_hit("projectile", _projectile_hit_source)
     else
         audio.play_solid_sound()
     end
@@ -238,5 +230,25 @@ function Projectile.create_shuriken(x, y, direction, owner)
     audio.play_shuriken_throw_sound()
     return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, 2, owner)
 end
+
+-- Initialize cached projectile specs (after create functions are defined)
+_axe_spec = {
+    name = "Axe",
+    sprite = sprites.projectiles.axe,
+    icon = sprites.projectiles.axe_icon,
+    damage = 1,
+    stamina_cost = 2,
+    energy_cost = 0,
+    create = Projectile.create_axe,
+}
+_shuriken_spec = {
+    name = "Shuriken",
+    sprite = sprites.projectiles.shuriken,
+    icon = sprites.projectiles.shuriken_icon,
+    damage = 2,
+    stamina_cost = 0,
+    energy_cost = 1,
+    create = Projectile.create_shuriken,
+}
 
 return Projectile

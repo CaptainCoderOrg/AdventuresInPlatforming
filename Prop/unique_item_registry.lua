@@ -174,7 +174,7 @@ return {
     },
     orb_of_teleportation = {
         name = "Orb of Teleportation",
-        description = "A crystal ball imbued with magic allowing the user to teleport between previously visited campfires.",
+        description = "A crystal ball imbued with magic allowing the user to teleport between previously visited campfires. Use at a campfire to fast travel.",
         type = "usable",
         static_sprite = sprites.items.orb_of_teleportation,
     },

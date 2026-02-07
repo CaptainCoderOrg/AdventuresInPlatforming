@@ -28,4 +28,13 @@ function utils.draw_outlined_text(text, x, y, fill_color)
     canvas.draw_text(x, y, text)
 end
 
+--- Wrap a value within a range (1 to max, cycling)
+---@param value number Current value
+---@param delta number Change amount (-1 or 1)
+---@param max number Maximum value
+---@return number Wrapped value
+function utils.wrap(value, delta, max)
+    return ((value - 1 + delta) % max) + 1
+end
+
 return utils

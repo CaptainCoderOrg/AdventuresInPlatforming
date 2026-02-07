@@ -5,6 +5,7 @@ local controls = require("controls")
 local unique_item_registry = require("Prop.unique_item_registry")
 local stackable_item_registry = require("Prop.stackable_item_registry")
 local weapon_sync = require("player.weapon_sync")
+local utils = require("ui/utils")
 
 local inventory_grid = {}
 inventory_grid.__index = inventory_grid
@@ -102,7 +103,7 @@ end
 ---@return boolean
 function inventory_grid:is_in_ability_slot(item_id)
     if not self.player or not self.player.ability_slots then return false end
-    for i = 1, 4 do
+    for i = 1, controls.ABILITY_SLOT_COUNT do
         if self.player.ability_slots[i] == item_id then return true end
     end
     return false
@@ -219,7 +220,7 @@ function inventory_grid:toggle_equipped(item_id, is_stackable)
 
         -- For secondaries, also clear from ability_slots
         if item_type == "secondary" and self.player and self.player.ability_slots then
-            for i = 1, 4 do
+            for i = 1, controls.ABILITY_SLOT_COUNT do
                 if self.player.ability_slots[i] == item_id then
                     self.player.ability_slots[i] = nil
                 end
@@ -274,14 +275,7 @@ function inventory_grid:reset_selection()
     self.selected_row = 1
 end
 
---- Wrap a value within a range (1 to max, cycling)
----@param value number Current value
----@param delta number Change amount (-1 or 1)
----@param max number Maximum value
----@return number Wrapped value
-local function wrap(value, delta, max)
-    return ((value - 1 + delta) % max) + 1
-end
+local wrap = utils.wrap
 
 --- Handle keyboard/gamepad input
 ---@return boolean consumed True if input was consumed

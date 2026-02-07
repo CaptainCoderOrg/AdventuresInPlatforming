@@ -30,8 +30,8 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Blue boxes: Player shield collider
 - `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
-- `H` - Grant and equip Minor Healing ability (debug mode only)
-- `1`/`2` - Switch between level1/title music
+- `H` - Grant Minor Healing and assign to first empty ability slot (debug mode only)
+- `F1`/`F2` - Switch between level1/title music
 
 ## Architecture
 
@@ -79,10 +79,12 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 **Combat:**
 - Attack: Mouse Left / Gamepad WEST (combo)
-- Ability: Mouse Right / Gamepad NORTH (use secondary: throw or hold to channel)
-- Swap Weapon: E / Gamepad EAST (cycle equipped weapons)
+- Ability 1: Mouse Right / Gamepad NORTH
+- Ability 2: 2 / Gamepad EAST
+- Ability 3: 3 / Gamepad LB
+- Ability 4: 4 / Gamepad LT
+- Swap Weapon: E / Gamepad SELECT (cycle equipped weapons)
 - Block: Q / Gamepad RT (hold)
-- Swap Ability: Z / Gamepad SELECT (cycle equipped secondaries)
 
 **Interaction:**
 - Interact: Up Arrow / D-pad UP (rest at campfires, open chests, collect items, unlock doors)
@@ -136,8 +138,9 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/boss_health_bar.lua` - Boss encounter health bar with intro animation
 - `ui/title_screen.lua`, `ui/slot_screen.lua`, `ui/rest_screen.lua`
 - `ui/status_panel.lua` - Player stats and inventory panel
-- `ui/inventory_grid.lua` - 5x5 item grid with equipment management
-- `ui/secondary_bar.lua` - Secondary abilities HUD widget
+- `ui/inventory_grid.lua` - 5x3 item grid with equipment management
+- `ui/ability_slots.lua` - Ability slot assignment component for status panel
+- `ui/secondary_bar.lua` - Secondary abilities HUD widget (4 fixed ability slots)
 - `ui/pickup_dialogue.lua` - Equip/inventory dialogue for collectible items
 - `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen

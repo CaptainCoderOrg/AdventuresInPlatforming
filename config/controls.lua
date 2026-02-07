@@ -155,11 +155,18 @@ controls_config.mouse_display_names = {
     [controls_config.MOUSE_MIDDLE] = "Mouse M",
 }
 
+-- Lookup set for mouse button codes (avoids per-call string allocation)
+local _mouse_buttons = {
+    [controls_config.MOUSE_LEFT] = true,
+    [controls_config.MOUSE_RIGHT] = true,
+    [controls_config.MOUSE_MIDDLE] = true,
+}
+
 --- Check if a code is a mouse button
 ---@param code any Key or mouse code
 ---@return boolean
 function controls_config.is_mouse_button(code)
-    return type(code) == "string" and code:sub(1, 6) == "MOUSE_"
+    return _mouse_buttons[code] == true
 end
 
 --- Get display name for a key or mouse code

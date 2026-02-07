@@ -217,7 +217,7 @@ local function user_input()
                 player.equipped_items.minor_healing = true
                 -- Assign to first empty ability slot
                 if player.ability_slots then
-                    for i = 1, 4 do
+                    for i = 1, controls.ABILITY_SLOT_COUNT do
                         if not player.ability_slots[i] then
                             player.ability_slots[i] = "minor_healing"
                             break

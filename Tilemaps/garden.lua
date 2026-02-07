@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 85,
+  nextobjectid = 86,
   properties = {
     ["id"] = "garden"
   },
@@ -1589,6 +1589,20 @@ return {
           height = 8,
           rotation = 0,
           gid = 1307,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 85,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -560,
+          y = -416,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1304,
           visible = true,
           properties = {}
         }

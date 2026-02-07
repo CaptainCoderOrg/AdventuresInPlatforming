@@ -42,7 +42,7 @@ function heal_channel.update(player, dt)
     -- Find if any held ability slot has minor_healing
     local healing_held = false
     if in_allowed_state and player.ability_slots then
-        for slot = 1, 4 do
+        for slot = 1, controls.ABILITY_SLOT_COUNT do
             if controls.ability_down(slot) and player.ability_slots[slot] == "minor_healing" then
                 healing_held = true
                 break

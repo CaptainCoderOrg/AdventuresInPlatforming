@@ -247,6 +247,8 @@ end
 
 -- Ability slot action IDs (indexed 1-4)
 local ABILITY_ACTION_IDS = { "ability_1", "ability_2", "ability_3", "ability_4" }
+controls.ABILITY_ACTION_IDS = ABILITY_ACTION_IDS
+controls.ABILITY_SLOT_COUNT = #ABILITY_ACTION_IDS
 
 --- Check if a specific ability slot input was pressed this frame
 ---@param slot number Ability slot (1-4)
@@ -271,19 +273,8 @@ end
 --- Check if any ability slot was pressed this frame
 ---@return number|nil slot The first pressed slot (1-4), or nil if none
 function controls.any_ability_pressed()
-    for slot = 1, 4 do
+    for slot = 1, controls.ABILITY_SLOT_COUNT do
         if controls.ability_pressed(slot) then
-            return slot
-        end
-    end
-    return nil
-end
-
---- Check if any ability slot is currently held down
----@return number|nil slot The first held slot (1-4), or nil if none
-function controls.any_ability_down()
-    for slot = 1, 4 do
-        if controls.ability_down(slot) then
             return slot
         end
     end

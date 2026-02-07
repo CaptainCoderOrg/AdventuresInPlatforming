@@ -30,6 +30,9 @@ local MAX_STAT_LEVEL = 20
 -- Must match ROWS in inventory_grid (for navigating to ability slots)
 local INVENTORY_ROWS = 3
 
+-- Gap between inventory grid and ability slots
+local ABILITY_SLOTS_GAP = 4
+
 --- Generate a fibonacci-like cost table from two starting values
 ---@param a number First cost
 ---@param b number Second cost
@@ -149,13 +152,7 @@ function status_panel.create(opts)
     self.inventory = inventory_grid.create({ x = 0, y = 0 })
     self.ability_slots = ability_slots_component.create({ x = 0, y = 0 })
 
-    -- Wire secondary equip callback: inventory delegates to ability slot assignment
-    self.inventory.on_equip_secondary = function(item_id)
-        self.focus_area = "ability_slots"
-        self.ability_slots.active = true
-        self.inventory.active = false
-        self.ability_slots:begin_assign(item_id)
-    end
+    self:_wire_equip_secondary()
 
     -- Pre-allocate reusable tables to avoid per-frame allocations
     self._cached_rows = {}
@@ -170,6 +167,17 @@ function status_panel.create(opts)
     return self
 end
 
+--- Wire the on_equip_secondary callback to start ability slot assignment
+---@return nil
+function status_panel:_wire_equip_secondary()
+    self.inventory.on_equip_secondary = function(item_id)
+        self.focus_area = "ability_slots"
+        self.ability_slots.active = true
+        self.inventory.active = false
+        self.ability_slots:begin_assign(item_id)
+    end
+end
+
 --- Set the player reference for stats display
 ---@param player table|nil Player instance
 ---@return nil
@@ -181,13 +189,7 @@ function status_panel:set_player(player)
         self.inventory:set_items(player.unique_items)
         self.inventory:set_stackable(player.stackable_items)
         self.inventory.on_use_item = self.on_use_item
-        -- Re-wire on_equip_secondary callback (set_equipped resets inventory internals)
-        self.inventory.on_equip_secondary = function(item_id)
-            self.focus_area = "ability_slots"
-            self.ability_slots.active = true
-            self.inventory.active = false
-            self.ability_slots:begin_assign(item_id)
-        end
+        self:_wire_equip_secondary()
         -- Sync player ability flags with current equipment
         weapon_sync.sync(player)
     end
@@ -739,7 +741,7 @@ function status_panel:update(dt, local_mx, local_my, mouse_active)
 
     -- Update ability slots position and hover (below inventory)
     local slots_x = inv_x
-    local slots_y = inv_y + self.inventory:get_height() + 4
+    local slots_y = inv_y + self.inventory:get_height() + ABILITY_SLOTS_GAP
     self.ability_slots.x = slots_x
     self.ability_slots.y = slots_y
     self.ability_slots:update(dt, local_mx - slots_x, local_my - slots_y, mouse_active)
@@ -994,7 +996,7 @@ function status_panel:draw()
 
     -- Draw ability slots below inventory
     self.ability_slots.x = self.x + inv_x
-    self.ability_slots.y = self.y + inv_y + self.inventory:get_height() + 4
+    self.ability_slots.y = self.y + inv_y + self.inventory:get_height() + ABILITY_SLOTS_GAP
     self.ability_slots:draw()
 
     canvas.restore()

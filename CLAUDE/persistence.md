@@ -48,7 +48,7 @@ Multi-slot save system using localStorage with 3 save slots.
     stackable_items = {},            -- Consumable items with counts (item_id -> count)
     equipped_items = {},             -- Set of equipped item_ids {throwing_axe=true, ...}
     active_weapon = nil,             -- Currently active weapon item_id (for quick swap)
-    active_secondary = nil,          -- Currently active secondary item_id (for ability swap)
+    ability_slots = {},              -- 4 ability slots {item_id or nil, ...}
     visited_campfires = {},          -- Fast travel locations {level_id:name -> {name, level_id, x, y}}
     defeated_bosses = {},            -- Set of defeated boss ids {boss_id -> true}
     dialogue_flags = {},             -- Dialogue condition flags {flag_name -> true}

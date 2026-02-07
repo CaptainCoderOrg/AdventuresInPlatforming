@@ -41,11 +41,11 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 
 **Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
 
-**Secondary Items:** Up to 4 secondary items can be equipped simultaneously. `player.active_secondary` tracks which one is currently in use. Cycle with 0 key or Gamepad SELECT. Secondaries come in two types:
-- **Throwable** (e.g., throwing axe, shuriken): Press ability to launch a projectile. `weapon_sync.get_secondary_spec(player)` returns the projectile spec, or nil for non-throwable secondaries.
-- **Channeled** (e.g., minor healing): Hold ability to continuously activate. Channeling logic in `player/heal_channel.lua` runs each frame during `Player:update()`.
+**Secondary Items:** Up to 4 secondary items can be assigned to ability slots (`player.ability_slots[1..4]`). Each slot is bound to a dedicated key (`ability_1` through `ability_4`). `player.active_ability_slot` tracks which slot triggered the current throw/heal action. Secondaries come in two types:
+- **Throwable** (e.g., throwing axe, shuriken): Press the slot's ability key to launch a projectile. `weapon_sync.get_secondary_spec(player, slot)` returns the projectile spec, or nil for non-throwable secondaries.
+- **Channeled** (e.g., minor healing): Hold the slot's ability key to continuously activate. Channeling logic in `player/heal_channel.lua` loops all 4 slots each frame during `Player:update()`.
 
-**Charge System:** Some secondaries (e.g., throwing axe) have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges()`, `consume_charge()`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest. Non-charge secondaries (e.g., shuriken) are unaffected.
+**Charge System:** Some secondaries (e.g., throwing axe) have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges(player, slot)`, `consume_charge(player)`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest. Non-charge secondaries (e.g., shuriken) are unaffected.
 
 ## Combat System
 
@@ -59,7 +59,7 @@ Player combat abilities managed through state machine.
    - Hold window: 0.16s after animation for combo input
    - Cooldown: 0.2s between combo chains
    - **Weapon Switching**: `player/weapon_sync.lua` manages equipped weapon
-     - Cycle with 0 key or Gamepad SELECT
+     - Cycle with E key or Gamepad SELECT
      - `player.active_weapon` tracks currently selected weapon item_id
      - Stats flow from `unique_item_registry.lua` via `weapon_sync.get_weapon_stats()`
    - **Per-Weapon Stats** (from equipped weapon):
@@ -75,17 +75,15 @@ Player combat abilities managed through state machine.
    - Launches selected projectile on entry (Axe or Shuriken)
    - Can move horizontally during throw
    - Duration: animation length (7 frames, 33ms/frame)
-   - **Secondary Cycling System:**
-     - Up to 4 secondary items can be equipped simultaneously
-     - `player.active_secondary` tracks currently selected secondary item_id
-     - Cycle with 0 key or Gamepad SELECT via `weapon_sync.cycle_secondary()`
-     - Uses `weapon_sync.get_equipped_secondaries()` to fetch all equipped
-     - Uses `weapon_sync.get_active_secondary()` to get current selection
-     - Uses `weapon_sync.get_secondary_spec()` to get projectile definition
+   - **Ability Slot System:**
+     - 4 ability slots (`player.ability_slots[1..4]`) with dedicated keybindings
+     - `player.active_ability_slot` tracks which slot triggered the current throw
+     - Uses `weapon_sync.get_slot_secondary(player, slot)` for slot lookup
+     - Uses `weapon_sync.get_secondary_spec(player, slot)` for projectile definition
    - **Charge System:**
      - Some secondaries have limited charges (e.g., throwing axe: 2 charges, 2s recharge each)
-     - `weapon_sync.has_throw_charges(player)` gates throw attempts
-     - `weapon_sync.consume_charge(player)` called in `throw.start()`
+     - `weapon_sync.has_throw_charges(player, slot)` gates throw attempts
+     - `weapon_sync.consume_charge(player)` called in `throw.start()` (uses `player.active_ability_slot`)
      - `weapon_sync.update_charges(player, dt)` ticks recharge timers each frame
      - Shows "Cooldown" text when attempting throw with 0 charges
      - Charges reset at campfires (`rest.start()`)
@@ -120,7 +118,7 @@ Player combat abilities managed through state machine.
 
 Centralized input buffering for locked states (hit, throw, hammer, attack).
 
-- **Queue Storage**: `player.input_queue` tracks pending inputs (jump, attack, ability)
+- **Queue Storage**: `player.input_queue` tracks pending inputs (jump, attack, ability_slot)
 - **During Locked States**: `common.queue_inputs(player)` captures button presses
 - **On State Exit**: `common.process_input_queue(player)` executes queued actions
 - **Priority Order**: Attack > Ability > Jump
@@ -252,7 +250,8 @@ self.max_health = 3             -- Starting health
 self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
 self.active_weapon = nil        -- Currently equipped weapon item_id (synced via weapon_sync)
-self.active_secondary = nil     -- Currently active secondary item_id (for ability swap)
+self.ability_slots = { nil, nil, nil, nil }  -- 4 ability slots, each holds item_id or nil
+self.active_ability_slot = nil  -- Which slot (1-4) triggered current throw/heal
 self.attack_cooldown = 0        -- Countdown timer (attack)
 self.throw_cooldown = 0         -- Countdown timer (throw)
 self.level = 0                  -- Player level (sum of all stat upgrades)
@@ -280,7 +279,9 @@ self.block_state = {            -- Shield and perfect block tracking
     cooldown,                   -- Time until next perfect block allowed
 }
 self.input_queue = {            -- Centralized input buffering
-    jump, attack, ability       -- Boolean flags for pending inputs
+    jump,                       -- boolean
+    attack,                     -- boolean
+    ability_slot,               -- number (1-4) or nil
 }
 self.max_stamina = 3            -- Maximum stamina points
 self.stamina_used = 0           -- Consumed stamina (can exceed max for fatigue)

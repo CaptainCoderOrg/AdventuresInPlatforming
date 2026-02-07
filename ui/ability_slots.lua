@@ -4,12 +4,13 @@ local sprites = require("sprites")
 local controls = require("controls")
 local unique_item_registry = require("Prop.unique_item_registry")
 local control_icon = require("ui.control_icon")
+local utils = require("ui/utils")
 
 local ability_slots = {}
 ability_slots.__index = ability_slots
 
 -- Grid configuration
-local SLOT_COUNT = 4
+local SLOT_COUNT = controls.ABILITY_SLOT_COUNT
 local CELL_SIZE = 24
 local CELL_SPACING = 1
 local SELECTION_ALPHA = 0.3
@@ -29,7 +30,7 @@ local ASSIGN_HEADER_TEXT = "Assign to Slot"
 -- Keybind icon configuration
 local ICON_SIZE = 8
 local ICON_MARGIN = 2
-local ABILITY_ACTION_IDS = { "ability_1", "ability_2", "ability_3", "ability_4" }
+local ABILITY_ACTION_IDS = controls.ABILITY_ACTION_IDS
 
 --- Create a new ability slots component
 ---@param opts {x: number, y: number, player: table|nil}
@@ -100,6 +101,7 @@ function ability_slots:confirm_assign()
 end
 
 --- Cancel assignment mode
+---@return nil
 function ability_slots:cancel_assign()
     self.assigning = false
     self.assign_item_id = nil
@@ -116,18 +118,12 @@ function ability_slots:unequip_slot(slot)
 end
 
 --- Reset selection to first slot
+---@return nil
 function ability_slots:reset_selection()
     self.selected_slot = 1
 end
 
---- Wrap a value within a range (1 to max, cycling)
----@param value number Current value
----@param delta number Change amount (-1 or 1)
----@param max number Maximum value
----@return number Wrapped value
-local function wrap(value, delta, max)
-    return ((value - 1 + delta) % max) + 1
-end
+local wrap = utils.wrap
 
 --- Handle keyboard/gamepad input
 ---@return boolean consumed True if input was consumed
@@ -210,6 +206,7 @@ function ability_slots:get_effective_slot()
 end
 
 --- Draw the ability slots
+---@return nil
 function ability_slots:draw()
     local sprite = sprites.ui.inventory_cell
 

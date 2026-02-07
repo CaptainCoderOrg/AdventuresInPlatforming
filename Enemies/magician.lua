@@ -58,20 +58,20 @@ local SAFE_POSITION_ANGLES = { 0, math.pi, math.pi/2, -math.pi/2, math.pi/4, -ma
 local FLY_HEIGHTS = { -2, -1, 0, 1, 2 }
 
 magician.animations = {
-	IDLE = Animation.create_definition(sprites.enemies.magician.idle, 6, {
-		ms_per_frame = 120, width = 16, height = 16, loop = true
+	IDLE = Animation.create_definition(sprites.enemies.magician.sheet, 6, {
+		ms_per_frame = 120, width = 16, height = 16, loop = true, row = 1
 	}),
-	FLY = Animation.create_definition(sprites.enemies.magician.fly, 4, {
-		ms_per_frame = 100, width = 16, height = 16, loop = true
+	FLY = Animation.create_definition(sprites.enemies.magician.sheet, 4, {
+		ms_per_frame = 100, width = 16, height = 16, loop = true, row = 2
 	}),
-	ATTACK = Animation.create_definition(sprites.enemies.magician.attack, 11, {
-		ms_per_frame = 80, width = 16, height = 16, loop = false
+	ATTACK = Animation.create_definition(sprites.enemies.magician.sheet, 11, {
+		ms_per_frame = 80, width = 16, height = 16, loop = false, row = 0
 	}),
-	HIT = Animation.create_definition(sprites.enemies.magician.hit, 3, {
-		ms_per_frame = 60, width = 16, height = 16, loop = false
+	HIT = Animation.create_definition(sprites.enemies.magician.sheet, 3, {
+		ms_per_frame = 60, width = 16, height = 16, loop = false, row = 3
 	}),
-	DEATH = Animation.create_definition(sprites.enemies.magician.death, 6, {
-		ms_per_frame = 100, width = 16, height = 16, loop = false
+	DEATH = Animation.create_definition(sprites.enemies.magician.sheet, 6, {
+		ms_per_frame = 100, width = 16, height = 16, loop = false, row = 4
 	}),
 	BOLT = Animation.create_definition(sprites.enemies.magician.projectile, 4, {
 		ms_per_frame = 80, width = 6, height = 6, loop = true

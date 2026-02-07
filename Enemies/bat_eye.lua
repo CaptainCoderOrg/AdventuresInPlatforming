@@ -400,7 +400,7 @@ return {
 	box = { w = 0.5, h = 0.5, x = 0.25, y = 0.25 },  -- 8x8 centered hitbox
 	gravity = 0,  -- Flying enemy
 	max_fall_speed = 0,
-	max_health = 2,
+	max_health = 3,
 	damage = 2,
 	damages_shield = true,
 	death_sound = "ratto",  -- Reuse ratto death sound for now

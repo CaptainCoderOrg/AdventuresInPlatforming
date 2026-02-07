@@ -34,6 +34,14 @@ local definition = {
         prop.animation:pause()
         prop.is_pressed = false
         prop.on_press = options.on_press
+        -- Auto-wire from Tiled properties if no explicit callback
+        if not prop.on_press and options.target_group and options.target_action then
+            local group = options.target_group
+            local action = options.target_action
+            prop.on_press = function()
+                Prop.group_action(group, action)
+            end
+        end
     end,
 
     states = {

@@ -92,7 +92,12 @@ local definition = {
     --- Activates alternating mode with the configured offset.
     --- The offset is applied once to stagger this trap relative to others in the group.
     ---@param prop table The prop instance to configure
-    set_alternating = function(prop)
+    ---@param config table|nil Optional config from group_config (extend_time, retract_time)
+    set_alternating = function(prop, config)
+        if config then
+            if config.extend_time then prop.extend_time = config.extend_time end
+            if config.retract_time then prop.retract_time = config.retract_time end
+        end
         prop.mode = "alternating"
 
         -- Normalize offset to within a single cycle for predictable behavior

@@ -173,17 +173,11 @@ return {
     },
     {
       id = 13,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
+      type = "wall"
     },
     {
       id = 15,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
+      type = "wall"
     },
     {
       id = 17,
@@ -215,10 +209,7 @@ return {
     },
     {
       id = 23,
-      type = "wall",
-      properties = {
-        ["type"] = "wall"
-      }
+      type = "wall"
     },
     {
       id = 24,

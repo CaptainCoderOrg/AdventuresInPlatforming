@@ -119,12 +119,13 @@ function Prop.spawn(type_key, x, y, options)
         Prop.set_state(prop, definition.initial_state)
     end
 
-    if options.group then
-        prop.group = options.group
-        if not Prop.groups[options.group] then
-            Prop.groups[options.group] = {}
+    local group_name = options.group or options.group_id
+    if group_name then
+        prop.group = group_name
+        if not Prop.groups[group_name] then
+            Prop.groups[group_name] = {}
         end
-        table.insert(Prop.groups[options.group], prop)
+        table.insert(Prop.groups[group_name], prop)
     end
 
     Prop.all[prop] = true
@@ -406,6 +407,25 @@ function Prop.group_action(group_name, action, ...)
         elseif prop.definition[action] then
             prop.definition[action](prop, ...)
         end
+    end
+end
+
+--- Apply all group_config props: run their target action on the target group, then remove them.
+--- Called once after all props are spawned during level load.
+function Prop.apply_group_configs()
+    local to_destroy = {}
+    local prop = next(Prop.all)
+    while prop do
+        if prop.type_key == "group_config" and not prop.marked_for_destruction then
+            if prop.target_group and prop.target_action then
+                Prop.group_action(prop.target_group, prop.target_action, prop.action_config)
+            end
+            to_destroy[#to_destroy + 1] = prop
+        end
+        prop = next(Prop.all, prop)
+    end
+    for i = 1, #to_destroy do
+        to_destroy[i].marked_for_destruction = true
     end
 end
 

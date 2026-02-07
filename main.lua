@@ -85,6 +85,7 @@ Prop.register("explorer_npc", require("Prop/explorer_npc"))
 Prop.register("adept_npc", require("Prop/adept_npc"))
 Prop.register("interactable", require("Prop/interactable"))
 Prop.register("decoration", require("Prop/decoration"))
+Prop.register("group_config", require("Prop/group_config"))
 
 -- Levels
 local level1 = require("levels/level1")
@@ -552,6 +553,9 @@ init_level = function(level, spawn_override, player_data, options)
             Prop.spawn(prop_data.type, prop_data.x, prop_data.y, prop_data)
         end
     end
+
+    -- Apply group_config props (configure groups, then self-destruct)
+    Prop.apply_group_configs()
 
     -- Restore persistent prop states from save data
     if player_data and player_data.prop_states then

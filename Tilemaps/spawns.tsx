@@ -83,7 +83,8 @@
  </tile>
  <tile id="12">
   <properties>
-   <property name="type" value="speark_trap"/>
+   <property name="flip" type="bool" value="true"/>
+   <property name="type" value="spear_trap"/>
   </properties>
   <image source="objects/spear_trap.png" width="16" height="16"/>
  </tile>

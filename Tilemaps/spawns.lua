@@ -141,7 +141,8 @@ return {
     {
       id = 12,
       properties = {
-        ["type"] = "speark_trap"
+        ["flip"] = true,
+        ["type"] = "spear_trap"
       },
       image = "objects/spear_trap.png",
       width = 16,

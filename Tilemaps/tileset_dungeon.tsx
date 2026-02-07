@@ -49,16 +49,8 @@
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="13" type="wall">
-  <properties>
-   <property name="type" value="wall"/>
-  </properties>
- </tile>
- <tile id="15" type="wall">
-  <properties>
-   <property name="type" value="wall"/>
-  </properties>
- </tile>
+ <tile id="13" type="wall"/>
+ <tile id="15" type="wall"/>
  <tile id="17" type="bridge">
   <properties>
    <property name="type" value="bridge"/>
@@ -79,11 +71,7 @@
    <property name="type" value="wall"/>
   </properties>
  </tile>
- <tile id="23" type="wall">
-  <properties>
-   <property name="type" value="wall"/>
-  </properties>
- </tile>
+ <tile id="23" type="wall"/>
  <tile id="24" type="wall">
   <properties>
    <property name="type" value="wall"/>

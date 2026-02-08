@@ -28,7 +28,7 @@ local definition = {
 
     ---@param prop table The prop instance being spawned
     ---@param def table The button definition
-    ---@param options table Spawn options, may contain on_press callback
+    ---@param options table Spawn options: on_press, target_group, target_action, persist
     on_spawn = function(prop, def, options)
         prop.animation = Animation.new(BUTTON_ANIM)
         prop.animation:pause()
@@ -41,6 +41,10 @@ local definition = {
             prop.on_press = function()
                 Prop.group_action(group, action)
             end
+        end
+        -- Opt-in persistence: button stays pressed across rest/reload
+        if options.persist then
+            prop.should_reset = false
         end
     end,
 
@@ -94,6 +98,40 @@ end
 function definition.reset(prop)
     if prop.is_pressed then
         Prop.set_state(prop, "resetting")
+    end
+end
+
+--- Save persistent button state
+---@param prop table Button prop instance
+---@return table state Saved state data
+function definition.get_save_state(prop)
+    return { state_name = prop.state_name }
+end
+
+--- Restore persistent button state silently (no sound) and re-fire callback
+---@param prop table Button prop instance
+---@param saved_state table Previously saved state data
+function definition.restore_save_state(prop, saved_state)
+    if saved_state.state_name == "pressed" then
+        prop.is_pressed = true
+        prop.animation = Animation.new(BUTTON_ANIM, {
+            start_frame = BUTTON_ANIM.frame_count - 1
+        })
+        prop.animation:pause()
+        prop.animation.flipped = prop.flipped
+        prop.state = prop.states.pressed
+        prop.state_name = "pressed"
+        if prop.on_press then
+            prop.on_press()
+        end
+    end
+end
+
+--- Re-fire callback for persistent buttons after campfire rest reset
+---@param prop table Button prop instance
+function definition.reapply_effects(prop)
+    if prop.is_pressed and prop.on_press then
+        prop.on_press()
     end
 end
 

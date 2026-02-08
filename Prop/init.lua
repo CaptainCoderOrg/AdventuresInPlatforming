@@ -310,6 +310,22 @@ function Prop.reset_all()
     end
 end
 
+--- Re-apply effects for persistent props after reset_all.
+--- Persistent props (should_reset = false) survive reset_all, but their target props
+--- get reset. This re-fires callbacks so controlled props (spikes, spears) get re-disabled.
+function Prop.reapply_persistent_effects()
+    local prop = next(Prop.all)
+    while prop do
+        if not prop.marked_for_destruction and not prop.should_reset then
+            local def = prop.definition
+            if def.reapply_effects then
+                def.reapply_effects(prop)
+            end
+        end
+        prop = next(Prop.all, prop)
+    end
+end
+
 --- Generate a unique key for a prop based on type and position
 ---@param prop table The prop instance
 ---@return string key Unique identifier for this prop

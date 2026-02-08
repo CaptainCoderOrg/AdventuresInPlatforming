@@ -67,6 +67,8 @@ function rest.start(player)
 
 	-- Animate props back to default states
 	Prop.reset_all()
+	-- Re-fire persistent button callbacks so their targets stay disabled
+	Prop.reapply_persistent_effects()
 
 	-- Find the campfire for name and screen centering
 	local campfire = find_current_campfire(player)

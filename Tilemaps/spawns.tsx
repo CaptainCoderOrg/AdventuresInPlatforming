@@ -22,6 +22,7 @@
  </tile>
  <tile id="2">
   <properties>
+   <property name="persist" type="bool" value="true"/>
    <property name="type" value="button"/>
   </properties>
   <image source="objects/button.png" width="16" height="16"/>

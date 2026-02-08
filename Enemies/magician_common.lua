@@ -1274,7 +1274,7 @@ function magician_common.create(sprite_set, cfg)
 		gravity = 0,
 		max_fall_speed = 0,
 		max_health = cfg.max_health or 6,
-		armor = cfg.armor or 0,
+		armor = cfg.armor or 0.5,
 		damage = cfg.damage or 0.5,
 		damages_shield = true,
 		death_sound = "ratto",

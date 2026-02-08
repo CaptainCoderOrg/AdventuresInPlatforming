@@ -50,6 +50,7 @@ return {
     {
       id = 2,
       properties = {
+        ["persist"] = true,
         ["type"] = "button"
       },
       image = "objects/button.png",

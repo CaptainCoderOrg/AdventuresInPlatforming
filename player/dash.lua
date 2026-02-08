@@ -12,7 +12,7 @@ local dash = { name = "dash" }
 local DASH_DURATION = 12 / 60
 
 --- Called when entering dash state. Locks direction, cancels vertical velocity, consumes charge.
---- @param player table The player object
+---@param player table The player object
 function dash.start(player)
 	player.dash_state.direction = player.direction
 	player.dash_state.elapsed_time = 0
@@ -23,7 +23,7 @@ function dash.start(player)
 end
 
 --- Handles input during dash. Direction change or jump cancels the dash.
---- @param player table The player object
+---@param player table The player object
 function dash.input(player)
 	if controls.left_down() then
 		player.direction = -1
@@ -52,8 +52,8 @@ function dash.input(player)
 end
 
 --- Updates dash state. Moves at dash speed until duration expires.
---- @param player table The player object
---- @param dt number Delta time
+---@param player table The player object
+---@param dt number Delta time
 function dash.update(player, dt)
 	player.vx = player.direction * player.dash_speed
 
@@ -64,7 +64,8 @@ function dash.update(player, dt)
 				local tangent = common.get_ground_tangent(player)
 				player.vy = player.direction * player.dash_speed * (tangent.y / tangent.x)
 			else
-				player.vy = common.GRAVITY
+				-- Small downward velocity keeps player snapped to ground during dash
+			player.vy = common.GRAVITY
 			end
 		else
 			-- Air/ceiling: horizontal only, collision handles vertical positioning
@@ -86,7 +87,7 @@ function dash.update(player, dt)
 end
 
 --- Renders the player in dash animation.
---- @param player table The player object
+---@param player table The player object
 function dash.draw(player)
 	common.draw(player)
 end

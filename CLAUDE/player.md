@@ -78,7 +78,7 @@ Player combat abilities managed through state machine.
    - Can move horizontally during throw
    - Duration: animation length (7 frames, 33ms/frame)
    - **Ability Slot System:**
-     - 4 ability slots (`player.ability_slots[1..4]`) with dedicated keybindings
+     - 6 ability slots (`player.ability_slots[1..6]`) with dedicated keybindings
      - `player.active_ability_slot` tracks which slot triggered the current throw
      - Uses `weapon_sync.get_slot_secondary(player, slot)` for slot lookup
      - Uses `weapon_sync.get_secondary_spec(player, slot)` for projectile definition
@@ -96,7 +96,7 @@ Player combat abilities managed through state machine.
    - 32px wide sprite
 
 4. **Block** - `player/block.lua`, `player/block_move.lua`
-   - Defensive stance (hold U or Gamepad RT)
+   - Defensive stance (hold shield's ability slot key)
    - Stops horizontal movement (block) or slows to 35% (block_move)
    - Shield logic centralized in `player/shield.lua`
    - **Perfect Block**: First 4 frames (~67ms) of stationary block allow perfect parry
@@ -252,8 +252,8 @@ self.max_health = 3             -- Starting health
 self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
 self.active_weapon = nil        -- Currently equipped weapon item_id (synced via weapon_sync)
-self.ability_slots = { nil, nil, nil, nil }  -- 4 ability slots, each holds item_id or nil
-self.active_ability_slot = nil  -- Which slot (1-4) triggered current throw/heal
+self.ability_slots = { nil, nil, nil, nil, nil, nil }  -- 6 ability slots, each holds item_id or nil
+self.active_ability_slot = nil  -- Which slot (1-6) triggered current throw/heal
 self.attack_cooldown = 0        -- Countdown timer (attack)
 self.throw_cooldown = 0         -- Countdown timer (throw)
 self.level = 0                  -- Player level (sum of all stat upgrades)
@@ -284,7 +284,7 @@ self.block_state = {            -- Shield and perfect block tracking
 self.input_queue = {            -- Centralized input buffering
     jump,                       -- boolean
     attack,                     -- boolean
-    ability_slot,               -- number (1-4) or nil
+    ability_slot,               -- number (1-6) or nil
 }
 self.max_stamina = 3            -- Maximum stamina points
 self.stamina_used = 0           -- Consumed stamina (can exceed max for fatigue)

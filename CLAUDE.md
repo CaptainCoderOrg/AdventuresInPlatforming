@@ -31,7 +31,7 @@ The game runs via the Canvas framework runtime. Debug controls:
 - `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
 - `H` - Grant Minor Healing and assign to first empty ability slot (debug mode only)
-- `F1`/`F2` - Switch between level1/title music
+- `1`/`2` - Switch between level1/title music (non-debug mode only)
 
 ## Architecture
 

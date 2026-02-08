@@ -6,11 +6,9 @@ local SaveSlots = {}
 
 SaveSlots.SLOT_COUNT = 3
 
--- Storage key prefix
 local STORAGE_KEY_PREFIX = "save_slot_"
 local OLD_STORAGE_KEY = "restore_point"
 
--- In-memory cache for slots
 local slots = {}
 
 --- Get storage key for a slot

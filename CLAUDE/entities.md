@@ -486,9 +486,8 @@ animation:draw(x, y - lift)
   - Non-equippable items (type = "no_equip") are added to inventory immediately without dialogue
   - Configurable: `item_id` (e.g., "gold_key")
   - Equipment types (see `unique_item_registry.lua`):
-    - `shield` - Only one equipped at a time
-    - `weapon` - Only one equipped at a time
-    - `secondary` - Only one equipped at a time (throwables)
+    - `weapon` - Multiple can be equipped (cycle with Swap Weapon key)
+    - `secondary` - Assigned to ability slots (dash, shield, throwables, healing)
     - `accessory` - Any number can be equipped
     - `no_equip` - Cannot be equipped (e.g., keys)
     - `usable` - Triggers `on_use_item` callback instead of equipping (e.g., Orb of Teleportation)

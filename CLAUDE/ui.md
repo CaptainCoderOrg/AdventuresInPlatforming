@@ -215,7 +215,7 @@ widget:flash_energy()      -- Manually trigger energy bar flash
 
 ## Secondary Bar Widget (`ui/secondary_bar.lua`)
 
-- Bottom HUD widget showing 4 fixed ability slots in a horizontal bar with end caps
+- Bottom HUD widget showing 6 fixed ability slots in a horizontal bar with end caps
 - Each slot shows the assigned ability icon and per-slot keybind label via `control_icon`
 - Empty slots rendered at 30% alpha
 - Always renders (even with no abilities assigned)
@@ -224,13 +224,14 @@ widget:flash_energy()      -- Manually trigger energy bar flash
 ```lua
 local widget = secondary_bar.create()
 widget:update(dt, player)  -- No-op (prepared for future animation)
-widget:draw(player)        -- Renders bar with 4 ability slots
+widget:draw(player)        -- Renders bar with 6 ability slots
 ```
 
 **Key Features:**
-- Reads directly from `player.ability_slots[1..4]` to display 4 fixed slots
+- Reads directly from `player.ability_slots[1..6]` to display 6 fixed slots
 - Shows item icons from `unique_item_registry` (static_sprite or first frame of animated_sprite)
 - Scales with `config.ui.SCALE` (layout constants in 1x scale)
+- Renders 6 fixed slots (auto-extends via `controls.ABILITY_SLOT_COUNT`)
 - X position auto-calculated based on max(health, stamina, energy) meter width
 - Charge display for charge-based secondaries:
   - Grey-out (30% alpha) when all charges depleted
@@ -312,9 +313,8 @@ grid:draw()
 ```
 
 **Equipment Types:**
-- `shield` - Only one shield equipped at a time
 - `weapon` - Multiple weapons can be equipped (cycle with Swap Weapon key)
-- `secondary` - Assigned to ability slots (1-4) via status_panel assignment flow
+- `secondary` - Assigned to ability slots (1-6) via status_panel assignment flow (dash, shield, throwables, healing)
 - `accessory` - Any number of accessories can be equipped
 - `no_equip` - Cannot be equipped (e.g., keys)
 - `usable` - Triggers `on_use_item` callback instead of equipping (e.g., Orb of Teleportation)
@@ -331,7 +331,7 @@ grid:draw()
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
 - `ui/control_icon.lua` - Shared control icon rendering utility for HUD widgets
 - `ui/projectile_selector.lua` - Resource meters HUD widget (HP/SP/EP)
-- `ui/secondary_bar.lua` - Secondary abilities HUD widget (4 fixed ability slots)
+- `ui/secondary_bar.lua` - Secondary abilities HUD widget (6 fixed ability slots)
 - `ui/status_panel.lua` - Player stats panel for rest screen
 - `ui/ability_slots.lua` - Ability slot assignment component for status panel
 - `ui/inventory_grid.lua` - 5x3 item grid component for status panel

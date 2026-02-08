@@ -293,10 +293,10 @@ function weapon_sync.get_charge_info(item_id, player)
     return available, max, progress
 end
 
---- Syncs player ability flags from equipped_items
---- Updates has_axe, has_shuriken, has_shield, can_dash, has_double_jump, has_wall_slide
---- Scans ability_slots to cache dash_slot/shield_slot positions
---- Also ensures active_weapon is valid (auto-selects first equipped weapon if needed)
+--- Syncs player ability flags from equipped_items.
+--- Updates has_axe, has_shuriken, has_shield, can_dash, has_double_jump, has_wall_slide.
+--- Validates ability_slots (clears invalid entries) and caches dash_slot/shield_slot positions.
+--- Also ensures active_weapon is valid (auto-selects first equipped weapon if needed).
 ---@param player table The player object
 function weapon_sync.sync(player)
     -- Invalidate cached equipment lists
@@ -321,22 +321,15 @@ function weapon_sync.sync(player)
         player.active_weapon = weapon_sync.get_first_equipped_weapon(player)
     end
 
-    -- Validate ability_slots: clear any slot with an invalid/unequipped secondary
-    if player.ability_slots then
-        for i = 1, controls.ABILITY_SLOT_COUNT do
-            if player.ability_slots[i] and not is_valid_secondary(player, player.ability_slots[i]) then
-                player.ability_slots[i] = nil
-            end
-        end
-    end
-
-    -- Scan ability_slots for dash/shield positions (avoids per-frame scanning)
+    -- Validate ability_slots and scan for dash/shield positions in a single pass
     player.dash_slot = nil
     player.shield_slot = nil
     if player.ability_slots then
         for i = 1, controls.ABILITY_SLOT_COUNT do
             local item = player.ability_slots[i]
-            if item == "dash_amulet" then player.dash_slot = i
+            if item and not is_valid_secondary(player, item) then
+                player.ability_slots[i] = nil
+            elseif item == "dash_amulet" then player.dash_slot = i
             elseif item == "shield" then player.shield_slot = i end
         end
     end

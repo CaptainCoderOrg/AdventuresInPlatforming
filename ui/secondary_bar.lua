@@ -96,6 +96,7 @@ end
 function secondary_bar:update(_dt, _player)
 end
 
+--- Draws the secondary abilities bar with all ability slots, charge info, and keybind icons
 ---@param player table Player instance with ability_slots and equipped_items
 ---@return nil
 function secondary_bar:draw(player)
@@ -121,7 +122,7 @@ function secondary_bar:draw(player)
     canvas.draw_image(sprites.ui.secondary_left_end, x, 0)
     x = x + END_WIDTH
 
-    -- Draw 4 fixed ability slots
+    -- Draw 6 fixed ability slots
     for slot = 1, SLOT_COUNT do
         local item_id = player.ability_slots[slot]
         local item_def = item_id and unique_item_registry[item_id]

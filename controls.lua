@@ -130,7 +130,7 @@ function controls.detect_key_press()
 end
 
 --- Detect any pressed mouse button for rebinding
----@return number|nil Mouse button code if a button was pressed this frame
+---@return string|nil Mouse button code if a button was pressed this frame
 function controls.detect_mouse_press()
     if canvas.is_mouse_pressed(0) then
         return controls_config.MOUSE_LEFT
@@ -145,7 +145,7 @@ function controls.detect_mouse_press()
 end
 
 --- Detect any pressed key or mouse button for rebinding (keyboard scheme)
----@return number|nil Key or mouse code if input was detected this frame
+---@return number|string|nil Key code (number) or mouse button code (string) if input was detected
 function controls.detect_keyboard_input()
     -- Check mouse first (more specific)
     local mouse = controls.detect_mouse_press()

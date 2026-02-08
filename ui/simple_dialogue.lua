@@ -8,6 +8,10 @@ local TextDisplay = require("TextDisplay")
 
 local simple_dialogue = {}
 
+-- Reusable tables for word wrapping (avoids per-frame allocations)
+local _words = {}
+local _line_words = {}
+
 -- 9-slice definition (76x37 sprite, borders: left=10, top=7, right=9, bottom=7)
 local slice = nine_slice.create(sprites.ui.simple_dialogue, 76, 37, 10, 7, 9, 7)
 
@@ -166,17 +170,21 @@ function simple_dialogue.draw(dialogue)
         if input_line == "" then
             y_offset = y_offset + LINE_HEIGHT
         else
-            -- Word-wrap this line
-            local words = {}
+            -- Word-wrap this line (reuse module-level tables)
+            for i = 1, #_words do _words[i] = nil end
+            local word_count = 0
             for word in input_line:gmatch("%S+") do
-                table.insert(words, word)
+                word_count = word_count + 1
+                _words[word_count] = word
             end
 
-            local line_words = {}
+            for i = 1, #_line_words do _line_words[i] = nil end
+            local lw_count = 0
             local line_width = 0
             local space_width = canvas.get_text_width(" ")
 
-            for _, word in ipairs(words) do
+            for wi = 1, word_count do
+                local word = _words[wi]
                 local word_width = get_word_width(word, scheme)
                 local test_width = line_width + (line_width > 0 and space_width or 0) + word_width
 
@@ -184,34 +192,37 @@ function simple_dialogue.draw(dialogue)
                     -- Draw current line and start new one
                     local draw_x = text_x
                     local draw_y = text_y + y_offset + FONT_SIZE
-                    for i, w in ipairs(line_words) do
+                    for i = 1, lw_count do
                         if i > 1 then
                             canvas.set_color("#FFFFFF")
                             canvas.draw_text(draw_x, draw_y, " ")
                             draw_x = draw_x + space_width
                         end
-                        draw_x = draw_x + draw_word(w, scheme, draw_x, draw_y)
+                        draw_x = draw_x + draw_word(_line_words[i], scheme, draw_x, draw_y)
                     end
                     y_offset = y_offset + LINE_HEIGHT
-                    line_words = { word }
+                    for i = 1, lw_count do _line_words[i] = nil end
+                    _line_words[1] = word
+                    lw_count = 1
                     line_width = word_width
                 else
-                    table.insert(line_words, word)
+                    lw_count = lw_count + 1
+                    _line_words[lw_count] = word
                     line_width = test_width
                 end
             end
 
             -- Draw remaining words
-            if #line_words > 0 then
+            if lw_count > 0 then
                 local draw_x = text_x
                 local draw_y = text_y + y_offset + FONT_SIZE
-                for i, w in ipairs(line_words) do
+                for i = 1, lw_count do
                     if i > 1 then
                         canvas.set_color("#FFFFFF")
                         canvas.draw_text(draw_x, draw_y, " ")
                         draw_x = draw_x + space_width
                     end
-                    draw_x = draw_x + draw_word(w, scheme, draw_x, draw_y)
+                    draw_x = draw_x + draw_word(_line_words[i], scheme, draw_x, draw_y)
                 end
                 y_offset = y_offset + LINE_HEIGHT
             end

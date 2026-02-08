@@ -172,6 +172,33 @@ local init_level
 canvas.set_size(config.ui.canvas_width, config.ui.canvas_height)
 canvas.set_image_smoothing(false)
 
+--- Toggle a debug secondary item: equip/unequip + assign/clear ability slot + sync.
+--- Shared by F2 (dash_amulet), F4 (hammer), F7 (shield) debug toggles.
+---@param p table Player instance
+---@param item_id string Item to toggle (e.g., "dash_amulet", "hammer", "shield")
+local function toggle_debug_secondary(p, item_id)
+    local weapon_sync = require("player.weapon_sync")
+    if p.equipped_items[item_id] then
+        p.equipped_items[item_id] = nil
+        for i = 1, controls.ABILITY_SLOT_COUNT do
+            if p.ability_slots[i] == item_id then
+                p.ability_slots[i] = nil
+            end
+        end
+    else
+        if not p.unique_items then p.unique_items = {} end
+        table.insert(p.unique_items, item_id)
+        p.equipped_items[item_id] = true
+        for i = 1, controls.ABILITY_SLOT_COUNT do
+            if not p.ability_slots[i] then
+                p.ability_slots[i] = item_id
+                break
+            end
+        end
+    end
+    weapon_sync.sync(p)
+end
+
 --- Process player and debug input each frame
 ---@return nil
 local function user_input()
@@ -203,75 +230,17 @@ local function user_input()
         if canvas.is_key_pressed(canvas.keys.F1) then
             player.has_double_jump = not player.has_double_jump
         elseif canvas.is_key_pressed(canvas.keys.F2) then
-            -- Toggle dash amulet (equip + assign to ability slot)
-            if player.equipped_items.dash_amulet then
-                player.equipped_items.dash_amulet = nil
-                for i = 1, controls.ABILITY_SLOT_COUNT do
-                    if player.ability_slots[i] == "dash_amulet" then
-                        player.ability_slots[i] = nil
-                    end
-                end
-            else
-                if not player.unique_items then player.unique_items = {} end
-                table.insert(player.unique_items, "dash_amulet")
-                player.equipped_items.dash_amulet = true
-                for i = 1, controls.ABILITY_SLOT_COUNT do
-                    if not player.ability_slots[i] then
-                        player.ability_slots[i] = "dash_amulet"
-                        break
-                    end
-                end
-            end
-            require("player.weapon_sync").sync(player)
+            toggle_debug_secondary(player, "dash_amulet")
         elseif canvas.is_key_pressed(canvas.keys.F3) then
             player.has_wall_slide = not player.has_wall_slide
         elseif canvas.is_key_pressed(canvas.keys.F4) then
-            -- Toggle hammer as secondary (equip + assign to ability slot)
-            if player.equipped_items.hammer then
-                player.equipped_items.hammer = nil
-                -- Remove from ability slots
-                for i = 1, controls.ABILITY_SLOT_COUNT do
-                    if player.ability_slots[i] == "hammer" then
-                        player.ability_slots[i] = nil
-                    end
-                end
-            else
-                table.insert(player.unique_items, "hammer")
-                player.equipped_items.hammer = true
-                -- Assign to first empty ability slot
-                for i = 1, controls.ABILITY_SLOT_COUNT do
-                    if not player.ability_slots[i] then
-                        player.ability_slots[i] = "hammer"
-                        break
-                    end
-                end
-            end
-            require("player.weapon_sync").sync(player)
+            toggle_debug_secondary(player, "hammer")
         elseif canvas.is_key_pressed(canvas.keys.F5) then
             player.has_axe = not player.has_axe
         elseif canvas.is_key_pressed(canvas.keys.F6) then
             player.has_shuriken = not player.has_shuriken
         elseif canvas.is_key_pressed(canvas.keys.F7) then
-            -- Toggle shield (equip + assign to ability slot)
-            if player.equipped_items.shield then
-                player.equipped_items.shield = nil
-                for i = 1, controls.ABILITY_SLOT_COUNT do
-                    if player.ability_slots[i] == "shield" then
-                        player.ability_slots[i] = nil
-                    end
-                end
-            else
-                if not player.unique_items then player.unique_items = {} end
-                table.insert(player.unique_items, "shield")
-                player.equipped_items.shield = true
-                for i = 1, controls.ABILITY_SLOT_COUNT do
-                    if not player.ability_slots[i] then
-                        player.ability_slots[i] = "shield"
-                        break
-                    end
-                end
-            end
-            require("player.weapon_sync").sync(player)
+            toggle_debug_secondary(player, "shield")
         elseif canvas.is_key_pressed(canvas.keys.H) then
             -- Grant and equip Minor Healing ability
             if not player.equipped_items.minor_healing then

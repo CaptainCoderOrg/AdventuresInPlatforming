@@ -29,11 +29,8 @@ local HEADER_HEIGHT = 12
 local HEADER_FONT_SIZE = 9
 local HEADER_TEXT = "Inventory"
 
--- Equipment types that only allow one item equipped at a time
--- Note: weapon removed to allow multiple weapons equipped (quick swap system)
+-- Note: weapons allow multiple equipped (quick swap system)
 -- Note: secondary (including shield/dash) handled via ability_slots component
-local EXCLUSIVE_TYPES = {
-}
 
 --- Create a new inventory grid
 ---@param opts {x: number, y: number, items: table, equipped: table, player: table|nil}
@@ -188,8 +185,8 @@ function inventory_grid:get_hovered_item_info()
 end
 
 --- Toggle equipped state for an item
---- For exclusive types (shield, secondary), unequips other items of the same type
 --- Weapons can stack (multiple equipped), with active_weapon tracking which is in use
+--- Secondaries delegate to ability slot assignment flow via on_equip_secondary callback
 --- Items with type "no_equip" cannot be equipped
 --- Stackable items cannot be equipped
 ---@param item_id string The item to toggle
@@ -239,18 +236,6 @@ function inventory_grid:toggle_equipped(item_id, is_stackable)
             self.on_equip_secondary(item_id)
         end
         return
-    end
-
-    -- For exclusive types, unequip any other item of the same type
-    if item_type and EXCLUSIVE_TYPES[item_type] then
-        for _, other_id in ipairs(self.items) do
-            if other_id ~= item_id and self.equipped[other_id] then
-                local other_def = unique_item_registry[other_id]
-                if other_def and other_def.type == item_type then
-                    self.equipped[other_id] = nil
-                end
-            end
-        end
     end
 
     -- Equip the item

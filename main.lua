@@ -54,9 +54,13 @@ local gnomo_def = require("Enemies/gnomo_axe_thrower")
 Enemy.register("gnomo_axe_thrower", gnomo_def)
 local gnomo_boss_def = require("Enemies/Bosses/gnomo")
 Enemy.register("gnomo_boss", gnomo_boss_def.definition)
+local valkyrie_boss_def = require("Enemies/Bosses/valkyrie")
+Enemy.register("shieldmaden_boss", valkyrie_boss_def.definition)
 local encounter_coordinator = require("Enemies/Bosses/encounter_coordinator")
 local gnomo_coordinator = require("Enemies/Bosses/gnomo/coordinator")
 encounter_coordinator.register("gnomo_brothers", gnomo_coordinator)
+local valkyrie_coordinator = require("Enemies/Bosses/valkyrie/coordinator")
+encounter_coordinator.register("valkyrie_boss", valkyrie_coordinator)
 boss_health_bar.set_coordinator(gnomo_coordinator)
 
 -- Props
@@ -551,10 +555,13 @@ init_level = function(level, spawn_override, player_data, options)
     end
 
     for _, enemy_data in ipairs(level_info.enemies) do
-        -- Skip gnomo_boss enemies if boss already defeated
-        local is_defeated_boss = enemy_data.type == "gnomo_boss" and
+        -- Skip boss enemies if boss already defeated
+        local is_defeated_boss = (enemy_data.type == "gnomo_boss" and
             player.defeated_bosses and
-            player.defeated_bosses[gnomo_coordinator.boss_id]
+            player.defeated_bosses[gnomo_coordinator.boss_id]) or
+            (enemy_data.type == "shieldmaden_boss" and
+            player.defeated_bosses and
+            player.defeated_bosses[valkyrie_coordinator.boss_id])
 
         if not is_defeated_boss then
             enemy_data.activation_bounds = find_activation_bounds(

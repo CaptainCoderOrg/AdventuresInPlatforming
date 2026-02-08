@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="14" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="enemy_spawns" tilewidth="48" tileheight="32" tilecount="15" columns="0">
  <editorsettings>
   <export target="enemy_spawns.lua" format="lua"/>
  </editorsettings>
@@ -116,5 +116,13 @@
    <property name="type" value="enemy"/>
   </properties>
   <image source="../assets/sprites/enemies/magician/magician_puprle.png" width="176" height="80"/>
+ </tile>
+ <tile id="14" x="0" y="0" width="40" height="29">
+  <properties>
+   <property name="flip" type="bool" value="true"/>
+   <property name="key" value="shieldmaden_boss"/>
+   <property name="type" value="enemy"/>
+  </properties>
+  <image source="../assets/sprites/enemies/shieldmaiden/shieldmaiden.png" width="440" height="261"/>
  </tile>
 </tileset>

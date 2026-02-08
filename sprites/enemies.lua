@@ -93,6 +93,9 @@ local enemies = {
 		magenta = "gnomo_boss_magenta",
 		red = "gnomo_boss_red",
 	},
+	shieldmaiden = {
+		sheet = "shieldmaiden_sheet",
+	},
 }
 
 canvas.assets.load_image(enemies.ratto.idle, "sprites/enemies/ratto/ratto_idle.png")
@@ -170,5 +173,7 @@ canvas.assets.load_image(enemies.gnomo_boss.green, "sprites/enemies/gnomo/gnomo.
 canvas.assets.load_image(enemies.gnomo_boss.blue, "sprites/enemies/gnomo/gnomo_blue.png")
 canvas.assets.load_image(enemies.gnomo_boss.magenta, "sprites/enemies/gnomo/gnomo_magenta.png")
 canvas.assets.load_image(enemies.gnomo_boss.red, "sprites/enemies/gnomo/gnomo_red.png")
+
+canvas.assets.load_image(enemies.shieldmaiden.sheet, "sprites/enemies/shieldmaiden/shieldmaiden.png")
 
 return enemies

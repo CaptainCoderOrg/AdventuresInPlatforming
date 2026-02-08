@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="347">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="352">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -9,8 +9,8 @@
  <tileset firstgid="1" source="tileset_dungeon.tsx"/>
  <tileset firstgid="64" source="spawns.tsx"/>
  <tileset firstgid="83" source="enemy_spawns.tsx"/>
- <tileset firstgid="97" source="unique_items.tsx"/>
- <tileset firstgid="113" source="decorations.tsx"/>
+ <tileset firstgid="98" source="unique_items.tsx"/>
+ <tileset firstgid="114" source="decorations.tsx"/>
  <imagelayer id="4" name="background" locked="1" repeatx="1" repeaty="1">
   <image source="../assets/Tilesets/bg_00_dungeon.png" width="240" height="160"/>
  </imagelayer>
@@ -1231,8 +1231,8 @@
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
-56,56,56,56,30,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+56,37,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
+0,28,56,56,30,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
@@ -2248,9 +2248,9 @@
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
-0,45,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
-0,54,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
-0,63,0,0,0,0,0,63,0,0,0,63,0,0,0,63,
+0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
+0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
+0,0,0,0,0,0,0,63,0,0,0,63,0,0,0,63,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -2387,9 +2387,9 @@
     <property name="group_id" value="entry_spears"/>
    </properties>
   </object>
-  <object id="153" gid="100" x="-112" y="320" width="16" height="16"/>
-  <object id="154" gid="99" x="1216" y="368" width="16" height="16"/>
-  <object id="157" gid="109" x="-1024" y="464" width="16" height="16"/>
+  <object id="153" gid="101" x="-112" y="320" width="16" height="16"/>
+  <object id="154" gid="100" x="1216" y="368" width="16" height="16"/>
+  <object id="157" gid="110" x="-1024" y="464" width="16" height="16"/>
   <object id="162" gid="77" x="-32" y="496" width="16" height="16">
    <properties>
     <property name="group_id" value="entry_spikes"/>
@@ -2726,7 +2726,7 @@
     <property name="type" value="group_config"/>
    </properties>
   </object>
-  <object id="287" gid="98" x="-3424" y="512" width="16" height="16"/>
+  <object id="287" gid="99" x="-3424" y="512" width="16" height="16"/>
   <object id="307" gid="76" x="-32" y="272" width="16" height="16">
    <properties>
     <property name="group_id" value="entry_spears"/>
@@ -2824,73 +2824,95 @@
    </properties>
   </object>
   <object id="332" gid="96" x="-1312" y="736" width="16" height="16"/>
-  <object id="342" gid="112" x="-432" y="240" width="16" height="16"/>
-  <object id="343" gid="112" x="-1472" y="528" width="16" height="16"/>
-  <object id="345" gid="112" x="-2112" y="224" width="16" height="16"/>
+  <object id="342" gid="113" x="-432" y="240" width="16" height="16"/>
+  <object id="343" gid="113" x="-1472" y="528" width="16" height="16"/>
+  <object id="345" gid="113" x="-2112" y="224" width="16" height="16"/>
+  <object id="348" gid="82" x="-720" y="944" width="32" height="32">
+   <properties>
+    <property name="id" value="valkrie_boss_door"/>
+   </properties>
+  </object>
+  <object id="349" x="-688" y="912" width="16" height="32">
+   <properties>
+    <property name="on_trigger" value="Enemies.Bosses.valkyrie.on_start"/>
+    <property name="repeat" type="bool" value="false"/>
+    <property name="type" value="trigger"/>
+   </properties>
+  </object>
+  <object id="350" x="-592" y="928" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_player_start_position"/>
+   </properties>
+  </object>
+  <object id="351" gid="2147483745" x="-432" y="944" width="40" height="29">
+   <properties>
+    <property name="flip" type="bool" value="false"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="10" name="Decorations">
-  <object id="39" gid="131" x="-472" y="304" width="16" height="32"/>
-  <object id="40" gid="113" x="-256" y="128" width="8" height="8"/>
-  <object id="41" gid="121" x="-96" y="224" width="16" height="32"/>
-  <object id="42" gid="121" x="-352" y="224" width="16" height="32"/>
-  <object id="43" gid="121" x="-784" y="288" width="16" height="32"/>
-  <object id="44" gid="121" x="-704" y="288" width="16" height="32"/>
-  <object id="45" gid="122" x="-1520" y="208" width="48" height="16"/>
-  <object id="46" gid="122" x="-1760" y="208" width="48" height="16"/>
+  <object id="39" gid="132" x="-472" y="304" width="16" height="32"/>
+  <object id="40" gid="114" x="-256" y="128" width="8" height="8"/>
+  <object id="41" gid="122" x="-96" y="224" width="16" height="32"/>
+  <object id="42" gid="122" x="-352" y="224" width="16" height="32"/>
+  <object id="43" gid="122" x="-784" y="288" width="16" height="32"/>
+  <object id="44" gid="122" x="-704" y="288" width="16" height="32"/>
+  <object id="45" gid="123" x="-1520" y="208" width="48" height="16"/>
+  <object id="46" gid="123" x="-1760" y="208" width="48" height="16"/>
   <object id="47" gid="80" x="-1016" y="304" width="16" height="24">
    <properties>
     <property name="offset_y" type="float" value="0.5"/>
    </properties>
   </object>
-  <object id="60" gid="120" x="-2064" y="224" width="16" height="32"/>
-  <object id="61" gid="120" x="-1872" y="224" width="16" height="32"/>
-  <object id="62" gid="120" x="-1824" y="224" width="16" height="32"/>
-  <object id="63" gid="120" x="-1840" y="224" width="16" height="32"/>
-  <object id="64" gid="120" x="-1856" y="224" width="16" height="32"/>
-  <object id="65" gid="120" x="-1888" y="224" width="16" height="32"/>
-  <object id="66" gid="120" x="-1920" y="224" width="16" height="32"/>
-  <object id="67" gid="120" x="-1904" y="224" width="16" height="32"/>
-  <object id="68" gid="120" x="-1936" y="224" width="16" height="32"/>
-  <object id="69" gid="120" x="-1952" y="224" width="16" height="32"/>
-  <object id="70" gid="120" x="-1968" y="224" width="16" height="32"/>
-  <object id="71" gid="120" x="-1984" y="224" width="16" height="32"/>
-  <object id="72" gid="120" x="-2000" y="224" width="16" height="32"/>
-  <object id="73" gid="120" x="-2016" y="224" width="16" height="32"/>
-  <object id="74" gid="120" x="-2032" y="224" width="16" height="32"/>
-  <object id="75" gid="120" x="-2048" y="224" width="16" height="32"/>
-  <object id="76" gid="113" x="-1472" y="320" width="8" height="8"/>
-  <object id="77" gid="132" x="-1032" y="300" width="16" height="16"/>
-  <object id="78" gid="132" x="-1000" y="300" width="16" height="16"/>
-  <object id="80" gid="133" x="-488" y="296" width="16" height="16"/>
-  <object id="81" gid="133" x="-456" y="296" width="16" height="16"/>
-  <object id="82" gid="122" x="-640" y="208" width="48" height="16"/>
-  <object id="83" gid="122" x="-544" y="208" width="48" height="16"/>
-  <object id="92" gid="120" x="-1040" y="400" width="16" height="32"/>
-  <object id="93" gid="120" x="-1024" y="400" width="16" height="32"/>
-  <object id="94" gid="120" x="1200" y="304" width="16" height="32"/>
-  <object id="95" gid="120" x="1216" y="304" width="16" height="32"/>
-  <object id="96" gid="120" x="1232" y="304" width="16" height="32"/>
-  <object id="97" gid="122" x="752" y="288" width="48" height="16"/>
-  <object id="98" gid="121" x="704" y="352" width="16" height="32"/>
-  <object id="99" gid="121" x="-112" y="432" width="16" height="32"/>
-  <object id="100" gid="121" x="-304" y="448" width="16" height="32"/>
-  <object id="101" gid="122" x="-416" y="384" width="48" height="16"/>
-  <object id="102" gid="122" x="-960" y="384" width="48" height="16"/>
+  <object id="60" gid="121" x="-2064" y="224" width="16" height="32"/>
+  <object id="61" gid="121" x="-1872" y="224" width="16" height="32"/>
+  <object id="62" gid="121" x="-1824" y="224" width="16" height="32"/>
+  <object id="63" gid="121" x="-1840" y="224" width="16" height="32"/>
+  <object id="64" gid="121" x="-1856" y="224" width="16" height="32"/>
+  <object id="65" gid="121" x="-1888" y="224" width="16" height="32"/>
+  <object id="66" gid="121" x="-1920" y="224" width="16" height="32"/>
+  <object id="67" gid="121" x="-1904" y="224" width="16" height="32"/>
+  <object id="68" gid="121" x="-1936" y="224" width="16" height="32"/>
+  <object id="69" gid="121" x="-1952" y="224" width="16" height="32"/>
+  <object id="70" gid="121" x="-1968" y="224" width="16" height="32"/>
+  <object id="71" gid="121" x="-1984" y="224" width="16" height="32"/>
+  <object id="72" gid="121" x="-2000" y="224" width="16" height="32"/>
+  <object id="73" gid="121" x="-2016" y="224" width="16" height="32"/>
+  <object id="74" gid="121" x="-2032" y="224" width="16" height="32"/>
+  <object id="75" gid="121" x="-2048" y="224" width="16" height="32"/>
+  <object id="76" gid="114" x="-1472" y="320" width="8" height="8"/>
+  <object id="77" gid="133" x="-1032" y="300" width="16" height="16"/>
+  <object id="78" gid="133" x="-1000" y="300" width="16" height="16"/>
+  <object id="80" gid="134" x="-488" y="296" width="16" height="16"/>
+  <object id="81" gid="134" x="-456" y="296" width="16" height="16"/>
+  <object id="82" gid="123" x="-640" y="208" width="48" height="16"/>
+  <object id="83" gid="123" x="-544" y="208" width="48" height="16"/>
+  <object id="92" gid="121" x="-1040" y="400" width="16" height="32"/>
+  <object id="93" gid="121" x="-1024" y="400" width="16" height="32"/>
+  <object id="94" gid="121" x="1200" y="304" width="16" height="32"/>
+  <object id="95" gid="121" x="1216" y="304" width="16" height="32"/>
+  <object id="96" gid="121" x="1232" y="304" width="16" height="32"/>
+  <object id="97" gid="123" x="752" y="288" width="48" height="16"/>
+  <object id="98" gid="122" x="704" y="352" width="16" height="32"/>
+  <object id="99" gid="122" x="-112" y="432" width="16" height="32"/>
+  <object id="100" gid="122" x="-304" y="448" width="16" height="32"/>
+  <object id="101" gid="123" x="-416" y="384" width="48" height="16"/>
+  <object id="102" gid="123" x="-960" y="384" width="48" height="16"/>
   <object id="104" gid="83" x="-928" y="496" width="48" height="32">
    <properties>
     <property name="flip" type="bool" value="true"/>
    </properties>
   </object>
-  <object id="122" gid="132" x="-2448" y="400" width="16" height="16"/>
-  <object id="123" gid="132" x="-2416" y="400" width="16" height="16"/>
-  <object id="133" gid="2147483779" x="-1840" y="760" width="16" height="32"/>
-  <object id="134" gid="133" x="-1856" y="752" width="16" height="16"/>
-  <object id="135" gid="133" x="-1824" y="752" width="16" height="16"/>
-  <object id="136" gid="131" x="-1744" y="759" width="16" height="32"/>
-  <object id="137" gid="133" x="-1760" y="752" width="16" height="16"/>
-  <object id="138" gid="133" x="-1728" y="752" width="16" height="16"/>
-  <object id="269" gid="132" x="-1280" y="299" width="16" height="16"/>
-  <object id="270" gid="132" x="-1248" y="299" width="16" height="16"/>
+  <object id="122" gid="133" x="-2448" y="400" width="16" height="16"/>
+  <object id="123" gid="133" x="-2416" y="400" width="16" height="16"/>
+  <object id="133" gid="2147483780" x="-1840" y="760" width="16" height="32"/>
+  <object id="134" gid="134" x="-1856" y="752" width="16" height="16"/>
+  <object id="135" gid="134" x="-1824" y="752" width="16" height="16"/>
+  <object id="136" gid="132" x="-1744" y="759" width="16" height="32"/>
+  <object id="137" gid="134" x="-1760" y="752" width="16" height="16"/>
+  <object id="138" gid="134" x="-1728" y="752" width="16" height="16"/>
+  <object id="269" gid="133" x="-1280" y="299" width="16" height="16"/>
+  <object id="270" gid="133" x="-1248" y="299" width="16" height="16"/>
   <object id="290" gid="93" x="-784" y="496" width="16" height="16"/>
   <object id="291" gid="93" x="-928" y="496" width="16" height="16"/>
   <object id="311" gid="90" x="-2432" y="400" width="16" height="24">
@@ -2922,13 +2944,13 @@
     <property name="group_id" value="second_spears"/>
    </properties>
   </object>
-  <object id="333" gid="122" x="-1520" y="400" width="48" height="16"/>
-  <object id="334" gid="122" x="-1760" y="400" width="48" height="16"/>
-  <object id="335" gid="113" x="-1792" y="528" width="8" height="8"/>
-  <object id="336" gid="120" x="-1472" y="416" width="16" height="32"/>
-  <object id="337" gid="120" x="-1456" y="416" width="16" height="32"/>
-  <object id="338" gid="120" x="-1792" y="416" width="16" height="32"/>
-  <object id="339" gid="120" x="-1776" y="416" width="16" height="32"/>
+  <object id="333" gid="123" x="-1520" y="400" width="48" height="16"/>
+  <object id="334" gid="123" x="-1760" y="400" width="48" height="16"/>
+  <object id="335" gid="114" x="-1792" y="528" width="8" height="8"/>
+  <object id="336" gid="121" x="-1472" y="416" width="16" height="32"/>
+  <object id="337" gid="121" x="-1456" y="416" width="16" height="32"/>
+  <object id="338" gid="121" x="-1792" y="416" width="16" height="32"/>
+  <object id="339" gid="121" x="-1776" y="416" width="16" height="32"/>
  </objectgroup>
  <objectgroup id="3" name="Campfires">
   <object id="12" gid="67" x="-160" y="128" width="16" height="16">
@@ -2958,13 +2980,13 @@
     <property name="required_key" value="brass_key"/>
    </properties>
   </object>
-  <object id="21" gid="109" x="-1136" y="736" width="16" height="16"/>
+  <object id="21" gid="110" x="-1136" y="736" width="16" height="16"/>
   <object id="294" gid="73" x="-1296" y="1008" width="16" height="32">
    <properties>
     <property name="required_key" value="brass_key"/>
    </properties>
   </object>
-  <object id="344" gid="109" x="-2528" y="592" width="16" height="16"/>
+  <object id="344" gid="110" x="-2528" y="592" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="7" name="Locations">
   <object id="15" x="10" y="48" width="55.5" height="86.417">

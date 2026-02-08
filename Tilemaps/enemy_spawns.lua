@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 14,
+  tilecount = 15,
   tiles = {
     {
       id = 0,
@@ -191,6 +191,19 @@ return {
       y = 0,
       width = 16,
       height = 16
+    },
+    {
+      id = 14,
+      properties = {
+        ["flip"] = true,
+        ["key"] = "shieldmaden_boss",
+        ["type"] = "enemy"
+      },
+      image = "../assets/sprites/enemies/shieldmaiden/shieldmaiden.png",
+      x = 0,
+      y = 0,
+      width = 40,
+      height = 29
     }
   }
 }

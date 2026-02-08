@@ -273,7 +273,10 @@ local confirm_no_metrics = nil
 local confirm_question_metrics = nil
 
 --- Get cached confirm dialog text metrics (lazy-initialized)
----@return table, table, table, table yes, sep, no, question metrics
+---@return table yes Text metrics for "Yes"
+---@return table sep Text metrics for separator
+---@return table no Text metrics for "No"
+---@return table question Text metrics for question text
 local function get_confirm_metrics()
     if not confirm_yes_metrics then
         canvas.set_font_family("menu_font")
@@ -568,7 +571,7 @@ end
 ---@return nil
 local function reset_navigation_state()
     focused_index = 1  -- Default to Status
-    nav_mode = NAV_MODE.MENU  -- Start in menu mode
+    nav_mode = NAV_MODE.MENU
     active_panel_index = 1  -- Show stats by default
     audio_focus_index = 1
     confirm_selection = 2  -- Default to No

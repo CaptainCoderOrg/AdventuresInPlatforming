@@ -30,14 +30,13 @@ local MAX_STAT_LEVEL = 20
 -- Must match ROWS in inventory_grid (for navigating to ability slots)
 local INVENTORY_ROWS = 3
 
--- Gap between inventory grid and ability slots
 local ABILITY_SLOTS_GAP = 4
 
 --- Generate a fibonacci-like cost table from two starting values
 ---@param a number First cost
 ---@param b number Second cost
 ---@param max number Number of entries to generate
----@return number[] table Array of costs
+---@return number[] Array of costs
 local function generate_fib_table(a, b, max)
     local t = { [1] = a, [2] = b }
     for i = 3, max do
@@ -49,7 +48,7 @@ end
 --- Generate a fibonacci-like cost table from a custom seed sequence
 ---@param seeds number[] Initial cost values (must have at least 2 entries)
 ---@param max number Number of entries to generate
----@return number[] table Array of costs
+---@return number[] Array of costs
 local function generate_seeded_fib_table(seeds, max)
     local t = {}
     for i, v in ipairs(seeds) do
@@ -392,7 +391,7 @@ function status_panel:cancel_upgrades()
 end
 
 --- Build the stats rows for display (reuses cached tables to avoid allocations)
----@return table[] Array of {label, value, suffix, extra} pairs (value is nil for blank lines)
+---@return table[] Array of {label, value, suffix, suffix_color, value_color, monospace} (nil label/value for blank separator lines)
 function status_panel:build_stats_rows()
     if not self.player then return self._cached_rows end
 
@@ -650,12 +649,6 @@ end
 ---@return boolean is_mouse True if currently hovering stats with mouse
 function status_panel:is_mouse_hover()
     return self.hovered_index ~= nil
-end
-
---- Check if any area (stats, inventory, or ability slots) has mouse hover
----@return boolean has_hover True if mouse is hovering over stats, inventory, or ability slots
-function status_panel:has_any_mouse_hover()
-    return self.hovered_index ~= nil or self.inventory.hovered_col ~= nil or self.ability_slots.hovered_slot ~= nil
 end
 
 --- Reset selection to first item
@@ -1001,14 +994,12 @@ function status_panel:draw()
         y_offset = y_offset + LINE_HEIGHT
     end
 
-    -- Draw inventory grid on the right side
     local inv_x = self:get_inventory_x()
     local inv_y = TEXT_PADDING_TOP
     self.inventory.x = self.x + inv_x
     self.inventory.y = self.y + inv_y
     self.inventory:draw()
 
-    -- Draw ability slots below inventory
     self.ability_slots.x = self.x + inv_x
     self.ability_slots.y = self.y + inv_y + self.inventory:get_height() + ABILITY_SLOTS_GAP
     self.ability_slots:draw()

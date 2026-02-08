@@ -29,8 +29,8 @@ local HEADER_TEXT = "Abilities"
 local ASSIGN_HEADER_TEXT = "Assign to Slot"
 
 -- Keybind icon configuration
-local ICON_SIZE = 8
-local ICON_MARGIN = 2
+local ICON_SIZE = 12
+local ICON_GAP = 2
 local ABILITY_ACTION_IDS = controls.ABILITY_ACTION_IDS
 
 --- Create a new ability slots component
@@ -59,7 +59,7 @@ end
 --- Get the total height including header
 ---@return number height
 function ability_slots:get_height()
-    return HEADER_HEIGHT + CELL_SIZE
+    return HEADER_HEIGHT + CELL_SIZE + ICON_GAP + ICON_SIZE
 end
 
 --- Set the player reference
@@ -255,9 +255,9 @@ function ability_slots:draw()
             end
         end
 
-        -- Draw keybind icon in the bottom-right corner
-        local icon_x = cx + CELL_SIZE - ICON_SIZE - ICON_MARGIN
-        local icon_y = cy + CELL_SIZE - ICON_SIZE - ICON_MARGIN
+        -- Draw keybind icon centered below the cell
+        local icon_x = cx + (CELL_SIZE - ICON_SIZE) / 2
+        local icon_y = cells_y + CELL_SIZE + ICON_GAP
         if not item_id then
             canvas.set_global_alpha(0.4)
         end

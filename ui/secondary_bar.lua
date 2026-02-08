@@ -20,9 +20,8 @@ local ICON_OFFSET_X = 5       -- X offset to center 16px icon in 26px container
 local ICON_OFFSET_Y = 4       -- Y offset to center 16px icon in 24px container
 
 -- Control icon layout (keybind label per slot)
-local CONTROL_ICON_SIZE = 8   -- Size of control icon in 1x scale
-local CONTROL_ICON_OFFSET_X = 16  -- X offset from slot left edge
-local CONTROL_ICON_OFFSET_Y = 14  -- Y offset from slot top edge
+local CONTROL_ICON_SIZE = 12  -- Size of control icon in 1x scale
+local CONTAINER_HEIGHT = 24   -- Height of each slot container sprite
 
 -- Charge display constants
 local CHARGE_FONT_SIZE = 7
@@ -178,8 +177,8 @@ function secondary_bar:draw(player)
             end
         end
 
-        -- Draw keybind label for this slot
-        control_icon.draw(ABILITY_ACTION_IDS[slot], x + CONTROL_ICON_OFFSET_X, CONTROL_ICON_OFFSET_Y, CONTROL_ICON_SIZE)
+        -- Draw keybind icon centered below the container
+        control_icon.draw(ABILITY_ACTION_IDS[slot], x + (CONTAINER_WIDTH - CONTROL_ICON_SIZE) / 2, CONTAINER_HEIGHT, CONTROL_ICON_SIZE)
 
         x = x + CONTAINER_WIDTH
     end

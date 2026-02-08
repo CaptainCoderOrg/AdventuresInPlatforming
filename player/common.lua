@@ -307,7 +307,7 @@ function common.handle_gravity(player, dt, max_speed)
 end
 
 --- Checks for ladder climb entry conditions and transitions to climb state.
---- Entry points: standing on ladder top + down, grounded + up, in air + down/up.
+--- Entry points: standing on ladder top + down, grounded + up, in air + up (falling only).
 ---@param player table The player object
 function common.handle_climb(player)
 	-- Entry from top of ladder (down while standing on ladder top)
@@ -317,14 +317,12 @@ function common.handle_climb(player)
 		end
 		return  -- Don't allow up to enter climb from top
 	end
-	-- Entry from middle of ladder (up or down while overlapping ladder)
+	-- Entry from middle of ladder (up while overlapping ladder)
 	-- Grounded + UP = start climbing from bottom
-	-- In air + DOWN = grab ladder while falling
-	-- In air + UP = grab ladder while jumping (but not at top, to prevent flicker)
+	-- In air + UP = grab ladder once falling (vy >= 0), not at top to prevent flicker
 	local up_pressed_on_ground = controls.up_down() and player.is_grounded
-	local down_pressed_in_air = controls.down_down() and not player.is_grounded
-	local up_pressed_in_air = controls.up_down() and not player.is_grounded and not player.on_ladder_top
-	if (up_pressed_on_ground or down_pressed_in_air or up_pressed_in_air) and player.can_climb then
+	local up_pressed_in_air = controls.up_down() and not player.is_grounded and not player.on_ladder_top and player.vy >= 0
+	if (up_pressed_on_ground or up_pressed_in_air) and player.can_climb then
 		player:set_state(player.states.climb)
 	end
 end

@@ -83,6 +83,7 @@ end
 ---@return number Effective stamina cost
 function effects.get_stamina_cost(player, weapon_id, base_cost)
     local fx = collect_effects(player, weapon_id)
+    if fx.stamina_cost ~= nil then return fx.stamina_cost end
     return base_cost + (fx.stamina_cost_add or 0)
 end
 

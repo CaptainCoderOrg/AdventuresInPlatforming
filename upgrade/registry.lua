@@ -12,7 +12,7 @@ registry.sword = {
           result = "I was able to increase the damage of the shortsword." },
         { gold = 50,  effects = { weapon_damage_add = 0.3 },
           result = "The enchantment grows stronger..." },
-        { gold = 100, material = "arcane_shard", effects = { weapon_damage_add = 1.0 },
+        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost = 0 },
           result = "A powerful dark energy flows through the blade now." },
     },
 }
@@ -25,7 +25,7 @@ registry.minor_healing = {
           result = "Now you will heal faster." },
         { gold = 100, effects = { energy_ratio = 1.5 },
           result = "Your energy flows more efficiently now." },
-        { gold = 250, material = "arcane_shard", effects = { heal_rate = 1.5, energy_ratio = 1 },
+        { gold = 0, material = "arcane_shard", effects = { heal_rate = 1.5, energy_ratio = 1 },
           result = "Life force surges through you with incredible speed." },
     },
 }
@@ -38,7 +38,7 @@ registry.longsword = {
           result = "The blade feels lighter and strikes harder." },
         { gold = 200, effects = { weapon_damage_add = 0.5, ms_per_frame = 70 },
           result = "The enchantment quickens the blade's swing." },
-        { gold = 500, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
+        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
           result = "A masterwork edge. Swift, deadly, and effortless." },
     },
 }
@@ -47,24 +47,24 @@ registry.throwing_axe = {
     label = "Enchant",
     description = "Imbue throwing axes to increase their power.",
     tiers = {
-        { gold = 50,  effects = { projectile_damage = 2 },
-          result = "The axes strike with renewed vigor." },
-        { gold = 150, effects = { recharge = 1.5 },
+        { gold = 50,  effects = { recharge = 1.5, max_charges_add = 1 },
           result = "The enchantment hastens the axe's return." },
-        { gold = 500, material = "arcane_shard", effects = { projectile_damage = 3 },
-          result = "Devastatingly heavy. These will crush anything." },
+        { gold = 150, effects = { projectile_damage = 2, max_charges_add = 1 },
+          result = "The axes strike with renewed vigor." },
+        { gold = 0, material = "arcane_shard", effects = { recharge = 1, max_charges_add = 1 },
+          result = "The axes return almost instantly." },
     },
 }
 
 registry.shuriken = {
-    label = "Enchant",
+    label = "Study",
     description = "Imbue shurikens with arcane power.",
     tiers = {
         { gold = 50,  effects = { max_charges_add = 2, projectile_damage = 3 },
           result = "The shurikens multiply and strike with greater force." },
         { gold = 200, effects = { max_charges_add = 2, energy_cost = 0.5 },
           result = "The summoning requires less energy now." },
-        { gold = 500, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 4, energy_cost = 0 },
+        { gold = 0, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 4, energy_cost = 0 },
           result = "Pure arcane energy. Infinite shurikens at no cost." },
     },
 }
@@ -73,7 +73,7 @@ registry.dash_amulet = {
     label = "Enchant",
     description = "Imbue the Dash Amulet with arcane energy.",
     tiers = {
-        { gold = 150, material = "arcane_shard", effects = { dash_invulnerable = true },
+        { gold = 0, material = "arcane_shard", effects = { dash_invulnerable = true },
           result = "The amulet pulses with a protective aura. You will be invulnerable while dashing." },
     },
 }

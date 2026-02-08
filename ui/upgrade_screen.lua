@@ -37,6 +37,9 @@ local LINE_HEIGHT = 12
 local ITEM_INDENT = 8
 local FONT_SIZE = 8
 
+-- Pagination
+local ITEMS_PER_PAGE = 4
+
 -- Selection indicator
 local SELECTOR_CHAR = ">"
 local SELECTOR_OFFSET_X = -10
@@ -60,6 +63,7 @@ local slice = nine_slice.create(sprites.ui.simple_dialogue, 76, 37, 10, 7, 9, 7)
 local state = STATE.HIDDEN
 local fade_progress = 0
 local selected_item = 1
+local current_page = 1
 local player_ref = nil
 local camera_ref = nil
 local original_camera_y = nil
@@ -94,6 +98,21 @@ local function get_alpha()
     return 0
 end
 
+--- Clamp selected_item and derive current_page
+local function clamp_selection()
+    if #upgradeable_items == 0 then
+        selected_item = 1
+        current_page = 1
+        return
+    end
+    if selected_item < 1 then selected_item = 1 end
+    if selected_item > #upgradeable_items then selected_item = #upgradeable_items end
+    current_page = math.ceil(selected_item / ITEMS_PER_PAGE)
+    local total_pages = math.ceil(#upgradeable_items / ITEMS_PER_PAGE)
+    if current_page > total_pages then current_page = total_pages end
+    if current_page < 1 then current_page = 1 end
+end
+
 --- Attempt to purchase the upgrade at the given index
 ---@param index number Index into upgradeable_items
 local function try_purchase(index)
@@ -107,6 +126,7 @@ local function try_purchase(index)
             npc_message = result
             message_reveal = 0
             refresh_items()
+            clamp_selection()
         end
     else
         npc_message = reason or "Cannot upgrade"
@@ -155,6 +175,7 @@ function upgrade_screen.start(player, camera, restore_camera_y)
     player_ref = player
     camera_ref = camera
     selected_item = 1
+    current_page = 1
     npc_message = DEFAULT_MESSAGE
     message_reveal = #DEFAULT_MESSAGE
 
@@ -198,16 +219,32 @@ end
 function upgrade_screen.input()
     if state ~= STATE.OPEN then return end
 
+    local total_pages = math.ceil(#upgradeable_items / ITEMS_PER_PAGE)
+
     -- Navigate items
     if controls.menu_up_pressed() then
         mouse_active = false
         if selected_item > 1 then
             selected_item = selected_item - 1
+            clamp_selection()
         end
     elseif controls.menu_down_pressed() then
         mouse_active = false
         if selected_item < #upgradeable_items then
             selected_item = selected_item + 1
+            clamp_selection()
+        end
+    elseif controls.menu_left_pressed() then
+        mouse_active = false
+        if current_page > 1 then
+            current_page = current_page - 1
+            selected_item = (current_page - 1) * ITEMS_PER_PAGE + 1
+        end
+    elseif controls.menu_right_pressed() then
+        mouse_active = false
+        if current_page < total_pages then
+            current_page = current_page + 1
+            selected_item = (current_page - 1) * ITEMS_PER_PAGE + 1
         end
     elseif controls.menu_confirm_pressed() then
         try_purchase(selected_item)
@@ -237,10 +274,10 @@ function upgrade_screen.update(dt)
 
         if mouse_active and #item_positions > 0 then
             local half_line = (LINE_HEIGHT * config.ui.SCALE) / 2
-            for i, pos in ipairs(item_positions) do
+            for _, pos in ipairs(item_positions) do
                 if mx >= pos.x_start and mx <= pos.x_end and
                    my >= pos.y - half_line and my <= pos.y + half_line then
-                    selected_item = i
+                    selected_item = pos.entry_index
 
                     if canvas.is_mouse_pressed(0) then
                         try_purchase(selected_item)
@@ -340,11 +377,16 @@ function upgrade_screen.draw()
                 canvas.draw_text(text_x, text_y + LINE_HEIGHT + FONT_SIZE, "\"" .. visible .. "\"")
             end
 
-            -- Draw items (below NPC message area)
+            -- Draw items (below NPC message area, with page support)
             item_positions = {}
             local item_y = text_y + LINE_HEIGHT * 2
+            local scroll_offset = (current_page - 1) * ITEMS_PER_PAGE
+            local visible_count = math.min(#upgradeable_items - scroll_offset, ITEMS_PER_PAGE)
+            local total_pages = math.ceil(#upgradeable_items / ITEMS_PER_PAGE)
 
-            for i, entry in ipairs(upgradeable_items) do
+            for i = 1, visible_count do
+                local entry_index = i + scroll_offset
+                local entry = upgradeable_items[entry_index]
                 local draw_y = item_y + FONT_SIZE
                 local item_x = text_x + ITEM_INDENT
 
@@ -352,6 +394,7 @@ function upgrade_screen.draw()
                     y = draw_y * scale,
                     x_start = (item_x + SELECTOR_OFFSET_X) * scale,
                     x_end = (box_x + box_w - TEXT_PADDING_RIGHT) * scale,
+                    entry_index = entry_index,
                 }
 
                 local item_def = unique_item_registry[entry.id]
@@ -364,7 +407,7 @@ function upgrade_screen.draw()
                 local can_buy = upgrade_transactions.can_purchase(player_ref, entry.id)
 
                 -- Draw selection indicator
-                if i == selected_item then
+                if entry_index == selected_item then
                     canvas.set_color("#FFCC00")
                     canvas.draw_text(item_x + SELECTOR_OFFSET_X, draw_y, SELECTOR_CHAR)
                 end
@@ -378,7 +421,7 @@ function upgrade_screen.draw()
                     canvas.set_color("#888888")
                 elseif not can_buy then
                     canvas.set_color("#AA5555")
-                elseif i == selected_item then
+                elseif entry_index == selected_item then
                     canvas.set_color("#FFFFFF")
                 else
                     canvas.set_color("#CCCCCC")
@@ -392,13 +435,50 @@ function upgrade_screen.draw()
                     price_text = "MAXED"
                 else
                     local next_tier = upgrade_def.tiers[current_tier + 1]
-                    price_text = tostring(next_tier.gold) .. "g"
+                    if next_tier.material then
+                        local mat_def = stackable_item_registry[next_tier.material]
+                        price_text = mat_def and mat_def.name or next_tier.material
+                    else
+                        price_text = tostring(next_tier.gold) .. "g"
+                    end
                 end
                 canvas.set_text_align("right")
                 canvas.draw_text(box_x + box_w - TEXT_PADDING_RIGHT, draw_y, price_text)
                 canvas.set_text_align("left")
 
                 item_y = item_y + LINE_HEIGHT
+            end
+
+            -- Page indicator row (on the 5th item row)
+            if total_pages > 1 then
+                local page_y = item_y + FONT_SIZE
+                local left_x = text_x + ITEM_INDENT
+                local page_text = "Page " .. current_page .. " / " .. total_pages
+                canvas.set_color("#AAAAAA")
+                canvas.draw_text(left_x, page_y, page_text)
+
+                -- Draw left/right navigation icons
+                local text_w = canvas.get_text_width(page_text)
+                local icon_size = CLOSE_ICON_SIZE
+                local mode = controls.get_last_input_device()
+                if current_page > 1 then
+                    local icon_x = left_x - CLOSE_ICON_SPACING - icon_size
+                    local icon_y = page_y - FONT_SIZE + (FONT_SIZE - icon_size) / 2
+                    if mode == "gamepad" then
+                        sprites.controls.draw_button(canvas.buttons.DPAD_LEFT, icon_x, icon_y, CLOSE_BUTTON_SCALE)
+                    else
+                        sprites.controls.draw_key(canvas.keys.LEFT, icon_x, icon_y, CLOSE_KEY_SCALE)
+                    end
+                end
+                if current_page < total_pages then
+                    local icon_x = left_x + text_w + CLOSE_ICON_SPACING
+                    local icon_y = page_y - FONT_SIZE + (FONT_SIZE - icon_size) / 2
+                    if mode == "gamepad" then
+                        sprites.controls.draw_button(canvas.buttons.DPAD_RIGHT, icon_x, icon_y, CLOSE_BUTTON_SCALE)
+                    else
+                        sprites.controls.draw_key(canvas.keys.RIGHT, icon_x, icon_y, CLOSE_KEY_SCALE)
+                    end
+                end
             end
 
             -- Draw selected item description and material requirement
@@ -410,7 +490,7 @@ function upgrade_screen.draw()
                 if not is_maxed then
                     local next_tier = entry.def.tiers[current_tier + 1]
                     local desc = entry.def.description
-                    local desc_y = box_y + box_h - TEXT_PADDING_TOP - LINE_HEIGHT
+                    local desc_y = box_y + box_h - TEXT_PADDING_TOP - LINE_HEIGHT + 2
 
                     if next_tier.material then
                         -- Draw description in gray, then "Requires: " in green, material name in gold

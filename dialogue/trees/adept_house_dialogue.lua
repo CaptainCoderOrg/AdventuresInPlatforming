@@ -321,10 +321,9 @@ return {
         },
 
         guilt_response = {
-            text = "I should have looked harder. I was so quick to blame them... Here. Take the key. It's the least I can do. But I fear no reward can ease my conscience now.",
-            actions = { "give_item_adept_key" },
+            text = "I should have looked harder. I was so quick to blame them... Please, find the crystal ball. If it wasn't with them, it must be somewhere nearby. I need to know the truth before I can part with anything.",
             options = {
-                { text = "I'll keep looking for the crystal ball.", next = "keep_looking" },
+                { text = "I'll keep looking for it.", next = "keep_looking" },
                 { text = "Try not to blame yourself too much.", next = "self_blame" },
                 { text = "Leave", next = nil },
             },
@@ -346,7 +345,7 @@ return {
         },
 
         self_blame = {
-            text = "How can I not? I called them thieves. Monsters. And they were innocent all along. Go. Take the key. I need to be alone with my shame.",
+            text = "How can I not? I called them thieves. Monsters. And they were innocent all along... Find the crystal ball. I need to know the truth. Go. I need to be alone with my shame.",
             options = {
                 { text = "Leave", next = nil },
             },

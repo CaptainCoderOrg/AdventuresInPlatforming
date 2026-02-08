@@ -366,6 +366,16 @@ local function is_fast_travel_available()
     return false
 end
 
+--- Open the fast travel panel from either the menu button or inventory use
+---@param from_menu boolean True if opened from menu button, false if from inventory
+local function open_fast_travel(from_menu)
+    local current_key = (current_level_id or "") .. ":" .. campfire_name
+    fast_travel_panel.show(player_ref.visited_campfires, current_key)
+    nav_mode = NAV_MODE.FAST_TRAVEL
+    fast_travel_from_menu = from_menu
+    rest_dialogue.text = "Select a destination."
+end
+
 --- Position all menu buttons within the menu dialogue
 ---@param menu_x number Menu dialogue X position
 ---@param menu_y number Menu dialogue Y position
@@ -501,11 +511,7 @@ function rest_screen.init()
 
     player_status_panel.on_use_item = function(item_id)
         if item_id == "orb_of_teleportation" and current_mode == MODE.REST then
-            local current_key = (current_level_id or "") .. ":" .. campfire_name
-            fast_travel_panel.show(player_ref.visited_campfires, current_key)
-            nav_mode = NAV_MODE.FAST_TRAVEL
-            fast_travel_from_menu = false
-            rest_dialogue.text = "Select a destination."
+            open_fast_travel(false)
             -- Deactivate status/inventory panels while fast travel is open
             player_status_panel.active = false
             player_status_panel.inventory.active = false
@@ -774,11 +780,7 @@ local function trigger_focused_action()
         journal_panel.show(player_ref and player_ref.journal or {}, player_ref and player_ref.journal_read or {})
     elseif focused_index == 4 then
         if is_fast_travel_available() then
-            local current_key = (current_level_id or "") .. ":" .. campfire_name
-            fast_travel_panel.show(player_ref.visited_campfires, current_key)
-            nav_mode = NAV_MODE.FAST_TRAVEL
-            fast_travel_from_menu = true
-            rest_dialogue.text = "Select a destination."
+            open_fast_travel(true)
         end
     elseif focused_index == 5 then
         nav_mode = NAV_MODE.SETTINGS
@@ -1504,11 +1506,6 @@ function rest_screen.update(dt, block_mouse)
                     player_status_panel:toggle_hovered_equipped()
                 end
 
-                -- Update rest dialogue with stat description when hovering or navigating
-                local description = player_status_panel:get_description()
-                if description then
-                    rest_dialogue.text = description
-                end
             elseif active_panel_index == 2 then
                 if nav_mode == NAV_MODE.SETTINGS then
                     rest_dialogue.text = "{move_up}{move_down}{move_left}{move_right} Scroll\n{jump} Center"
@@ -1759,11 +1756,18 @@ local function is_level_up_prompt_visible()
     return player_status_panel:is_highlighted_levelable()
 end
 
+-- Cached level-up prompt text/metrics (recomputed only when cost or affordability changes)
+local cached_lu_cost = nil
+local cached_lu_afford = nil
+local cached_lu_text = nil
+local cached_lu_metrics = nil
+
 --- Draw the level-up prompt in the bottom right of the rest dialogue
 ---@param dialogue table The rest dialogue with x, y, width, height
+---@param level_up_visible boolean Pre-computed result of is_level_up_prompt_visible()
 ---@return nil
-local function draw_level_up_prompt(dialogue)
-    if not is_level_up_prompt_visible() then
+local function draw_level_up_prompt(dialogue, level_up_visible)
+    if not level_up_visible then
         return
     end
 
@@ -1773,11 +1777,15 @@ local function draw_level_up_prompt(dialogue)
     local stat = player_status_panel:get_highlighted_stat()
     local can_afford = player_status_panel:can_afford_upgrade(stat)
 
-    local text
-    if can_afford then
-        text = string.format("Spend %d XP to increase", cost)
-    else
-        text = string.format("Not enough XP (%d required)", cost)
+    if cost ~= cached_lu_cost or can_afford ~= cached_lu_afford then
+        cached_lu_cost = cost
+        cached_lu_afford = can_afford
+        if can_afford then
+            cached_lu_text = string.format("Spend %d XP to increase", cost)
+        else
+            cached_lu_text = string.format("Not enough XP (%d required)", cost)
+        end
+        cached_lu_metrics = nil
     end
     local text_color = can_afford and "#FFFFFF" or "#888888"
 
@@ -1792,11 +1800,13 @@ local function draw_level_up_prompt(dialogue)
     local text_y = dialogue.y + dialogue.height - PROMPT_PADDING - 4
 
     canvas.set_color(text_color)
-    canvas.draw_text(text_x, text_y, text)
+    canvas.draw_text(text_x, text_y, cached_lu_text)
 
     if can_afford then
-        local text_metrics = canvas.get_text_metrics(text)
-        local icon_x = text_x - text_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
+        if not cached_lu_metrics then
+            cached_lu_metrics = canvas.get_text_metrics(cached_lu_text)
+        end
+        local icon_x = text_x - cached_lu_metrics.width - PROMPT_ICON_SPACING - PROMPT_ICON_SIZE
         local icon_y = text_y - PROMPT_ICON_SIZE / 2
         draw_input_icon(icon_x, icon_y, player_status_panel:is_mouse_hover())
     end
@@ -1806,10 +1816,11 @@ end
 
 --- Check if the inventory equip prompt should be visible
 --- Only true when inventory has a hovered/selected item AND level-up prompt is not visible
+---@param level_up_visible boolean Pre-computed result of is_level_up_prompt_visible()
 ---@return boolean
-local function is_inventory_prompt_visible()
+local function is_inventory_prompt_visible(level_up_visible)
     -- Only on status panel, and mutually exclusive with level-up prompt
-    if active_panel_index ~= 1 or is_level_up_prompt_visible() then
+    if active_panel_index ~= 1 or level_up_visible then
         return false
     end
 
@@ -1827,15 +1838,16 @@ end
 
 --- Draw the submenu entry prompt in the bottom right of the info panel
 ---@param dialogue table The rest dialogue with x, y, width, height
+---@param level_up_visible boolean Pre-computed result of is_level_up_prompt_visible()
 ---@return nil
-local function draw_submenu_prompt(dialogue)
+local function draw_submenu_prompt(dialogue, level_up_visible)
     -- Only show in menu mode for submenu items (Status, Map, Journal, Fast Travel, Controls, Audio)
     if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 6 then
         return
     end
 
     -- Mutual exclusion: never show if level-up or inventory prompts are visible
-    if is_level_up_prompt_visible() or is_inventory_prompt_visible() then
+    if level_up_visible or is_inventory_prompt_visible(level_up_visible) then
         return
     end
 
@@ -1875,11 +1887,11 @@ end
 local equip_prompt_metrics = {}  -- "Equip"/"Unequip"/"Use" -> metrics
 
 --- Draw the inventory equip/unequip prompt in the bottom right of the rest dialogue
-
 ---@param dialogue table The rest dialogue with x, y, width, height
+---@param level_up_visible boolean Pre-computed result of is_level_up_prompt_visible()
 ---@return nil
-local function draw_inventory_equip_prompt(dialogue)
-    if not is_inventory_prompt_visible() then
+local function draw_inventory_equip_prompt(dialogue, level_up_visible)
+    if not is_inventory_prompt_visible(level_up_visible) then
         return
     end
 
@@ -1999,6 +2011,14 @@ local function draw_circular_viewport(x, y, radius, screen_w, screen_h)
     end
 end
 
+-- Cached campfire glow gradients (rebuilt only when quantized radius or position changes)
+local cached_glow_key = nil
+local cached_glow_x = nil
+local cached_glow_y = nil
+local cached_vignette_gradient = nil
+local cached_ring_gradient = nil
+local cached_ring_outer = 0
+
 --- Draw campfire glow effects (vignette and glow ring)
 ---@param x number Circle center X in screen pixels
 ---@param y number Circle center Y in screen pixels
@@ -2006,30 +2026,38 @@ end
 ---@param pulse number Pulse amount for animation
 ---@return nil
 local function draw_campfire_glow(x, y, radius, pulse)
-    -- Vignette gradient
-    local gradient = canvas.create_radial_gradient(x, y, radius * 0.5, x, y, radius)
-    gradient:add_color_stop(0, "rgba(255, 106, 0, 0.1)")
-    gradient:add_color_stop(0.7, "rgba(255, 106, 0, 0.3)")
-    gradient:add_color_stop(0.7, "rgba(255, 106, 0, 0.3)")
-    gradient:add_color_stop(1, "rgba(0,0,0,0.7)")
-    canvas.set_fill_style(gradient)
+    -- Quantize radius to nearest pixel to avoid rebuilding gradients every frame
+    local q_radius = math.floor(radius + 0.5)
+
+    if q_radius ~= cached_glow_key or x ~= cached_glow_x or y ~= cached_glow_y then
+        cached_glow_key = q_radius
+        cached_glow_x = x
+        cached_glow_y = y
+
+        -- Vignette gradient
+        cached_vignette_gradient = canvas.create_radial_gradient(x, y, q_radius * 0.5, x, y, q_radius)
+        cached_vignette_gradient:add_color_stop(0, "rgba(255, 106, 0, 0.1)")
+        cached_vignette_gradient:add_color_stop(0.7, "rgba(255, 106, 0, 0.3)")
+        cached_vignette_gradient:add_color_stop(0.7, "rgba(255, 106, 0, 0.3)")
+        cached_vignette_gradient:add_color_stop(1, "rgba(0,0,0,0.7)")
+
+        -- Glow ring gradient
+        local glow_inner = q_radius * 0.85
+        cached_ring_outer = q_radius * 1.2
+        cached_ring_gradient = canvas.create_radial_gradient(x, y, glow_inner, x, y, cached_ring_outer)
+        cached_ring_gradient:add_color_stop(0, "rgba(255,180,50,0)")
+        cached_ring_gradient:add_color_stop(0.4, get_glow_color(0.3))
+        cached_ring_gradient:add_color_stop(1, "rgba(255,80,20,0)")
+    end
+
+    canvas.set_fill_style(cached_vignette_gradient)
     canvas.begin_path()
-    canvas.arc(x, y, radius, 0, math.pi * 2)
+    canvas.arc(x, y, q_radius, 0, math.pi * 2)
     canvas.fill()
 
-    -- Glow ring
-    local glow_alpha = 0.4 + pulse * 0.2
-    local glow_inner = radius * 0.85
-    local glow_outer = radius * 1.2
-
-    local glow_gradient = canvas.create_radial_gradient(x, y, glow_inner, x, y, glow_outer)
-    glow_gradient:add_color_stop(0, "rgba(255,180,50,0)")
-    glow_gradient:add_color_stop(0.4, get_glow_color(glow_alpha * 0.5))
-    glow_gradient:add_color_stop(1, "rgba(255,80,20,0)")
-
-    canvas.set_fill_style(glow_gradient)
+    canvas.set_fill_style(cached_ring_gradient)
     canvas.begin_path()
-    canvas.arc(x, y, glow_outer, 0, math.pi * 2)
+    canvas.arc(x, y, cached_ring_outer, 0, math.pi * 2)
     canvas.fill()
 end
 
@@ -2113,9 +2141,10 @@ function rest_screen.draw()
         end
 
         simple_dialogue.draw(rest_dialogue)
-        draw_level_up_prompt(rest_dialogue)
-        draw_submenu_prompt(rest_dialogue)
-        draw_inventory_equip_prompt(rest_dialogue)
+        local level_up_visible = is_level_up_prompt_visible()
+        draw_level_up_prompt(rest_dialogue, level_up_visible)
+        draw_submenu_prompt(rest_dialogue, level_up_visible)
+        draw_inventory_equip_prompt(rest_dialogue, level_up_visible)
         draw_map_back_prompt(rest_dialogue)
 
         local journal_has_unread = player_ref and journal_panel.has_unread(player_ref.journal, player_ref.journal_read)

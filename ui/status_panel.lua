@@ -200,6 +200,7 @@ end
 ---@return boolean can_level True if player can afford at least one stat upgrade
 function status_panel:can_level_up(available_exp)
     if not self.player then return false end
+    available_exp = available_exp or (self.player.experience - self:get_total_pending_cost())
     for stat_name in pairs(LEVELABLE_STATS) do
         if self:can_afford_upgrade(stat_name, available_exp) then
             return true
@@ -557,6 +558,25 @@ function status_panel:get_highlighted_stat()
     return selectable and selectable.label
 end
 
+-- Cached item description strings (item_id -> "Name: Description")
+local item_desc_cache = {}
+
+--- Get cached display text for an item definition
+---@param item_id string Item identifier
+---@param item_def table Item definition with name and description fields
+---@return string display_text
+local function get_item_display_text(item_id, item_def)
+    local cached = item_desc_cache[item_id]
+    if cached then return cached end
+    if item_def.description and item_def.description ~= "" then
+        cached = item_def.name .. ": " .. item_def.description
+    else
+        cached = item_def.name
+    end
+    item_desc_cache[item_id] = cached
+    return cached
+end
+
 --- Get the description for the currently hovered inventory item or ability slot
 ---@return string|nil description Item name and description, or nil if nothing hovered
 function status_panel:get_inventory_description()
@@ -565,10 +585,7 @@ function status_panel:get_inventory_description()
     if slot_item then
         local item_def = unique_item_registry[slot_item]
         if item_def then
-            if item_def.description and item_def.description ~= "" then
-                return item_def.name .. ": " .. item_def.description
-            end
-            return item_def.name
+            return get_item_display_text(slot_item, item_def)
         end
     end
 
@@ -583,10 +600,7 @@ function status_panel:get_inventory_description()
         return nil
     end
 
-    if item_def.description and item_def.description ~= "" then
-        return item_def.name .. ": " .. item_def.description
-    end
-    return item_def.name
+    return get_item_display_text(item_id, item_def)
 end
 
 --- Check if the currently hovered inventory item is equipped

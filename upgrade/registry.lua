@@ -12,7 +12,7 @@ registry.sword = {
           result = "I was able to increase the damage of the shortsword." },
         { gold = 50,  effects = { weapon_damage_add = 0.3 },
           result = "The enchantment grows stronger..." },
-        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost = 0 },
+        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 0.5, stamina_cost = 0.5 },
           result = "A powerful dark energy flows through the blade now." },
     },
 }
@@ -25,7 +25,7 @@ registry.minor_healing = {
           result = "Now you will heal faster." },
         { gold = 100, effects = { energy_ratio = 1.5 },
           result = "Your energy flows more efficiently now." },
-        { gold = 0, material = "arcane_shard", effects = { heal_rate = 1.5, energy_ratio = 1 },
+        { gold = 0, material = "arcane_shard", effects = { heal_rate = 3, energy_ratio = 1 },
           result = "Life force surges through you with incredible speed." },
     },
 }
@@ -49,7 +49,7 @@ registry.throwing_axe = {
     tiers = {
         { gold = 50,  effects = { recharge = 1.5, max_charges_add = 1 },
           result = "The enchantment hastens the axe's return." },
-        { gold = 150, effects = { projectile_damage = 2, max_charges_add = 1 },
+        { gold = 150, effects = { projectile_damage = 2, max_charges_add = 1, double_projectile = true },
           result = "The axes strike with renewed vigor." },
         { gold = 0, material = "arcane_shard", effects = { recharge = 1, max_charges_add = 1 },
           result = "The axes return almost instantly." },
@@ -60,12 +60,38 @@ registry.shuriken = {
     label = "Study",
     description = "Imbue shurikens with arcane power.",
     tiers = {
-        { gold = 50,  effects = { max_charges_add = 2, projectile_damage = 3 },
+        { gold = 50,  effects = { max_charges_add = 2, projectile_damage = 3, double_projectile = true },
           result = "The shurikens multiply and strike with greater force." },
         { gold = 200, effects = { max_charges_add = 2, energy_cost = 0.5 },
           result = "The summoning requires less energy now." },
-        { gold = 0, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 4, energy_cost = 0 },
-          result = "Pure arcane energy. Infinite shurikens at no cost." },
+        { gold = 0, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 4, triple_projectile = true },
+          result = "Pure arcane energy. A fan of shurikens at your command." },
+    },
+}
+
+registry.grip_boots = {
+    label = "Enchant",
+    description = "Enchant the Grip Boots with arcane energy.",
+    tiers = {
+        { gold = 50,  effects = { stamina_cost_add = -0.5 },
+          result = "The boots grip tighter. Wall jumping requires less effort." },
+        { gold = 200, effects = { wall_slide_delay = 1 },
+          result = "The enchantment lets you cling to walls longer before sliding." },
+        { gold = 0, material = "arcane_shard", effects = { stamina_cost = 0, wall_slide_delay = 2 },
+          result = "You can hang on walls effortlessly for an extended time." },
+    },
+}
+
+registry.hammer = {
+    label = "Enchant",
+    description = "Enchant the hammer to increase its power.",
+    tiers = {
+        { gold = 50,  effects = { weapon_damage_add = 5 },
+          result = "The hammer strikes with greater force." },
+        { gold = 200, effects = { stamina_cost_add = -4 },
+          result = "The enchantment makes the hammer feel lighter." },
+        { gold = 0, material = "arcane_shard", effects = { ms_per_frame = 112 },
+          result = "The hammer swings with blinding speed." },
     },
 }
 
@@ -73,13 +99,17 @@ registry.dash_amulet = {
     label = "Enchant",
     description = "Imbue the Dash Amulet with arcane energy.",
     tiers = {
+        { gold = 50,  effects = { max_charges_add = 1 },
+          result = "The amulet hums with energy. You can now dash twice before recharging." },
+        { gold = 200, effects = { stamina_cost_add = -2 },
+          result = "The amulet feels lighter. Dashing requires less effort." },
         { gold = 0, material = "arcane_shard", effects = { dash_invulnerable = true },
           result = "The amulet pulses with a protective aura. You will be invulnerable while dashing." },
     },
 }
 
 --- Stable display order for upgrade UI
-registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken", "dash_amulet" }
+registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken", "hammer", "grip_boots", "dash_amulet" }
 
 -- Lookup set built from DISPLAY_ORDER (prevents get() from returning non-upgrade keys)
 local VALID_ITEMS = {}

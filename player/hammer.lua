@@ -6,6 +6,7 @@ local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local Prop = require('Prop')
 local shield = require('player.shield')
+local upgrade_effects = require('upgrade.effects')
 local unique_item_registry = require('Prop.unique_item_registry')
 
 --- Hammer state: Player performs a heavy overhead attack.
@@ -87,7 +88,7 @@ local function check_hammer_hits(player, hitbox, stats)
 		return
 	end
 
-	local damage = stats and stats.damage or 5
+	local damage = upgrade_effects.get_weapon_damage(player, "hammer", stats and stats.damage or 5)
 	filter_player = player
 	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter, _query_results)
 	local crit_threshold = player:critical_percent()
@@ -133,8 +134,9 @@ end
 ---@param player table The player object
 function hammer.start(player)
 	shield.remove(player)
-	player.animation = Animation.new(common.animations.HAMMER)
-	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * common.animations.HAMMER.ms_per_frame) / 1000
+	local speed = upgrade_effects.get_attack_speed(player, "hammer", common.animations.HAMMER.ms_per_frame)
+	player.animation = Animation.new(common.animations.HAMMER, { ms_per_frame = speed })
+	player.hammer_state.remaining_time = (common.animations.HAMMER.frame_count * speed) / 1000
 	player.hammer_state.hit_button = false
 	player.hammer_state.hit_lever = false
 	player.hammer_state.hit_shield = false

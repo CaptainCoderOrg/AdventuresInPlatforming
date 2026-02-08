@@ -32,8 +32,8 @@ common.MAX_FALL_SPEED = 20
 common.ATTACK_STAMINA_COST = 2
 -- Air jump costs 1: double jump only, ground jump stays free
 common.AIR_JUMP_STAMINA_COST = 1
--- Dash costs 2.5: high cost for powerful escape/engage
-common.DASH_STAMINA_COST = 2.5
+-- Dash costs 4: high cost for powerful escape/engage
+common.DASH_STAMINA_COST = 4
 -- Wall jump costs 1: matches air jump cost
 common.WALL_JUMP_STAMINA_COST = 1
 -- Fixed fatigue duration in seconds (normal regen continues during fatigue)
@@ -522,7 +522,7 @@ function common.handle_dash(player)
 		Effects.create_text(player.x, player.y, "Cooldown")
 		return false
 	end
-	if player:use_stamina(common.DASH_STAMINA_COST) then
+	if player:use_stamina(upgrade_effects.get_stamina_cost(player, "dash_amulet", common.DASH_STAMINA_COST)) then
 		player.active_ability_slot = player.dash_slot
 		player:set_state(player.states.dash)
 		return true

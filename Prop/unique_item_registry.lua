@@ -65,7 +65,7 @@ return {
         static_sprite = sprites.items.hammer,
         stats = {
             damage = 5,
-            stamina_cost = 5,
+            stamina_cost = 8,
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             active_frames = { min = 3, max = 4 },
             can_hit_buttons = true,

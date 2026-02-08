@@ -42,6 +42,9 @@ local function collect_effects(player, item_id)
     _result.energy_cost = nil
     _result.recharge = nil
     _result.dash_invulnerable = nil
+    _result.wall_slide_delay = nil
+    _result.double_projectile = nil
+    _result.triple_projectile = nil
 
     for i = 1, math.min(tier_num, #def.tiers) do
         local tier = def.tiers[i]
@@ -134,6 +137,33 @@ end
 function effects.has_dash_invulnerability(player)
     local fx = collect_effects(player, "dash_amulet")
     return fx.dash_invulnerable or false
+end
+
+--- Get effective wall slide delay (override from upgrades, or base)
+---@param player table Player instance
+---@param base_delay number Base wall slide delay in seconds
+---@return number Effective wall slide delay in seconds
+function effects.get_wall_slide_delay(player, base_delay)
+    local fx = collect_effects(player, "grip_boots")
+    return fx.wall_slide_delay or base_delay
+end
+
+--- Check if player has double projectile from throwing axe upgrade
+---@param player table Player instance
+---@param item_id string Secondary item ID
+---@return boolean True if double projectile is active
+function effects.has_double_projectile(player, item_id)
+    local fx = collect_effects(player, item_id)
+    return fx.double_projectile or false
+end
+
+--- Check if player has triple projectile from upgrade
+---@param player table Player instance
+---@param item_id string Secondary item ID
+---@return boolean True if triple projectile is active
+function effects.has_triple_projectile(player, item_id)
+    local fx = collect_effects(player, item_id)
+    return fx.triple_projectile or false
 end
 
 --- Get effective recharge time (override from upgrades, or base)

@@ -2,6 +2,7 @@ local Animation = require('Animation')
 local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
+local upgrade_effects = require('upgrade/effects')
 
 --- Wall slide state: Player is sliding down a wall at reduced speed.
 --- Transitions to wall_jump on jump, air if releasing wall, or idle on landing.
@@ -25,7 +26,7 @@ end
 ---@param player table The player object
 function wall_slide.input(player)
 	if controls.jump_pressed() then
-		if player:use_stamina(common.WALL_JUMP_STAMINA_COST) then
+		if player:use_stamina(upgrade_effects.get_stamina_cost(player, "grip_boots", common.WALL_JUMP_STAMINA_COST)) then
 			player.wall_jump_dir = player.wall_direction
 			player:set_state(player.states.wall_jump)
 		end
@@ -54,7 +55,7 @@ function wall_slide.update(player, dt)
 	player.wall_slide_state.slide_delay_timer = player.wall_slide_state.slide_delay_timer + dt
 
 	local in_grace = player.wall_slide_state.grace_time > 0
-	local in_slide_delay = player.wall_slide_state.slide_delay_timer < WALL_SLIDE_DELAY
+	local in_slide_delay = player.wall_slide_state.slide_delay_timer < upgrade_effects.get_wall_slide_delay(player, WALL_SLIDE_DELAY)
 
 	if in_grace then
 		common.apply_gravity(player, dt)

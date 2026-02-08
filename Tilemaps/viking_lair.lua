@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 345,
+  nextobjectid = 346,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -123,9 +123,9 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = -3526.5,
+          x = -3459,
           y = 448,
-          width = 1122.5,
+          width = 1055,
           height = 176,
           rotation = 0,
           visible = true,
@@ -324,7 +324,7 @@ return {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 56, 56, 56, 56,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 0, 0, 0, 0,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 0, 0, 0, 0,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 0, 0, 0, 0,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 27, 0, 0, 0,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 30, 0, 0, 0, 0
           }
         },
@@ -4997,6 +4997,20 @@ return {
           shape = "rectangle",
           x = -1472,
           y = 528,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 112,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 345,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -2112,
+          y = 224,
           width = 16,
           height = 16,
           rotation = 0,

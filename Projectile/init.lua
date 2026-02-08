@@ -217,7 +217,11 @@ end
 function Projectile.create_axe(x, y, direction, owner)
     audio.play_axe_throw_sound()
     local damage = upgrade_effects.get_projectile_damage(owner, "throwing_axe", 1)
-    return Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, damage, owner)
+    local first = Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -3, 20, direction, nil, damage, owner)
+    if owner and upgrade_effects.has_double_projectile(owner, "throwing_axe") then
+        Projectile.new("axe", Projectile.animations.AXE, x + 0.5, y + 0.25, direction * 16, -8, 20, direction, nil, damage, owner)
+    end
+    return first
 end
 
 --- Creates and spawns a shuriken projectile with straight trajectory.
@@ -229,7 +233,16 @@ end
 function Projectile.create_shuriken(x, y, direction, owner)
     audio.play_shuriken_throw_sound()
     local damage = upgrade_effects.get_projectile_damage(owner, "shuriken", 2)
-    return Projectile.new("shuriken", Projectile.animations.SHURIKEN, x + 0.5, y + 0.25, direction * 24, 0, 0, direction, Effects.create_shuriken_hit, damage, owner)
+    local vx = direction * 24
+    local sx, sy = x + 0.5, y + 0.25
+    local first = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 0, 0, direction, Effects.create_shuriken_hit, damage, owner)
+    if owner and upgrade_effects.has_triple_projectile(owner, "shuriken") then
+        Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -14, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 14, 0, direction, Effects.create_shuriken_hit, damage, owner)
+    elseif owner and upgrade_effects.has_double_projectile(owner, "shuriken") then
+        Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -8, 0, direction, Effects.create_shuriken_hit, damage, owner)
+    end
+    return first
 end
 
 -- Initialize cached projectile specs (after create functions are defined)

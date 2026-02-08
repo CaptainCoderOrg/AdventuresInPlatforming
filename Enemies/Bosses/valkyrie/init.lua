@@ -9,10 +9,52 @@ local Effects = require('Effects')
 local audio = require('audio')
 local boss_health_bar = require('ui/boss_health_bar')
 
+local canvas = require('canvas')
+local config = require('config')
+local Prop = require('Prop')
+
 local valkyrie = {}
 
 local FRAME_W = 40
 local FRAME_H = 29
+
+-- Cached sprite dimensions (avoid per-frame multiplication)
+local SPRITE_WIDTH = FRAME_W * config.ui.SCALE
+local SPRITE_HEIGHT = FRAME_H * config.ui.SCALE
+local BASE_WIDTH = 16 * config.ui.SCALE   -- 1-tile character anchor width
+local EXTRA_HEIGHT = (FRAME_H - 16) * config.ui.SCALE  -- Sprite extends above 1-tile base
+local Y_NUDGE = 13 * config.ui.SCALE       -- Shift sprite down to align with hitbox
+local X_NUDGE_RIGHT = 10 * config.ui.SCALE -- Extra rightward shift when facing right
+
+--- Draw valkyrie sprite (40x29 sprite with character anchored at bottom).
+--- Uses canvas transforms to flip visually while hitbox stays fixed.
+---@param enemy table The enemy instance
+local function draw_sprite(enemy)
+    if not enemy.animation then return end
+
+    local definition = enemy.animation.definition
+    local frame = enemy.animation.frame
+    local x = sprites.px(enemy.x)
+    local lift = Prop.get_pressure_plate_lift(enemy)
+    local y = sprites.stable_y(enemy, enemy.y, -lift)
+
+    canvas.save()
+
+    if enemy.direction == 1 then
+        canvas.translate(x + SPRITE_WIDTH - BASE_WIDTH + X_NUDGE_RIGHT, y - EXTRA_HEIGHT + Y_NUDGE)
+        canvas.scale(-1, 1)
+    else
+        canvas.translate(x - BASE_WIDTH, y - EXTRA_HEIGHT + Y_NUDGE)
+    end
+
+    local sheet_frame = frame + (definition.frame_offset or 0)
+    local source_y = (definition.row or 0) * definition.height
+    canvas.draw_image(definition.name, 0, 0,
+        SPRITE_WIDTH, SPRITE_HEIGHT,
+        sheet_frame * definition.width, source_y,
+        definition.width, definition.height)
+    canvas.restore()
+end
 
 -- Animation definitions (single sheet, rows by animation)
 local sheet = sprites.enemies.shieldmaiden.sheet
@@ -42,7 +84,7 @@ states.idle = {
             enemy.animation.flipped = enemy.direction
         end
     end,
-    draw = common.draw,
+    draw = draw_sprite,
 }
 
 states.hit = {
@@ -57,7 +99,7 @@ states.hit = {
             enemy:set_state(states.idle)
         end
     end,
-    draw = common.draw,
+    draw = draw_sprite,
 }
 
 states.death = {
@@ -74,7 +116,7 @@ states.death = {
             enemy.marked_for_destruction = true
         end
     end,
-    draw = common.draw,
+    draw = draw_sprite,
 }
 
 --- Custom on_spawn handler to register with coordinator.
@@ -140,10 +182,11 @@ end
 
 --- Export enemy type definition
 valkyrie.definition = {
-    box = { w = 0.625, h = 0.625, x = 0.6875, y = 0.625 },
+    box = { w = 0.6875, h = 0.9375, x = 0.25, y = 0.625 },
     gravity = 1.5,
     max_fall_speed = 20,
     max_health = 100,
+    armor = 1,
     damage = 1,
     loot = { xp = 50 },
     states = states,

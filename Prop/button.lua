@@ -47,6 +47,16 @@ local definition = {
         if options.persist then
             prop.should_reset = false
         end
+
+        -- Start already pressed (silently, no sound or callback)
+        if options.start_pressed then
+            prop.is_pressed = true
+            prop.animation = Animation.new(BUTTON_ANIM, {
+                start_frame = BUTTON_ANIM.frame_count - 1
+            })
+            prop.animation:pause()
+            Prop.set_state(prop, "pressed", true)
+        end
     end,
 
     states = {

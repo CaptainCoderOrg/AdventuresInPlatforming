@@ -89,6 +89,16 @@ local definition = {
         -- If already retracting, the state will check is_disabled when animation finishes
     end,
 
+    --- Retract spikes and stop cycling (non-permanent, can be reactivated with set_alternating).
+    ---@param prop table The prop instance to retract
+    retract = function(prop)
+        prop.mode = "static"
+        if prop.state_name == "extended" or prop.state_name == "extending" then
+            Prop.set_state(prop, "retracting")
+        end
+        -- If already retracting or retracted, no action needed
+    end,
+
     --- Activates alternating mode with the configured offset.
     --- The offset is applied once to stagger this trap relative to others in the group.
     ---@param prop table The prop instance to configure

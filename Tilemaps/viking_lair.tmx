@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="352">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="410">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -877,9 +877,9 @@
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
+11,11,11,11,39,11,11,11,11,11,11,11,11,11,11,11,
+11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
+11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="-32" y="32" width="16" height="16">
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
@@ -895,9 +895,9 @@
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
+11,11,11,11,11,11,11,11,11,11,37,11,11,11,11,11,
+0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
+0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11
 </chunk>
    <chunk x="-16" y="32" width="16" height="16">
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
@@ -1224,12 +1224,12 @@
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
 </chunk>
    <chunk x="-48" y="48" width="16" height="16">
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,39,56,56,56,56,56,56,56,56,56,56,56,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
+11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
+11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
+11,11,11,11,12,27,36,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 56,37,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 0,28,56,56,30,0,0,0,0,0,0,0,0,0,0,0,
@@ -1242,14 +1242,14 @@
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11
 </chunk>
    <chunk x="-32" y="48" width="16" height="16">
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-56,56,56,56,56,56,56,56,56,56,37,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
+0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
+0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
+0,0,0,0,0,0,0,0,36,18,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
@@ -2240,13 +2240,13 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="-48" y="48" width="16" height="16">
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,45,0,0,0,45,0,0,0,45,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
+0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
+0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
+0,0,0,0,0,0,0,54,0,0,0,54,0,14,24,24,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
@@ -2258,13 +2258,13 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </chunk>
    <chunk x="-32" y="48" width="16" height="16">
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,45,0,0,0,45,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
+0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
+0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
+24,16,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
@@ -2368,6 +2368,11 @@
   </object>
   <object id="305" gid="93" x="-1856" y="704" width="16" height="16"/>
   <object id="306" gid="93" x="-1840" y="768" width="16" height="16"/>
+  <object id="396" x="-560" y="864" width="80" height="16">
+   <properties>
+    <property name="type" value="one_way_platform"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="11" name="Props">
   <object id="149" gid="66" x="-48" y="320" width="16" height="16">
@@ -2846,7 +2851,204 @@
   </object>
   <object id="351" gid="2147483745" x="-432" y="944" width="40" height="29">
    <properties>
+    <property name="flip" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="357" gid="9" x="-624" y="896" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_block_0"/>
+    <property name="type" value="boss_block"/>
+   </properties>
+  </object>
+  <object id="358" gid="9" x="-576" y="880" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_block_1"/>
+    <property name="type" value="boss_block"/>
+   </properties>
+  </object>
+  <object id="359" gid="9" x="-480" y="880" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_block_2"/>
+    <property name="type" value="boss_block"/>
+   </properties>
+  </object>
+  <object id="360" gid="9" x="-432" y="896" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_block_3"/>
+    <property name="type" value="boss_block"/>
+   </properties>
+  </object>
+  <object id="367" gid="76" x="-368" y="944" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_7"/>
+   </properties>
+  </object>
+  <object id="368" gid="76" x="-368" y="928" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_6"/>
+   </properties>
+  </object>
+  <object id="369" gid="2147483724" x="-688" y="912" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
     <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_5"/>
+   </properties>
+  </object>
+  <object id="370" gid="2147483724" x="-688" y="896" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_4"/>
+   </properties>
+  </object>
+  <object id="371" gid="2147483724" x="-688" y="880" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_3"/>
+   </properties>
+  </object>
+  <object id="372" gid="2147483724" x="-688" y="864" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_2"/>
+   </properties>
+  </object>
+  <object id="373" gid="76" x="-368" y="848" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_1"/>
+   </properties>
+  </object>
+  <object id="374" gid="76" x="-368" y="832" width="16" height="16">
+   <properties>
+    <property name="enabled" type="bool" value="false"/>
+    <property name="group_id" value="valkyrie_spear_0"/>
+   </properties>
+  </object>
+  <object id="378" gid="77" x="-624" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_0"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="379" gid="77" x="-640" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_0"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="380" gid="77" x="-608" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_0"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="382" gid="77" x="-576" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_1"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="383" gid="77" x="-560" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_1"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="384" gid="77" x="-544" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_1"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="386" gid="77" x="-512" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_2"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="387" gid="77" x="-480" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_2"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="388" gid="77" x="-496" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_2"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="390" gid="77" x="-448" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_3"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="391" gid="77" x="-432" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_3"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="392" gid="77" x="-416" y="944" width="16" height="16">
+   <properties>
+    <property name="group_id" value="valkyrie_spikes_3"/>
+    <property name="mode" value="static"/>
+    <property name="start_retracted" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="400" gid="66" x="-368" y="880" width="16" height="16">
+   <properties>
+    <property name="id" value="right_button"/>
+    <property name="start_pressed" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="401" gid="66" x="-688" y="848" width="16" height="16">
+   <properties>
+    <property name="id" value="left_button"/>
+    <property name="start_pressed" type="bool" value="true"/>
+   </properties>
+  </object>
+  <object id="402" x="-592" y="928" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_right_pillar_1"/>
+   </properties>
+  </object>
+  <object id="403" x="-464" y="928" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_right_pillar_3"/>
+   </properties>
+  </object>
+  <object id="404" x="-400" y="928" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_right_pillar_4"/>
+   </properties>
+  </object>
+  <object id="405" x="-528" y="928" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_right_pillar_2"/>
+   </properties>
+  </object>
+  <object id="406" x="-656" y="928" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_right_pillar_0"/>
    </properties>
   </object>
  </objectgroup>
@@ -2999,6 +3201,31 @@
   <object id="16" x="-32" y="112" width="16" height="16">
    <properties>
     <property name="id" value="viking_entrance"/>
+   </properties>
+  </object>
+  <object id="397" x="-672" y="832" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_bridge_left"/>
+   </properties>
+  </object>
+  <object id="398" x="-560" y="848" width="80" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_top"/>
+   </properties>
+  </object>
+  <object id="399" x="-432" y="864" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_right"/>
+   </properties>
+  </object>
+  <object id="407" x="-624" y="864" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_boss_left"/>
+   </properties>
+  </object>
+  <object id="409" x="-384" y="864" width="16" height="16">
+   <properties>
+    <property name="id" value="valkyrie_bridge_right"/>
    </properties>
   </object>
  </objectgroup>

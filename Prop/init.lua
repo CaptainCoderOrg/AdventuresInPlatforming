@@ -104,6 +104,11 @@ function Prop.spawn(type_key, x, y, options)
         prop.tiled_id = options.id
     end
 
+    -- Assign states before on_spawn so set_state works inside on_spawn
+    if definition.states then
+        prop.states = definition.states
+    end
+
     if definition.on_spawn then
         definition.on_spawn(prop, definition, options)
     end
@@ -114,9 +119,10 @@ function Prop.spawn(type_key, x, y, options)
     end
 
     if definition.states and definition.initial_state then
-        prop.states = definition.states
-        prop.state = nil
-        Prop.set_state(prop, definition.initial_state)
+        -- Skip if on_spawn already set a state (e.g. spike_trap start_retracted)
+        if not prop.state_name then
+            Prop.set_state(prop, definition.initial_state)
+        end
     end
 
     local group_name = options.group or options.group_id

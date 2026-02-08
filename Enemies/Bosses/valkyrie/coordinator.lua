@@ -4,7 +4,42 @@ local boss_health_bar = require("ui/boss_health_bar")
 local music = require("audio/music")
 local Prop = require("Prop")
 
+-- Lazy-loaded to avoid circular dependency (platforms → triggers → registry → valkyrie → coordinator)
+local platforms = nil
+
 local MAX_HEALTH = 100
+local SOLID_DURATION = 3  -- How long blocks stay solid after activation
+
+-- Must match the "id" properties on boss_block props in viking_lair.tmx
+local BLOCK_IDS = {
+    "valkyrie_boss_block_0",
+    "valkyrie_boss_block_1",
+    "valkyrie_boss_block_2",
+    "valkyrie_boss_block_3",
+}
+
+local SPEAR_GROUP_PREFIX = "valkyrie_spear_"   -- groups 0-7
+local SPIKE_GROUP_PREFIX = "valkyrie_spikes_"  -- groups 0-3
+
+local ZONE_IDS = {
+    top = "valkyrie_boss_top",
+    left = "valkyrie_boss_left",
+    right = "valkyrie_boss_right",
+    left_side = "valkyrie_boss_left_side",
+    right_side = "valkyrie_boss_right_side",
+    middle = "valkyrie_boss_middle",
+}
+
+local PILLAR_PREFIX = "valkyrie_right_pillar_"  -- 0-4
+local BRIDGE_IDS = {
+    left = "valkyrie_bridge_left",
+    right = "valkyrie_bridge_right",
+}
+
+local BUTTON_IDS = {
+    left = "left_button",
+    right = "right_button",
+}
 
 -- Lazy-loaded to avoid circular dependency
 local audio = nil
@@ -20,6 +55,8 @@ local coordinator = {
     boss_subtitle = "Shieldmaiden of the Crypts",
     victory_pending = false,
     victory_timer = 0,
+    blocks_active = false,
+    blocks_timer = 0,
 }
 
 --- Register the valkyrie enemy with the coordinator.
@@ -42,10 +79,39 @@ function coordinator.start(player)
     audio.play_music(audio.gnomo_boss)
 end
 
+--- Activate arena blocks (solid walls with fade-in).
+local function activate_blocks()
+    for i = 1, #BLOCK_IDS do
+        local block = Prop.find_by_id(BLOCK_IDS[i])
+        if block and not block.marked_for_destruction and block.definition.activate then
+            block.definition.activate(block)
+        end
+    end
+    coordinator.blocks_active = true
+    coordinator.blocks_timer = 0
+end
+
+--- Deactivate arena blocks (passable with fade-out).
+local function deactivate_blocks()
+    for i = 1, #BLOCK_IDS do
+        local block = Prop.find_by_id(BLOCK_IDS[i])
+        if block and not block.marked_for_destruction and block.definition.deactivate then
+            block.definition.deactivate(block)
+        end
+    end
+    coordinator.blocks_active = false
+    coordinator.blocks_timer = 0
+end
+
 --- Report damage dealt to the valkyrie.
 ---@param damage number Amount of damage dealt
 function coordinator.report_damage(damage)
     coordinator.total_health = math.max(0, coordinator.total_health - damage)
+
+    -- Re/activate arena walls each hit (resets the 3s solid timer)
+    if coordinator.active then
+        activate_blocks()
+    end
 
     if coordinator.total_health <= 0 and coordinator.active then
         coordinator.trigger_victory()
@@ -81,6 +147,13 @@ end
 function coordinator.trigger_victory()
     coordinator.active = false
 
+    -- Deactivate blocks so player isn't trapped
+    deactivate_blocks()
+
+    -- Deactivate all arena hazards
+    coordinator.disable_spears(0, 7)
+    coordinator.deactivate_spikes(0, 3)
+
     -- Kill the enemy
     if coordinator.enemy and not coordinator.enemy.marked_for_destruction then
         coordinator.enemy:die()
@@ -97,9 +170,17 @@ function coordinator.trigger_victory()
     coordinator.victory_timer = 0
 end
 
---- Update victory sequence state.
+--- Update victory sequence and block timers.
 ---@param dt number Delta time in seconds
 function coordinator.update(dt)
+    -- Tick block solid timer
+    if coordinator.blocks_active then
+        coordinator.blocks_timer = coordinator.blocks_timer + dt
+        if coordinator.blocks_timer >= SOLID_DURATION then
+            deactivate_blocks()
+        end
+    end
+
     if not coordinator.victory_pending then return end
 
     coordinator.victory_timer = coordinator.victory_timer + dt
@@ -137,6 +218,142 @@ function coordinator.set_refs(player, _camera)
     coordinator.player = player
 end
 
+-- ── Spear API ────────────────────────────────────────────────────────────────
+
+--- Fire spears in a range (inclusive). Each index is its own group.
+---@param from number Start index (0-7)
+---@param to number End index (0-7)
+function coordinator.fire_spears(from, to)
+    for i = from, to do
+        Prop.group_action(SPEAR_GROUP_PREFIX .. i, "fire")
+    end
+end
+
+--- Enable spears in a range (allows auto-fire and manual fire).
+---@param from number Start index (0-7)
+---@param to number End index (0-7)
+function coordinator.enable_spears(from, to)
+    for i = from, to do
+        Prop.group_action(SPEAR_GROUP_PREFIX .. i, "enable")
+    end
+end
+
+--- Disable spears in a range (prevents firing).
+---@param from number Start index (0-7)
+---@param to number End index (0-7)
+function coordinator.disable_spears(from, to)
+    for i = from, to do
+        Prop.group_action(SPEAR_GROUP_PREFIX .. i, "disable")
+    end
+end
+
+-- ── Spike API ────────────────────────────────────────────────────────────────
+
+--- Activate spike group into alternating mode.
+---@param from number Start index (0-3)
+---@param to number End index (0-3)
+---@param config table|nil Optional {extend_time, retract_time} override
+function coordinator.activate_spikes(from, to, config)
+    for i = from, to do
+        Prop.group_action(SPIKE_GROUP_PREFIX .. i, "set_alternating", config)
+    end
+end
+
+--- Deactivate spike group (retract and stop cycling).
+---@param from number Start index (0-3)
+---@param to number End index (0-3)
+function coordinator.deactivate_spikes(from, to)
+    for i = from, to do
+        Prop.group_action(SPIKE_GROUP_PREFIX .. i, "retract")
+    end
+end
+
+-- ── Zone API ─────────────────────────────────────────────────────────────────
+
+--- Check if player is inside a named zone.
+--- Zones are plain rectangles in Tiled with id properties, stored in platforms.spawn_points.
+---@param zone_key string Zone key: "top", "left", or "right"
+---@return boolean True if player center is within the zone
+function coordinator.is_player_in_zone(zone_key)
+    platforms = platforms or require("platforms")
+    local player = coordinator.player
+    if not player then return false end
+
+    local zone_id = ZONE_IDS[zone_key]
+    if not zone_id then return false end
+
+    local zone = platforms.spawn_points[zone_id]
+    if not zone or not zone.width then return false end
+
+    local px = player.x + (player.box.x + player.box.w / 2)
+    local py = player.y + (player.box.y + player.box.h / 2)
+    return px >= zone.x and px < zone.x + zone.width
+       and py >= zone.y and py < zone.y + zone.height
+end
+
+--- Get a zone rectangle by key. Returns the spawn_point entry with x, y, width, height.
+---@param zone_key string Zone key: "top", "left", "right", or a pillar/bridge key
+---@return table|nil zone The zone rectangle, or nil if not found
+function coordinator.get_zone(zone_key)
+    platforms = platforms or require("platforms")
+    local zone_id = ZONE_IDS[zone_key]
+    if not zone_id then return nil end
+    return platforms.spawn_points[zone_id]
+end
+
+--- Get a right-pillar zone rectangle by index (0-4).
+---@param index number Pillar index (0-4)
+---@return table|nil zone The zone rectangle
+function coordinator.get_pillar_zone(index)
+    platforms = platforms or require("platforms")
+    return platforms.spawn_points[PILLAR_PREFIX .. index]
+end
+
+--- Get a bridge zone rectangle by side.
+---@param side string "left" or "right"
+---@return table|nil zone The zone rectangle
+function coordinator.get_bridge_zone(side)
+    platforms = platforms or require("platforms")
+    local id = BRIDGE_IDS[side]
+    if not id then return nil end
+    return platforms.spawn_points[id]
+end
+
+-- ── Button API ───────────────────────────────────────────────────────────────
+
+--- Set the on_press callback for a button.
+---@param side string "left" or "right"
+---@param callback function|nil Callback to fire when pressed (nil to clear)
+function coordinator.set_button_callback(side, callback)
+    local id = BUTTON_IDS[side]
+    if not id then return end
+    local button = Prop.find_by_id(id)
+    if button then
+        button.on_press = callback
+    end
+end
+
+--- Reset a button to unpressed state (plays reverse animation).
+---@param side string "left" or "right"
+function coordinator.reset_button(side)
+    local id = BUTTON_IDS[side]
+    if not id then return end
+    local button = Prop.find_by_id(id)
+    if button and button.definition.reset then
+        button.definition.reset(button)
+    end
+end
+
+--- Check if a button is currently pressed.
+---@param side string "left" or "right"
+---@return boolean
+function coordinator.is_button_pressed(side)
+    local id = BUTTON_IDS[side]
+    if not id then return false end
+    local button = Prop.find_by_id(id)
+    return button and button.is_pressed or false
+end
+
 --- Reset coordinator state for level cleanup.
 function coordinator.reset()
     coordinator.active = false
@@ -146,6 +363,12 @@ function coordinator.reset()
     coordinator.player = nil
     coordinator.victory_pending = false
     coordinator.victory_timer = 0
+    coordinator.blocks_active = false
+    coordinator.blocks_timer = 0
+
+    -- Deactivate all arena hazards
+    coordinator.disable_spears(0, 7)
+    coordinator.deactivate_spikes(0, 3)
 
     local cinematic = require("Enemies/Bosses/valkyrie/cinematic")
     cinematic.reset()

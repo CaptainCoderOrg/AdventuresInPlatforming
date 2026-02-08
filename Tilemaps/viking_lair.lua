@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 352,
+  nextobjectid = 410,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -1226,9 +1226,9 @@ return {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11
+            11, 11, 11, 11, 39, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+            11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
           }
         },
         {
@@ -1247,9 +1247,9 @@ return {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 37, 11, 11, 11, 11, 11,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11
           }
         },
         {
@@ -1633,12 +1633,12 @@ return {
         {
           x = -48, y = 48, width = 16, height = 16,
           data = {
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 39, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
             11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 12, 27, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             56, 37, 11, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 28, 56, 56, 30, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1654,14 +1654,14 @@ return {
         {
           x = -32, y = 48, width = 16, height = 16,
           data = {
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            56, 56, 56, 56, 56, 56, 56, 56, 56, 56, 37, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
+            0, 0, 0, 0, 0, 0, 0, 0, 36, 18, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11,
@@ -2849,13 +2849,13 @@ return {
         {
           x = -48, y = 48, width = 16, height = 16,
           data = {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 45, 0, 0, 0, 45, 0, 0, 0, 45,
             0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
             0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
             0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
+            0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
+            0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
+            0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 14, 24, 24,
             0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
             0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
             0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 54,
@@ -2870,13 +2870,13 @@ return {
         {
           x = -32, y = 48, width = 16, height = 16,
           data = {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 45, 0, 0, 0, 45, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
+            24, 16, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 54, 0, 0, 0, 54, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -3506,6 +3506,21 @@ return {
           gid = 93,
           visible = true,
           properties = {}
+        },
+        {
+          id = 396,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -560,
+          y = 864,
+          width = 80,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["type"] = "one_way_platform"
+          }
         }
       }
     },
@@ -5079,7 +5094,540 @@ return {
           gid = 2147483745,
           visible = true,
           properties = {
-            ["flip"] = false
+            ["flip"] = true
+          }
+        },
+        {
+          id = 357,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -624,
+          y = 896,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 9,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_block_0",
+            ["type"] = "boss_block"
+          }
+        },
+        {
+          id = 358,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -576,
+          y = 880,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 9,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_block_1",
+            ["type"] = "boss_block"
+          }
+        },
+        {
+          id = 359,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -480,
+          y = 880,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 9,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_block_2",
+            ["type"] = "boss_block"
+          }
+        },
+        {
+          id = 360,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -432,
+          y = 896,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 9,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_block_3",
+            ["type"] = "boss_block"
+          }
+        },
+        {
+          id = 367,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -368,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 76,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["group_id"] = "valkyrie_spear_7"
+          }
+        },
+        {
+          id = 368,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -368,
+          y = 928,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 76,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["group_id"] = "valkyrie_spear_6"
+          }
+        },
+        {
+          id = 369,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -688,
+          y = 912,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["flip"] = false,
+            ["group_id"] = "valkyrie_spear_5"
+          }
+        },
+        {
+          id = 370,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -688,
+          y = 896,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["flip"] = false,
+            ["group_id"] = "valkyrie_spear_4"
+          }
+        },
+        {
+          id = 371,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -688,
+          y = 880,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["flip"] = false,
+            ["group_id"] = "valkyrie_spear_3"
+          }
+        },
+        {
+          id = 372,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -688,
+          y = 864,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["flip"] = false,
+            ["group_id"] = "valkyrie_spear_2"
+          }
+        },
+        {
+          id = 373,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -368,
+          y = 848,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 76,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["group_id"] = "valkyrie_spear_1"
+          }
+        },
+        {
+          id = 374,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -368,
+          y = 832,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 76,
+          visible = true,
+          properties = {
+            ["enabled"] = false,
+            ["group_id"] = "valkyrie_spear_0"
+          }
+        },
+        {
+          id = 378,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -624,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_0",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 379,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -640,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_0",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 380,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -608,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_0",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 382,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -576,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_1",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 383,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -560,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_1",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 384,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -544,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_1",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 386,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -512,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_2",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 387,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -480,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_2",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 388,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -496,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_2",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 390,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -448,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_3",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 391,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -432,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_3",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 392,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -416,
+          y = 944,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 77,
+          visible = true,
+          properties = {
+            ["group_id"] = "valkyrie_spikes_3",
+            ["mode"] = "static",
+            ["start_retracted"] = true
+          }
+        },
+        {
+          id = 400,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -368,
+          y = 880,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 66,
+          visible = true,
+          properties = {
+            ["id"] = "right_button",
+            ["start_pressed"] = true
+          }
+        },
+        {
+          id = 401,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -688,
+          y = 848,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 66,
+          visible = true,
+          properties = {
+            ["id"] = "left_button",
+            ["start_pressed"] = true
+          }
+        },
+        {
+          id = 402,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -592,
+          y = 928,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_right_pillar_1"
+          }
+        },
+        {
+          id = 403,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -464,
+          y = 928,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_right_pillar_3"
+          }
+        },
+        {
+          id = 404,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -400,
+          y = 928,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_right_pillar_4"
+          }
+        },
+        {
+          id = 405,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -528,
+          y = 928,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_right_pillar_2"
+          }
+        },
+        {
+          id = 406,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -656,
+          y = 928,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_right_pillar_0"
           }
         }
       }
@@ -6270,6 +6818,81 @@ return {
           visible = true,
           properties = {
             ["id"] = "viking_entrance"
+          }
+        },
+        {
+          id = 397,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -672,
+          y = 832,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_bridge_left"
+          }
+        },
+        {
+          id = 398,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -560,
+          y = 848,
+          width = 80,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_top"
+          }
+        },
+        {
+          id = 399,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -432,
+          y = 864,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_right"
+          }
+        },
+        {
+          id = 407,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -624,
+          y = 864,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_boss_left"
+          }
+        },
+        {
+          id = 409,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -384,
+          y = 864,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          visible = true,
+          properties = {
+            ["id"] = "valkyrie_bridge_right"
           }
         }
       }

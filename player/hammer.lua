@@ -31,6 +31,7 @@ local SHIELD_KNOCKBACK = 5  -- Stronger knockback for hammer hitting shield
 -- Reusable state for filters (avoids closure allocation per frame)
 local filter_player = nil
 local hammer_hit_source = { damage = 5, x = 0, is_crit = false }
+local _query_results = {}  -- Reusable output table for combat.query_rect
 
 --- Filter function for enemy hits (uses module-level state to avoid closure allocation)
 ---@param entity table Entity to check
@@ -88,7 +89,7 @@ local function check_hammer_hits(player, hitbox, stats)
 
 	local damage = stats and stats.damage or 5
 	filter_player = player
-	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter)
+	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, enemy_filter, _query_results)
 	local crit_threshold = player:critical_percent()
 
 	for i = 1, #hits do
@@ -150,6 +151,7 @@ end
 ---@param dt number Delta time in seconds
 function hammer.update(player, dt)
 	local hitbox = get_hammer_hitbox(player, HAMMER_STATS)
+	player.hammer_state.cached_hitbox = hitbox
 	if hitbox then
 		check_hammer_hits(player, hitbox, HAMMER_STATS)
 		check_button_hits(player, hitbox, HAMMER_STATS)
@@ -179,7 +181,7 @@ end
 ---@param player table The player object
 function hammer.draw(player)
 	common.draw(player)
-	common.draw_debug_hitbox(get_hammer_hitbox(player, HAMMER_STATS), "#FF00FF")
+	common.draw_debug_hitbox(player.hammer_state.cached_hitbox, "#FF00FF")
 end
 
 return hammer

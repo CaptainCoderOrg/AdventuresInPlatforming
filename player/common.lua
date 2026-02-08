@@ -95,6 +95,17 @@ function common.has_throw_energy(player, spec, sec_id)
 	return player.energy_used + energy_cost <= player.max_energy
 end
 
+--- Attempts to activate the hammer from an ability slot.
+--- Checks unlock status and consumes stamina (with upgrade modifiers).
+---@param player table The player object
+---@param slot number Ability slot (1-4) containing the hammer
+---@return boolean True if activation succeeded (unlocked and stamina consumed)
+function common.try_use_hammer(player, slot)
+	if not weapon_sync.is_secondary_unlocked(player, slot) then return false end
+	local cost = upgrade_effects.get_stamina_cost(player, "hammer", unique_item_registry.hammer.stats.stamina_cost)
+	return player:use_stamina(cost)
+end
+
 -- Footstep timing: two footsteps per run animation cycle
 local FOOTSTEP_COOLDOWN_TIME = nil  -- Computed lazily after animations are defined
 
@@ -146,10 +157,7 @@ function common.handle_ability(player)
 
 	-- Melee secondary (hammer): consumes stamina, enters hammer state
 	if sec_id == "hammer" then
-		if not weapon_sync.is_secondary_unlocked(player, slot) then return end
-		local hammer_def = unique_item_registry[sec_id]
-		local cost = upgrade_effects.get_stamina_cost(player, sec_id, hammer_def.stats.stamina_cost)
-		if player:use_stamina(cost) then
+		if common.try_use_hammer(player, slot) then
 			shield = shield or require('player.shield')
 			shield.clear_perfect_window(player)
 			player.active_ability_slot = slot
@@ -593,13 +601,9 @@ local function try_queued_combat_action(player)
 		player.input_queue.ability_slot = nil
 		local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
 		-- Melee secondary (hammer)
-		if sec_id == "hammer" and weapon_sync.is_secondary_unlocked(player, queued_slot) then
-			local hammer_def = unique_item_registry[sec_id]
-			local cost = upgrade_effects.get_stamina_cost(player, sec_id, hammer_def.stats.stamina_cost)
-			if player:use_stamina(cost) then
-				player.active_ability_slot = queued_slot
-				return player.states.hammer
-			end
+		if sec_id == "hammer" and common.try_use_hammer(player, queued_slot) then
+			player.active_ability_slot = queued_slot
+			return player.states.hammer
 		end
 		-- Projectile secondaries (require throw_cooldown)
 		if player.throw_cooldown <= 0 then

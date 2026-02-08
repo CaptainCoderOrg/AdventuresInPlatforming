@@ -33,7 +33,7 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 |---------|-------------|------------|
 | Double Jump | `has_double_jump` | `handle_air_jump()` |
 | Wall Slide | `has_wall_slide` | state transitions |
-| Hammer | `has_hammer` | `handle_hammer()` |
+| Hammer | `has_hammer` | `handle_ability()` / `weapon_sync.is_secondary_unlocked()` |
 | Shield/Block | `has_shield` | `handle_block()` |
 | Dash | `can_dash` | `handle_dash()` |
 | Axe Throw | `has_axe` | `weapon_sync.is_secondary_unlocked()` |

@@ -8,7 +8,6 @@ local prop_common = require('Prop.common')
 local shield = require('player.shield')
 local weapon_sync = require('player.weapon_sync')
 local upgrade_effects = require('upgrade/effects')
-local unique_item_registry = require('Prop.unique_item_registry')
 
 
 --- Attack state: Player performs melee combo attacks.
@@ -206,15 +205,11 @@ function attack.input(player)
 		if not combo_queued and queued_slot then
 			local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
 			-- Melee secondary (hammer)
-			if sec_id == "hammer" and weapon_sync.is_secondary_unlocked(player, queued_slot) then
-				local hammer_def = unique_item_registry[sec_id]
-				local cost = upgrade_effects.get_stamina_cost(player, sec_id, hammer_def.stats.stamina_cost)
-				if player:use_stamina(cost) then
-					player.active_ability_slot = queued_slot
-					player.attack_cooldown = ATTACK_COOLDOWN
-					player:set_state(player.states.hammer)
-					return
-				end
+			if sec_id == "hammer" and common.try_use_hammer(player, queued_slot) then
+				player.active_ability_slot = queued_slot
+				player.attack_cooldown = ATTACK_COOLDOWN
+				player:set_state(player.states.hammer)
+				return
 			end
 			-- Projectile secondaries
 			local spec = weapon_sync.get_secondary_spec(player, queued_slot)

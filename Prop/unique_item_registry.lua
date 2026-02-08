@@ -91,7 +91,6 @@ return {
         stats = {
             damage = 1,
             stamina_cost = 1.5,
-
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 60,
         },
@@ -104,7 +103,6 @@ return {
         stats = {
             damage = 2.5,
             stamina_cost = 2.5,
-
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 80,
         },
@@ -117,7 +115,6 @@ return {
         stats = {
             damage = 2.5,
             stamina_cost = 1.5,
-
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 60,
         },
@@ -130,7 +127,6 @@ return {
         stats = {
             damage = 5,
             stamina_cost = 4,
-
             animation = "wide",
             hitbox = { width = 1.7, height = 1.2, y_offset = -0.15 },
             ms_per_frame = 90,

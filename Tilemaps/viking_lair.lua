@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 312,
+  nextobjectid = 331,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -647,12 +647,12 @@ return {
           x = -160, y = 16, width = 16, height = 16,
           data = {
             11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 56, 56,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 30, 0, 0,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 30, 0, 0, 0,
-            11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 30, 0, 0, 0, 0,
-            56, 56, 56, 56, 56, 56, 56, 37, 11, 39, 30, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 28, 56, 30, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 39, 56, 56, 56, 56, 56, 56,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0,
+            11, 11, 11, 11, 11, 11, 11, 11, 11, 12, 0, 0, 0, 0, 0, 0,
+            56, 56, 56, 56, 56, 56, 56, 37, 11, 12, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 28, 56, 30, 27, 36, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -710,7 +710,7 @@ return {
           x = -112, y = 16, width = 16, height = 16,
           data = {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 1, 2, 3, 27, 36, 36, 36, 36, 36, 36, 36, 36, 36, 36,
+            0, 0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             2, 2, 19, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -731,7 +731,7 @@ return {
           x = -96, y = 16, width = 16, height = 16,
           data = {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            18, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1, 2, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 10, 11, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 10, 11, 21, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -4742,7 +4742,7 @@ return {
           properties = {}
         },
         {
-          id = 309,
+          id = 316,
           name = "",
           type = "",
           shape = "rectangle",
@@ -4751,9 +4751,235 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 72,
+          gid = 66,
           visible = true,
-          properties = {}
+          properties = {
+            ["id"] = "entry_button",
+            ["target_action"] = "appear",
+            ["target_group"] = "minotaur_bridge"
+          }
+        },
+        {
+          id = 317,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -2400,
+          y = 352,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 66,
+          visible = true,
+          properties = {
+            ["id"] = "entry_button",
+            ["target_action"] = "disable",
+            ["target_group"] = "second_spears "
+          }
+        },
+        {
+          id = 318,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1712,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 27,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 319,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1696,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 320,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1536,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 18,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 321,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1680,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 322,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1664,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 323,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1648,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 324,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1632,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 325,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1616,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 326,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1600,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 327,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1584,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 328,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1568,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
+        },
+        {
+          id = 329,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1552,
+          y = 288,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 36,
+          visible = true,
+          properties = {
+            ["group"] = "minotaur_bridge",
+            ["type"] = "appearing_bridge"
+          }
         }
       }
     },
@@ -5573,6 +5799,74 @@ return {
           visible = true,
           properties = {
             ["offset_y"] = 0.5
+          }
+        },
+        {
+          id = 312,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -2640,
+          y = 416,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["flip"] = false,
+            ["group_id"] = "second_spears"
+          }
+        },
+        {
+          id = 313,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -2640,
+          y = 400,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["flip"] = false,
+            ["group_id"] = "second_spears"
+          }
+        },
+        {
+          id = 314,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -2640,
+          y = 384,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["flip"] = false,
+            ["group_id"] = "second_spears"
+          }
+        },
+        {
+          id = 315,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -2640,
+          y = 368,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 2147483724,
+          visible = true,
+          properties = {
+            ["flip"] = false,
+            ["group_id"] = "second_spears"
           }
         }
       }

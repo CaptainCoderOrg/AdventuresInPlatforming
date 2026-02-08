@@ -14,6 +14,7 @@ local BUTTON_ANIM = Animation.create_definition(sprites.environment.button, 5, {
 
 --- Button Y offset (sprite is 8px tall, positioned in bottom half of tile)
 local BUTTON_Y_OFFSET = 0.5
+local RESET_ANIM_OPTS = { start_frame = BUTTON_ANIM.frame_count - 1, reverse = true }
 
 --- Shared draw function for button states
 ---@param prop table Button prop instance
@@ -69,10 +70,7 @@ local definition = {
         },
         resetting = {
             start = function(prop, _def)
-                prop.animation = Animation.new(BUTTON_ANIM, {
-                    start_frame = BUTTON_ANIM.frame_count - 1,
-                    reverse = true
-                })
+                prop.animation = Animation.new(BUTTON_ANIM, RESET_ANIM_OPTS)
             end,
             update = function(prop, _dt)
                 if prop.animation:is_finished() then
@@ -99,13 +97,6 @@ function definition.reset(prop)
     if prop.is_pressed then
         Prop.set_state(prop, "resetting")
     end
-end
-
---- Save persistent button state
----@param prop table Button prop instance
----@return table state Saved state data
-function definition.get_save_state(prop)
-    return { state_name = prop.state_name }
 end
 
 --- Restore persistent button state silently (no sound) and re-fire callback

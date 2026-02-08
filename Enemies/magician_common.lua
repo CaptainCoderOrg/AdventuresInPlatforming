@@ -55,6 +55,11 @@ local PROJECTILE_DODGE_RANGE_SQ = PROJECTILE_DODGE_RANGE * PROJECTILE_DODGE_RANG
 -- Static table literals moved to module scope (avoids per-call allocation)
 local SAFE_POSITION_DISTANCES = { 5, 6, 7, 4, 8, 3 }
 local SAFE_POSITION_ANGLES = { 0, math.pi, math.pi/2, -math.pi/2, math.pi/4, -math.pi/4, 3*math.pi/4, -3*math.pi/4 }
+-- Pre-computed direction unit vectors for safe position search (avoids per-call trig)
+local SAFE_POSITION_DIRS = {}
+for i, angle in ipairs(SAFE_POSITION_ANGLES) do
+	SAFE_POSITION_DIRS[i] = { x = math.cos(angle), y = math.sin(angle) }
+end
 local FLY_HEIGHTS = { -2, -1, 0, 1, 2 }
 
 --------------------------------------------------------------------------------
@@ -627,7 +632,8 @@ local function should_dodge_projectile(enemy)
 	enemy._dodge_check_timer = DODGE_CHECK_INTERVAL
 
 	-- Check all player projectiles
-	for projectile, _ in pairs(Projectile.all) do
+	local projectile = next(Projectile.all)
+	while projectile do
 		local dx = projectile.x - enemy.x
 		local dy = projectile.y - enemy.y
 		local dist_sq = dx * dx + dy * dy
@@ -640,6 +646,7 @@ local function should_dodge_projectile(enemy)
 				return true
 			end
 		end
+		projectile = next(Projectile.all, projectile)
 	end
 
 	return false
@@ -681,9 +688,9 @@ local function find_safe_position(enemy)
 	test_shape.is_probe = true
 
 	for _, dist in ipairs(SAFE_POSITION_DISTANCES) do
-		for _, angle in ipairs(SAFE_POSITION_ANGLES) do
-			local test_x = player.x + math.cos(angle) * dist
-			local test_y = player.y + math.sin(angle) * dist
+		for _, dir in ipairs(SAFE_POSITION_DIRS) do
+			local test_x = player.x + dir.x * dist
+			local test_y = player.y + dir.y * dist
 
 			local px = (test_x + enemy.box.x) * ts
 			local py = (test_y + enemy.box.y) * ts
@@ -1053,10 +1060,15 @@ function magician_common.create(sprite_set, cfg)
 					local old_x, old_y = enemy._intangible_shape:bbox()
 					enemy._intangible_shape:move(target_px - old_x, target_py - old_y)
 
-					if not is_position_clear(enemy._intangible_shape) then
-						enemy._intangible_shape:move(old_x - target_px, old_y - target_py)
-						enemy.vx = 0
-						enemy.vy = 0
+					-- Throttle wall check to reduce HC allocation frequency
+					enemy._invis_wall_timer = (enemy._invis_wall_timer or 0) - dt
+					if enemy._invis_wall_timer <= 0 then
+						enemy._invis_wall_timer = WALL_CHECK_INTERVAL
+						if not is_position_clear(enemy._intangible_shape) then
+							enemy._intangible_shape:move(old_x - target_px, old_y - target_py)
+							enemy.vx = 0
+							enemy.vy = 0
+						end
 					end
 				end
 				clamp_to_bounds(enemy)

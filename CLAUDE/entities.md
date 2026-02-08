@@ -426,6 +426,9 @@ Prop.group_action("spike_buttons", "pressed")  -- Transitions all to "pressed" s
 - `Prop.check_hit(type_key, hitbox, filter)` - Hitbox overlap detection
 - `Prop.register_global_draw(fn)` - Register a draw function called every frame regardless of prop visibility (receives camera)
 - `Prop.get_pressure_plate_lift(entity)` - Get cached lift amount for entity
+- `Prop.reset_all()` - Reset all resettable props to initial states (skips `should_reset = false`)
+- `Prop.reapply_persistent_effects()` - Re-fire callbacks on persistent props after `reset_all`
+- `Prop.apply_group_configs()` - Apply group_config props after level load, then remove them
 - `Prop.get_persistent_states()` - Merge current level's props into accumulator and return all persistent states
 - `Prop.restore_persistent_states(states)` - Initialize accumulator and restore prop states from save data
 - `Prop.clear_persistent_states()` - Reset accumulator (new game)
@@ -446,7 +449,11 @@ animation:draw(x, y - lift)
 
 ### Current Props
 
-- **Button** - Binary state (unpressed/pressed), triggers `on_press` callback
+- **Button** - Tri-state prop (unpressed/pressed/resetting) triggered by hammer hits
+  - `press()` external API; `reset()` triggers animated return to unpressed
+  - Callbacks: `on_press` (explicit) or auto-wired from Tiled `target_group`/`target_action`
+  - Optional persistence: `persist = true` keeps button pressed across rest/reload
+  - Persistence methods: `restore_save_state()`, `reapply_effects()` (re-fires callback after reset)
 - **Campfire** - Sets player restore point, transitions to lit state
 - **Spike Trap** - 5-state hazard (extended, extending, retracted, retracting, disabled)
   - Modes: "static" (always extended) or "alternating" (cycles on timer)

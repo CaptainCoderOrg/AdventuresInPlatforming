@@ -132,11 +132,13 @@ cleanup_level()                    -- Remove colliders before reload
 ### Rest (Campfire) Flow
 
 1. Player touches campfire -> enters `rest` state
-2. `rest.start()` saves full state to active slot
-3. `Playtime.pause()` stops timer
-4. Rest screen shows with circular viewport
-5. All enemies respawn via `Enemy.respawn()`
-6. "Continue" -> `continue_from_checkpoint()` reloads level
+2. `Prop.reset_all()` resets non-persistent props to initial states
+3. `Prop.reapply_persistent_effects()` re-fires persistent prop callbacks (e.g. buttons re-disable targets)
+4. `rest.start()` saves full state to active slot
+5. `Playtime.pause()` stops timer
+6. Rest screen shows with circular viewport
+7. All enemies respawn via `Enemy.respawn()`
+8. "Continue" -> `continue_from_checkpoint()` reloads level
 
 ### Active Slot Tracking
 

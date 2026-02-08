@@ -70,7 +70,7 @@ function rest.start(player)
 	-- Re-fire persistent button callbacks so their targets stay disabled
 	Prop.reapply_persistent_effects()
 
-	-- Find the campfire for name and screen centering
+	-- Campfire reference needed for fast travel registration and rest screen centering
 	local campfire = find_current_campfire(player)
 	local campfire_name = campfire and campfire.name or "Campfire"
 
@@ -86,7 +86,6 @@ function rest.start(player)
 		}
 	end
 
-	-- Save to active slot with full data
 	if rest.active_slot and level_id then
 		local save_data = SaveSlots.build_player_data(player, level_id, campfire_name)
 		SaveSlots.set(rest.active_slot, save_data)
@@ -106,20 +105,19 @@ function rest.start(player)
 			rest.active_slot, level_id, campfire_name)
 	end
 
-	-- Fade to rest music
 	audio.play_music(audio.rest)
 end
 
 --- Handles input while resting. Input is blocked by rest screen overlay.
----@param player table The player object
-function rest.input(player)
+---@param _player table The player object
+function rest.input(_player)
 end
 
 --- Updates rest state. Keeps player stationary until level reload from rest screen.
 --- If the rest screen has closed and the player presses a movement key, exit to run state.
 ---@param player table The player object
----@param dt number Delta time in seconds (unused: rest state is static, waiting for UI)
-function rest.update(player, dt)
+---@param _dt number Delta time (unused: rest state is static, waiting for UI)
+function rest.update(player, _dt)
 	player.vx = 0
 	player.vy = 0
 

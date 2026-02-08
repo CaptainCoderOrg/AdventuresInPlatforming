@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="312">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="331">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -14,7 +14,7 @@
  <imagelayer id="4" name="background" repeatx="1" repeaty="1">
   <image source="../assets/Tilesets/bg_00_dungeon.png" width="240" height="160"/>
  </imagelayer>
- <objectgroup id="2" name="Camera Bounds">
+ <objectgroup id="2" name="Camera Bounds" locked="1">
   <properties>
    <property name="type" value="camera_bounds"/>
   </properties>
@@ -379,12 +379,12 @@
 </chunk>
    <chunk x="-160" y="16" width="16" height="16">
 11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
-11,11,11,11,11,11,11,11,11,11,11,11,11,39,56,56,
-11,11,11,11,11,11,11,11,11,11,11,11,39,30,0,0,
-11,11,11,11,11,11,11,11,11,11,11,39,30,0,0,0,
-11,11,11,11,11,11,11,11,11,11,39,30,0,0,0,0,
-56,56,56,56,56,56,56,37,11,39,30,0,0,0,0,0,
-0,0,0,0,0,0,0,28,56,30,0,0,0,0,0,0,
+11,11,11,11,11,11,11,11,11,39,56,56,56,56,56,56,
+11,11,11,11,11,11,11,11,11,12,0,0,0,0,0,0,
+11,11,11,11,11,11,11,11,11,12,0,0,0,0,0,0,
+11,11,11,11,11,11,11,11,11,12,0,0,0,0,0,0,
+56,56,56,56,56,56,56,37,11,12,0,0,0,0,0,0,
+0,0,0,0,0,0,0,28,56,30,27,36,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -433,7 +433,7 @@
 </chunk>
    <chunk x="-112" y="16" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-0,0,1,2,3,27,36,36,36,36,36,36,36,36,36,36,
+0,0,1,2,3,0,0,0,0,0,0,0,0,0,0,0,
 0,0,10,11,12,0,0,0,0,0,0,0,0,0,0,0,
 0,0,10,11,12,0,0,0,0,0,0,0,0,0,0,0,
 2,2,19,11,12,0,0,0,0,0,0,0,0,0,0,0,
@@ -451,7 +451,7 @@
 </chunk>
    <chunk x="-96" y="16" width="16" height="16">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-18,1,2,3,0,0,0,0,0,0,0,0,0,0,0,0,
+0,1,2,3,0,0,0,0,0,0,0,0,0,0,0,0,
 0,10,11,12,0,0,0,0,0,0,0,0,0,0,0,0,
 0,10,11,12,0,0,0,0,0,0,0,0,0,0,0,0,
 0,10,11,21,2,2,2,2,2,2,2,2,2,2,2,2,
@@ -2751,7 +2751,92 @@
    </properties>
   </object>
   <object id="308" gid="81" x="-144" y="272" width="16" height="16"/>
-  <object id="309" gid="72" x="-1504" y="272" width="16" height="16"/>
+  <object id="316" gid="66" x="-1504" y="272" width="16" height="16">
+   <properties>
+    <property name="id" value="entry_button"/>
+    <property name="target_action" value="appear"/>
+    <property name="target_group" value="minotaur_bridge"/>
+   </properties>
+  </object>
+  <object id="317" gid="66" x="-2400" y="352" width="16" height="16">
+   <properties>
+    <property name="id" value="entry_button"/>
+    <property name="target_action" value="disable"/>
+    <property name="target_group" value="second_spears "/>
+   </properties>
+  </object>
+  <object id="318" gid="27" x="-1712" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="319" gid="36" x="-1696" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="320" gid="18" x="-1536" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="321" gid="36" x="-1680" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="322" gid="36" x="-1664" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="323" gid="36" x="-1648" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="324" gid="36" x="-1632" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="325" gid="36" x="-1616" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="326" gid="36" x="-1600" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="327" gid="36" x="-1584" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="328" gid="36" x="-1568" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
+  <object id="329" gid="36" x="-1552" y="288" width="16" height="16">
+   <properties>
+    <property name="group" value="minotaur_bridge"/>
+    <property name="type" value="appearing_bridge"/>
+   </properties>
+  </object>
  </objectgroup>
  <objectgroup id="10" name="Decorations">
   <object id="39" gid="130" x="-472" y="304" width="16" height="32"/>
@@ -2821,6 +2906,30 @@
   <object id="311" gid="90" x="-2432" y="400" width="16" height="24">
    <properties>
     <property name="offset_y" type="float" value="0.5"/>
+   </properties>
+  </object>
+  <object id="312" gid="2147483724" x="-2640" y="416" width="16" height="16">
+   <properties>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="second_spears"/>
+   </properties>
+  </object>
+  <object id="313" gid="2147483724" x="-2640" y="400" width="16" height="16">
+   <properties>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="second_spears"/>
+   </properties>
+  </object>
+  <object id="314" gid="2147483724" x="-2640" y="384" width="16" height="16">
+   <properties>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="second_spears"/>
+   </properties>
+  </object>
+  <object id="315" gid="2147483724" x="-2640" y="368" width="16" height="16">
+   <properties>
+    <property name="flip" type="bool" value="false"/>
+    <property name="group_id" value="second_spears"/>
    </properties>
   </object>
  </objectgroup>

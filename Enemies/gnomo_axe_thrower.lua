@@ -454,7 +454,6 @@ gnomo.states.run_away = {
 }
 
 gnomo.states.death = common.create_death_state(gnomo.animations.DEATH)
-gnomo.states.death.draw = common.draw
 
 --------------------------------------------------------------------------------
 -- Custom on_hit handler (doesn't reset animation if already in hit state)

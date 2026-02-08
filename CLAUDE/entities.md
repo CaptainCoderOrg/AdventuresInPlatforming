@@ -107,7 +107,7 @@ states = {
   - Spawned via `P` symbol in level map
 - **Magician** - Flying mage that casts homing projectiles and teleports to dodge
   - States: idle, attack, fly, disappear, unstuck, hit, return, death
-  - Health: 6 HP, Armor: 0, No contact damage
+  - Health: 6 HP, Armor: 0, Contact damage: 0.5 (0 during fade states)
   - Flying (no gravity), custom on_hit (no knockback)
   - Detection: 10 tiles (face player), 8 tiles + LOS (attack)
   - Attack: Casts homing MagicBolt (2 damage, 10 tiles/sec, 1.5 rad/sec homing)
@@ -119,10 +119,12 @@ states = {
   - Throttled expensive checks (dodge: 0.05s, wall: 0.15s, LOS: 0.12s, path: 0.08s)
   - Spawned via `M` symbol in level map
 - **Guardian** - Heavy enemy with spiked club that jumps to engage
-  - States: idle, alert, attack, back_away, reassess, hit, jump_away, jump_toward, land, charge, charge_and_jump, assess_charge, death
-  - Health: 6 HP, Armor: 1, Body damage: 1, Club damage: 3
+  - States: idle, alert, attack, back_away, reassess, hit, jump_away, jump_toward, land, charge, charge_and_jump, charge_and_jump_over, jump_over, assess_charge, death
+  - Health: 6 HP, Armor: 1.5, Body damage: 1, Club damage: 3
   - Detection: 12 tiles horizontal, 1.5 tiles vertical (facing direction only)
   - Two damage zones: body (hittable) and club (high damage)
+  - Club acts as shield: blocks player projectiles and weapon hits (position follows club through all animations)
+  - Shield removed during recovery frames (frames 5-6 of attack animation)
   - Attack behavior: Alert animation, then jump toward or charge based on distance
   - Post-hit recovery: Jumps away from player after stun
   - Custom on_hit: No knockback (heavy enemy)
@@ -161,9 +163,9 @@ states = {
   - Spawned via Tiled object layer with type "enemy" and key "red_slime"
 - **Gnomo Axe Thrower** - Ranged enemy that throws arcing axes at the player
   - States: idle, throw, hit, run_away, death
-  - Health: 5 HP, Contact damage: 1, Axe damage: 1, XP: 6, Gold: 3-5
+  - Health: 4 HP, Contact damage: 1, Axe damage: 1, XP: 6, Gold: 3-5
   - Idle: Faces player for 2.5 seconds before attacking
-  - Throw: Launches 3-5 axes per attack sequence (spawned on frame 6 of attack animation)
+  - Throw: Launches 3 axes per attack sequence (spawned on frame 6 of attack animation)
   - Axes have varied trajectories (vy randomized between -10 and -6 tiles/sec)
   - Hit: Does not reset animation if already in hit state (allows multi-hit combos)
   - Run away: After being hit, becomes invulnerable and repositions ~5 tiles from player
@@ -305,6 +307,18 @@ return slime_common.create(sprites.enemies.blue_slime, {
 ```
 
 Adding a new slime variant requires only a configuration file using this factory.
+
+### Magician Factory Pattern (`Enemies/magician_common.lua`)
+
+Magician variants share identical state machines, projectiles, and particle systems with different sprites.
+The `magician_common.create(sprite_set, cfg)` factory generates enemy definitions from configuration:
+
+```lua
+return magician_common.create(sprites.enemies.magician_blue)
+```
+
+All variants share a single MagicBolt pool and particle systems (bolt trail and puff effects).
+Adding a new magician variant requires only a new file using this factory.
 
 ### Edge Detection
 
@@ -674,7 +688,10 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/bat_eye.lua` - Bat eye enemy (waypoint patrol, flying)
 - `Enemies/zombie.lua` - Zombie enemy (bounded patrol, chase, attack)
 - `Enemies/ghost_painting.lua` - Ghost painting enemy (look-away attack, phasing)
-- `Enemies/magician.lua` - Magician enemy (flying mage, homing projectiles, teleport dodge)
+- `Enemies/magician.lua` - Red magician enemy (flying mage, homing projectiles, teleport dodge)
+- `Enemies/magician_common.lua` - Shared magician variant factory (sprites, states, MagicBolt pool, particles)
+- `Enemies/magician_blue.lua` - Blue magician variant (yellow projectiles)
+- `Enemies/magician_purple.lua` - Purple magician variant (green projectiles)
 - `Enemies/guardian.lua` - Guardian enemy (heavy club wielder, jump attacks, no knockback)
 - `Enemies/flaming_skull.lua` - Flaming skull enemy (bouncing flyer, energy drain)
 - `Enemies/slime_common.lua` - Slime factory for creating variant slime enemies

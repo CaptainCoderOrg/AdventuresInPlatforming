@@ -872,6 +872,7 @@ function magician_common.create(sprite_set, cfg)
 
 			face_player(enemy)
 
+			-- Spawn bolt on penultimate frame of attack animation (frame 10 of 11)
 			if not enemy.bolt_spawned and enemy.animation.frame >= 10 then
 				enemy.bolt_spawned = true
 

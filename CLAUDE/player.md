@@ -157,10 +157,10 @@ Resource management for abilities with fatigue mechanic.
 
 ```lua
 ATTACK_STAMINA_COST = 2      -- Per sword swing
-HAMMER_STAMINA_COST = 5      -- Full bar (heavy attack)
 AIR_JUMP_STAMINA_COST = 1    -- Double jump
 DASH_STAMINA_COST = 2.5      -- Dash ability
 WALL_JUMP_STAMINA_COST = 1   -- Wall jump
+-- Hammer stamina cost (5) is defined in unique_item_registry.hammer.stats
 ```
 
 ### Fatigue System

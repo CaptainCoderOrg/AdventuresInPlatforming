@@ -62,7 +62,7 @@ return {
             end,
             group = "spike_buttons"
         },
-        b = { type = "sign", text = "Hammer\n{hammer}" },
+        b = { type = "sign", text = "Hammer\nAssign to an ability slot to use" },
         R = { type = "enemy", key = "ratto", offset = { y = 0.5 } },
         W = { type = "enemy", key = "worm" },
         G = { type = "enemy", key = "spike_slug" },

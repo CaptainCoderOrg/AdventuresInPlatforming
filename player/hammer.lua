@@ -6,11 +6,14 @@ local Effects = require('Effects')
 local prop_common = require('Prop.common')
 local Prop = require('Prop')
 local shield = require('player.shield')
-local weapon_sync = require('player.weapon_sync')
+local unique_item_registry = require('Prop.unique_item_registry')
 
 --- Hammer state: Player performs a heavy overhead attack.
 --- High damage, hits buttons, but consumes full stamina bar.
 local hammer = { name = "hammer" }
+
+-- Stats read from registry (hammer is a secondary, not a weapon)
+local HAMMER_STATS = unique_item_registry.hammer.stats
 
 -- Default hitbox dimensions (used if weapon has no hitbox stats)
 local DEFAULT_WIDTH = 1.15
@@ -146,12 +149,10 @@ end
 ---@param player table The player object
 ---@param dt number Delta time in seconds
 function hammer.update(player, dt)
-	-- Fetch stats once per frame and pass to all check functions
-	local stats = weapon_sync.get_weapon_stats(player)
-	local hitbox = get_hammer_hitbox(player, stats)
+	local hitbox = get_hammer_hitbox(player, HAMMER_STATS)
 	if hitbox then
-		check_hammer_hits(player, hitbox, stats)
-		check_button_hits(player, hitbox, stats)
+		check_hammer_hits(player, hitbox, HAMMER_STATS)
+		check_button_hits(player, hitbox, HAMMER_STATS)
 		check_lever_hits(player, hitbox)
 	end
 	player.vx = 0
@@ -178,8 +179,7 @@ end
 ---@param player table The player object
 function hammer.draw(player)
 	common.draw(player)
-	local stats = weapon_sync.get_weapon_stats(player)
-	common.draw_debug_hitbox(get_hammer_hitbox(player, stats), "#FF00FF")
+	common.draw_debug_hitbox(get_hammer_hitbox(player, HAMMER_STATS), "#FF00FF")
 end
 
 return hammer

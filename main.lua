@@ -207,7 +207,27 @@ local function user_input()
         elseif canvas.is_key_pressed(canvas.keys.F3) then
             player.has_wall_slide = not player.has_wall_slide
         elseif canvas.is_key_pressed(canvas.keys.F4) then
-            player.has_hammer = not player.has_hammer
+            -- Toggle hammer as secondary (equip + assign to ability slot)
+            if player.equipped_items.hammer then
+                player.equipped_items.hammer = nil
+                -- Remove from ability slots
+                for i = 1, controls.ABILITY_SLOT_COUNT do
+                    if player.ability_slots[i] == "hammer" then
+                        player.ability_slots[i] = nil
+                    end
+                end
+            else
+                table.insert(player.unique_items, "hammer")
+                player.equipped_items.hammer = true
+                -- Assign to first empty ability slot
+                for i = 1, controls.ABILITY_SLOT_COUNT do
+                    if not player.ability_slots[i] then
+                        player.ability_slots[i] = "hammer"
+                        break
+                    end
+                end
+            end
+            require("player.weapon_sync").sync(player)
         elseif canvas.is_key_pressed(canvas.keys.F5) then
             player.has_axe = not player.has_axe
         elseif canvas.is_key_pressed(canvas.keys.F6) then

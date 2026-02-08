@@ -116,7 +116,7 @@ local ANIM_FRAMES_CHARGE = 4
 
 -- Entity stats
 local MAX_HEALTH = 6
-local ARMOR = 1
+local ARMOR = 1.5
 local BODY_DAMAGE = 1
 local GRAVITY = 1.5
 local MAX_FALL_SPEED = 20

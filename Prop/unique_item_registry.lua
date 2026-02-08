@@ -9,7 +9,7 @@ local audio = require("audio")
 ---@field name string Display name
 ---@field description string|nil Item description (supports {action} keybinding placeholders)
 ---@field type string|nil Equipment type: "shield", "weapon", "secondary", "accessory", "no_equip", "usable"
----@field stats table|nil Weapon combat stats: damage, stamina_cost, attack_type, hitbox, ms_per_frame, animation, active_frames, can_hit_buttons
+---@field stats table|nil Weapon combat stats: damage, stamina_cost, hitbox, ms_per_frame, animation, active_frames, can_hit_buttons
 ---@field static_sprite string|nil Sprite for non-animated items
 ---@field animated_sprite string|nil Sprite sheet for animated items
 ---@field collected_sprite string|nil Animation played when collected
@@ -65,13 +65,12 @@ return {
     },
     hammer = {
         name = "Sledge Hammer",
-        description = "A slow but heavy weapon that can smash buttons and enemies.",
-        type = "weapon",
+        description = "A heavy hammer that can smash buttons and enemies. Assign to an ability slot to use.",
+        type = "secondary",
         static_sprite = sprites.items.hammer,
         stats = {
             damage = 5,
             stamina_cost = 5,
-            attack_type = "heavy",
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             active_frames = { min = 3, max = 4 },
             can_hit_buttons = true,
@@ -92,7 +91,7 @@ return {
         stats = {
             damage = 1,
             stamina_cost = 1.5,
-            attack_type = "combo",
+
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 60,
         },
@@ -105,7 +104,7 @@ return {
         stats = {
             damage = 2.5,
             stamina_cost = 2.5,
-            attack_type = "combo",
+
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 80,
         },
@@ -118,7 +117,7 @@ return {
         stats = {
             damage = 2.5,
             stamina_cost = 1.5,
-            attack_type = "combo",
+
             hitbox = { width = 1.2, height = 1.1, y_offset = -0.1 },
             ms_per_frame = 60,
         },
@@ -131,7 +130,7 @@ return {
         stats = {
             damage = 5,
             stamina_cost = 4,
-            attack_type = "combo",
+
             animation = "wide",
             hitbox = { width = 1.7, height = 1.2, y_offset = -0.15 },
             ms_per_frame = 90,

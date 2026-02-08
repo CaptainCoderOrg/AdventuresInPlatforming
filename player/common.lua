@@ -9,6 +9,7 @@ local Prop = require('Prop')
 local sprites = require('sprites')
 local weapon_sync = require('player.weapon_sync')
 local upgrade_effects = require('upgrade/effects')
+local unique_item_registry = require('Prop.unique_item_registry')
 
 local common = {}
 
@@ -29,8 +30,6 @@ common.MAX_FALL_SPEED = 20
 -- Stamina costs (balanced against max_stamina=3)
 -- Attack costs 2: allows 1 full attack before fatigue risk
 common.ATTACK_STAMINA_COST = 2
--- Hammer costs 5: single use depletes bar, high-risk/high-reward
-common.HAMMER_STAMINA_COST = 5
 -- Air jump costs 1: double jump only, ground jump stays free
 common.AIR_JUMP_STAMINA_COST = 1
 -- Dash costs 2.5: high cost for powerful escape/engage
@@ -135,13 +134,29 @@ function common.handle_weapon_swap(player)
 	end
 end
 
---- Checks for ability input and transitions to throw state or queues if on cooldown.
---- Queries weapon_sync for the pressed slot's projectile spec.
+--- Checks for ability input and transitions to throw/hammer state or queues if on cooldown.
+--- Routes melee secondaries (hammer) directly, queries weapon_sync for projectile specs.
 --- Non-projectile secondaries (e.g., minor_healing) return nil spec and are skipped here.
 ---@param player table The player object
 function common.handle_ability(player)
 	local slot = controls.any_ability_pressed()
 	if not slot then return end
+
+	local sec_id = weapon_sync.get_slot_secondary(player, slot)
+
+	-- Melee secondary (hammer): consumes stamina, enters hammer state
+	if sec_id == "hammer" then
+		if not weapon_sync.is_secondary_unlocked(player, slot) then return end
+		local hammer_def = unique_item_registry[sec_id]
+		local cost = upgrade_effects.get_stamina_cost(player, sec_id, hammer_def.stats.stamina_cost)
+		if player:use_stamina(cost) then
+			shield = shield or require('player.shield')
+			shield.clear_perfect_window(player)
+			player.active_ability_slot = slot
+			player:set_state(player.states.hammer)
+		end
+		return
+	end
 
 	-- Get projectile spec from the pressed slot (nil for non-projectile abilities)
 	local spec = weapon_sync.get_secondary_spec(player, slot)
@@ -155,7 +170,6 @@ function common.handle_ability(player)
 	end
 
 	-- Block ability when insufficient energy (no cooldown queue needed)
-	local sec_id = weapon_sync.get_slot_secondary(player, slot)
 	if not common.has_throw_energy(player, spec, sec_id) then
 		local current_energy = player.max_energy - player.energy_used
 		Effects.create_energy_text(player.x, player.y, current_energy)
@@ -173,8 +187,7 @@ function common.handle_ability(player)
 	end
 end
 
---- Checks for attack input and transitions to appropriate attack state based on equipped weapon.
---- Routes to combo (attack) or heavy (hammer) state based on weapon's attack_type.
+--- Checks for attack input and transitions to attack state.
 --- Shows "No Weapon" effect if no weapon equipped.
 --- Invalidates perfect block window when attacking from block state.
 ---@param player table The player object
@@ -196,12 +209,7 @@ function common.handle_attack(player)
 			-- Invalidate perfect block window when attacking from block
 			shield = shield or require('player.shield')
 			shield.clear_perfect_window(player)
-			-- Route to appropriate state based on weapon type
-			if stats.attack_type == "heavy" then
-				player:set_state(player.states.hammer)
-			else
-				player:set_state(player.states.attack)
-			end
+			player:set_state(player.states.attack)
 			return true
 		end
 	else
@@ -576,24 +584,32 @@ local function try_queued_combat_action(player)
 		if stats then
 			local stamina_cost = upgrade_effects.get_stamina_cost(player, player.active_weapon, stats.stamina_cost)
 			if player:use_stamina(stamina_cost) then
-				if stats.attack_type == "heavy" then
-					return player.states.hammer
-				else
-					return player.states.attack
-				end
+				return player.states.attack
 			end
 		end
 	end
 	local queued_slot = player.input_queue.ability_slot
-	if queued_slot and player.throw_cooldown <= 0 then
+	if queued_slot then
 		player.input_queue.ability_slot = nil
-		local spec = weapon_sync.get_secondary_spec(player, queued_slot)
 		local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
-		if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
-		   and weapon_sync.has_throw_charges(player, queued_slot) and common.has_throw_energy(player, spec, sec_id) then
-			if common.try_use_throw_stamina(player, spec) then
+		-- Melee secondary (hammer)
+		if sec_id == "hammer" and weapon_sync.is_secondary_unlocked(player, queued_slot) then
+			local hammer_def = unique_item_registry[sec_id]
+			local cost = upgrade_effects.get_stamina_cost(player, sec_id, hammer_def.stats.stamina_cost)
+			if player:use_stamina(cost) then
 				player.active_ability_slot = queued_slot
-				return player.states.throw
+				return player.states.hammer
+			end
+		end
+		-- Projectile secondaries (require throw_cooldown)
+		if player.throw_cooldown <= 0 then
+			local spec = weapon_sync.get_secondary_spec(player, queued_slot)
+			if spec and weapon_sync.is_secondary_unlocked(player, queued_slot)
+			   and weapon_sync.has_throw_charges(player, queued_slot) and common.has_throw_energy(player, spec, sec_id) then
+				if common.try_use_throw_stamina(player, spec) then
+					player.active_ability_slot = queued_slot
+					return player.states.throw
+				end
 			end
 		end
 	end

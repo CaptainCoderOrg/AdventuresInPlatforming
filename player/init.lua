@@ -161,7 +161,7 @@ function Player.new()
 	self.throw_cooldown = 0
 	self.charge_state = {}  -- Runtime charge state per secondary (populated by weapon_sync.sync)
 	self.attack_speed_multiplier = 1.0  -- For future speed upgrades
-	self.has_hammer = false             -- Legacy flag (combat now uses equipped_items)
+	self.has_hammer = false             -- Unlock flag (synced by weapon_sync from equipped_items)
 	self.has_axe = false
 	self.has_shuriken = false
 	self.has_shield = false
@@ -214,6 +214,8 @@ function Player.new()
 		remaining_time = 0,
 		hit_enemies = {},
 		hit_button = false,
+		hit_lever = false,
+		hit_shield = false,
 		sound_played = false
 	}
 	self.throw_state = {

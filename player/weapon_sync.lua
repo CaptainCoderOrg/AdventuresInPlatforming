@@ -205,6 +205,7 @@ function weapon_sync.is_secondary_unlocked(player, slot)
     if not secondary_id then return false end
     if secondary_id == "throwing_axe" then return player.has_axe end
     if secondary_id == "shuriken" then return player.has_shuriken end
+    if secondary_id == "hammer" then return player.has_hammer end
     return true
 end
 
@@ -311,6 +312,7 @@ function weapon_sync.sync(player)
     -- Sync secondary weapons
     player.has_axe = player.equipped_items.throwing_axe == true
     player.has_shuriken = player.equipped_items.shuriken == true
+    player.has_hammer = player.equipped_items.hammer == true
 
     -- Sync accessories
     player.can_dash = player.equipped_items.dash_amulet == true

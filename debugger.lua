@@ -75,20 +75,20 @@ function debugger.draw(player)
 
     canvas.set_font_size(16)
     canvas.set_color("#FFFFFF")
-    canvas.draw_text(ability_x, ability_y, "Abilities (1-7 to toggle):")
+    canvas.draw_text(ability_x, ability_y, "Abilities (F1-F7 to toggle):")
     ability_y = ability_y + line_h
 
     -- NOTE: This table is allocated per-frame when debug mode is on.
     -- Could be moved to module scope with in-place flag updates if GC pressure becomes an issue.
     -- Monitor for performance problems during extended debug sessions.
     local abilities = {
-        { key = "1", name = "Double Jump", flag = player.has_double_jump },
-        { key = "2", name = "Dash",        flag = player.can_dash },
-        { key = "3", name = "Wall Slide",  flag = player.has_wall_slide },
-        { key = "4", name = "Hammer",      flag = player.has_hammer },
-        { key = "5", name = "Axe",         flag = player.has_axe },
-        { key = "6", name = "Shuriken",    flag = player.has_shuriken },
-        { key = "7", name = "Shield",      flag = player.has_shield },
+        { key = "F1", name = "Double Jump", flag = player.has_double_jump },
+        { key = "F2", name = "Dash",        flag = player.can_dash },
+        { key = "F3", name = "Wall Slide",  flag = player.has_wall_slide },
+        { key = "F4", name = "Hammer",      flag = player.has_hammer },
+        { key = "F5", name = "Axe",         flag = player.has_axe },
+        { key = "F6", name = "Shuriken",    flag = player.has_shuriken },
+        { key = "F7", name = "Shield",      flag = player.has_shield },
     }
 
     for _, ability in ipairs(abilities) do

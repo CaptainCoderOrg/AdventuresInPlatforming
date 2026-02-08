@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="unique_items" tilewidth="16" tileheight="16" tilecount="15" columns="0">
+<tileset version="1.10" tiledversion="1.11.2" name="unique_items" tilewidth="16" tileheight="16" tilecount="16" columns="0">
  <editorsettings>
   <export target="unique_items.lua" format="lua"/>
  </editorsettings>
@@ -108,5 +108,12 @@
    <property name="type" value="stackable_item"/>
   </properties>
   <image source="../assets/sprites/items/dungeon-key.png" width="16" height="16"/>
+ </tile>
+ <tile id="15">
+  <properties>
+   <property name="item_id" value="arcane_shard"/>
+   <property name="type" value="stackable_item"/>
+  </properties>
+  <image source="../assets/sprites/items/arcane_shard.png" width="16" height="16"/>
  </tile>
 </tileset>

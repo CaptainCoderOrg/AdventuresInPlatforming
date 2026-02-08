@@ -61,7 +61,7 @@ function manager.evaluate_condition(condition, player)
         return not manager.evaluate_condition(inner_condition, player)
     end
 
-    -- Check for "has_item_" prefix
+    -- Check for "has_item_" prefix (searches both unique and stackable items)
     if condition:sub(1, 9) == "has_item_" then
         local item_id = condition:sub(10)
         if player and player.unique_items then
@@ -70,6 +70,9 @@ function manager.evaluate_condition(condition, player)
                     return true
                 end
             end
+        end
+        if player and player.stackable_items and (player.stackable_items[item_id] or 0) > 0 then
+            return true
         end
         return false
     end

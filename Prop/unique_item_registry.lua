@@ -31,13 +31,6 @@ return {
         collected_frames = 5,
         collect_sfx = audio.pick_up_key,
     },
-    brass_key = {
-        name = "Brass Key",
-        description = "An ornate brass key.",
-        type = "no_equip",
-        static_sprite = sprites.items.brass_key,
-        collect_sfx = audio.pick_up_key,
-    },
     old_key = {
         name = "Old Key",
         description = "A weathered iron key.",
@@ -180,35 +173,5 @@ return {
         description = "Hold the assigned ability key to slowly convert energy into health.",
         type = "secondary",
         static_sprite = sprites.items.minor_healing,
-    },
-    minotaur_blood = {
-        name = "Minotaur Blood",
-        description = "Blood from a fearsome minotaur.",
-        type = "no_equip",
-        static_sprite = sprites.items.minotaur_blood,
-    },
-    mending_root = {
-        name = "Mending Root",
-        description = "A root with restorative properties.",
-        type = "no_equip",
-        static_sprite = sprites.items.mending_root,
-    },
-    chunk_of_iron = {
-        name = "Chunk of Iron",
-        description = "A dense chunk of pure iron.",
-        type = "no_equip",
-        static_sprite = sprites.items.chunk_of_iron,
-    },
-    sharpening_stone = {
-        name = "Sharpening Stone",
-        description = "A fine-grained stone used to hone blades to a razor edge.",
-        type = "no_equip",
-        static_sprite = sprites.items.sharpening_stone,
-    },
-    arcane_shard = {
-        name = "Arcane Shard",
-        description = "A crystallized fragment of pure magical energy.",
-        type = "no_equip",
-        static_sprite = sprites.items.arcane_shard,
     },
 }

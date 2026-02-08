@@ -23,7 +23,7 @@ return {
   },
   properties = {},
   wangsets = {},
-  tilecount = 15,
+  tilecount = 16,
   tiles = {
     {
       id = 0,
@@ -174,6 +174,16 @@ return {
         ["type"] = "stackable_item"
       },
       image = "../assets/sprites/items/dungeon-key.png",
+      width = 16,
+      height = 16
+    },
+    {
+      id = 15,
+      properties = {
+        ["item_id"] = "arcane_shard",
+        ["type"] = "stackable_item"
+      },
+      image = "../assets/sprites/items/arcane_shard.png",
       width = 16,
       height = 16
     }

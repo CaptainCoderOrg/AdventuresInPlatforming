@@ -38,6 +38,14 @@ local BOLT_DAMAGE = 2
 local BOLT_HOMING_STRENGTH = 1.5  -- Radians/sec: how fast bolt turns toward player
 local BOLT_MAX_LIFETIME = 5       -- Seconds: bolt self-destructs after this duration
 
+-- Spread shot constants (blue magician)
+local SPREAD_ANGLE = math.pi / 4      -- 45 degrees offset for outer bolts
+local SPREAD_BOLT_SPEED = 8           -- Slightly slower than homing for balance
+local SPREAD_OFFSETS = { 0, SPREAD_ANGLE, -SPREAD_ANGLE }
+
+-- Burst shot constants (purple magician)
+local BURST_COUNT = 3                 -- Number of bolts in a burst sequence
+
 -- Visual bob constants
 local BOB_SPEED = 3               -- Radians/sec for oscillation
 local BOB_AMPLITUDE = 0.08        -- Tiles amplitude (up/down distance)
@@ -192,18 +200,29 @@ local PARTICLE_POOL_SIZE = 250       -- Pre-allocated particle pool size
 local PARTICLE_ALPHA_STEPS = 10      -- Number of alpha gradient steps
 
 -- Cyan to white color range (hex base colors without alpha)
-local PARTICLE_BASE_COLORS = { "00FFFF", "66FFFF", "AAFFFF", "FFFFFF" }
+local PARTICLE_CYAN_COLORS = { "00FFFF", "66FFFF", "AAFFFF", "FFFFFF" }
+-- Yellow to white color range
+local PARTICLE_YELLOW_COLORS = { "FFFF00", "FFFF66", "FFFFAA", "FFFFFF" }
+-- Green to white color range
+local PARTICLE_GREEN_COLORS = { "00FF00", "66FF66", "AAFFAA", "FFFFFF" }
 
 -- Pre-compute color+alpha combinations (eliminates per-frame string allocation)
 local PARTICLE_COLOR_CACHE = {}
-for _, base_color in ipairs(PARTICLE_BASE_COLORS) do
-	PARTICLE_COLOR_CACHE[base_color] = {}
-	for alpha_step = 0, PARTICLE_ALPHA_STEPS do
-		local alpha = alpha_step / PARTICLE_ALPHA_STEPS
-		local a = math.floor(alpha * 255 + 0.5)
-		PARTICLE_COLOR_CACHE[base_color][alpha_step] = "#" .. base_color .. HEX_LOOKUP[a]
+local function cache_color_set(colors)
+	for _, base_color in ipairs(colors) do
+		if not PARTICLE_COLOR_CACHE[base_color] then
+			PARTICLE_COLOR_CACHE[base_color] = {}
+			for alpha_step = 0, PARTICLE_ALPHA_STEPS do
+				local alpha = alpha_step / PARTICLE_ALPHA_STEPS
+				local a = math.floor(alpha * 255 + 0.5)
+				PARTICLE_COLOR_CACHE[base_color][alpha_step] = "#" .. base_color .. HEX_LOOKUP[a]
+			end
+		end
 	end
 end
+cache_color_set(PARTICLE_CYAN_COLORS)
+cache_color_set(PARTICLE_YELLOW_COLORS)
+cache_color_set(PARTICLE_GREEN_COLORS)
 
 -- Pre-allocate particle pool (avoids per-spawn table allocation)
 local particle_pool = {}
@@ -215,11 +234,12 @@ local particle_pool_index = 0
 --- Spawn a trail particle at the given position
 ---@param x number X position in tiles
 ---@param y number Y position in tiles
-local function spawn_particle(x, y)
+---@param colors table Array of hex color strings to pick from
+local function spawn_particle(x, y, colors)
 	particle_pool_index = particle_pool_index + 1
 	if particle_pool_index > PARTICLE_POOL_SIZE then particle_pool_index = 1 end
 
-	local color = PARTICLE_BASE_COLORS[math.random(#PARTICLE_BASE_COLORS)]
+	local color = colors[math.random(#colors)]
 	local angle = math.random() * 2 * math.pi
 	local radius = math.random() * PARTICLE_SPREAD_PX / sprites.tile_size
 
@@ -403,6 +423,8 @@ function MagicBolt.spawn(x, y, target_x, target_y, bolt_anim_def, bolt_hit_anim_
 		y = y,
 		vx = vx,
 		vy = vy,
+		homing = true,
+		particle_colors = PARTICLE_CYAN_COLORS,
 		box = BOLT_BOX,
 		animation = Animation.new(bolt_anim_def, bolt_anim_opts),
 		hit_anim_def = bolt_hit_anim_def,
@@ -416,6 +438,42 @@ function MagicBolt.spawn(x, y, target_x, target_y, bolt_anim_def, bolt_hit_anim_
 	-- Add trigger collider for wall detection
 	world.add_trigger_collider(bolt)
 	-- Add to combat system for player collision
+	combat.add(bolt)
+
+	MagicBolt.all[#MagicBolt.all + 1] = bolt
+	return bolt
+end
+
+--- Spawn a non-homing magic bolt with explicit velocity
+---@param x number X position in tiles
+---@param y number Y position in tiles
+---@param vx number X velocity in tiles/sec
+---@param vy number Y velocity in tiles/sec
+---@param bolt_anim_def table Animation definition for the bolt sprite
+---@param bolt_hit_anim_def table Animation definition for the bolt hit effect
+---@param colors table|nil Particle color set (defaults to cyan)
+---@return table bolt The created MagicBolt instance
+function MagicBolt.spawn_with_velocity(x, y, vx, vy, bolt_anim_def, bolt_hit_anim_def, colors)
+	bolt_anim_opts.flipped = vx >= 0 and 1 or -1
+
+	local bolt = {
+		x = x,
+		y = y,
+		vx = vx,
+		vy = vy,
+		homing = false,
+		particle_colors = colors or PARTICLE_CYAN_COLORS,
+		box = BOLT_BOX,
+		animation = Animation.new(bolt_anim_def, bolt_anim_opts),
+		hit_anim_def = bolt_hit_anim_def,
+		marked_for_destruction = false,
+		debug_color = "#FFFF00",
+		particle_timer = 0,
+		wall_check_timer = 0,
+		lifetime = 0,
+	}
+
+	world.add_trigger_collider(bolt)
 	combat.add(bolt)
 
 	MagicBolt.all[#MagicBolt.all + 1] = bolt
@@ -469,7 +527,7 @@ function MagicBolt.update_all(dt, player)
 			MagicBolt.all[#MagicBolt.all] = nil
 		else
 			-- Homing: gradually turn toward player using vector lerp (avoids trig)
-			if player then
+			if bolt.homing and player then
 				local bolt_cx = bolt.x + bolt.box.w / 2
 				local bolt_cy = bolt.y + bolt.box.h / 2
 				local player_cx = player.x + player.box.x + player.box.w / 2
@@ -521,7 +579,7 @@ function MagicBolt.update_all(dt, player)
 					local bolt_cx = bolt.x + bolt.box.w / 2
 					local bolt_cy = bolt.y + bolt.box.h / 2
 					for _ = 1, PARTICLE_SPAWN_COUNT do
-						spawn_particle(bolt_cx, bolt_cy)
+						spawn_particle(bolt_cx, bolt_cy, bolt.particle_colors)
 					end
 				end
 
@@ -865,9 +923,10 @@ function magician_common.create(sprite_set, cfg)
 		start = function(enemy, _)
 			begin_state(enemy, animations.ATTACK)
 			enemy.bolt_spawned = false
+			enemy.attack_count = 1
 			face_player(enemy)
 
-			-- Store target position at attack start
+			-- Store target position at attack start (used by default and spread)
 			if enemy.target_player then
 				enemy.attack_target_x = enemy.target_player.x + enemy.target_player.box.x + enemy.target_player.box.w / 2
 				enemy.attack_target_y = enemy.target_player.y + enemy.target_player.box.y + enemy.target_player.box.h / 2
@@ -883,18 +942,56 @@ function magician_common.create(sprite_set, cfg)
 			if not enemy.bolt_spawned and enemy.animation.frame >= 10 then
 				enemy.bolt_spawned = true
 
+				-- Burst: re-read player position each shot
+				if cfg.burst_shot and enemy.target_player then
+					enemy.attack_target_x = enemy.target_player.x + enemy.target_player.box.x + enemy.target_player.box.w / 2
+					enemy.attack_target_y = enemy.target_player.y + enemy.target_player.box.y + enemy.target_player.box.h / 2
+				end
+
 				-- Spawn from top corner based on direction
 				local spawn_x = enemy.x + (enemy.direction == 1 and 0.75 or -0.125)
 				local spawn_y = enemy.y
 
 				if enemy.attack_target_x and enemy.attack_target_y then
-					MagicBolt.spawn(spawn_x, spawn_y, enemy.attack_target_x, enemy.attack_target_y,
-						animations.BOLT, animations.BOLT_HIT)
+					if cfg.spread_shot then
+						-- 3-bolt spread: center fires horizontally, outer two at ±45°
+						local base_angle = enemy.direction == 1 and 0 or math.pi
+						for _, offset in ipairs(SPREAD_OFFSETS) do
+							local angle = base_angle + offset
+							local bvx = math.cos(angle) * SPREAD_BOLT_SPEED
+							local bvy = math.sin(angle) * SPREAD_BOLT_SPEED
+							MagicBolt.spawn_with_velocity(spawn_x, spawn_y, bvx, bvy,
+								animations.BOLT, animations.BOLT_HIT, PARTICLE_YELLOW_COLORS)
+						end
+					elseif cfg.burst_shot then
+						-- Burst: non-homing bolt aimed at player's current position
+						local dx = enemy.attack_target_x - spawn_x
+						local dy = enemy.attack_target_y - spawn_y
+						local dist = math.sqrt(dx * dx + dy * dy)
+						local bvx, bvy = 0, 0
+						if dist > 0 then
+							bvx = (dx / dist) * BOLT_SPEED
+							bvy = (dy / dist) * BOLT_SPEED
+						end
+						MagicBolt.spawn_with_velocity(spawn_x, spawn_y, bvx, bvy,
+							animations.BOLT, animations.BOLT_HIT, PARTICLE_GREEN_COLORS)
+					else
+						MagicBolt.spawn(spawn_x, spawn_y, enemy.attack_target_x, enemy.attack_target_y,
+							animations.BOLT, animations.BOLT_HIT)
+					end
 				end
 			end
 
 			if enemy.animation:is_finished() then
-				enemy:set_state(states.fly)
+				-- Burst: replay attack animation up to BURST_COUNT times
+				if cfg.burst_shot and enemy.attack_count < BURST_COUNT then
+					enemy.attack_count = enemy.attack_count + 1
+					enemy.bolt_spawned = false
+					common.set_animation(enemy, animations.ATTACK)
+					face_player(enemy)
+				else
+					enemy:set_state(states.fly)
+				end
 			end
 		end,
 		draw = draw_magician,

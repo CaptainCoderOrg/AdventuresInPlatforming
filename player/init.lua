@@ -13,6 +13,7 @@ local heal_channel = require('player.heal_channel')
 local Effects = require('Effects')
 local audio = require('audio')
 local stats = require('player.stats')
+local upgrade_effects = require('upgrade/effects')
 
 local Player = {}
 Player.__index = Player
@@ -258,10 +259,12 @@ function Player.new()
 	return self
 end
 
---- Returns whether player is currently invincible (post-hit immunity frames).
+--- Returns whether player is currently invincible (post-hit immunity or dash upgrade).
 ---@return boolean True if invincible
 function Player:is_invincible()
-	return self.invincible_time > 0
+	if self.invincible_time > 0 then return true end
+	if self.state == self.states.dash and upgrade_effects.has_dash_invulnerability(self) then return true end
+	return false
 end
 
 --- Attempts to consume stamina for an ability.
@@ -410,7 +413,11 @@ end
 --- Also draws debug bounding box if enabled in config.
 function Player:draw()
 	if self:is_invincible() then
-		canvas.set_global_alpha(0.75 + 0.25 * math.sin(self.invincible_time * 20))
+		local blink_time = self.invincible_time
+		if self.state == self.states.dash then
+			blink_time = self.dash_state.elapsed_time
+		end
+		canvas.set_global_alpha(0.75 + 0.25 * math.sin(blink_time * 20))
 	end
 
 	self.state.draw(self)

@@ -59,8 +59,26 @@ return {
         hub = {
             text = "What can I do for you?",
             options = {
+                { text = "Arcane Shard", next = "arcane_offer", condition = "has_item_arcane_shard", condition2 = "not_has_item_shuriken" },
                 { text = "Upgrade Equipment", next = nil, actions = { "set_flag_open_upgrades" }, keep_camera = true },
                 { text = "Leave", next = nil },
+            },
+        },
+
+        -- Arcane shard trade
+        arcane_offer = {
+            text = "Oh my, is that an Arcane Shard? Those are exceedingly rare! I could transmute it into a throwing weapon - a Shuriken, enchanted with magical energy. Would you like to trade?",
+            options = {
+                { text = "Trade Arcane Shard for Shuriken", next = "arcane_accept" },
+                { text = "Not right now.", next = "hub" },
+            },
+        },
+
+        arcane_accept = {
+            text = "Excellent! Let me work my magic... There! A fine enchanted Shuriken, perfect for dispatching enemies from afar.",
+            actions = { "set_flag_trade_shuriken" },
+            options = {
+                { text = "Thanks!", next = nil },
             },
         },
     },

@@ -52,6 +52,18 @@ return {
                 end
             end
 
+            -- Check for trade_shuriken flag
+            if saved_player.dialogue_flags and saved_player.dialogue_flags.trade_shuriken then
+                saved_player.dialogue_flags.trade_shuriken = nil
+                common.consume_stackable_item(saved_player, "arcane_shard", 1)
+                pickup_dialogue.show("shuriken", saved_player, function()
+                    -- Complete journal quest after equip dialogue closes
+                    saved_player.journal = saved_player.journal or {}
+                    saved_player.journal.arcane_shard_quest = "complete"
+                end)
+                return
+            end
+
             -- Check for open_upgrades flag (keep_camera option held camera in place)
             if saved_player.dialogue_flags and saved_player.dialogue_flags.open_upgrades then
                 saved_player.dialogue_flags.open_upgrades = nil

@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 11,
-  nextobjectid = 158,
+  nextobjectid = 162,
   properties = {
     ["id"] = "dungeon"
   },
@@ -53,7 +53,7 @@ return {
     },
     {
       name = "gnomo_boss",
-      firstgid = 527,
+      firstgid = 528,
       filename = "gnomo_boss.tsx",
       exportfilename = "gnomo_boss.lua"
     }
@@ -2582,20 +2582,6 @@ return {
           properties = {}
         },
         {
-          id = 22,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = -176,
-          y = 32,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 306,
-          visible = true,
-          properties = {}
-        },
-        {
           id = 24,
           name = "",
           type = "",
@@ -2678,20 +2664,6 @@ return {
           height = 8,
           rotation = 0,
           gid = 500,
-          visible = true,
-          properties = {}
-        },
-        {
-          id = 40,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 720,
-          y = 16,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 290,
           visible = true,
           properties = {}
         },
@@ -3533,7 +3505,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 527,
+          gid = 528,
           visible = true,
           properties = {}
         },
@@ -3547,7 +3519,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 528,
+          gid = 529,
           visible = true,
           properties = {}
         },
@@ -3561,7 +3533,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 529,
+          gid = 530,
           visible = true,
           properties = {}
         },
@@ -3575,7 +3547,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 530,
+          gid = 531,
           visible = true,
           properties = {}
         },
@@ -3695,6 +3667,50 @@ return {
           visible = true,
           properties = {
             ["text"] = "Press {menu} to access [color=#00AA00]MAP[/color]"
+          }
+        },
+        {
+          id = 158,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -176,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 527,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 159,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = 720,
+          y = 16,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 527,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 161,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -672,
+          y = 32,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 306,
+          visible = true,
+          properties = {
+            ["gold"] = 50
           }
         }
       }

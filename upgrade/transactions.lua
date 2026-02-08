@@ -1,7 +1,8 @@
 --- Purchase validation and execution for equipment upgrades
 
 local upgrade_registry = require("upgrade/registry")
-local unique_item_registry = require("Prop/unique_item_registry")
+local stackable_item_registry = require("Prop/stackable_item_registry")
+local prop_common = require("Prop/common")
 
 local transactions = {}
 
@@ -24,19 +25,11 @@ function transactions.can_purchase(player, item_id)
         return false, "Not enough gold"
     end
 
-    -- Check material requirement
+    -- Check material requirement (stackable items)
     if next_tier.material then
-        local has_material = false
-        if player.unique_items then
-            for _, uid in ipairs(player.unique_items) do
-                if uid == next_tier.material then
-                    has_material = true
-                    break
-                end
-            end
-        end
-        if not has_material then
-            local mat_def = unique_item_registry[next_tier.material]
+        local count = (player.stackable_items and player.stackable_items[next_tier.material]) or 0
+        if count < 1 then
+            local mat_def = stackable_item_registry[next_tier.material]
             local mat_name = mat_def and mat_def.name or next_tier.material
             return false, "Need " .. mat_name
         end
@@ -61,18 +54,9 @@ function transactions.purchase(player, item_id)
     -- Deduct gold
     player.gold = player.gold - next_tier.gold
 
-    -- Remove material from unique_items if required
-    if next_tier.material and player.unique_items then
-        for i, uid in ipairs(player.unique_items) do
-            if uid == next_tier.material then
-                table.remove(player.unique_items, i)
-                -- Also remove from equipped_items if present
-                if player.equipped_items then
-                    player.equipped_items[next_tier.material] = nil
-                end
-                break
-            end
-        end
+    -- Consume material from stackable items if required
+    if next_tier.material then
+        prop_common.consume_stackable_item(player, next_tier.material)
     end
 
     -- Increment tier

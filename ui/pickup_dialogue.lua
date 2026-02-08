@@ -6,6 +6,7 @@ local controls = require("controls")
 local simple_dialogue = require("ui/simple_dialogue")
 local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
+local prop_common = require("Prop.common")
 local unique_item_registry = require("Prop.unique_item_registry")
 local weapon_sync = require("player.weapon_sync")
 local utils = require("ui/utils")
@@ -45,6 +46,7 @@ local current_item_id = nil
 local current_player = nil
 local on_complete_callback = nil
 local is_no_equip = false  -- True for no_equip items (single button mode)
+local is_info_only = false  -- True for info-only mode (no inventory add)
 
 -- Input blocking (prevents jump on dialogue close)
 local block_input_frames = 0
@@ -223,15 +225,13 @@ local function ensure_button_metrics()
     button_metrics_cached = true
 end
 
---- Get the item definition for the current item
+--- Get the item definition for the current item (checks unique then stackable registries)
 ---@return table|nil item_def
 local function get_item_def()
     if not current_item_id then return nil end
-    return unique_item_registry[current_item_id]
+    return prop_common.get_item_def(current_item_id)
 end
 
---- Count equipped items of a specific type
----@param player table Player instance
 --- Equip the current item to the player
 --- Handles exclusive types (shields), secondary limits, and active weapon/secondary tracking
 ---@param player table Player instance
@@ -293,8 +293,9 @@ end
 --- Show the pickup dialogue for an item
 ---@param item_id string The item ID to show
 ---@param player table The player instance
----@param on_complete function Callback when dialogue closes (receives equip boolean)
-function pickup_dialogue.show(item_id, player, on_complete)
+---@param on_complete function|nil Callback when dialogue closes (receives equip boolean)
+---@param options table|nil Optional settings: { info_only = true } shows item info with OK button only
+function pickup_dialogue.show(item_id, player, on_complete, options)
     if state ~= STATE.HIDDEN then return end
 
     current_item_id = item_id
@@ -305,9 +306,11 @@ function pickup_dialogue.show(item_id, player, on_complete)
     state = STATE.FADING_IN
     fade_progress = 0
 
-    -- Check if this is a no_equip item (single button mode)
-    local item_def = unique_item_registry[item_id]
-    is_no_equip = item_def and item_def.type == "no_equip"
+    is_info_only = options and options.info_only or false
+
+    -- Check if this is a no_equip item or info-only (single button mode)
+    local item_def = prop_common.get_item_def(item_id)
+    is_no_equip = is_info_only or (item_def and item_def.type == "no_equip")
 end
 
 --- Check if the dialogue is active (not hidden)
@@ -328,7 +331,7 @@ local function close_dialogue(equip)
     state = STATE.FADING_OUT
     fade_progress = 0
 
-    if current_player and current_item_id then
+    if not is_info_only and current_player and current_item_id then
         -- Add to inventory (unique_items)
         table.insert(current_player.unique_items, current_item_id)
 

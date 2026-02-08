@@ -4,8 +4,11 @@
 local audio = require("audio")
 local canvas = require("canvas")
 local common = require("Prop/common")
+local dialogue_manager = require("dialogue/manager")
 local Effects = require("Effects")
 local ITEMS = require("Prop/stackable_item_registry")
+local journal_toast = require("ui/journal_toast")
+local pickup_dialogue = require("ui/pickup_dialogue")
 local Prop = require("Prop")
 local sprites = require("sprites")
 local TextDisplay = require("TextDisplay")
@@ -111,6 +114,32 @@ return {
                     common.add_stackable_item(prop.last_player, prop.item_id, prop.count)
                 end
 
+                -- Check for first-collect dialogue
+                local fc = prop.item.first_collect
+                if fc and prop.last_player and not dialogue_manager.get_flag(fc.flag) then
+                    -- First time collecting this item type
+                    dialogue_manager.set_flag(fc.flag)
+
+                    -- Add journal entry
+                    if fc.journal then
+                        prop.last_player.journal = prop.last_player.journal or {}
+                        if not prop.last_player.journal[fc.journal] then
+                            prop.last_player.journal[fc.journal] = "active"
+                            journal_toast.push(fc.journal)
+                        end
+                    end
+
+                    -- Show info-only pickup dialogue (delays fade until closed)
+                    prop.pending_dialogue = true
+                    pickup_dialogue.show(prop.item_id, prop.last_player, function()
+                        prop.pending_dialogue = false
+                        audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
+                        prop.fade_elapsed = 0
+                        Effects.create_collect_particles(prop.x + 0.5, prop.y + 0.5)
+                    end, { info_only = true })
+                    return
+                end
+
                 -- Play collection sound
                 audio.play_sfx(prop.item.collect_sfx or audio.default_collect_sfx)
 
@@ -122,6 +151,9 @@ return {
             ---@param prop table The stackable_item prop instance
             ---@param dt number Delta time in seconds
             update = function(prop, dt, _player)
+                -- Skip update while waiting for dialogue
+                if prop.pending_dialogue then return end
+
                 -- Wait for fade to complete
                 prop.fade_elapsed = prop.fade_elapsed + dt
                 if prop.fade_elapsed >= FADE_DURATION then
@@ -131,6 +163,10 @@ return {
 
             ---@param prop table The stackable_item prop instance
             draw = function(prop)
+                if prop.pending_dialogue then
+                    draw_item(prop)
+                    return
+                end
                 local alpha = 1 - prop.fade_elapsed / FADE_DURATION
                 draw_item(prop, alpha)
             end

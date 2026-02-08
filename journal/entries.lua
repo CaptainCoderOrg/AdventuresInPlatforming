@@ -13,6 +13,13 @@ return {
         parent = "awakening", sort_order = 1,
     },
 
+    -- Top-level: Arcane Shard
+    arcane_shard_quest = {
+        title = "Bring Arcane Shard to Zabarbra",
+        description = "I found a crystallized fragment of magical energy. Zabarbra might be able to do something with it.",
+        parent = nil, sort_order = 3,
+    },
+
     -- Top-level: The Adept
     the_adept = {
         title = "The Adept",

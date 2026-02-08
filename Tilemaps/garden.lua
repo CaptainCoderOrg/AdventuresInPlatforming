@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 14,
-  nextobjectid = 136,
+  nextobjectid = 137,
   properties = {
     ["id"] = "garden"
   },
@@ -70,19 +70,19 @@ return {
     },
     {
       name = "NPCS",
-      firstgid = 1397,
+      firstgid = 1398,
       filename = "NPCS.tsx",
       exportfilename = "NPCS.lua"
     },
     {
       name = "tombstones",
-      firstgid = 1401,
+      firstgid = 1402,
       filename = "tombstones.tsx",
       exportfilename = "tombstones.lua"
     },
     {
       name = "caves_tileset",
-      firstgid = 1465,
+      firstgid = 1466,
       filename = "caves_tileset.tsx",
       exportfilename = "caves_tileset.lua"
     }
@@ -1288,11 +1288,11 @@ return {
             652, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1577, 0, 0, 246, 247, 248,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1578, 0, 0, 246, 247, 248,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 651, 652, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 621,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1577, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1578, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
           }
         },
@@ -1312,9 +1312,9 @@ return {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 246, 247, 248, 224,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 1538, 1539, 0, 0, 0, 1577, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1539, 1540, 0, 0, 0, 1578, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 621,
-            0, 0, 0, 0, 651, 652, 0, 0, 1576, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 651, 652, 0, 0, 1577, 0, 0, 0, 0, 0, 0, 0
           }
         },
         {
@@ -1383,7 +1383,7 @@ return {
         {
           x = -64, y = -32, width = 16, height = 16,
           data = {
-            0, 1576, 1577, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1577, 1578, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 225, 226, 227, 0, 0, 0, 0, 0, 246, 247, 248, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2061,7 +2061,7 @@ return {
           width = 32,
           height = 32,
           rotation = 0,
-          gid = 1397,
+          gid = 1398,
           visible = true,
           properties = {}
         },
@@ -2164,20 +2164,6 @@ return {
           height = 16,
           rotation = 0,
           gid = 1313,
-          visible = true,
-          properties = {}
-        },
-        {
-          id = 78,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = -432,
-          y = -480,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 1334,
           visible = true,
           properties = {}
         },
@@ -2483,6 +2469,20 @@ return {
           properties = {
             ["type"] = "patrol_area"
           }
+        },
+        {
+          id = 136,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -432,
+          y = -480,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1397,
+          visible = true,
+          properties = {}
         }
       }
     },

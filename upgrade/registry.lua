@@ -12,7 +12,7 @@ registry.sword = {
           result = "I was able to increase the damage of the shortsword." },
         { gold = 50,  effects = { weapon_damage_add = 0.3 },
           result = "The enchantment grows stronger..." },
-        { gold = 100, material = "minotaur_blood", effects = { weapon_damage_add = 1.0 },
+        { gold = 100, material = "arcane_shard", effects = { weapon_damage_add = 1.0 },
           result = "A powerful dark energy flows through the blade now." },
     },
 }
@@ -25,7 +25,7 @@ registry.minor_healing = {
           result = "Now you will heal faster." },
         { gold = 100, effects = { energy_ratio = 1.5 },
           result = "Your energy flows more efficiently now." },
-        { gold = 250, material = "mending_root", effects = { heal_rate = 1.5, energy_ratio = 1 },
+        { gold = 250, material = "arcane_shard", effects = { heal_rate = 1.5, energy_ratio = 1 },
           result = "Life force surges through you with incredible speed." },
     },
 }
@@ -38,7 +38,7 @@ registry.longsword = {
           result = "The blade feels lighter and strikes harder." },
         { gold = 200, effects = { weapon_damage_add = 0.5, ms_per_frame = 70 },
           result = "The enchantment quickens the blade's swing." },
-        { gold = 500, material = "sharpening_stone", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
+        { gold = 500, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
           result = "A masterwork edge. Swift, deadly, and effortless." },
     },
 }
@@ -51,7 +51,7 @@ registry.throwing_axe = {
           result = "The axes strike with renewed vigor." },
         { gold = 150, effects = { recharge = 1.5 },
           result = "The enchantment hastens the axe's return." },
-        { gold = 500, material = "chunk_of_iron", effects = { projectile_damage = 3 },
+        { gold = 500, material = "arcane_shard", effects = { projectile_damage = 3 },
           result = "Devastatingly heavy. These will crush anything." },
     },
 }
@@ -69,8 +69,17 @@ registry.shuriken = {
     },
 }
 
+registry.dash_amulet = {
+    label = "Enchant",
+    description = "Imbue the Dash Amulet with arcane energy.",
+    tiers = {
+        { gold = 150, material = "arcane_shard", effects = { dash_invulnerable = true },
+          result = "The amulet pulses with a protective aura. You will be invulnerable while dashing." },
+    },
+}
+
 --- Stable display order for upgrade UI
-registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken" }
+registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken", "dash_amulet" }
 
 -- Lookup set built from DISPLAY_ORDER (prevents get() from returning non-upgrade keys)
 local VALID_ITEMS = {}

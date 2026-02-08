@@ -8,6 +8,7 @@ local sprites = require("sprites")
 local upgrade_registry = require("upgrade/registry")
 local upgrade_transactions = require("upgrade/transactions")
 local unique_item_registry = require("Prop/unique_item_registry")
+local stackable_item_registry = require("Prop/stackable_item_registry")
 
 local upgrade_screen = {}
 
@@ -409,14 +410,27 @@ function upgrade_screen.draw()
                 if not is_maxed then
                     local next_tier = entry.def.tiers[current_tier + 1]
                     local desc = entry.def.description
-                    if next_tier.material then
-                        local mat_def = unique_item_registry[next_tier.material]
-                        local mat_name = mat_def and mat_def.name or next_tier.material
-                        desc = desc .. " (Requires: " .. mat_name .. ")"
-                    end
-                    canvas.set_color("#AAAAAA")
                     local desc_y = box_y + box_h - TEXT_PADDING_TOP - LINE_HEIGHT
-                    canvas.draw_text(text_x, desc_y, desc)
+
+                    if next_tier.material then
+                        -- Draw description in gray, then "Requires: " in green, material name in gold
+                        canvas.set_color("#AAAAAA")
+                        canvas.draw_text(text_x, desc_y, desc)
+                        local desc_w = canvas.get_text_width(desc)
+
+                        local req_text = " Requires: "
+                        canvas.set_color("#558855")
+                        canvas.draw_text(text_x + desc_w, desc_y, req_text)
+                        local req_w = canvas.get_text_width(req_text)
+
+                        local mat_def = stackable_item_registry[next_tier.material]
+                        local mat_name = mat_def and mat_def.name or next_tier.material
+                        canvas.set_color("#CC9933")
+                        canvas.draw_text(text_x + desc_w + req_w, desc_y, mat_name)
+                    else
+                        canvas.set_color("#AAAAAA")
+                        canvas.draw_text(text_x, desc_y, desc)
+                    end
                 end
             end
         else

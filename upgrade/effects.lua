@@ -116,6 +116,14 @@ function effects.get_max_charges(player, item_id, base_max)
     return base_max + (fx.max_charges_add or 0)
 end
 
+--- Check if player has dash invulnerability from dash amulet upgrade
+---@param player table Player instance
+---@return boolean True if dash grants invulnerability
+function effects.has_dash_invulnerability(player)
+    local fx = collect_effects(player, "dash_amulet")
+    return fx.dash_invulnerable or false
+end
+
 --- Get effective recharge time (override from upgrades, or base)
 ---@param player table Player instance
 ---@param item_id string Secondary item ID

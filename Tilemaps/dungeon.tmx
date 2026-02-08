@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="158">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="11" nextobjectid="162">
  <editorsettings>
   <export target="dungeon.lua" format="lua"/>
  </editorsettings>
@@ -12,7 +12,7 @@
  <tileset firstgid="308" source="caves_tileset.tsx"/>
  <tileset firstgid="498" source="enemy_spawns.tsx"/>
  <tileset firstgid="512" source="unique_items.tsx"/>
- <tileset firstgid="527" source="gnomo_boss.tsx"/>
+ <tileset firstgid="528" source="gnomo_boss.tsx"/>
  <imagelayer id="3" name="Background" offsetx="0" offsety="-64" repeatx="1" repeaty="1">
   <image source="../assets/Tilesets/caves_background_00.png" width="240" height="160"/>
  </imagelayer>
@@ -1881,7 +1881,6 @@
   </object>
   <object id="17" gid="1073742201" x="176" y="0" width="16" height="16"/>
   <object id="20" gid="3221225849" x="-16" y="64" width="16" height="16"/>
-  <object id="22" gid="306" x="-176" y="32" width="16" height="16"/>
   <object id="24" gid="298" x="464" y="80" width="16" height="32">
    <properties>
     <property name="required_key" value="dungeon_key"/>
@@ -1892,7 +1891,6 @@
   <object id="29" gid="381" x="-160" y="32" width="16" height="16"/>
   <object id="32" gid="502" x="-368" y="96" width="16" height="8"/>
   <object id="36" gid="500" x="928" y="80" width="16" height="8"/>
-  <object id="40" gid="290" x="720" y="16" width="16" height="16"/>
   <object id="41" gid="292" x="1904" y="80" width="16" height="16">
    <properties>
     <property name="name" value="Gnomos Hideout"/>
@@ -1983,10 +1981,10 @@
     <property name="start_direction" value="NE"/>
    </properties>
   </object>
-  <object id="128" gid="527" x="3184" y="80" width="16" height="16"/>
-  <object id="129" gid="528" x="3360" y="80" width="16" height="16"/>
-  <object id="130" gid="529" x="3248" y="48" width="16" height="16"/>
-  <object id="131" gid="530" x="3296" y="48" width="16" height="16"/>
+  <object id="128" gid="528" x="3184" y="80" width="16" height="16"/>
+  <object id="129" gid="529" x="3360" y="80" width="16" height="16"/>
+  <object id="130" gid="530" x="3248" y="48" width="16" height="16"/>
+  <object id="131" gid="531" x="3296" y="48" width="16" height="16"/>
   <object id="133" gid="292" x="3008" y="144" width="16" height="16">
    <properties>
     <property name="name" value="Gnomos Ledge"/>
@@ -2005,6 +2003,13 @@
   <object id="157" gid="300" x="1840" y="80" width="16" height="16">
    <properties>
     <property name="text" value="Press {menu} to access [color=#00AA00]MAP[/color]"/>
+   </properties>
+  </object>
+  <object id="158" gid="527" x="-176" y="32" width="16" height="16"/>
+  <object id="159" gid="527" x="720" y="16" width="16" height="16"/>
+  <object id="161" gid="306" x="-672" y="32" width="16" height="16">
+   <properties>
+    <property name="gold" type="int" value="50"/>
    </properties>
   </object>
  </objectgroup>

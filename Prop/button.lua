@@ -3,6 +3,7 @@ local Animation = require("Animation")
 local audio = require("audio")
 local common = require("Prop/common")
 local Prop = require("Prop")
+local proximity_audio = require("proximity_audio")
 local sprites = require("sprites")
 
 local BUTTON_ANIM = Animation.create_definition(sprites.environment.button, 5, {
@@ -14,6 +15,7 @@ local BUTTON_ANIM = Animation.create_definition(sprites.environment.button, 5, {
 
 --- Button Y offset (sprite is 8px tall, positioned in bottom half of tile)
 local BUTTON_Y_OFFSET = 0.5
+local SOUND_RADIUS = 8
 local RESET_ANIM_OPTS = { start_frame = BUTTON_ANIM.frame_count - 1, reverse = true }
 
 --- Shared draw function for button states
@@ -48,6 +50,13 @@ local definition = {
             prop.should_reset = false
         end
 
+        -- Register for proximity-based sound
+        proximity_audio.register(prop, {
+            sound_id = "button",
+            radius = SOUND_RADIUS,
+            max_volume = 1.0
+        })
+
         -- Start already pressed (silently, no sound or callback)
         if options.start_pressed then
             prop.is_pressed = true
@@ -67,13 +76,15 @@ local definition = {
         pressed = {
             ---@param prop table Button prop instance
             ---@param _def table Button definition (unused)
-            ---@param skip_callback boolean|nil If true, don't fire on_press callback
-            start = function(prop, _def, skip_callback)
+            ---@param silent boolean|nil If true, skip sound and callback
+            start = function(prop, _def, silent)
                 prop.is_pressed = true
                 prop.animation:resume()
-                audio.play_sfx(audio.stone_slab_pressed)
-                if prop.on_press and not skip_callback then
-                    prop.on_press()
+                if not silent then
+                    audio.play_sfx(audio.stone_slab_pressed)
+                    if prop.on_press then
+                        prop.on_press()
+                    end
                 end
             end,
             draw = draw_button

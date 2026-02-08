@@ -28,6 +28,7 @@ local ZONE_IDS = {
     left_side = "valkyrie_boss_left_side",
     right_side = "valkyrie_boss_right_side",
     middle = "valkyrie_boss_middle",
+    middle_platform = "valkyrie_boss_middle_platform",
 }
 
 local PILLAR_PREFIX = "valkyrie_right_pillar_"  -- 0-4
@@ -43,9 +44,33 @@ local BUTTON_IDS = {
 
 -- Lazy-loaded to avoid circular dependency
 local audio = nil
+local valk_common = nil
+
+-- Health thresholds for phase transitions (percentage of max health)
+-- Phase 1: 100%-75%, Phase 2: 75%-50%, Phase 3: 50%-25%, Phase 4: 25%-0%
+local PHASE_THRESHOLDS = { 0.75, 0.50, 0.25 }
+
+-- Phase modules (lazy loaded to avoid circular requires)
+local phase_modules = nil
+
+--- Lazy load phase modules
+---@return table Phase modules indexed by number
+local function get_phase_modules()
+    if not phase_modules then
+        phase_modules = {
+            [0] = require("Enemies/Bosses/valkyrie/phase0"),
+            [1] = require("Enemies/Bosses/valkyrie/phase1"),
+            [2] = require("Enemies/Bosses/valkyrie/phase2"),
+            [3] = require("Enemies/Bosses/valkyrie/phase3"),
+            [4] = require("Enemies/Bosses/valkyrie/phase4"),
+        }
+    end
+    return phase_modules
+end
 
 local coordinator = {
     active = false,
+    phase = 0,
     total_max_health = MAX_HEALTH,
     total_health = MAX_HEALTH,
     enemy = nil,
@@ -72,15 +97,57 @@ function coordinator.start(player)
     if coordinator.active then return end
 
     coordinator.active = true
+    coordinator.phase = 0
     coordinator.player = player
 
     -- TODO: Replace with valkyrie-specific boss music when available
     audio = audio or require("audio")
     audio.play_music(audio.gnomo_boss)
+
+    -- Apply phase 0 states to the valkyrie
+    coordinator.apply_phase_states()
+end
+
+--- Transition from phase 0 (intro) to phase 1 (combat begins).
+function coordinator.start_phase1()
+    if coordinator.phase ~= 0 then return end
+    coordinator.set_phase(1)
+end
+
+--- Get the current phase module.
+---@return table|nil Phase module with states table
+function coordinator.get_phase_module()
+    local modules = get_phase_modules()
+    return modules[coordinator.phase]
+end
+
+--- Apply current phase's states to the valkyrie enemy.
+function coordinator.apply_phase_states()
+    local enemy = coordinator.enemy
+    if not enemy or enemy.marked_for_destruction then return end
+
+    local phase_module = coordinator.get_phase_module()
+    if not phase_module then return end
+
+    enemy.states = phase_module.states
+    enemy:set_state(phase_module.states.idle)
+end
+
+--- Set the phase and apply new states.
+---@param new_phase number Phase number (0-4)
+function coordinator.set_phase(new_phase)
+    coordinator.phase = new_phase
+    coordinator.apply_phase_states()
+end
+
+--- Get the current phase number.
+---@return number Current phase (0-4)
+function coordinator.get_phase()
+    return coordinator.phase
 end
 
 --- Activate arena blocks (solid walls with fade-in).
-local function activate_blocks()
+function coordinator.activate_blocks()
     for i = 1, #BLOCK_IDS do
         local block = Prop.find_by_id(BLOCK_IDS[i])
         if block and not block.marked_for_destruction and block.definition.activate then
@@ -106,11 +173,25 @@ end
 --- Report damage dealt to the valkyrie.
 ---@param damage number Amount of damage dealt
 function coordinator.report_damage(damage)
+    local old_health = coordinator.total_health
     coordinator.total_health = math.max(0, coordinator.total_health - damage)
 
     -- Re/activate arena walls each hit (resets the 3s solid timer)
     if coordinator.active then
-        activate_blocks()
+        coordinator.activate_blocks()
+    end
+
+    -- Check for phase transitions based on health thresholds
+    local old_percent = old_health / coordinator.total_max_health
+    local new_percent = coordinator.total_health / coordinator.total_max_health
+
+    for i = 1, #PHASE_THRESHOLDS do
+        local threshold = PHASE_THRESHOLDS[i]
+        local target_phase = i + 1  -- threshold[1]=0.75 -> phase 2, etc.
+        if old_percent > threshold and new_percent <= threshold then
+            coordinator.set_phase(target_phase)
+            break  -- Only one transition per damage tick
+        end
     end
 
     if coordinator.total_health <= 0 and coordinator.active then
@@ -170,9 +251,12 @@ function coordinator.trigger_victory()
     coordinator.victory_timer = 0
 end
 
---- Update victory sequence and block timers.
+--- Update victory sequence, block timers, and ghost trails.
 ---@param dt number Delta time in seconds
 function coordinator.update(dt)
+    valk_common = valk_common or require("Enemies/Bosses/valkyrie/common")
+    valk_common.update_ghost_trails(dt)
+
     -- Tick block solid timer
     if coordinator.blocks_active then
         coordinator.blocks_timer = coordinator.blocks_timer + dt
@@ -357,6 +441,7 @@ end
 --- Reset coordinator state for level cleanup.
 function coordinator.reset()
     coordinator.active = false
+    coordinator.phase = 0
     coordinator.total_max_health = MAX_HEALTH
     coordinator.total_health = MAX_HEALTH
     coordinator.enemy = nil
@@ -369,6 +454,9 @@ function coordinator.reset()
     -- Deactivate all arena hazards
     coordinator.disable_spears(0, 7)
     coordinator.deactivate_spikes(0, 3)
+
+    valk_common = valk_common or require("Enemies/Bosses/valkyrie/common")
+    valk_common.clear_ghost_trails()
 
     local cinematic = require("Enemies/Bosses/valkyrie/cinematic")
     cinematic.reset()

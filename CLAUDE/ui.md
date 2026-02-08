@@ -162,6 +162,28 @@ journal_toast.draw()               -- Render toast notification
 
 **State machine:** `HIDDEN` -> `FADING_IN` (0.3s) -> `VISIBLE` (2.5s) -> `FADING_OUT` (0.5s) -> `HIDDEN`
 
+## Upgrade Screen (`ui/upgrade_screen.lua`)
+
+- Split-screen overlay for equipment upgrades at Zabarbra's shop
+- Map view in top area, 9-slice dialogue box in bottom area
+- Paginated item list (4 items per page) with left/right page navigation
+- Typewriter text reveal for NPC messages (purchase results, errors)
+- Mouse hover/click support with keyboard/gamepad navigation
+- Camera shifts to show player in map view (same formula as dialogue/shop screens)
+
+```lua
+upgrade_screen.start(player, camera, restore_camera_y)  -- Open (3rd arg skips fade-in for overlay chaining)
+upgrade_screen.is_active()                               -- Check if visible or transitioning
+upgrade_screen.input()                                   -- Handle navigation and purchase
+upgrade_screen.update(dt)                                -- Update state machine, typewriter, mouse
+upgrade_screen.draw()                                    -- Render overlay
+upgrade_screen.get_camera_offset_y()                     -- World render Y offset (0 when hidden)
+```
+
+**States:** `HIDDEN`, `FADING_IN`, `OPEN`, `FADING_OUT`
+
+**Integration:** Started from witch NPC's `on_close` callback. Dialogue sets `open_upgrades` flag; witch NPC checks/clears it and calls `upgrade_screen.start()`. Uses `upgrade/registry.lua` for item lists, `upgrade/transactions.lua` for purchase validation/execution.
+
 ## Audio Dialog (`ui/audio_dialog.lua`)
 
 - Standalone dialog for volume settings (Master, Music, SFX sliders)

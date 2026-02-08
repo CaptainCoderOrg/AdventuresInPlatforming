@@ -50,11 +50,11 @@ local GOLD_LABEL = "Gold: "
 -- Typewriter
 local TYPEWRITER_SPEED = 30  -- Characters per second
 
--- Close hint icon
-local CLOSE_ICON_SIZE = 8
-local CLOSE_ICON_SPACING = 4
-local CLOSE_KEY_SCALE = 0.125       -- 64px * 0.125 = 8px
-local CLOSE_BUTTON_SCALE = 0.5      -- 16px * 0.5 = 8px
+-- Shared icon sizing (used by close hint and page navigation)
+local ICON_SIZE = 8
+local ICON_SPACING = 4
+local KEY_SCALE = 0.125             -- 64px * 0.125 = 8px
+local BUTTON_SCALE = 0.5            -- 16px * 0.5 = 8px
 
 -- 9-slice definition (reuse simple_dialogue sprite)
 local slice = nine_slice.create(sprites.ui.simple_dialogue, 76, 37, 10, 7, 9, 7)
@@ -79,6 +79,10 @@ local DEFAULT_MESSAGE = "How can I help you?"
 local mouse_active = false
 local last_mouse_x, last_mouse_y = 0, 0
 local item_positions = {}
+local item_positions_count = 0
+for i = 1, ITEMS_PER_PAGE do
+    item_positions[i] = { y = 0, x_start = 0, x_end = 0, entry_index = 0 }
+end
 
 --- Rebuild the list of upgradeable items from player inventory
 local function refresh_items()
@@ -105,12 +109,8 @@ local function clamp_selection()
         current_page = 1
         return
     end
-    if selected_item < 1 then selected_item = 1 end
-    if selected_item > #upgradeable_items then selected_item = #upgradeable_items end
+    selected_item = math.max(1, math.min(selected_item, #upgradeable_items))
     current_page = math.ceil(selected_item / ITEMS_PER_PAGE)
-    local total_pages = math.ceil(#upgradeable_items / ITEMS_PER_PAGE)
-    if current_page > total_pages then current_page = total_pages end
-    if current_page < 1 then current_page = 1 end
 end
 
 --- Attempt to purchase the upgrade at the given index
@@ -156,13 +156,13 @@ local function draw_close_hint(box_x, box_w, box_y, box_h)
     canvas.draw_text(hint_x, hint_y, hint_text)
 
     local text_w = canvas.get_text_width(hint_text)
-    local icon_x = hint_x - text_w - CLOSE_ICON_SPACING - CLOSE_ICON_SIZE
-    local icon_y = hint_y - FONT_SIZE + (FONT_SIZE - CLOSE_ICON_SIZE) / 2
+    local icon_x = hint_x - text_w - ICON_SPACING - ICON_SIZE
+    local icon_y = hint_y - FONT_SIZE + (FONT_SIZE - ICON_SIZE) / 2
     local mode = controls.get_last_input_device()
     if mode == "gamepad" then
-        sprites.controls.draw_button(canvas.buttons.EAST, icon_x, icon_y, CLOSE_BUTTON_SCALE)
+        sprites.controls.draw_button(canvas.buttons.EAST, icon_x, icon_y, BUTTON_SCALE)
     else
-        sprites.controls.draw_key(canvas.keys.ESCAPE, icon_x, icon_y, CLOSE_KEY_SCALE)
+        sprites.controls.draw_key(canvas.keys.ESCAPE, icon_x, icon_y, KEY_SCALE)
     end
     canvas.set_text_align("left")
 end
@@ -181,7 +181,7 @@ function upgrade_screen.start(player, camera, restore_camera_y)
 
     -- Reset mouse state
     mouse_active = false
-    item_positions = {}
+    item_positions_count = 0
 
     -- Calculate target camera Y (same formula as dialogue/shop screens)
     local tile_size = config.ui.TILE
@@ -272,9 +272,10 @@ function upgrade_screen.update(dt)
             last_mouse_x, last_mouse_y = mx, my
         end
 
-        if mouse_active and #item_positions > 0 then
+        if mouse_active and item_positions_count > 0 then
             local half_line = (LINE_HEIGHT * config.ui.SCALE) / 2
-            for _, pos in ipairs(item_positions) do
+            for i = 1, item_positions_count do
+                local pos = item_positions[i]
                 if mx >= pos.x_start and mx <= pos.x_end and
                    my >= pos.y - half_line and my <= pos.y + half_line then
                     selected_item = pos.entry_index
@@ -378,7 +379,7 @@ function upgrade_screen.draw()
             end
 
             -- Draw items (below NPC message area, with page support)
-            item_positions = {}
+            item_positions_count = 0
             local item_y = text_y + LINE_HEIGHT * 2
             local scroll_offset = (current_page - 1) * ITEMS_PER_PAGE
             local visible_count = math.min(#upgradeable_items - scroll_offset, ITEMS_PER_PAGE)
@@ -390,12 +391,12 @@ function upgrade_screen.draw()
                 local draw_y = item_y + FONT_SIZE
                 local item_x = text_x + ITEM_INDENT
 
-                item_positions[i] = {
-                    y = draw_y * scale,
-                    x_start = (item_x + SELECTOR_OFFSET_X) * scale,
-                    x_end = (box_x + box_w - TEXT_PADDING_RIGHT) * scale,
-                    entry_index = entry_index,
-                }
+                item_positions_count = i
+                local pos = item_positions[i]
+                pos.y = draw_y * scale
+                pos.x_start = (item_x + SELECTOR_OFFSET_X) * scale
+                pos.x_end = (box_x + box_w - TEXT_PADDING_RIGHT) * scale
+                pos.entry_index = entry_index
 
                 local item_def = unique_item_registry[entry.id]
                 local item_name = item_def and item_def.name or entry.id
@@ -459,24 +460,23 @@ function upgrade_screen.draw()
 
                 -- Draw left/right navigation icons
                 local text_w = canvas.get_text_width(page_text)
-                local icon_size = CLOSE_ICON_SIZE
+                local icon_size = ICON_SIZE
+                local icon_y = page_y - FONT_SIZE + (FONT_SIZE - icon_size) / 2
                 local mode = controls.get_last_input_device()
                 if current_page > 1 then
-                    local icon_x = left_x - CLOSE_ICON_SPACING - icon_size
-                    local icon_y = page_y - FONT_SIZE + (FONT_SIZE - icon_size) / 2
+                    local icon_x = left_x - ICON_SPACING - icon_size
                     if mode == "gamepad" then
-                        sprites.controls.draw_button(canvas.buttons.DPAD_LEFT, icon_x, icon_y, CLOSE_BUTTON_SCALE)
+                        sprites.controls.draw_button(canvas.buttons.DPAD_LEFT, icon_x, icon_y, BUTTON_SCALE)
                     else
-                        sprites.controls.draw_key(canvas.keys.LEFT, icon_x, icon_y, CLOSE_KEY_SCALE)
+                        sprites.controls.draw_key(canvas.keys.LEFT, icon_x, icon_y, KEY_SCALE)
                     end
                 end
                 if current_page < total_pages then
-                    local icon_x = left_x + text_w + CLOSE_ICON_SPACING
-                    local icon_y = page_y - FONT_SIZE + (FONT_SIZE - icon_size) / 2
+                    local icon_x = left_x + text_w + ICON_SPACING
                     if mode == "gamepad" then
-                        sprites.controls.draw_button(canvas.buttons.DPAD_RIGHT, icon_x, icon_y, CLOSE_BUTTON_SCALE)
+                        sprites.controls.draw_button(canvas.buttons.DPAD_RIGHT, icon_x, icon_y, BUTTON_SCALE)
                     else
-                        sprites.controls.draw_key(canvas.keys.RIGHT, icon_x, icon_y, CLOSE_KEY_SCALE)
+                        sprites.controls.draw_key(canvas.keys.RIGHT, icon_x, icon_y, KEY_SCALE)
                     end
                 end
             end

@@ -261,6 +261,7 @@ self.defense = 0                -- Reduces incoming damage
 self.critical_chance = 2        -- Percent chance for critical hit (2 points = 5% base)
 self.recovery = 0               -- Bonus regeneration rate
 self.stat_upgrades = {}         -- Tracks upgrade counts per stat {Health=2, Stamina=1, ...}
+self.upgrade_tiers = {}         -- Equipment upgrade tiers (item_id -> tier_number), managed by upgrade/effects.lua
 self.defeated_bosses = {}       -- Set of defeated boss ids (boss_id -> true), persisted on rest
 self.visited_campfires = {}     -- Visited campfires keyed by "level_id:name" -> {name, level_id, x, y}
 self.dialogue_flags = {}        -- Dialogue condition flags (flag_name -> true), managed by dialogue/manager.lua

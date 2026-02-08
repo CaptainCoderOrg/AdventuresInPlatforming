@@ -30,7 +30,18 @@ local function collect_effects(player, item_id)
     local def = upgrade_registry.get(item_id)
     if not def then return _empty end
 
-    for k in pairs(_result) do _result[k] = nil end
+    -- Clear all known effect keys (must stay in sync with tier effects in upgrade/registry.lua)
+    _result.weapon_damage_add = nil
+    _result.stamina_cost_add = nil
+    _result.max_charges_add = nil
+    _result.stamina_cost = nil
+    _result.ms_per_frame = nil
+    _result.projectile_damage = nil
+    _result.heal_rate = nil
+    _result.energy_ratio = nil
+    _result.energy_cost = nil
+    _result.recharge = nil
+    _result.dash_invulnerable = nil
 
     for i = 1, math.min(tier_num, #def.tiers) do
         local tier = def.tiers[i]
@@ -76,7 +87,7 @@ function effects.get_projectile_damage(player, item_id, base_damage)
     return fx.projectile_damage or base_damage
 end
 
---- Get effective weapon stamina cost (base + additive bonuses from upgrades)
+--- Get effective weapon stamina cost (absolute override, or base + additive bonuses)
 ---@param player table Player instance
 ---@param weapon_id string Weapon item ID
 ---@param base_cost number Base stamina cost from weapon stats

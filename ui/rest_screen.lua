@@ -1509,6 +1509,12 @@ function rest_screen.update(dt, block_mouse)
                     player_status_panel:toggle_hovered_equipped()
                 end
 
+                -- Update rest dialogue with stat/item description when hovering or navigating
+                local description = player_status_panel:get_description()
+                if description then
+                    rest_dialogue.text = description
+                end
+
             elseif active_panel_index == 2 then
                 if nav_mode == NAV_MODE.SETTINGS then
                     rest_dialogue.text = "{move_up}{move_down}{move_left}{move_right} Scroll\n{jump} Center"

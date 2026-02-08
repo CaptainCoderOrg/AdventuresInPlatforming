@@ -95,6 +95,19 @@ registry.hammer = {
     },
 }
 
+registry.great_sword = {
+    label = "Enchant",
+    description = "Enchant greatsword to increase its power.",
+    tiers = {
+        { gold = 75,  effects = { weapon_damage_add = 1.5 },
+          result = "The blade's edge gleams with arcane sharpness." },
+        { gold = 250, effects = { weapon_damage_add = 1, stamina_cost_add = -1 },
+          result = "The blade strikes harder and feels lighter in your hands." },
+        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 2.5, stamina_cost_add = -1 },
+          result = "An unstoppable force. Each swing devastates with minimal effort." },
+    },
+}
+
 registry.dash_amulet = {
     label = "Enchant",
     description = "Imbue the Dash Amulet with arcane energy.",
@@ -109,7 +122,7 @@ registry.dash_amulet = {
 }
 
 --- Stable display order for upgrade UI
-registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken", "hammer", "grip_boots", "dash_amulet" }
+registry.DISPLAY_ORDER = { "sword", "longsword", "minor_healing", "throwing_axe", "shuriken", "hammer", "great_sword", "grip_boots", "dash_amulet" }
 
 -- Lookup set built from DISPLAY_ORDER (prevents get() from returning non-upgrade keys)
 local VALID_ITEMS = {}

@@ -121,7 +121,7 @@ return {
         static_sprite = sprites.items.great_sword,
         stats = {
             damage = 5,
-            stamina_cost = 4,
+            stamina_cost = 5,
             animation = "wide",
             hitbox = { width = 1.7, height = 1.2, y_offset = -0.15 },
             ms_per_frame = 90,

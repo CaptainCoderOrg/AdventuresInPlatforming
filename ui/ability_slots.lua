@@ -1,4 +1,4 @@
---- Ability slots component for displaying 4 horizontal ability slots
+--- Ability slots component for displaying 6 horizontal ability slots
 local canvas = require("canvas")
 local sprites = require("sprites")
 local controls = require("controls")
@@ -11,11 +11,12 @@ ability_slots.__index = ability_slots
 
 -- Grid configuration
 local SLOT_COUNT = controls.ABILITY_SLOT_COUNT
-local CELL_SIZE = 24
+local CELL_SIZE = 20
 local CELL_SPACING = 1
 local SELECTION_ALPHA = 0.3
 
--- Sprite frame positions (24px frames, no spacing in sprite sheet)
+-- Sprite frame positions (24px source frames, drawn at CELL_SIZE)
+local SPRITE_SIZE = 24
 local FRAME_BACKGROUND_X = 0
 local FRAME_SELECTION_X = 24
 
@@ -108,7 +109,7 @@ function ability_slots:cancel_assign()
 end
 
 --- Unequip the item in a slot, returning the removed item_id
----@param slot number Slot index (1-4)
+---@param slot number Slot index (1-6)
 ---@return string|nil item_id The removed item, or nil if slot was empty
 function ability_slots:unequip_slot(slot)
     if not self.player or not self.player.ability_slots then return nil end
@@ -233,7 +234,7 @@ function ability_slots:draw()
 
         -- Draw cell background
         canvas.draw_image(sprite, cx, cy, CELL_SIZE, CELL_SIZE,
-            FRAME_BACKGROUND_X, 0, CELL_SIZE, CELL_SIZE)
+            FRAME_BACKGROUND_X, 0, SPRITE_SIZE, SPRITE_SIZE)
 
         -- Draw item if slot is populated
         local item_id = self.player and self.player.ability_slots and self.player.ability_slots[slot]
@@ -269,7 +270,7 @@ function ability_slots:draw()
         if self:is_slot_selected(slot) then
             canvas.set_global_alpha(SELECTION_ALPHA)
             canvas.draw_image(sprite, cx, cy, CELL_SIZE, CELL_SIZE,
-                FRAME_SELECTION_X, 0, CELL_SIZE, CELL_SIZE)
+                FRAME_SELECTION_X, 0, SPRITE_SIZE, SPRITE_SIZE)
             canvas.set_global_alpha(1)
         end
     end

@@ -19,7 +19,7 @@ end
 ---@param player table The player object
 function block_move.input(player)
 	if shield.check_guard_break(player) then return end
-	if not controls.block_down() then
+	if not player.shield_slot or not controls.ability_down(player.shield_slot) then
 		shield.exit_state(player)
 		return
 	end

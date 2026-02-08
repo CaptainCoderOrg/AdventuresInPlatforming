@@ -162,7 +162,7 @@ end
 --- Returns the secondary id and definition for a specific ability slot.
 --- Falls back to player.active_ability_slot if slot is nil.
 ---@param player table The player object
----@param slot number|nil Ability slot index (1-4), falls back to player.active_ability_slot
+---@param slot number|nil Ability slot index (1-6), falls back to player.active_ability_slot
 ---@return string|nil secondary_id The secondary's item_id, or nil if slot is empty/invalid
 ---@return table|nil secondary_def The secondary's definition from unique_item_registry, or nil
 function weapon_sync.get_slot_secondary(player, slot)
@@ -177,7 +177,7 @@ end
 --- Returns the projectile spec for a specific ability slot (or active_ability_slot as fallback)
 --- Maps secondary item_id to the corresponding projectile definition
 ---@param player table The player object
----@param slot number|nil Ability slot (1-4), falls back to player.active_ability_slot
+---@param slot number|nil Ability slot (1-6), falls back to player.active_ability_slot
 ---@return table|nil spec The projectile spec, or nil if no secondary equipped
 function weapon_sync.get_secondary_spec(player, slot)
     local secondary_id = weapon_sync.get_slot_secondary(player, slot)
@@ -198,7 +198,7 @@ end
 --- Throwable secondaries check has_axe/has_shuriken flags.
 --- Non-throwable secondaries (e.g., minor_healing) are always unlocked (gated by equip logic).
 ---@param player table The player object
----@param slot number|nil Ability slot (1-4), falls back to player.active_ability_slot
+---@param slot number|nil Ability slot (1-6), falls back to player.active_ability_slot
 ---@return boolean True if the secondary is unlocked
 function weapon_sync.is_secondary_unlocked(player, slot)
     local secondary_id = weapon_sync.get_slot_secondary(player, slot)
@@ -224,7 +224,7 @@ end
 --- Returns true if the secondary in the given slot has charges available (or is not charge-based).
 --- Non-charge items always pass.
 ---@param player table The player object
----@param slot number|nil Ability slot (1-4), falls back to player.active_ability_slot
+---@param slot number|nil Ability slot (1-6), falls back to player.active_ability_slot
 ---@return boolean True if throw is allowed by charge system
 function weapon_sync.has_throw_charges(player, slot)
     local sec_id = weapon_sync.get_slot_secondary(player, slot)
@@ -294,7 +294,8 @@ function weapon_sync.get_charge_info(item_id, player)
 end
 
 --- Syncs player ability flags from equipped_items
---- Updates has_shield, has_axe, has_shuriken, can_dash, has_double_jump, has_wall_slide
+--- Updates has_axe, has_shuriken, has_shield, can_dash, has_double_jump, has_wall_slide
+--- Scans ability_slots to cache dash_slot/shield_slot positions
 --- Also ensures active_weapon is valid (auto-selects first equipped weapon if needed)
 ---@param player table The player object
 function weapon_sync.sync(player)
@@ -306,16 +307,12 @@ function weapon_sync.sync(player)
         player.equipped_items = {}
     end
 
-    -- Sync shield
-    player.has_shield = player.equipped_items.shield == true
-
     -- Sync secondary weapons
     player.has_axe = player.equipped_items.throwing_axe == true
     player.has_shuriken = player.equipped_items.shuriken == true
     player.has_hammer = player.equipped_items.hammer == true
 
     -- Sync accessories
-    player.can_dash = player.equipped_items.dash_amulet == true
     player.has_double_jump = player.equipped_items.jump_ring == true
     player.has_wall_slide = player.equipped_items.grip_boots == true
 
@@ -332,6 +329,19 @@ function weapon_sync.sync(player)
             end
         end
     end
+
+    -- Scan ability_slots for dash/shield positions (avoids per-frame scanning)
+    player.dash_slot = nil
+    player.shield_slot = nil
+    if player.ability_slots then
+        for i = 1, controls.ABILITY_SLOT_COUNT do
+            local item = player.ability_slots[i]
+            if item == "dash_amulet" then player.dash_slot = i
+            elseif item == "shield" then player.shield_slot = i end
+        end
+    end
+    player.can_dash = player.dash_slot ~= nil
+    player.has_shield = player.shield_slot ~= nil
 
     -- Initialize charge_state entries for equipped charge-based secondaries
     if not player.charge_state then player.charge_state = {} end

@@ -1,4 +1,4 @@
---- Secondary abilities HUD widget showing 4 fixed ability slots
+--- Secondary abilities HUD widget showing 6 fixed ability slots
 local canvas = require("canvas")
 local sprites = require("sprites")
 local config = require("config")

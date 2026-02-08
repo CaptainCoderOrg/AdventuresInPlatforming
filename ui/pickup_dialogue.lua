@@ -247,22 +247,10 @@ local function equip_item(player, item_id)
 
     local item_type = item_def.type
 
-    -- For shields, unequip other shields first (exclusive type)
-    if item_type == "shield" then
-        for other_id, equipped in pairs(player.equipped_items) do
-            if equipped then
-                local other_def = unique_item_registry[other_id]
-                if other_def and other_def.type == "shield" then
-                    player.equipped_items[other_id] = nil
-                end
-            end
-        end
-    end
-
     -- For secondaries, assign to first empty ability slot
     if item_type == "secondary" then
         if not player.ability_slots then
-            player.ability_slots = { nil, nil, nil, nil }
+            player.ability_slots = { nil, nil, nil, nil, nil, nil }
         end
         local assigned = false
         for i = 1, ABILITY_SLOT_COUNT do

@@ -48,7 +48,7 @@ return {
             end
         },
         ["["] = { type = "spear_trap", auto_fire = false, group = "spear_trigger", flip = true },
-        ["!"] = { type = "sign", text = "Shield\n{block}" },
+        ["!"] = { type = "sign", text = "Shield\nAssign to an ability slot to use" },
         [">"] = { type = "spear_trap", fire_delay = 2.0, cooldown_time = 0.5 },
         ["<"] = { type = "spear_trap", fire_delay = 2.0, cooldown_time = 0.5, flip = true },
         S = { type = "spawn" },
@@ -81,10 +81,10 @@ return {
         ["6"] = { type = "sign", text = "Ability: {ability_1}" },
         ["7"] = { type = "sign", text = "Wall Slide\nHold {move_right}" },
         ["8"] = { type = "sign", text = "Climb\n{move_up}" },
-        ["9"] = { type = "sign", text = "Dash\n{dash}" },
+        ["9"] = { type = "sign", text = "Dash\nAssign to an ability slot to use" },
         ["0"] = { type = "sign", text = "Wall Jump\n{move_right} + {jump}", offset = { x = -0.5 } },
         T = { type = "trap_door" },
-        l = { type = "sign", text = "Abilities\n{ability_1} {ability_2} {ability_3} {ability_4}" },
+        l = { type = "sign", text = "Abilities\n{ability_1} {ability_2} {ability_3} {ability_4} {ability_5} {ability_6}" },
         ["&"] = { type = "spike_trap", mode = "extended", group = "lever_spikes" },
         ["%"] = { type = "appearing_bridge", group = "lever_bridge" },
         L = {

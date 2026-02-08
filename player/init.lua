@@ -96,8 +96,8 @@ function Player.new()
 	self.stackable_items = {}   -- Consumable stackable items (item_id -> count)
 	self.equipped_items = {}    -- Set of equipped item_ids (item_id -> true)
 	self.active_weapon = nil    -- item_id of currently active weapon (for quick swap)
-	self.ability_slots = { nil, nil, nil, nil } -- 4 ability slots, each holds item_id or nil
-	self.active_ability_slot = nil -- which slot (1-4) triggered current throw/heal
+	self.ability_slots = { nil, nil, nil, nil, nil, nil } -- 6 ability slots, each holds item_id or nil
+	self.active_ability_slot = nil -- which slot (1-6) triggered current throw/heal
 	self.defeated_bosses = {}   -- Set of defeated boss ids (boss_id -> true)
 	self.visited_campfires = {} -- Keyed by "level_id:name" -> {name, level_id, x, y}
 	self.journal = { awakening = "active" }  -- Quest journal entries (entry_id -> "active"|"complete")
@@ -168,10 +168,10 @@ function Player.new()
 	self.has_shield = false
 
 	-- Dash
-	self.dash_cooldown = 0
 	self.dash_speed = self._base_speed * 3
-	self.has_dash = true       -- Cooldown flag (resets on ground)
-	self.can_dash = false      -- Unlock flag (progression)
+	self.can_dash = false      -- Unlock flag (derived from dash_slot in weapon_sync.sync)
+	self.dash_slot = nil       -- Ability slot containing dash_amulet (cached by weapon_sync.sync)
+	self.shield_slot = nil     -- Ability slot containing shield (cached by weapon_sync.sync)
 
 	-- Animation
 	self.animation = Animation.new(common.animations.IDLE)
@@ -244,7 +244,7 @@ function Player.new()
 	self.input_queue = {
 		jump = false,
 		attack = false,
-		ability_slot = nil  -- slot number (1-4) or nil
+		ability_slot = nil  -- slot number (1-6) or nil
 	}
 
 	-- Register with collision system
@@ -449,7 +449,6 @@ function Player:update(dt)
 
 	self.animation.flipped = self.direction
 	self.animation:play(dt)  -- Self-managing delta-time based animation
-	self.dash_cooldown = self.dash_cooldown - dt
 	self.attack_cooldown = self.attack_cooldown - dt
 	self.throw_cooldown = self.throw_cooldown - dt
 	weapon_sync.update_charges(self, dt)

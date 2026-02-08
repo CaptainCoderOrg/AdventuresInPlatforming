@@ -83,8 +83,9 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - Ability 2: 2 / Gamepad EAST
 - Ability 3: 3 / Gamepad LB
 - Ability 4: 4 / Gamepad LT
+- Ability 5: Shift / Gamepad RB
+- Ability 6: Q / Gamepad RT
 - Swap Weapon: E / Gamepad SELECT (cycle equipped weapons)
-- Block: Q / Gamepad RT (hold)
 
 **Interaction:**
 - Interact: Up Arrow / D-pad UP (rest at campfires, open chests, collect items, unlock doors)
@@ -140,7 +141,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/status_panel.lua` - Player stats and inventory panel
 - `ui/inventory_grid.lua` - 5x3 item grid with equipment management
 - `ui/ability_slots.lua` - Ability slot assignment component for status panel
-- `ui/secondary_bar.lua` - Secondary abilities HUD widget (4 fixed ability slots)
+- `ui/secondary_bar.lua` - Secondary abilities HUD widget (6 fixed ability slots)
 - `ui/pickup_dialogue.lua` - Equip/inventory dialogue for collectible items
 - `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen

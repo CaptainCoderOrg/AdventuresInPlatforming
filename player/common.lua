@@ -98,7 +98,7 @@ end
 --- Attempts to activate the hammer from an ability slot.
 --- Checks unlock status and consumes stamina (with upgrade modifiers).
 ---@param player table The player object
----@param slot number Ability slot (1-4) containing the hammer
+---@param slot number Ability slot (1-6) containing the hammer
 ---@return boolean True if activation succeeded (unlocked and stamina consumed)
 function common.try_use_hammer(player, slot)
 	if not weapon_sync.is_secondary_unlocked(player, slot) then return false end
@@ -147,6 +147,7 @@ end
 
 --- Checks for ability input and transitions to throw/hammer state or queues if on cooldown.
 --- Routes melee secondaries (hammer) directly, queries weapon_sync for projectile specs.
+--- Dash and shield are handled by their dedicated handlers (handle_dash/handle_block).
 --- Non-projectile secondaries (e.g., minor_healing) return nil spec and are skipped here.
 ---@param player table The player object
 function common.handle_ability(player)
@@ -154,6 +155,9 @@ function common.handle_ability(player)
 	if not slot then return end
 
 	local sec_id = weapon_sync.get_slot_secondary(player, slot)
+
+	-- Dash and shield are handled by dedicated handlers, not here
+	if sec_id == "dash_amulet" or sec_id == "shield" then return end
 
 	-- Melee secondary (hammer): consumes stamina, enters hammer state
 	if sec_id == "hammer" then
@@ -233,8 +237,8 @@ end
 --- Shows "TIRED" text on first press when fatigued.
 ---@param player table The player object
 function common.handle_block(player)
-	if not player.has_shield then return end
-	local block_down = controls.block_down()
+	if not player.shield_slot then return end
+	local block_down = controls.ability_down(player.shield_slot)
 	if block_down and not player:is_fatigued() then
 		player:set_state(player.states.block)
 	elseif block_down and player:is_fatigued() and not player.block_was_down then
@@ -411,7 +415,6 @@ function common.check_ground(player, cols, dt)
 			player.ground_normal = cols.ground_normal
 			player.coyote_time = 0
 			player.jumps = player.max_jumps
-			player.has_dash = true
 			player.vy = 0
 			player.is_air_jumping = false
 			player.climb_touching_ground = false  -- Clear when not climbing
@@ -508,18 +511,21 @@ function common.handle_air_jump(player)
 	return false
 end
 
---- Attempts to initiate a dash if off cooldown, has stamina, and dash is pressed.
---- Requires dash ability to be unlocked (can_dash) and available (has_dash).
+--- Attempts to initiate a dash if charges available, has stamina, and dash key is pressed.
+--- Requires dash_amulet assigned to an ability slot. Uses the charge system for cooldown.
 ---@param player table The player object
 ---@return boolean True if dash was initiated
 function common.handle_dash(player)
-	if not player.can_dash then return false end
-	if player.dash_cooldown > 0 or not player.has_dash then return false end
-	if controls.dash_pressed() then
-		if player:use_stamina(common.DASH_STAMINA_COST) then
-			player:set_state(player.states.dash)
-			return true
-		end
+	if not player.dash_slot then return false end
+	if not controls.ability_pressed(player.dash_slot) then return false end
+	if not weapon_sync.has_throw_charges(player, player.dash_slot) then
+		Effects.create_text(player.x, player.y, "Cooldown")
+		return false
+	end
+	if player:use_stamina(common.DASH_STAMINA_COST) then
+		player.active_ability_slot = player.dash_slot
+		player:set_state(player.states.dash)
+		return true
 	end
 	return false
 end
@@ -549,7 +555,7 @@ end
 --- Queues an input for later execution.
 ---@param player table The player object
 ---@param input_name string The input to queue ("jump", "attack", or "ability")
----@param slot number|nil Ability slot (1-4) when input_name is "ability"
+---@param slot number|nil Ability slot (1-6) when input_name is "ability"
 function common.queue_input(player, input_name, slot)
 	if input_name == "ability" then
 		player.input_queue.ability_slot = slot
@@ -598,6 +604,8 @@ local function try_queued_combat_action(player)
 	if queued_slot then
 		player.input_queue.ability_slot = nil
 		local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
+		-- Dash and shield are handled by dedicated handlers, skip here
+		if sec_id == "dash_amulet" or sec_id == "shield" then return nil end
 		-- Melee secondary (hammer)
 		if sec_id == "hammer" and common.try_use_hammer(player, queued_slot) then
 			player.active_ability_slot = queued_slot

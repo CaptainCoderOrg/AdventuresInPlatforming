@@ -31,9 +31,8 @@ local HEADER_TEXT = "Inventory"
 
 -- Equipment types that only allow one item equipped at a time
 -- Note: weapon removed to allow multiple weapons equipped (quick swap system)
--- Note: secondary handled via ability_slots component
+-- Note: secondary (including shield/dash) handled via ability_slots component
 local EXCLUSIVE_TYPES = {
-    shield = true,
 }
 
 --- Create a new inventory grid

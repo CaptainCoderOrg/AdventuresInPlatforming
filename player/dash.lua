@@ -2,21 +2,22 @@ local Animation = require('Animation')
 local audio = require('audio')
 local common = require('player.common')
 local controls = require('controls')
+local weapon_sync = require('player.weapon_sync')
 
 --- Dash state: Player performs a quick horizontal burst of speed.
 --- Ignores gravity during dash. Can be cancelled by jumping or changing direction.
+--- Uses the charge system on dash_amulet for cooldown (recharges over time).
 local dash = { name = "dash" }
 
 local DASH_DURATION = 12 / 60
-local DASH_COOLDOWN_FRAMES = DASH_DURATION * 2
 
---- Called when entering dash state. Locks direction and cancels vertical velocity.
+--- Called when entering dash state. Locks direction, cancels vertical velocity, consumes charge.
 --- @param player table The player object
 function dash.start(player)
 	player.dash_state.direction = player.direction
 	player.dash_state.elapsed_time = 0
 	player.vy = 0
-	player.has_dash = false
+	weapon_sync.consume_charge(player)
 	player.animation = Animation.new(common.animations.DASH)
 	audio.play_sfx(audio.dash, 0.15)
 end
@@ -74,7 +75,6 @@ function dash.update(player, dt)
 	player.dash_state.elapsed_time = player.dash_state.elapsed_time + dt
 
 	if player.dash_state.elapsed_time >= DASH_DURATION then
-		player.dash_cooldown = DASH_COOLDOWN_FRAMES
 		if not player.is_grounded then
 			player:set_state(player.states.air)
 		elseif controls.left_down() or controls.right_down() then

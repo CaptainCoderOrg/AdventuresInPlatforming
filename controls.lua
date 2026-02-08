@@ -245,13 +245,13 @@ local function is_trigger_binding_down(action_id)
     return check_gamepad_binding(action_id, TRIGGER_THRESHOLD)
 end
 
--- Ability slot action IDs (indexed 1-4)
-local ABILITY_ACTION_IDS = { "ability_1", "ability_2", "ability_3", "ability_4" }
+-- Ability slot action IDs (indexed 1-6)
+local ABILITY_ACTION_IDS = { "ability_1", "ability_2", "ability_3", "ability_4", "ability_5", "ability_6" }
 controls.ABILITY_ACTION_IDS = ABILITY_ACTION_IDS
 controls.ABILITY_SLOT_COUNT = #ABILITY_ACTION_IDS
 
 --- Check if a specific ability slot input was pressed this frame
----@param slot number Ability slot (1-4)
+---@param slot number Ability slot (1-6)
 ---@return boolean pressed True if ability slot binding was pressed
 function controls.ability_pressed(slot)
     local action_id = ABILITY_ACTION_IDS[slot]
@@ -261,7 +261,7 @@ function controls.ability_pressed(slot)
 end
 
 --- Check if a specific ability slot input is currently held down
----@param slot number Ability slot (1-4)
+---@param slot number Ability slot (1-6)
 ---@return boolean down True if ability slot binding is held
 function controls.ability_down(slot)
     local action_id = ABILITY_ACTION_IDS[slot]
@@ -271,7 +271,7 @@ function controls.ability_down(slot)
 end
 
 --- Check if any ability slot was pressed this frame
----@return number|nil slot The first pressed slot (1-4), or nil if none
+---@return number|nil slot The first pressed slot (1-6), or nil if none
 function controls.any_ability_pressed()
     for slot = 1, controls.ABILITY_SLOT_COUNT do
         if controls.ability_pressed(slot) then
@@ -286,13 +286,6 @@ end
 function controls.swap_weapon_pressed()
     return is_key_binding_pressed("swap_weapon")
         or is_button_binding_pressed("swap_weapon")
-end
-
---- Check if block input is currently held down
----@return boolean down True if block binding is held
-function controls.block_down()
-    return is_key_binding_down("block")
-        or is_trigger_binding_down("block")
 end
 
 --- Check if up directional input is currently held
@@ -351,13 +344,6 @@ end
 function controls.right_down()
     return is_key_binding_down("move_right")
         or is_button_binding_down("move_right")
-end
-
---- Check if dash input was pressed this frame
----@return boolean pressed True if dash binding was pressed
-function controls.dash_pressed()
-    return is_key_binding_pressed("dash")
-        or is_button_binding_pressed("dash")
 end
 
 --- Check if attack input was pressed this frame
@@ -493,7 +479,7 @@ end
 
 --- Expand {action} placeholders in text to key/button names
 --- Uses the current binding scheme to determine which binding to show
----@param text string Text with {action} placeholders (e.g., "Press {block} to block")
+---@param text string Text with {action} placeholders (e.g., "Press {attack} to attack")
 ---@return string Text with placeholders replaced by key/button names
 function controls.expand_bindings(text)
     if not text then return "" end

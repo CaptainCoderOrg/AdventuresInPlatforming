@@ -143,7 +143,7 @@ local function draw_word(word, scheme, x, y)
 end
 
 --- Render a dialogue box with 9-slice background and word-wrapped text
---- Supports keybinding placeholders like {block} that render as button/key sprites
+--- Supports keybinding placeholders like {attack} that render as button/key sprites
 ---@param dialogue table Dialogue instance created by simple_dialogue.create()
 ---@return nil
 function simple_dialogue.draw(dialogue)

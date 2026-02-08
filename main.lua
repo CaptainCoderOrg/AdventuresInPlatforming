@@ -203,7 +203,26 @@ local function user_input()
         if canvas.is_key_pressed(canvas.keys.F1) then
             player.has_double_jump = not player.has_double_jump
         elseif canvas.is_key_pressed(canvas.keys.F2) then
-            player.can_dash = not player.can_dash
+            -- Toggle dash amulet (equip + assign to ability slot)
+            if player.equipped_items.dash_amulet then
+                player.equipped_items.dash_amulet = nil
+                for i = 1, controls.ABILITY_SLOT_COUNT do
+                    if player.ability_slots[i] == "dash_amulet" then
+                        player.ability_slots[i] = nil
+                    end
+                end
+            else
+                if not player.unique_items then player.unique_items = {} end
+                table.insert(player.unique_items, "dash_amulet")
+                player.equipped_items.dash_amulet = true
+                for i = 1, controls.ABILITY_SLOT_COUNT do
+                    if not player.ability_slots[i] then
+                        player.ability_slots[i] = "dash_amulet"
+                        break
+                    end
+                end
+            end
+            require("player.weapon_sync").sync(player)
         elseif canvas.is_key_pressed(canvas.keys.F3) then
             player.has_wall_slide = not player.has_wall_slide
         elseif canvas.is_key_pressed(canvas.keys.F4) then
@@ -233,7 +252,26 @@ local function user_input()
         elseif canvas.is_key_pressed(canvas.keys.F6) then
             player.has_shuriken = not player.has_shuriken
         elseif canvas.is_key_pressed(canvas.keys.F7) then
-            player.has_shield = not player.has_shield
+            -- Toggle shield (equip + assign to ability slot)
+            if player.equipped_items.shield then
+                player.equipped_items.shield = nil
+                for i = 1, controls.ABILITY_SLOT_COUNT do
+                    if player.ability_slots[i] == "shield" then
+                        player.ability_slots[i] = nil
+                    end
+                end
+            else
+                if not player.unique_items then player.unique_items = {} end
+                table.insert(player.unique_items, "shield")
+                player.equipped_items.shield = true
+                for i = 1, controls.ABILITY_SLOT_COUNT do
+                    if not player.ability_slots[i] then
+                        player.ability_slots[i] = "shield"
+                        break
+                    end
+                end
+            end
+            require("player.weapon_sync").sync(player)
         elseif canvas.is_key_pressed(canvas.keys.H) then
             -- Grant and equip Minor Healing ability
             if not player.equipped_items.minor_healing then

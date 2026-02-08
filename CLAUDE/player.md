@@ -39,11 +39,13 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 | Axe Throw | `has_axe` | `weapon_sync.is_secondary_unlocked()` |
 | Shuriken | `has_shuriken` | `weapon_sync.is_secondary_unlocked()` |
 
-**Note:** `can_dash` is the unlock flag (progression). `has_dash` is a separate cooldown flag that resets when grounded.
+**Note:** `can_dash` is the unlock flag (derived from `dash_slot` presence). Dash uses the charge system (`max_charges=1, recharge=1s`) instead of a ground-reset cooldown.
 
-**Secondary Items:** Up to 4 secondary items can be assigned to ability slots (`player.ability_slots[1..4]`). Each slot is bound to a dedicated key (`ability_1` through `ability_4`). `player.active_ability_slot` tracks which slot triggered the current throw/heal action. Secondaries come in two types:
+**Secondary Items:** Up to 6 secondary items can be assigned to ability slots (`player.ability_slots[1..6]`). Each slot is bound to a dedicated key (`ability_1` through `ability_6`). `player.active_ability_slot` tracks which slot triggered the current throw/heal/dash action. Secondaries come in several types:
 - **Throwable** (e.g., throwing axe, shuriken): Press the slot's ability key to launch a projectile. `weapon_sync.get_secondary_spec(player, slot)` returns the projectile spec, or nil for non-throwable secondaries.
-- **Channeled** (e.g., minor healing): Hold the slot's ability key to continuously activate. Channeling logic in `player/heal_channel.lua` loops all 4 slots each frame during `Player:update()`.
+- **Channeled** (e.g., minor healing): Hold the slot's ability key to continuously activate. Channeling logic in `player/heal_channel.lua` loops all 6 slots each frame during `Player:update()`.
+- **Dash** (dash_amulet): Press the slot's ability key to dash. Uses dedicated `handle_dash()` handler (not the generic ability flow). Charge-based cooldown.
+- **Shield** (shield): Hold the slot's ability key to block. Uses dedicated `handle_block()` handler. No charges.
 
 **Charge System:** Throwable secondaries have limited charges that recharge over time. Defined in `unique_item_registry.lua` via `max_charges` and `recharge` fields. Runtime state tracked in `player.charge_state` (per-item `used_charges` and `recharge_timer`). Charges managed by `weapon_sync`: `has_throw_charges(player, slot)`, `consume_charge(player)`, `update_charges(dt)`, `get_charge_info()`. Charges reset on rest.
 

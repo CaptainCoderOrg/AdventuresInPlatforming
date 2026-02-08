@@ -213,7 +213,7 @@ function SaveSlots.restore_player_stats(player, stats)
 
     -- Migrate old active_secondary to ability_slots (pre-ability-slots saves)
     if stats.active_secondary and not player.ability_slots then
-        player.ability_slots = { stats.active_secondary, nil, nil, nil }
+        player.ability_slots = { stats.active_secondary, nil, nil, nil, nil, nil }
     end
 end
 

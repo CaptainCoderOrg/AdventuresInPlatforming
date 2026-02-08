@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 346,
+  nextobjectid = 347,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -6066,6 +6066,22 @@ return {
           visible = true,
           properties = {
             ["name"] = "Valkyrie's Ledge"
+          }
+        },
+        {
+          id = 346,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1776,
+          y = 528,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 67,
+          visible = true,
+          properties = {
+            ["name"] = "Boss Fight Test"
           }
         }
       }

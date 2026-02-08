@@ -64,7 +64,7 @@ slot_screen.set_back_callback(fn)   -- Callback when Back pressed
 
 - Dual mode: Rest (campfire) and Pause (ESC/START during gameplay)
 - Circular viewport effect centered on campfire (rest mode only)
-- Menu navigation with sub-panels: Status, Map, Journal, Controls, Audio, Continue, Return to Title
+- Menu navigation with sub-panels: Status, Map, Journal, Fast Travel, Controls, Audio, Continue, Return to Title
 - Integrated audio sliders and keybind panel
 - Confirmation dialog for Return to Title
 

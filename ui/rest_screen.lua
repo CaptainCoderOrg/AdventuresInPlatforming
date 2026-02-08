@@ -74,20 +74,21 @@ local REPEAT_INTERVAL = 0.08
 local VOLUME_STEP = 0.05
 
 -- Menu configuration
-local MENU_ITEM_COUNT = 7
+local MENU_ITEM_COUNT = 8
 
 -- Submenu arrow configuration
 local ARROW_WIDTH = 4
 local ARROW_HEIGHT = 6
 local ARROW_INSET = 7  -- Inset from button right edge (accounts for text-only button centering)
 
--- Menu item descriptions (index 6 is set dynamically when mode changes)
+-- Menu item descriptions (index 7 is set dynamically when mode changes)
 local REST_CONTINUE_DESC = "Resting restores your hit points, energy, and saves your progress. Enemies also respawn when you rest."
 local PAUSE_CONTINUE_DESC = "Resume gameplay."
 local MENU_DESCRIPTIONS = {
     "View your current stats and progression. You can spend experience at campfires to increase your stats.",
     "View a map of the current area.",
     "Track your progress and quest objectives.",
+    "Fast travel to a previously visited campfire.",
     "View and customize keyboard and gamepad controls.",
     "Adjust master volume, music, and sound effects.",
     REST_CONTINUE_DESC,
@@ -145,6 +146,7 @@ local circle_lerp_t = 0
 
 -- Fast travel state
 local is_fast_traveling = false
+local fast_travel_from_menu = false
 
 -- Callbacks
 local continue_callback = nil
@@ -157,6 +159,7 @@ local audio_button = nil
 local controls_button = nil
 local map_button = nil
 local journal_button = nil
+local fast_travel_button = nil
 local continue_button = nil
 local return_to_title_button = nil
 local rest_dialogue = nil
@@ -225,7 +228,7 @@ local function return_to_status()
     upgrade_button_focus = nil
 
     -- Restore default rest dialogue text (already set in init_screen_state)
-    rest_dialogue.text = MENU_DESCRIPTIONS[6]
+    rest_dialogue.text = MENU_DESCRIPTIONS[7]
 end
 
 --- Create a text-only menu button with standard dimensions
@@ -324,7 +327,7 @@ local function calculate_layout(scale)
     local menu_x = DIALOGUE_PADDING
     local menu_y = DIALOGUE_PADDING
     local menu_width = circle_right - DIALOGUE_PADDING
-    local menu_height = circle_top - DIALOGUE_GAP - DIALOGUE_PADDING
+    local menu_height = circle_top - DIALOGUE_GAP - DIALOGUE_PADDING + (BUTTON_HEIGHT + BUTTON_SPACING)
 
     local info_x = circle_right + DIALOGUE_PADDING
     local info_y = DIALOGUE_PADDING
@@ -350,6 +353,19 @@ local function calculate_layout(scale)
     return cached_layout
 end
 
+--- Check if the fast travel menu button should be available
+--- Only visible when resting at a campfire and player owns the Orb of Teleportation
+---@return boolean available True if resting at campfire and player owns Orb of Teleportation
+local function is_fast_travel_available()
+    if current_mode ~= MODE.REST or not player_ref then return false end
+    local items = player_ref.unique_items
+    if not items then return false end
+    for i = 1, #items do
+        if items[i] == "orb_of_teleportation" then return true end
+    end
+    return false
+end
+
 --- Position all menu buttons within the menu dialogue
 ---@param menu_x number Menu dialogue X position
 ---@param menu_y number Menu dialogue Y position
@@ -368,11 +384,14 @@ local function position_buttons(menu_x, menu_y, menu_width, menu_height)
     journal_button.x = button_x
     journal_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 2
 
+    fast_travel_button.x = button_x
+    fast_travel_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
+
     controls_button.x = button_x
-    controls_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 3
+    controls_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 4
 
     audio_button.x = button_x
-    audio_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 4
+    audio_button.y = button_start_y + (BUTTON_HEIGHT + BUTTON_SPACING) * 5
 
     -- Bottom-aligned action buttons
     continue_button.x = button_x
@@ -425,8 +444,9 @@ function rest_screen.init()
     status_button = create_menu_button("Status")
     map_button = create_menu_button("Map")
     journal_button = create_menu_button("Journal")
+    fast_travel_button = create_menu_button("Fast Travel")
     controls_button = create_menu_button("Controls")
-    audio_button = create_menu_button("Audio")
+    audio_button = create_menu_button("Settings")
     continue_button = create_menu_button("Continue")
     return_to_title_button = create_menu_button("Return to Title")
 
@@ -484,6 +504,7 @@ function rest_screen.init()
             local current_key = (current_level_id or "") .. ":" .. campfire_name
             fast_travel_panel.show(player_ref.visited_campfires, current_key)
             nav_mode = NAV_MODE.FAST_TRAVEL
+            fast_travel_from_menu = false
             rest_dialogue.text = "Select a destination."
             -- Deactivate status/inventory panels while fast travel is open
             player_status_panel.active = false
@@ -499,7 +520,7 @@ function rest_screen.init()
         text = ""
     })
 
-    buttons = { status_button, map_button, journal_button, controls_button, audio_button, continue_button, return_to_title_button }
+    buttons = { status_button, map_button, journal_button, fast_travel_button, controls_button, audio_button, continue_button, return_to_title_button }
 end
 
 --- Hide and reset the rest screen (used when returning to title)
@@ -549,6 +570,7 @@ local function reset_navigation_state()
     hold_time = 0
     hovered_index = nil
     is_fast_traveling = false
+    fast_travel_from_menu = false
     if controls_panel then
         controls_panel:reset_focus()
     end
@@ -625,7 +647,7 @@ local function init_screen_state(mode, player, camera, description, button_label
 
     rest_dialogue.text = description
     continue_button.label = button_label
-    MENU_DESCRIPTIONS[6] = description
+    MENU_DESCRIPTIONS[7] = description
 
     -- Initialize layout immediately for correct first-frame rendering
     init_component_layout()
@@ -738,7 +760,7 @@ function rest_screen.get_camera_offset()
 end
 
 --- Trigger the currently focused menu action based on focused_index
---- 1 = Status, 2 = Map, 3 = Journal, 4 = Controls, 5 = Audio, 6 = Continue, 7 = Return to Title
+--- 1 = Status, 2 = Map, 3 = Journal, 4 = Fast Travel, 5 = Controls, 6 = Audio, 7 = Continue, 8 = Return to Title
 ---@return nil
 local function trigger_focused_action()
     if focused_index == 1 then
@@ -751,16 +773,24 @@ local function trigger_focused_action()
         active_panel_index = 3
         journal_panel.show(player_ref and player_ref.journal or {}, player_ref and player_ref.journal_read or {})
     elseif focused_index == 4 then
+        if is_fast_travel_available() then
+            local current_key = (current_level_id or "") .. ":" .. campfire_name
+            fast_travel_panel.show(player_ref.visited_campfires, current_key)
+            nav_mode = NAV_MODE.FAST_TRAVEL
+            fast_travel_from_menu = true
+            rest_dialogue.text = "Select a destination."
+        end
+    elseif focused_index == 5 then
         nav_mode = NAV_MODE.SETTINGS
         active_panel_index = 4
         controls_panel:reset_focus()
-    elseif focused_index == 5 then
+    elseif focused_index == 6 then
         nav_mode = NAV_MODE.SETTINGS
         active_panel_index = 5
         audio_focus_index = 1
-    elseif focused_index == 6 then
-        rest_screen.trigger_continue()
     elseif focused_index == 7 then
+        rest_screen.trigger_continue()
+    elseif focused_index == 8 then
         nav_mode = NAV_MODE.CONFIRM
         confirm_selection = 2
     end
@@ -1165,12 +1195,12 @@ local function enter_settings_mode()
     if focused_index == 1 then
         player_status_panel.active = true
         player_status_panel:reset_selection()
-    elseif focused_index == 4 then
-        controls_panel:reset_focus()
     elseif focused_index == 5 then
+        controls_panel:reset_focus()
+    elseif focused_index == 6 then
         audio_focus_index = 1
     end
-    -- Map panel (index 2) and Journal panel (index 3) have no special init needed
+    -- Map (2), Journal (3), Fast Travel (4) have no special init needed
 end
 
 --- Execute fast travel to a destination campfire
@@ -1206,12 +1236,17 @@ local function handle_fast_travel_input()
     if not result then return end
     if result.action == "back" then
         fast_travel_panel.hide()
-        nav_mode = NAV_MODE.SETTINGS
-        active_panel_index = 1
-        -- Restore status panel with inventory focused (player was in inventory before)
-        player_status_panel.active = true
-        player_status_panel.focus_area = "inventory"
-        player_status_panel.inventory.active = true
+        if fast_travel_from_menu then
+            -- Opened from menu button: return to menu
+            return_to_status()
+        else
+            -- Opened from inventory: restore status panel with inventory focused
+            nav_mode = NAV_MODE.SETTINGS
+            active_panel_index = 1
+            player_status_panel.active = true
+            player_status_panel.focus_area = "inventory"
+            player_status_panel.inventory.active = true
+        end
         return
     end
     if result.action == "teleport" then
@@ -1230,15 +1265,22 @@ local function handle_menu_input()
 
     if controls.menu_up_pressed() then
         focused_index = wrap_index(focused_index, -1, MENU_ITEM_COUNT)
+        if focused_index == 4 and not is_fast_travel_available() then
+            focused_index = wrap_index(focused_index, -1, MENU_ITEM_COUNT)
+        end
     elseif controls.menu_down_pressed() then
         focused_index = wrap_index(focused_index, 1, MENU_ITEM_COUNT)
+        if focused_index == 4 and not is_fast_travel_available() then
+            focused_index = wrap_index(focused_index, 1, MENU_ITEM_COUNT)
+        end
     end
 
     local right_pressed = controls.menu_right_pressed()
     local confirm_pressed = controls.menu_confirm_pressed()
-    local is_submenu_item = focused_index <= 5
+    local is_submenu_item = focused_index <= 6
 
     -- Enter settings mode when pressing right/confirm on the active submenu panel
+    -- (active_panel_index is always 1 in MENU mode, so this only matches focused_index=1/Status)
     if (right_pressed or confirm_pressed) and is_submenu_item and focused_index == active_panel_index then
         enter_settings_mode()
         return
@@ -1370,6 +1412,9 @@ function rest_screen.update(dt, block_mouse)
                 hovered_index = nil
                 if mouse_active then
                     for i, btn in ipairs(buttons) do
+                        if i == 4 and not is_fast_travel_available() then
+                            goto continue_hover_loop
+                        end
                         if local_mx >= btn.x and local_mx <= btn.x + btn.width and
                            local_my >= btn.y and local_my <= btn.y + btn.height then
                             hovered_index = i
@@ -1382,6 +1427,7 @@ function rest_screen.update(dt, block_mouse)
                             end
                             break
                         end
+                        ::continue_hover_loop::
                     end
                 end
 
@@ -1783,8 +1829,8 @@ end
 ---@param dialogue table The rest dialogue with x, y, width, height
 ---@return nil
 local function draw_submenu_prompt(dialogue)
-    -- Only show in menu mode for submenu items (Status, Map, Journal, Controls, Audio)
-    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 5 then
+    -- Only show in menu mode for submenu items (Status, Map, Journal, Fast Travel, Controls, Audio)
+    if nav_mode ~= NAV_MODE.MENU or focused_index < 1 or focused_index > 6 then
         return
     end
 
@@ -1793,7 +1839,7 @@ local function draw_submenu_prompt(dialogue)
         return
     end
 
-    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 5
+    local mouse_on_submenu = hovered_index and hovered_index >= 1 and hovered_index <= 6
 
     -- Don't show if mouse is hovering over status panel stats
     if not mouse_on_submenu and player_status_panel:is_mouse_hover() then
@@ -2073,7 +2119,13 @@ function rest_screen.draw()
         draw_map_back_prompt(rest_dialogue)
 
         local journal_has_unread = player_ref and journal_panel.has_unread(player_ref.journal, player_ref.journal_read)
+        local ft_available = is_fast_travel_available()
         for i, btn in ipairs(buttons) do
+            -- Skip fast travel button when not available (leaves blank space)
+            if i == 4 and not ft_available then
+                goto continue_button_loop
+            end
+
             local is_focused = focused_index == i or hovered_index == i
             btn:draw(is_focused)
 
@@ -2096,12 +2148,14 @@ function rest_screen.draw()
                 canvas.restore()
             end
 
-            -- Draw arrow for submenu items (Status, Map, Journal, Controls, Audio)
-            if i <= 5 then
+            -- Draw arrow for submenu items (Status, Map, Journal, Fast Travel, Controls, Audio)
+            if i <= 6 then
                 local arrow_x = btn.x + btn.width - ARROW_INSET
                 local arrow_y = btn.y + btn.height / 2
                 draw_submenu_arrow(arrow_x, arrow_y, is_focused)
             end
+
+            ::continue_button_loop::
         end
 
         canvas.restore()

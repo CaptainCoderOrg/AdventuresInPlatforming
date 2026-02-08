@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="346">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="347">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -2944,6 +2944,11 @@
   <object id="340" gid="67" x="-1024" y="944" width="16" height="16">
    <properties>
     <property name="name" value="Valkyrie's Ledge"/>
+   </properties>
+  </object>
+  <object id="346" gid="67" x="-1776" y="528" width="16" height="16">
+   <properties>
+    <property name="name" value="Boss Fight Test"/>
    </properties>
   </object>
  </objectgroup>

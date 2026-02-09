@@ -36,14 +36,18 @@ local HOLD_TW_DURATION = 1
 local SCROLL_SPEED = 14           -- 1x px/s
 
 -- Content layout (1x scale coordinates, content Y=0 at top)
-local TYPEWRITER_Y = 50
+local SUBTITLE_LINE_1 = "Made in 37 days for the"
+local SUBTITLE_LINE_2 = "Solo Development Marathon Jam #5"
+local SUBTITLE_Y_1 = 22
+local SUBTITLE_Y_2 = 34
+local TYPEWRITER_Y = 56
 local TYPEWRITER_TEXT = "Thank you for playing!"
 
 -- Scroll math: screen_y = content_y - scroll_offset
 -- Title at content Y=0, screen center at 108 (216/2) => initial offset = -108
 local INITIAL_SCROLL = -108
--- Final text at Y=560 centered on screen => offset = 560 - 108 = 452
-local MAX_SCROLL = 452
+-- Final text at Y=910 centered on screen => offset = 910 - 108 = 802
+local MAX_SCROLL = 802
 
 -- Decoration sprite X positions (1x scale, screen is 384px wide)
 local DECO_LEFT_X = 50
@@ -66,28 +70,45 @@ local CREDITS_DATA = {
     { type = "header", y = 170, text = "--- Game Design & Programming ---" },
     { type = "name", y = 190, text = "TheCaptainCoder" },
 
-    { type = "header", y = 240, text = "--- Art ---" },
-    { type = "name", y = 260, text = "\"Another Metroidvania Asset Pack\" by O_LOBSTER" },
-    { type = "name", y = 274, text = "\"Viking Shieldmaiden\" by DezrasDragons" },
-    { type = "name", y = 288, text = "\"Skeleton and Friends\" by patvanmackelberg" },
-    { type = "name", y = 302, text = "\"Roguelike/RPG Items\" by Joe Williamson" },
-    { type = "name", y = 316, text = "\"Golden UI\"" },
-    { type = "name", y = 330, text = "\"Golden UI - Bigger Edition\"" },
+    { type = "header", y = 260, text = "--- Art ---" },
+    { type = "name", y = 280, text = "\"Another Metroidvania Asset Pack\" by O_LOBSTER" },
+    { type = "name", y = 294, text = "\"Viking Shieldmaiden\" by DezrasDragons" },
+    { type = "name", y = 308, text = "\"Skeleton and Friends\" by patvanmackelberg" },
+    { type = "name", y = 322, text = "\"Roguelike/RPG Items\" by Joe Williamson" },
+    { type = "name", y = 336, text = "\"Golden UI\"" },
+    { type = "name", y = 350, text = "\"Golden UI - Bigger Edition\"" },
 
-    { type = "header", y = 380, text = "--- Audio & Sound Effects ---" },
-    { type = "name", y = 400, text = "\"Fantasy Sound Effects Library\"" },
-    { type = "name", y = 414, text = "\"Campfire\" by cagankaya" },
-    { type = "name", y = 428, text = "\"Key Pickup\"" },
-    { type = "name", y = 442, text = "\"Watermelon Splatter\" by duckduckpony" },
-    { type = "name", y = 456, text = "\"Sledge Hammer on Mulch\" by FST180081" },
-    { type = "name", y = 470, text = "\"Spike Trap\" by Deathscyp" },
-    { type = "name", y = 484, text = "\"Stone Slab Impact\" by Scottrex05" },
+    { type = "header", y = 420, text = "--- Audio & Sound Effects ---" },
+    { type = "name", y = 440, text = "\"Fantasy Sound Effects Library\"" },
+    { type = "name", y = 454, text = "\"Campfire\" by cagankaya" },
+    { type = "name", y = 468, text = "\"Key Pickup\"" },
+    { type = "name", y = 482, text = "\"Watermelon Splatter\" by duckduckpony" },
+    { type = "name", y = 496, text = "\"Sledge Hammer on Mulch\" by FST180081" },
+    { type = "name", y = 510, text = "\"Spike Trap\" by Deathscyp" },
+    { type = "name", y = 524, text = "\"Stone Slab Impact\" by Scottrex05" },
 
-    { type = "name", y = 560, text = "Thank you for playing!" },
+    { type = "header", y = 600, text = "--- Special Thanks ---" },
+    { type = "name", y = 624, text = "iheartfunnyboys" },
+    { type = "name", y = 638, text = "Just Covino" },
+    { type = "name", y = 652, text = "MooNiZZ" },
+    { type = "name", y = 666, text = "KiltedNinja" },
+    { type = "name", y = 680, text = "MadChirpy" },
+    { type = "name", y = 694, text = "IrishJohn" },
+    { type = "name", y = 708, text = "Don Stove" },
+    { type = "name", y = 722, text = "Jam" },
+    { type = "name", y = 736, text = "The Working Man" },
+
+    { type = "name", y = 790, text = "And a huge thanks to" },
+    { type = "dedication", y = 812, text = "The Wonderful Ravenhale" },
+    { type = "name", y = 834, text = "for putting up with my obsessions" },
+
+    { type = "name", y = 910, text = "Thank you for playing!" },
 }
 
 -- Cached text widths (populated in show() to avoid per-frame get_text_metrics calls)
 local cached_title_width = 0
+local cached_sub1_width = 0
+local cached_sub2_width = 0
 local cached_tw_width = 0
 local cached_skip_width = 0
 
@@ -124,11 +145,12 @@ end
 
 --- Create a decoration sprite entry with multiple cycling animations
 ---@param y number Content Y position
----@param side string "left" or "right"
+---@param side string|number "left", "right", or numeric X position (1x scale)
 ---@param flipped number 1 (facing right) or -1 (facing left)
 ---@param anim_specs table Array of {asset, frames, w, h, ms, row?, loop?}
+---@param duration_override? table Explicit durations per animation (for synced scene pairs)
 ---@return table Decoration sprite entry
-local function create_deco(y, side, flipped, anim_specs)
+local function create_deco(y, side, flipped, anim_specs, duration_override)
     local anims = {}
     local durations = {}
     for i, spec in ipairs(anim_specs) do
@@ -140,11 +162,15 @@ local function create_deco(y, side, flipped, anim_specs)
             loop = spec.loop or false,
         })
         anims[i] = Animation.new(def, { flipped = flipped })
-        local natural_secs = spec.frames * spec.ms / 1000
-        if spec.loop then
-            durations[i] = math.max(natural_secs * 2, LOOP_CYCLE_SECS)
+        if duration_override then
+            durations[i] = duration_override[i]
         else
-            durations[i] = math.max(natural_secs, 0.5)
+            local natural_secs = spec.frames * spec.ms / 1000
+            if spec.loop then
+                durations[i] = math.max(natural_secs * 2, LOOP_CYCLE_SECS)
+            else
+                durations[i] = math.max(natural_secs, 0.5)
+            end
         end
     end
     return {
@@ -162,6 +188,10 @@ function credits_screen.init()
     local e = sprites.enemies
     local p = sprites.player
     local n = sprites.npcs
+    local env = sprites.environment
+
+    -- Synced duration arrays for interactive scene pairs (action -> idle cycle)
+    local scene_sync = { 0.5, 2.5 }
 
     deco_sprites = {
         -- Y=170: Game Design header
@@ -177,83 +207,99 @@ function credits_screen.init()
             { asset = e.shieldmaiden.sheet, frames = 3, w = 40, h = 29, ms = 100, row = 1 },
         }),
 
-        -- Y=205: Player and Adept NPC
-        create_deco(205, "left", 1, {
+        -- Y=225: Scene - Player attacking Zombie
+        create_deco(225, 152, 1, {
+            { asset = p.attack_0, frames = 5, w = 32, h = 16, ms = 60 },
             { asset = p.idle, frames = 6, w = 16, h = 16, ms = 240, loop = true },
-            { asset = p.run, frames = 8, w = 16, h = 16, ms = 80, loop = true },
-            { asset = p.jump_up, frames = 3, w = 16, h = 16, ms = 80 },
-            { asset = p.fall, frames = 3, w = 16, h = 16, ms = 80, loop = true },
-            { asset = p.dash, frames = 4, w = 16, h = 16, ms = 80 },
-        }),
-        create_deco(205, "right", -1, {
-            { asset = n.adept_reading, frames = 6, w = 16, h = 16, ms = 200, loop = true },
-        }),
+        }, scene_sync),
+        create_deco(225, 186, -1, {
+            { asset = e.zombie.hit, frames = 5, w = 16, h = 16, ms = 60 },
+            { asset = e.zombie.idle, frames = 6, w = 16, h = 16, ms = 200, loop = true },
+        }, scene_sync),
 
-        -- Y=240: Art header
-        create_deco(240, "left", 1, {
+        -- Y=260: Art header
+        create_deco(260, "left", 1, {
             { asset = e.zombie.idle, frames = 6, w = 16, h = 16, ms = 200, loop = true },
             { asset = e.zombie.run, frames = 6, w = 16, h = 16, ms = 150, loop = true },
         }),
-        create_deco(240, "right", -1, {
+        create_deco(260, "right", -1, {
             { asset = e.ghost_painting.static, frames = 1, w = 16, h = 24, ms = 80 },
             { asset = e.ghost_painting.fly, frames = 10, w = 16, h = 24, ms = 80, loop = true },
         }),
 
-        -- Y=275: Among art credits
-        create_deco(275, "left", 1, {
+        -- Y=310: Among art credits
+        create_deco(310, "left", 1, {
             { asset = e.ratto.idle, frames = 6, w = 16, h = 8, ms = 200, loop = true },
             { asset = e.ratto.run, frames = 4, w = 16, h = 8, ms = 80, loop = true },
         }),
-        create_deco(275, "right", -1, {
+        create_deco(310, "right", -1, {
             { asset = e.spikeslug.run, frames = 4, w = 16, h = 16, ms = 200, loop = true },
             { asset = e.spikeslug.defense, frames = 6, w = 16, h = 16, ms = 200 },
             { asset = e.spikeslug.stop_defend, frames = 6, w = 16, h = 16, ms = 200 },
         }),
 
-        -- Y=315: Bottom of art section
-        create_deco(315, "left", 1, {
+        -- Y=350: Bottom of art section
+        create_deco(350, "left", 1, {
             { asset = e.blue_slime.idle, frames = 5, w = 16, h = 16, ms = 150, loop = true },
             { asset = e.blue_slime.jump, frames = 4, w = 16, h = 16, ms = 300 },
         }),
-        create_deco(315, "right", -1, {
+        create_deco(350, "right", -1, {
             { asset = e.red_slime.idle, frames = 5, w = 16, h = 16, ms = 150, loop = true },
             { asset = e.red_slime.jump, frames = 4, w = 16, h = 16, ms = 225 },
         }),
 
-        -- Y=350: Gap between sections
-        create_deco(350, "left", 1, {
-            { asset = e.magician.sheet, frames = 6, w = 16, h = 16, ms = 120, row = 1, loop = true },
-            { asset = e.magician.sheet, frames = 4, w = 16, h = 16, ms = 100, row = 2, loop = true },
-            { asset = e.magician.sheet, frames = 11, w = 16, h = 16, ms = 80, row = 0 },
+        -- Y=385: Scene - Spear vs blocking Player
+        create_deco(385, 164, 1, {
+            { asset = env.spear, frames = 3, w = 16, h = 8, ms = 100, loop = true },
         }),
-        create_deco(350, "right", -1, {
-            { asset = e.magician_blue.sheet, frames = 6, w = 16, h = 16, ms = 120, row = 1, loop = true },
-            { asset = e.magician_blue.sheet, frames = 4, w = 16, h = 16, ms = 100, row = 2, loop = true },
-            { asset = e.magician_blue.sheet, frames = 11, w = 16, h = 16, ms = 120, row = 0 },
+        create_deco(385, 188, -1, {
+            { asset = p.block_step, frames = 4, w = 16, h = 16, ms = 160, loop = true },
         }),
 
-        -- Y=380: Audio header
-        create_deco(380, "left", 1, {
+        -- Y=420: Audio header
+        create_deco(420, "left", 1, {
             { asset = e.bat_eye.idle, frames = 6, w = 16, h = 16, ms = 80, loop = true },
             { asset = e.bat_eye.alert, frames = 4, w = 16, h = 16, ms = 160 },
             { asset = e.bat_eye.attack, frames = 3, w = 16, h = 16, ms = 80, loop = true },
         }),
-        create_deco(380, "right", -1, {
+        create_deco(420, "right", -1, {
             { asset = e.flaming_skull.float, frames = 8, w = 18, h = 26, ms = 100, loop = true },
         }),
 
-        -- Y=420: Among audio credits
-        create_deco(420, "left", 1, {
+        -- Y=480: Among audio credits
+        create_deco(480, "left", 1, {
             { asset = e.worm.run, frames = 5, w = 16, h = 8, ms = 200, loop = true },
         }),
-        create_deco(420, "right", -1, {
+        create_deco(480, "right", -1, {
             { asset = e.magician_purple.sheet, frames = 6, w = 16, h = 16, ms = 120, row = 1, loop = true },
             { asset = e.magician_purple.sheet, frames = 4, w = 16, h = 16, ms = 100, row = 2, loop = true },
             { asset = e.magician_purple.sheet, frames = 11, w = 16, h = 16, ms = 55, row = 0 },
         }),
 
-        -- Y=465: Bottom of audio section
-        create_deco(465, "left", 1, {
+        -- Y=525: Bottom of audio section
+        create_deco(525, "left", 1, {
+            { asset = e.magician.sheet, frames = 6, w = 16, h = 16, ms = 120, row = 1, loop = true },
+            { asset = e.magician.sheet, frames = 4, w = 16, h = 16, ms = 100, row = 2, loop = true },
+            { asset = e.magician.sheet, frames = 11, w = 16, h = 16, ms = 80, row = 0 },
+        }),
+        create_deco(525, "right", -1, {
+            { asset = e.magician_blue.sheet, frames = 6, w = 16, h = 16, ms = 120, row = 1, loop = true },
+            { asset = e.magician_blue.sheet, frames = 4, w = 16, h = 16, ms = 100, row = 2, loop = true },
+            { asset = e.magician_blue.sheet, frames = 11, w = 16, h = 16, ms = 120, row = 0 },
+        }),
+
+        -- Y=570: Scene - Player throwing at Ratto
+        create_deco(570, 164, 1, {
+            { asset = p.throw, frames = 7, w = 16, h = 16, ms = 33 },
+            { asset = p.idle, frames = 6, w = 16, h = 16, ms = 240, loop = true },
+        }, scene_sync),
+        create_deco(570, 188, -1, {
+            { asset = e.ratto.hit, frames = 5, w = 16, h = 8, ms = 80 },
+            { asset = e.ratto.idle, frames = 6, w = 16, h = 8, ms = 200, loop = true },
+        }, scene_sync),
+
+        -- Y=600: Special Thanks header
+        create_deco(600, "left", 1, {
             { asset = e.guardian.idle, frames = 6, w = 48, h = 32, ms = 150, loop = true },
             { asset = e.guardian.run, frames = 4, w = 48, h = 32, ms = 100, loop = true },
             { asset = e.guardian.attack, frames = 8, w = 48, h = 32, ms = 100 },
@@ -261,17 +307,29 @@ function credits_screen.init()
             { asset = e.guardian.jump, frames = 2, w = 48, h = 32, ms = 100 },
             { asset = e.guardian.land, frames = 7, w = 48, h = 32, ms = 100 },
         }),
-        create_deco(465, "right", -1, {
+        create_deco(600, "right", -1, {
             { asset = n.witch_merchant_idle, frames = 10, w = 32, h = 32, ms = 100, loop = true },
         }),
 
-        -- Y=520: Near final text
-        create_deco(520, "left", 1, {
+        -- Y=700: Among Special Thanks
+        create_deco(700, "left", 1, {
+            { asset = p.idle, frames = 6, w = 16, h = 16, ms = 240, loop = true },
+            { asset = p.run, frames = 8, w = 16, h = 16, ms = 80, loop = true },
+            { asset = p.jump_up, frames = 3, w = 16, h = 16, ms = 80 },
+            { asset = p.fall, frames = 3, w = 16, h = 16, ms = 80, loop = true },
+            { asset = p.dash, frames = 4, w = 16, h = 16, ms = 80 },
+        }),
+        create_deco(700, "right", -1, {
+            { asset = n.adept_reading, frames = 6, w = 16, h = 16, ms = 200, loop = true },
+        }),
+
+        -- Y=800: Ravenhale section
+        create_deco(800, "left", 1, {
             { asset = e.gnomo_boss.green, frames = 5, w = 16, h = 16, ms = 150, row = 1, loop = true },
             { asset = e.gnomo_boss.green, frames = 6, w = 16, h = 16, ms = 100, row = 3, loop = true },
             { asset = e.gnomo_boss.green, frames = 8, w = 16, h = 16, ms = 60, row = 0 },
         }),
-        create_deco(520, "right", -1, {
+        create_deco(800, "right", -1, {
             { asset = e.gnomo_boss.red, frames = 5, w = 16, h = 16, ms = 150, row = 1, loop = true },
             { asset = e.gnomo_boss.red, frames = 6, w = 16, h = 16, ms = 100, row = 3, loop = true },
             { asset = e.gnomo_boss.red, frames = 8, w = 16, h = 16, ms = 60, row = 0 },
@@ -305,11 +363,14 @@ function credits_screen.show()
     canvas.set_font_family("menu_font")
     canvas.set_font_size(16)
     cached_title_width = canvas.get_text_metrics("KNIGHTMARE").width
+    canvas.set_font_size(6)
+    cached_sub1_width = canvas.get_text_metrics(SUBTITLE_LINE_1).width
+    cached_sub2_width = canvas.get_text_metrics(SUBTITLE_LINE_2).width
     canvas.set_font_size(7)
     cached_tw_width = canvas.get_text_metrics(TYPEWRITER_TEXT).width
     cached_skip_width = canvas.get_text_metrics("Skip").width
     for _, entry in ipairs(CREDITS_DATA) do
-        if entry.type == "header" then
+        if entry.type == "header" or entry.type == "dedication" then
             canvas.set_font_size(8)
             entry.cached_width = canvas.get_text_metrics(entry.text).width
         else
@@ -488,6 +549,12 @@ function credits_screen.draw()
     canvas.set_color("#FFFF00")
     canvas.draw_text(title_x, title_sy, "KNIGHTMARE")
 
+    -- Subtitle lines
+    canvas.set_font_size(6)
+    canvas.set_color("#AAAAAA")
+    canvas.draw_text(center_x - cached_sub1_width / 2, SUBTITLE_Y_1 - scroll_offset, SUBTITLE_LINE_1)
+    canvas.draw_text(center_x - cached_sub2_width / 2, SUBTITLE_Y_2 - scroll_offset, SUBTITLE_LINE_2)
+
     -- Typewriter text (visible once typing starts, persists through all later phases)
     if typewriter_index > 0 then
         canvas.set_font_size(7)
@@ -510,6 +577,11 @@ function credits_screen.draw()
         -- Cull off-screen entries
         if sy > -20 and sy < h_1x + 20 then
             if entry.type == "header" then
+                canvas.set_font_size(8)
+                canvas.set_color("#FFFF00")
+                canvas.draw_text(center_x - entry.cached_width / 2, sy, entry.text)
+
+            elseif entry.type == "dedication" then
                 canvas.set_font_size(8)
                 canvas.set_color("#FFFF00")
                 canvas.draw_text(center_x - entry.cached_width / 2, sy, entry.text)
@@ -552,7 +624,14 @@ function credits_screen.draw()
     for _, deco in ipairs(deco_sprites) do
         local sy = deco.y - scroll_offset
         if sy > -50 and sy < h_1x + 50 then
-            local x = deco.side == "left" and DECO_LEFT_X or DECO_RIGHT_X
+            local x
+            if type(deco.side) == "number" then
+                x = deco.side
+            elseif deco.side == "left" then
+                x = DECO_LEFT_X
+            else
+                x = DECO_RIGHT_X
+            end
             deco.anims[deco.current]:draw(x * scale, sy * scale)
         end
     end

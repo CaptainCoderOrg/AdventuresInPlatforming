@@ -33,13 +33,13 @@ controls_config.keyboard_defaults = {
     move_down   = canvas.keys.S,
     jump        = canvas.keys.SPACE,
     attack      = controls_config.MOUSE_LEFT,
-    ability_1   = controls_config.MOUSE_RIGHT,
-    ability_2   = canvas.keys.DIGIT_2,
-    ability_3   = canvas.keys.DIGIT_3,
-    ability_4   = canvas.keys.DIGIT_4,
-    ability_5   = canvas.keys.SHIFT,
-    ability_6   = canvas.keys.Q,
-    swap_weapon = canvas.keys.E,
+    ability_1   = canvas.keys.Q,
+    ability_2   = controls_config.MOUSE_RIGHT,
+    ability_3   = canvas.keys.E,
+    ability_4   = canvas.keys.Z,
+    ability_5   = canvas.keys.C,
+    ability_6   = canvas.keys.F,
+    swap_weapon = canvas.keys.TAB,
 }
 
 -- Default gamepad bindings (action_id -> canvas.buttons.* constant)

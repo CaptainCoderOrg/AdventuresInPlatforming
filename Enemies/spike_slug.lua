@@ -94,7 +94,7 @@ return {
 	max_health = 3,
 	damage = 1,
 	death_sound = "spike_slug",
-	loot = { xp = 5, gold = { min = 0, max = 5 } },
+	loot = { xp = 10, gold = { min = 0, max = 10 }, health = { min = 0, max = 10 } },
 	get_armor = function(self)
 		return self.is_defending and 4 or 0
 	end,

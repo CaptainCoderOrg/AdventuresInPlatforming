@@ -43,4 +43,7 @@ return slime_common.create(sprites.enemies.red_slime, {
 	loot_xp = 3,
 	loot_gold_min = 0,
 	loot_gold_max = 1,
+
+	-- HP drops (0-5 particles at 0.1 each = 0-0.5 HP)
+	loot_health_max = 5,
 })

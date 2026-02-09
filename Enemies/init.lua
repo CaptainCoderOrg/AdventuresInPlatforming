@@ -403,6 +403,11 @@ function Enemy:check_player_overlap(player)
 
 	-- No shield block - take damage
 	player:take_damage(self.damage, self.x, self)
+
+	-- Notify enemy of successful contact (e.g. ghost self-damage)
+	if self.damage > 0 and self.on_damage_player then
+		self:on_damage_player()
+	end
 end
 
 --- Returns the enemy's current armor value.

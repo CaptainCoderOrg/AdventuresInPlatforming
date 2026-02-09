@@ -404,7 +404,7 @@ return {
 	damage = 2,
 	damages_shield = true,
 	death_sound = "ratto",  -- Reuse ratto death sound for now
-	loot = { xp = 5, gold = { min = 0, max = 5 } },
+	loot = { xp = 10, gold = { min = 0, max = 10 }, health = { min = 0, max = 10 } },
 	states = bat_eye.states,
 	animations = bat_eye.animations,
 	initial_state = "patrol",

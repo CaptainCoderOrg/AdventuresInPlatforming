@@ -23,9 +23,14 @@ local SIZE = 4  -- pixels
 
 -- Colors
 local COLORS = {
-	xp = "#FFFFFF",  -- white
-	gold = "#FFD700"  -- gold
+	xp = "#FFFFFF",      -- white
+	gold = "#FFD700",    -- gold
+	health = "#FF4466",  -- red
+	energy = "#4488FF",  -- blue
 }
+
+local HEALTH_VALUE = 0.1
+local ENERGY_VALUE = 0.1
 
 -- Module-level table to avoid allocation each frame
 local to_remove = {}
@@ -49,7 +54,7 @@ function Collectible.spawn(type, x, y, value, velocity)
 		h = SIZE / sprites.tile_size,
 		vx = velocity.vx or 0,
 		vy = velocity.vy or 0,
-		value = value or 1,
+		value = value or (type == "health" and HEALTH_VALUE or (type == "energy" and ENERGY_VALUE or 1)),
 		color = COLORS[type] or COLORS.xp,
 		size = SIZE,
 		lifetime = LIFETIME,
@@ -85,7 +90,7 @@ local function spawn_explosion(type, x, y, count, away_x, away_y)
 		local spread = (math.random() - 0.5) * 2.1  -- ~120 degree cone
 		local dir_x, dir_y = rotate_vector(away_x, away_y, spread)
 		local speed = 4 + math.random() * 2
-		Collectible.spawn(type, x, y, 1, {
+		Collectible.spawn(type, x, y, nil, {
 			vx = dir_x * speed,
 			vy = dir_y * speed - 2  -- Slight upward bias
 		})
@@ -122,6 +127,24 @@ function Collectible.spawn_loot(x, y, loot_def, player)
 		local gold_count = math.random(gold_def.min, gold_def.max)
 		if gold_count > 0 then
 			spawn_explosion("gold", x, y, gold_count, away_x, away_y)
+		end
+	end
+
+	-- Spawn health particles (only if player has taken damage)
+	local health_def = loot_def.health
+	if health_def and player.damage and player.damage > 0 then
+		local health_count = math.random(health_def.min, health_def.max)
+		if health_count > 0 then
+			spawn_explosion("health", x, y, health_count, away_x, away_y)
+		end
+	end
+
+	-- Spawn energy particles (only if player has spent energy)
+	local energy_def = loot_def.energy
+	if energy_def and player.energy_used and player.energy_used > 0 then
+		local energy_count = math.random(energy_def.min, energy_def.max)
+		if energy_count > 0 then
+			spawn_explosion("energy", x, y, energy_count, away_x, away_y)
 		end
 	end
 end
@@ -198,6 +221,12 @@ function Collectible.update(dt, player)
 			elseif collectible.type == "gold" then
 				player.gold = (player.gold or 0) + collectible.value
 				Effects.create_gold_text(collectible.x, collectible.y, collectible.value, player)
+			elseif collectible.type == "health" then
+				player.damage = math.max(0, player.damage - collectible.value)
+				Effects.create_hp_loot_text(collectible.x, collectible.y, collectible.value, player)
+			elseif collectible.type == "energy" then
+				player.energy_used = math.max(0, player.energy_used - collectible.value)
+				Effects.create_energy_loot_text(collectible.x, collectible.y, collectible.value, player)
 			end
 			to_remove[#to_remove + 1] = collectible
 			collectible = next(state.all, collectible)

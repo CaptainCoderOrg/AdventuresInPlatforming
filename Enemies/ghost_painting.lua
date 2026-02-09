@@ -2,6 +2,7 @@ local Animation = require('Animation')
 local sprites = require('sprites')
 local canvas = require('canvas')
 local common = require('Enemies/common')
+local audio = require('audio')
 
 --- Ghost Painting enemy: A haunted painting that attacks when player looks away.
 --- States: idle (wait for player), wait (player in range), prep_attack (wind up),
@@ -130,7 +131,7 @@ ghost_painting.states.prep_attack = {
 		enemy.prep_timer = 0
 		enemy.vx = 0
 		enemy.vy = -FLOAT_SPEED
-		enemy.damage = 2
+		enemy.damage = 1
 	end,
 	update = function(enemy, dt)
 		enemy.prep_timer = enemy.prep_timer + dt
@@ -147,7 +148,7 @@ ghost_painting.states.attack = {
 	name = "attack",
 	start = function(enemy, _)
 		common.set_animation(enemy, ghost_painting.animations.FLY)
-		enemy.damage = 2
+		enemy.damage = 1
 		enemy.attack_vx = 0
 		enemy.attack_vy = 0
 		enemy.attack_dir_x = 0
@@ -286,6 +287,17 @@ ghost_painting.states.death = {
 	draw = common.draw,
 }
 
+--- Called when ghost painting contacts the player and deals damage.
+--- Ghost loses 1 HP per hit as self-damage.
+---@param self table The ghost_painting enemy
+local function on_damage_player(self)
+	self.health = self.health - 1
+	audio.play_squish_sound()
+	if self.health <= 0 then
+		self:die()
+	end
+end
+
 --- Called when player performs a perfect block against ghost_painting's attack.
 --- Ghost painting is instantly killed by perfect blocks.
 ---@param enemy table The ghost_painting enemy
@@ -295,18 +307,19 @@ local function on_perfect_blocked(enemy, _player)
 end
 
 return {
+	on_damage_player = on_damage_player,
 	on_perfect_blocked = on_perfect_blocked,
 	box = { w = 0.75, h = 1.25, x = 0.125, y = 0.25 },
 	spawn_offset = { y = -0.5 },  -- -8 pixels to match decoy_painting
 	gravity = 0,
 	max_fall_speed = 0,
-	max_health = 4,
-	armor = 1,
+	max_health = 2,
+	armor = 0,
 	damage = 0,
 	damages_shield = true,
 	directional_shield = true,  -- Uses direction-based shield check (phases through walls)
 	death_sound = "ratto",
-	loot = { xp = 10, gold = { min = 3, max = 12 } },
+	loot = { xp = 20, gold = { min = 6, max = 24 } },
 	states = ghost_painting.states,
 	animations = ghost_painting.animations,
 	initial_state = "idle",

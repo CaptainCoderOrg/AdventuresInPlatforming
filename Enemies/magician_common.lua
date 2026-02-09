@@ -854,7 +854,7 @@ function magician_common.create(sprite_set, cfg)
 			ms_per_frame = 100, width = 16, height = 16, loop = true, row = 2
 		}),
 		ATTACK = Animation.create_definition(sprite_set.sheet, 11, {
-			ms_per_frame = 80, width = 16, height = 16, loop = false, row = 0
+			ms_per_frame = cfg.attack_ms_per_frame or 80, width = 16, height = 16, loop = false, row = 0
 		}),
 		HIT = Animation.create_definition(sprite_set.sheet, 3, {
 			ms_per_frame = 60, width = 16, height = 16, loop = false, row = 3
@@ -990,6 +990,9 @@ function magician_common.create(sprite_set, cfg)
 					common.set_animation(enemy, animations.ATTACK)
 					face_player(enemy)
 				else
+					if cfg.attack_cooldown then
+						enemy._attack_cooldown = cfg.attack_cooldown
+					end
 					enemy:set_state(states.fly)
 				end
 			end
@@ -1010,6 +1013,11 @@ function magician_common.create(sprite_set, cfg)
 		update = function(enemy, dt)
 			update_common(enemy, dt)
 			if check_combat_interrupts(enemy) then return end
+
+			-- Tick down attack cooldown
+			if enemy._attack_cooldown and enemy._attack_cooldown > 0 then
+				enemy._attack_cooldown = enemy._attack_cooldown - dt
+			end
 
 			-- Throttle path-clear raycasts
 			local path_check_ready = (enemy._path_check_timer or 0) <= 0
@@ -1333,6 +1341,12 @@ function magician_common.create(sprite_set, cfg)
 			return
 		end
 
+		-- Attack cooldown: force fly state until timer expires
+		if enemy._attack_cooldown and enemy._attack_cooldown > 0 then
+			enemy:set_state(states.fly)
+			return
+		end
+
 		if common.player_in_range(enemy, ATTACK_RANGE) and common.has_line_of_sight(enemy) then
 			enemy:set_state(states.attack)
 		elseif not common.player_in_range(enemy, TOO_FAR_DISTANCE) then
@@ -1387,7 +1401,7 @@ function magician_common.create(sprite_set, cfg)
 		damage = cfg.damage or 0.5,
 		damages_shield = true,
 		death_sound = "ratto",
-		loot = cfg.loot or { xp = 15, gold = { min = 5, max = 15 } },
+		loot = cfg.loot or { xp = 30, gold = { min = 10, max = 30 }, health = { min = 0, max = 20 }, energy = { min = 0, max = 20 } },
 		states = states,
 		animations = animations,
 		initial_state = "idle",

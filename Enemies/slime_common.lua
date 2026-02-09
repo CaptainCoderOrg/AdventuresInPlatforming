@@ -248,7 +248,12 @@ function slime_common.create(sprite_set, cfg)
 		damage = cfg.contact_damage,
 		damages_shield = true,
 		death_sound = "ratto",
-		loot = { xp = cfg.loot_xp, gold = { min = cfg.loot_gold_min, max = cfg.loot_gold_max } },
+		loot = {
+			xp = cfg.loot_xp,
+			gold = { min = cfg.loot_gold_min, max = cfg.loot_gold_max },
+			health = cfg.loot_health_max and { min = cfg.loot_health_min or 0, max = cfg.loot_health_max } or nil,
+			energy = cfg.loot_energy_max and { min = cfg.loot_energy_min or 0, max = cfg.loot_energy_max } or nil,
+		},
 		states = states,
 		animations = animations,
 		initial_state = "idle",

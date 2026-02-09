@@ -527,6 +527,36 @@ function Effects.create_heal_text(x, y, amount, player)
 	create_accumulating_text("active_heal_text", nil, "#44FF44", -0.2, x, y, amount, player, format_heal_hp)
 end
 
+local function format_hp_loot(amount)
+	return string.format("+%.1f HP", amount)
+end
+
+--- Factory: Creates or updates floating HP loot text (e.g. "+0.5 HP")
+--- Accumulates fractional HP gains from loot drops.
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param amount number HP amount to add
+---@param player table Player to follow
+---@return nil
+function Effects.create_hp_loot_text(x, y, amount, player)
+	create_accumulating_text("active_hp_loot_text", nil, "#FF4466", 0.1, x, y, amount, player, format_hp_loot)
+end
+
+local function format_energy_loot(amount)
+	return string.format("+%.1f Energy", amount)
+end
+
+--- Factory: Creates or updates floating energy loot text (e.g. "+0.5 Energy")
+--- Accumulates fractional energy gains from loot drops.
+---@param x number X position in tile coordinates
+---@param y number Y position in tile coordinates
+---@param amount number Energy amount to add
+---@param player table Player to follow
+---@return nil
+function Effects.create_energy_loot_text(x, y, amount, player)
+	create_accumulating_text("active_energy_loot_text", nil, "#4488FF", 0.4, x, y, amount, player, format_energy_loot)
+end
+
 --- Factory: Creates "Locked" text above the player
 ---@param x number X position in tile coordinates
 ---@param y number Y position in tile coordinates
@@ -773,6 +803,8 @@ function Effects.clear()
 	state.active_xp_text = nil
 	state.active_gold_text = nil
 	state.active_heal_text = nil
+	state.active_hp_loot_text = nil
+	state.active_energy_loot_text = nil
 end
 
 return Effects

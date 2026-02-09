@@ -43,4 +43,7 @@ return slime_common.create(sprites.enemies.blue_slime, {
 	loot_xp = 2,
 	loot_gold_min = 0,
 	loot_gold_max = 1,
+
+	-- Energy drops (0-5 particles at 0.1 each = 0-0.5 Energy)
+	loot_energy_max = 5,
 })

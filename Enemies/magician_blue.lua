@@ -4,4 +4,7 @@
 local magician_common = require("Enemies/magician_common")
 local sprites = require("sprites")
 
-return magician_common.create(sprites.enemies.magician_blue, { spread_shot = true })
+return magician_common.create(sprites.enemies.magician_blue, {
+	spread_shot = true,
+	attack_ms_per_frame = 120,
+})

@@ -24,7 +24,7 @@ local guardian = {}
 local CLUB_WIDTH = 0.9375     -- 15px / 16 (reduced 25% from 20px)
 local CLUB_HEIGHT = 0.75      -- 12px / 16
 local CLUB_Y_OFFSET = 0.0625  -- 1px / 16
-local CLUB_DAMAGE = 3
+local CLUB_DAMAGE = 2
 
 -- Body hitbox edges (for club adjacency calculation)
 local BODY_LEFT = 0.125       -- box.x
@@ -115,16 +115,16 @@ local ANIM_FRAMES_LAND = 7
 local ANIM_FRAMES_CHARGE = 4
 
 -- Entity stats
-local MAX_HEALTH = 6
-local ARMOR = 1.5
+local MAX_HEALTH = 4.5
+local ARMOR = 2
 local BODY_DAMAGE = 1
 local GRAVITY = 1.5
 local MAX_FALL_SPEED = 20
 
 -- Loot
-local LOOT_XP = 12
-local LOOT_GOLD_MIN = 5
-local LOOT_GOLD_MAX = 15
+local LOOT_XP = 24
+local LOOT_GOLD_MIN = 10
+local LOOT_GOLD_MAX = 30
 
 -- Body hitbox dimensions (in tiles)
 local BOX_WIDTH = 0.625
@@ -1022,7 +1022,7 @@ return {
 	armor = ARMOR,
 	damage = BODY_DAMAGE,
 	death_sound = "spike_slug",
-	loot = { xp = LOOT_XP, gold = { min = LOOT_GOLD_MIN, max = LOOT_GOLD_MAX } },
+	loot = { xp = LOOT_XP, gold = { min = LOOT_GOLD_MIN, max = LOOT_GOLD_MAX }, health = { min = 10, max = 20 } },
 	states = guardian.states,
 	animations = guardian.animations,
 	initial_state = "idle",

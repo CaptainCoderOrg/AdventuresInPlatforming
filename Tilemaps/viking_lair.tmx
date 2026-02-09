@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="415">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="417">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -1227,9 +1227,9 @@
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
-11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
-11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,27,36,0,0,0,0,0,0,0,0,0,
+11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
+11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 11,11,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 56,37,11,11,12,0,0,0,0,0,0,0,0,0,0,0,
 0,28,56,56,30,0,0,0,0,0,0,0,0,0,0,0,
@@ -1247,9 +1247,9 @@
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
-0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
-0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,36,18,10,11,11,11,11,11,
+0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
+0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
 0,0,0,0,0,0,0,0,0,0,10,11,11,11,11,11,
@@ -2246,7 +2246,7 @@
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
-0,0,0,0,0,0,0,54,0,0,0,54,0,14,24,24,
+0,0,0,0,0,0,0,54,0,0,0,54,0,0,14,24,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
 0,0,0,0,0,0,0,54,0,0,0,54,0,0,0,54,
@@ -2264,7 +2264,7 @@
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
-24,16,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
+16,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
 0,0,0,54,0,0,0,54,0,0,0,0,0,0,0,0,
@@ -2368,7 +2368,7 @@
   </object>
   <object id="305" gid="93" x="-1856" y="704" width="16" height="16"/>
   <object id="306" gid="93" x="-1840" y="768" width="16" height="16"/>
-  <object id="396" x="-560" y="864" width="80" height="16">
+  <object id="396" x="-544" y="864" width="48" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
@@ -2854,25 +2854,25 @@
     <property name="flip" type="bool" value="true"/>
    </properties>
   </object>
-  <object id="357" gid="9" x="-624" y="896" width="16" height="16">
+  <object id="357" gid="9" x="-608" y="896" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_boss_block_0"/>
     <property name="type" value="boss_block"/>
    </properties>
   </object>
-  <object id="358" gid="9" x="-576" y="880" width="16" height="16">
+  <object id="358" gid="9" x="-560" y="880" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_boss_block_1"/>
     <property name="type" value="boss_block"/>
    </properties>
   </object>
-  <object id="359" gid="9" x="-480" y="880" width="16" height="16">
+  <object id="359" gid="9" x="-496" y="880" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_boss_block_2"/>
     <property name="type" value="boss_block"/>
    </properties>
   </object>
-  <object id="360" gid="9" x="-432" y="896" width="16" height="16">
+  <object id="360" gid="9" x="-448" y="896" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_boss_block_3"/>
     <property name="type" value="boss_block"/>
@@ -2904,29 +2904,31 @@
     <property name="group_id" value="valkyrie_spear_4"/>
    </properties>
   </object>
-  <object id="371" gid="2147483724" x="-688" y="880" width="16" height="16">
+  <object id="371" gid="76" x="-368" y="880" width="16" height="16">
    <properties>
     <property name="enabled" type="bool" value="false"/>
-    <property name="flip" type="bool" value="false"/>
+    <property name="flip" type="bool" value="true"/>
     <property name="group_id" value="valkyrie_spear_3"/>
    </properties>
   </object>
-  <object id="372" gid="2147483724" x="-688" y="864" width="16" height="16">
+  <object id="372" gid="76" x="-368" y="864" width="16" height="16">
    <properties>
     <property name="enabled" type="bool" value="false"/>
-    <property name="flip" type="bool" value="false"/>
+    <property name="flip" type="bool" value="true"/>
     <property name="group_id" value="valkyrie_spear_2"/>
    </properties>
   </object>
-  <object id="373" gid="76" x="-368" y="848" width="16" height="16">
+  <object id="373" gid="2147483724" x="-688" y="848" width="16" height="16">
    <properties>
     <property name="enabled" type="bool" value="false"/>
+    <property name="flip" type="bool" value="false"/>
     <property name="group_id" value="valkyrie_spear_1"/>
    </properties>
   </object>
-  <object id="374" gid="76" x="-368" y="832" width="16" height="16">
+  <object id="374" gid="2147483724" x="-688" y="832" width="16" height="16">
    <properties>
     <property name="enabled" type="bool" value="false"/>
+    <property name="flip" type="bool" value="false"/>
     <property name="group_id" value="valkyrie_spear_0"/>
    </properties>
   </object>
@@ -3014,13 +3016,13 @@
     <property name="start_retracted" type="bool" value="true"/>
    </properties>
   </object>
-  <object id="400" gid="66" x="-368" y="880" width="16" height="16">
+  <object id="400" gid="66" x="-368" y="848" width="16" height="16">
    <properties>
     <property name="id" value="right_button"/>
     <property name="start_pressed" type="bool" value="true"/>
    </properties>
   </object>
-  <object id="401" gid="66" x="-688" y="848" width="16" height="16">
+  <object id="401" gid="66" x="-688" y="816" width="16" height="16">
    <properties>
     <property name="id" value="left_button"/>
     <property name="start_pressed" type="bool" value="true"/>
@@ -3203,7 +3205,7 @@
     <property name="id" value="viking_entrance"/>
    </properties>
   </object>
-  <object id="397" x="-672" y="832" width="16" height="16">
+  <object id="397" x="-672" y="800" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_bridge_left"/>
    </properties>
@@ -3213,12 +3215,12 @@
     <property name="id" value="valkyrie_boss_top"/>
    </properties>
   </object>
-  <object id="399" x="-432" y="864" width="16" height="16">
+  <object id="399" x="-448" y="864" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_boss_right"/>
    </properties>
   </object>
-  <object id="407" x="-624" y="864" width="16" height="16">
+  <object id="407" x="-608" y="864" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_boss_left"/>
    </properties>
@@ -3243,7 +3245,7 @@
     <property name="id" value="valkyrie_boss_middle"/>
    </properties>
   </object>
-  <object id="414" x="-384" y="864" width="16" height="16">
+  <object id="414" x="-384" y="832" width="16" height="16">
    <properties>
     <property name="id" value="valkyrie_bridge_right"/>
    </properties>

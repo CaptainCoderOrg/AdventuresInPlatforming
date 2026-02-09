@@ -69,6 +69,8 @@ function Spear.spawn(x, y, direction)
         debug_color = "#FFA500",  -- Orange
     }
 
+    spear.is_spear = true
+
     -- Add trigger collider for wall detection
     world.add_trigger_collider(spear)
     -- Add to combat system for player collision
@@ -293,9 +295,19 @@ local definition = {
     },
 
     --- Trigger the trap to fire (external API for pressure plates, etc.)
+    --- Respects the enabled flag; disabled traps ignore this call.
     ---@param prop table Spear trap prop instance
     fire = function(prop)
         if not prop.enabled then return end
+        if prop.state_name == "idle" then
+            Prop.set_state(prop, "firing")
+        end
+    end,
+
+    --- Force-fire the trap regardless of enabled state.
+    --- Used by boss sequencers that manage timing externally.
+    ---@param prop table Spear trap prop instance
+    single_fire = function(prop)
         if prop.state_name == "idle" then
             Prop.set_state(prop, "firing")
         end

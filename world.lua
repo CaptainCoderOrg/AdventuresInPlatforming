@@ -588,9 +588,11 @@ function world.move_trigger(obj)
 			elseif is_physics_shape and not is_enemy and not solid_hit then
 				-- Non-enemy physics shape (walls, platforms)
 				-- Skip bridges so projectiles pass through
+				-- Skip boss blocks for spear projectiles so they can reach the player
 				local is_bridge = owner and owner.is_bridge
+				local is_boss_block = owner and owner.is_boss_block
 				local is_shield = other.is_shield
-				if not is_bridge then
+				if not is_bridge and not (is_boss_block and obj.is_spear) then
 					solid_hit = { shape = other, sep = sep, is_shield = is_shield }
 				end
 			end

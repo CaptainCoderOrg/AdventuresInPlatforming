@@ -99,6 +99,7 @@ local definition = {
         prop.fade_alpha = 0.2
         prop.fade_timer = 0
         prop.fade_start_alpha = 0.2
+        prop.is_boss_block = true
     end,
 
     states = {

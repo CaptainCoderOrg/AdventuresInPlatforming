@@ -93,6 +93,13 @@ local SPIKE_SEQ_INTERVAL = 1.0
 local SPIKE_SEQ_CYCLE_START = 2
 local SPIKE_SEQ_CYCLE_END = 5
 
+-- ── Spear Sequencer ────────────────────────────────────────────────────────
+-- Fires spear groups in an outside-in pattern: 0,7,1,6,2,5,3,4.
+
+local spear_seq = { active = false, timer = 0, current_step = 0 }
+local SPEAR_SEQ_INTERVAL = 0.5
+local SPEAR_SEQ_PATTERN = {0, 7, 1, 6, 2, 5, 3, 4}
+
 local SPIKE_SEQ_STEPS = {
     [0] = { extend = {0} },
     [1] = { extend = {1} },
@@ -115,6 +122,16 @@ local function execute_spike_step(step_data)
         for _, idx in ipairs(step_data.retract) do
             Prop.group_action(SPIKE_GROUP_PREFIX .. idx, "retracting")
         end
+    end
+end
+
+--- Execute a single spear sequencer step (force-fire one group).
+--- Uses single_fire to bypass the enabled check so traps don't auto-fire.
+---@param step_index number 1-based index into SPEAR_SEQ_PATTERN
+local function execute_spear_step(step_index)
+    local group = SPEAR_SEQ_PATTERN[step_index]
+    if group ~= nil then
+        Prop.group_action(SPEAR_GROUP_PREFIX .. group, "single_fire")
     end
 end
 
@@ -267,6 +284,7 @@ function coordinator.trigger_victory()
 
     -- Deactivate all arena hazards
     coordinator.stop_spike_sequencer()
+    coordinator.stop_spear_sequencer()
     coordinator.disable_spears(0, 7)
     coordinator.deactivate_spikes(0, 3)
 
@@ -314,6 +332,19 @@ function coordinator.update(dt)
             end
 
             execute_spike_step(SPIKE_SEQ_STEPS[effective])
+        end
+    end
+
+    -- Tick spear sequencer
+    if spear_seq.active then
+        spear_seq.timer = spear_seq.timer + dt
+        while spear_seq.timer >= SPEAR_SEQ_INTERVAL and spear_seq.active do
+            spear_seq.timer = spear_seq.timer - SPEAR_SEQ_INTERVAL
+            spear_seq.current_step = spear_seq.current_step + 1
+            if spear_seq.current_step > #SPEAR_SEQ_PATTERN then
+                spear_seq.current_step = 1
+            end
+            execute_spear_step(spear_seq.current_step)
         end
     end
 
@@ -422,6 +453,23 @@ function coordinator.stop_spike_sequencer()
     spike_seq.current_step = 0
 end
 
+-- ── Spear Sequencer API ───────────────────────────────────────────────────
+
+--- Start the spear sequencer. Fires first group immediately.
+function coordinator.start_spear_sequencer()
+    spear_seq.active = true
+    spear_seq.timer = 0
+    spear_seq.current_step = 1
+    execute_spear_step(1)
+end
+
+--- Stop the spear sequencer.
+function coordinator.stop_spear_sequencer()
+    spear_seq.active = false
+    spear_seq.timer = 0
+    spear_seq.current_step = 0
+end
+
 -- ── Zone API ─────────────────────────────────────────────────────────────────
 
 --- Check if player is inside a named zone.
@@ -524,6 +572,7 @@ function coordinator.reset()
 
     -- Deactivate all arena hazards
     coordinator.stop_spike_sequencer()
+    coordinator.stop_spear_sequencer()
     coordinator.disable_spears(0, 7)
     coordinator.deactivate_spikes(0, 3)
 

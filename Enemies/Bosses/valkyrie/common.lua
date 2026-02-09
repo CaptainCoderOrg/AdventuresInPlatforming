@@ -500,6 +500,252 @@ common.states.landing = {
     draw = common.draw_sprite,
 }
 
+--------------------------------------------------------------------------------
+-- Shared dive-bomb states (reused by phase 2 and phase 3)
+-- These reference enemy.states.* for phase-specific routing and
+-- enemy._hazard_cleanup() for phase-specific hazard teardown.
+--------------------------------------------------------------------------------
+
+local DIVE_MAKE_CHOICE_DELAY = 0.8
+local DIVE_JUMP_UP_DURATION = 0.5
+local DIVE_WAIT = 1.0
+local DIVE_DURATION = 0.75
+local DIVE_CONTACT_DAMAGE = 3
+local DIVE_TRAIL_INTERVAL = 0.05
+local DIVE_OFF_SCREEN_OFFSET = 3  -- tiles above camera:get_y()
+
+--- Hazard-aware landing: routes to bridge_attack in hazard mode, prep_attack otherwise.
+common.states.hazard_landing = {
+    name = "hazard_landing",
+    start = function(enemy)
+        enemy.invulnerable = false
+        enemy.gravity = 1.5
+        enemy_common.set_animation(enemy, common.ANIMATIONS.LAND)
+        audio.play_landing_sound()
+    end,
+    update = function(enemy, _dt)
+        if enemy.animation:is_finished() then
+            if enemy._entering_hazard_mode then
+                enemy._entering_hazard_mode = false
+                enemy:set_state(enemy.states.bridge_attack)
+            else
+                enemy:set_state(common.states.prep_attack)
+            end
+        end
+    end,
+    draw = common.draw_sprite,
+}
+
+--- Ascend off screen. If button was pressed, skip to ground mode.
+common.states.jump_off_screen = {
+    name = "jump_off_screen",
+    start = function(enemy)
+        coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+
+        -- Early exit: button was pressed during bridge_attack or dive loop
+        if enemy._exit_dive_loop then
+            enemy._exit_dive_loop = false
+            if enemy._hazard_cleanup then enemy._hazard_cleanup() end
+            enemy.invulnerable = false
+            enemy:set_state(enemy.states.dive_make_choice)
+            return
+        end
+
+        enemy.invulnerable = true
+        enemy.gravity = 0
+        enemy.vx = 0
+        enemy.vy = 0
+
+        -- Refresh boss blocks
+        coordinator.activate_blocks()
+
+        -- Target: above camera top
+        enemy._ascend_start_y = enemy.y
+        enemy._ascend_target_y = coordinator.camera:get_y() - DIVE_OFF_SCREEN_OFFSET
+        enemy._ascend_timer = 0
+
+        -- Hold JUMP frame 1 (airborne pose)
+        enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+        enemy.animation.frame = 1
+        enemy.animation:pause()
+    end,
+    update = function(enemy, dt)
+        enemy._ascend_timer = enemy._ascend_timer + dt
+        local progress = math.min(1, enemy._ascend_timer / DIVE_JUMP_UP_DURATION)
+
+        enemy.y = enemy._ascend_start_y + (enemy._ascend_target_y - enemy._ascend_start_y) * progress
+        combat.update(enemy)
+
+        if progress >= 1 then
+            enemy:set_state(common.states.dive_bomb)
+        end
+    end,
+    draw = common.draw_sprite,
+}
+
+--- Dive bomb: wait off-screen, then plunge at player position.
+common.states.dive_bomb = {
+    name = "dive_bomb",
+    start = function(enemy)
+        coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+        enemy.invulnerable = true
+        enemy.gravity = 0
+        enemy.vx = 0
+        enemy.vy = 0
+
+        enemy._dive_waiting = true
+        enemy._dive_timer = 0
+        enemy._dive_trail_timer = 0
+    end,
+    update = function(enemy, dt)
+        coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+        enemy._dive_timer = enemy._dive_timer + dt
+
+        if enemy._dive_waiting then
+            -- Wait phase: invisible off-screen
+            if enemy._dive_timer >= DIVE_WAIT then
+                enemy._dive_waiting = false
+                enemy._dive_timer = 0
+
+                -- Move valkyrie to player's X (invisible off-screen)
+                -- Floor Y = bottom of valkyrie_boss_middle zone
+                local player = enemy.target_player
+                local box = enemy.box
+
+                if player then
+                    local player_cx = player.x + (player.box.x + player.box.w / 2)
+                    local offset = (math.random() < 0.5) and -3 or 3
+                    local target_x = player_cx - (box.x + box.w / 2) + offset
+
+                    -- Clamp within camera horizontal bounds
+                    local cam = coordinator.camera
+                    if cam then
+                        local spr = require("sprites")
+                        local cam_left = cam:get_x()
+                        local cam_right = cam_left + cam:get_viewport_width() / spr.tile_size
+                        local enemy_left = target_x + box.x
+                        local enemy_right = target_x + box.x + box.w
+                        if enemy_left < cam_left then
+                            target_x = target_x + (cam_left - enemy_left)
+                        elseif enemy_right > cam_right then
+                            target_x = target_x - (enemy_right - cam_right)
+                        end
+                    end
+
+                    enemy.x = target_x
+                end
+
+                local middle_zone = coordinator.get_zone("middle")
+                local floor_y = middle_zone and (middle_zone.y + (middle_zone.height or 0)) or enemy.y
+                enemy._dive_target_y = floor_y - (box.y + box.h)
+
+                if player then
+                    local player_cx = player.x + (player.box.x + player.box.w / 2)
+                    enemy._dive_target_x = player_cx - (box.x + box.w / 2)
+                else
+                    enemy._dive_target_x = enemy.x
+                end
+                enemy._dive_start_x = enemy.x
+                enemy._dive_start_y = enemy.y
+
+                -- Refresh boss blocks
+                coordinator.activate_blocks()
+
+                -- Switch to FALL animation, face toward target
+                enemy_common.set_animation(enemy, common.ANIMATIONS.FALL)
+                local dir = enemy._dive_target_x > enemy.x and 1 or -1
+                enemy.direction = dir
+                enemy.animation.flipped = dir
+            end
+        else
+            -- Descent phase: linear tween to target
+            local progress = math.min(1, enemy._dive_timer / DIVE_DURATION)
+
+            enemy.x = enemy._dive_start_x + (enemy._dive_target_x - enemy._dive_start_x) * progress
+            enemy.y = enemy._dive_start_y + (enemy._dive_target_y - enemy._dive_start_y) * progress
+
+            combat.update(enemy)
+
+            -- Ghost trail
+            enemy._dive_trail_timer = enemy._dive_trail_timer + dt
+            if enemy._dive_trail_timer >= DIVE_TRAIL_INTERVAL then
+                enemy._dive_trail_timer = enemy._dive_trail_timer - DIVE_TRAIL_INTERVAL
+                common.spawn_ghost_trail(enemy)
+            end
+
+            -- Contact damage
+            local player = enemy.target_player
+            if player and not player:is_invincible() and player:health() > 0 then
+                if combat.collides(enemy, player) then
+                    player:take_damage(DIVE_CONTACT_DAMAGE, enemy.x)
+                end
+            end
+
+            if progress >= 1 then
+                if enemy._exit_dive_loop then
+                    enemy._exit_dive_loop = false
+                    enemy:set_state(common.states.ground_landing)
+                else
+                    audio.play_landing_sound()
+                    enemy:set_state(common.states.jump_off_screen)
+                end
+            end
+        end
+    end,
+    draw = function(enemy)
+        -- Invisible during wait phase
+        if enemy._dive_waiting then return end
+        common.draw_sprite(enemy)
+    end,
+}
+
+--- Landing after dive bomb exit: transition to ground attack pattern.
+common.states.ground_landing = {
+    name = "ground_landing",
+    start = function(enemy)
+        enemy.invulnerable = false
+        enemy.gravity = 1.5
+        enemy_common.set_animation(enemy, common.ANIMATIONS.LAND)
+        audio.play_landing_sound()
+    end,
+    update = function(enemy, _dt)
+        if enemy.animation:is_finished() then
+            enemy:set_state(enemy.states.dive_make_choice)
+        end
+    end,
+    draw = common.draw_sprite,
+}
+
+--- Face player, wait, then jump to nearest zone for attack.
+common.states.dive_make_choice = {
+    name = "dive_make_choice",
+    start = function(enemy)
+        if enemy.target_player then
+            enemy.direction = enemy_common.direction_to_player(enemy)
+        end
+        enemy_common.set_animation(enemy, common.ANIMATIONS.IDLE)
+        if enemy.animation then
+            enemy.animation.flipped = enemy.direction
+        end
+        enemy._choice_timer = 0
+    end,
+    update = function(enemy, dt)
+        if enemy.target_player then
+            enemy.direction = enemy_common.direction_to_player(enemy)
+            if enemy.animation then
+                enemy.animation.flipped = enemy.direction
+            end
+        end
+
+        enemy._choice_timer = enemy._choice_timer + dt
+        if enemy._choice_timer >= DIVE_MAKE_CHOICE_DELAY then
+            common.set_jump_target_nearest_player(enemy)
+            enemy:set_state(common.states.prejump)
+        end
+    end,
+    draw = common.draw_sprite,
+}
+
 --- Check if the player overlaps the spear hitbox extending in front of the valkyrie.
 --- The spear adds one hitbox-width of reach beyond the body, doubling effective range.
 ---@param enemy table The enemy instance

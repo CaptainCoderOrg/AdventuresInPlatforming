@@ -79,8 +79,10 @@ local definition = {
             ---@param silent boolean|nil If true, skip sound and callback
             start = function(prop, _def, silent)
                 prop.is_pressed = true
-                prop.animation:resume()
                 if not silent then
+                    -- Fresh forward animation (resume fails after reset since the
+                    -- reversed animation is already finished)
+                    prop.animation = Animation.new(BUTTON_ANIM)
                     audio.play_sfx(audio.stone_slab_pressed)
                     if prop.on_press then
                         prop.on_press()

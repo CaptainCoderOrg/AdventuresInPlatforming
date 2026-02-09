@@ -75,6 +75,7 @@ local coordinator = {
     total_health = MAX_HEALTH,
     enemy = nil,
     player = nil,
+    camera = nil,
     boss_id = "valkyrie_boss",
     boss_name = "The Valkyrie",
     boss_subtitle = "Shieldmaiden of the Crypts",
@@ -83,6 +84,39 @@ local coordinator = {
     blocks_active = false,
     blocks_timer = 0,
 }
+
+-- ── Spike Sequencer ────────────────────────────────────────────────────────
+-- Rolling wave: 2 groups active at a time, cycling through groups 0-3.
+
+local spike_seq = { active = false, timer = 0, current_step = 0 }
+local SPIKE_SEQ_INTERVAL = 1.0
+local SPIKE_SEQ_CYCLE_START = 2
+local SPIKE_SEQ_CYCLE_END = 5
+
+local SPIKE_SEQ_STEPS = {
+    [0] = { extend = {0} },
+    [1] = { extend = {1} },
+    [2] = { extend = {2}, retract = {0} },
+    [3] = { extend = {3}, retract = {1} },
+    [4] = { extend = {0}, retract = {2} },
+    [5] = { extend = {1}, retract = {3} },
+}
+
+--- Execute a single spike sequencer step (extend/retract groups).
+---@param step_data table Step with extend and/or retract arrays of group indices
+local function execute_spike_step(step_data)
+    if not step_data then return end
+    if step_data.extend then
+        for _, idx in ipairs(step_data.extend) do
+            Prop.group_action(SPIKE_GROUP_PREFIX .. idx, "extending")
+        end
+    end
+    if step_data.retract then
+        for _, idx in ipairs(step_data.retract) do
+            Prop.group_action(SPIKE_GROUP_PREFIX .. idx, "retracting")
+        end
+    end
+end
 
 --- Register the valkyrie enemy with the coordinator.
 ---@param enemy table The valkyrie enemy instance
@@ -232,6 +266,7 @@ function coordinator.trigger_victory()
     deactivate_blocks()
 
     -- Deactivate all arena hazards
+    coordinator.stop_spike_sequencer()
     coordinator.disable_spears(0, 7)
     coordinator.deactivate_spikes(0, 3)
 
@@ -262,6 +297,23 @@ function coordinator.update(dt)
         coordinator.blocks_timer = coordinator.blocks_timer + dt
         if coordinator.blocks_timer >= SOLID_DURATION then
             deactivate_blocks()
+        end
+    end
+
+    -- Tick spike sequencer
+    if spike_seq.active then
+        spike_seq.timer = spike_seq.timer + dt
+        while spike_seq.timer >= SPIKE_SEQ_INTERVAL and spike_seq.active do
+            spike_seq.timer = spike_seq.timer - SPIKE_SEQ_INTERVAL
+            spike_seq.current_step = spike_seq.current_step + 1
+
+            local effective = spike_seq.current_step
+            if effective > SPIKE_SEQ_CYCLE_END then
+                local cycle_len = SPIKE_SEQ_CYCLE_END - SPIKE_SEQ_CYCLE_START + 1
+                effective = SPIKE_SEQ_CYCLE_START + (effective - SPIKE_SEQ_CYCLE_START) % cycle_len
+            end
+
+            execute_spike_step(SPIKE_SEQ_STEPS[effective])
         end
     end
 
@@ -297,9 +349,10 @@ end
 
 --- Set references needed by sub-modules.
 ---@param player table Player instance
----@param _camera table Camera instance (unused for valkyrie)
-function coordinator.set_refs(player, _camera)
+---@param camera table Camera instance
+function coordinator.set_refs(player, camera)
     coordinator.player = player
+    coordinator.camera = camera
 end
 
 -- ── Spear API ────────────────────────────────────────────────────────────────
@@ -350,6 +403,23 @@ function coordinator.deactivate_spikes(from, to)
     for i = from, to do
         Prop.group_action(SPIKE_GROUP_PREFIX .. i, "retract")
     end
+end
+
+-- ── Spike Sequencer API ─────────────────────────────────────────────────────
+
+--- Start the rolling spike wave sequencer. Executes step 0 immediately.
+function coordinator.start_spike_sequencer()
+    spike_seq.active = true
+    spike_seq.timer = 0
+    spike_seq.current_step = 0
+    execute_spike_step(SPIKE_SEQ_STEPS[0])
+end
+
+--- Stop the spike sequencer.
+function coordinator.stop_spike_sequencer()
+    spike_seq.active = false
+    spike_seq.timer = 0
+    spike_seq.current_step = 0
 end
 
 -- ── Zone API ─────────────────────────────────────────────────────────────────
@@ -446,12 +516,14 @@ function coordinator.reset()
     coordinator.total_health = MAX_HEALTH
     coordinator.enemy = nil
     coordinator.player = nil
+    coordinator.camera = nil
     coordinator.victory_pending = false
     coordinator.victory_timer = 0
     coordinator.blocks_active = false
     coordinator.blocks_timer = 0
 
     -- Deactivate all arena hazards
+    coordinator.stop_spike_sequencer()
     coordinator.disable_spears(0, 7)
     coordinator.deactivate_spikes(0, 3)
 

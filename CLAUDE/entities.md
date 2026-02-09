@@ -208,6 +208,31 @@ Enemies/Bosses/gnomo/
 - Health bar via `ui/boss_health_bar.lua` reads `coordinator.get_health_percent()`
 - Reset coordinator on level cleanup to prevent stale state
 
+**Valkyrie** (`Enemies/Bosses/valkyrie/`):
+- Single-entity boss with 75 HP shared across 5 phases (0-4)
+- Phase transitions at 75%, 50%, 25% health thresholds
+- Coordinator manages arena hazards: spike traps, spear traps, boss blocks, and pressure-plate buttons
+- Phase 0: Intro (cinematic walk, door close, valkyrie drop). Phase 1: Ground combat (jump-attack pattern)
+- Phase 2: Spike mode (dive bomb loop + rolling spike waves, right button disables). Phase 3: Spear mode (same pattern, left button)
+- Phase 4: Combined mode (both hazards + dual buttons, re-enable mechanic after 4 dives)
+- Victory sequence: shield flies to waypoint, DEFEATED text, shield descends to pillar as collectible, arcane shard drops to floor
+- Door opens only after player collects the shield
+
+**Valkyrie File Structure:**
+```
+Enemies/Bosses/valkyrie/
+├── init.lua          -- Enemy definition, on_start trigger, on_hit routing
+├── coordinator.lua   -- Shared state, phase transitions, health pool, arena hazard APIs
+├── common.lua        -- Shared animations, draw, state definitions (jump, attack, dive bomb)
+├── cinematic.lua     -- Intro sequence (walk to position, door closes, valkyrie falls/jumps)
+├── victory.lua       -- Defeat sequence (flying shield, arcane shard, collectible spawn, door opens)
+├── phase0.lua        -- Phase 0 state machine (intro idle)
+├── phase1.lua        -- Phase 1 state machine (ground combat)
+├── phase2.lua        -- Phase 2 state machine (spike mode + dive bombs)
+├── phase3.lua        -- Phase 3 state machine (spear mode + dive bombs)
+└── phase4.lua        -- Phase 4 state machine (combined hazards + dual buttons)
+```
+
 **Defeated Boss Tracking:**
 - `player.defeated_bosses` tracks which bosses have been defeated (boss_id → true)
 - Persisted via `SaveSlots.PLAYER_STAT_KEYS` when resting at campfire
@@ -646,7 +671,8 @@ Visual feedback system for transient effects including animations, floating text
 - Heal particles - Pink/red particles that converge toward player center during channeling
 
 **Flying Objects:**
-- Flying axe - Boss defeat animation (fly up → pause → descend to target, spinning sprite, completion callback)
+- Flying object - Generalized boss defeat animation (fly between positions, configurable sprite/rotation/duration, completion callback)
+- Flying axe - Gnomo boss variant (wrapper around `create_flying_object` with axe sprite)
 
 ### Usage
 
@@ -673,7 +699,8 @@ Effects.create_collect_particles(x, y)          -- Item collection burst
 Effects.create_heal_particle(cx, cy)            -- Pink converging heal particle
 
 -- Flying objects
-Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)  -- Boss defeat axe
+Effects.create_flying_object(start_x, start_y, target_x, target_y, opts)     -- Generalized (opts: sprite, rotations, flight_duration, on_complete)
+Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)  -- Gnomo boss defeat axe
 ```
 
 Effects are positioned in tile coordinates and converted to screen pixels for rendering.
@@ -711,6 +738,12 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/Bosses/gnomo/victory.lua` - Gnomo boss defeat sequence (flying axe, collectible spawn, door open)
 - `Enemies/Bosses/gnomo/apology_path.lua` - Gnomo boss peaceful resolution (dialogue, cinematic exit)
 - `Enemies/Bosses/gnomo/phase0-4.lua` - Phase-specific state machines
+- `Enemies/Bosses/valkyrie/init.lua` - Valkyrie boss definition (on_start trigger, on_hit routing)
+- `Enemies/Bosses/valkyrie/coordinator.lua` - Valkyrie boss coordinator (health pool, arena hazards, phase transitions)
+- `Enemies/Bosses/valkyrie/common.lua` - Valkyrie boss shared animations, draw, state definitions
+- `Enemies/Bosses/valkyrie/cinematic.lua` - Valkyrie boss intro sequence (walk, door close, fall/jump)
+- `Enemies/Bosses/valkyrie/victory.lua` - Valkyrie boss defeat sequence (flying shield, shard, door open)
+- `Enemies/Bosses/valkyrie/phase0-4.lua` - Phase-specific state machines
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)

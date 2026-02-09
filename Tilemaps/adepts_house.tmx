@@ -232,7 +232,6 @@
     <property name="gold" type="int" value="200"/>
     <property name="id" value="adepts_shield_chest"/>
     <property name="item_id" value="adepts_shield"/>
-    <property name="required_key" value="gold_key"/>
    </properties>
   </object>
  </objectgroup>

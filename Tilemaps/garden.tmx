@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="14" nextobjectid="146">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="16" tileheight="16" infinite="1" nextlayerid="14" nextobjectid="148">
  <editorsettings>
   <export target="garden.lua" format="lua"/>
  </editorsettings>
@@ -1339,7 +1339,7 @@ No Soliciting!</property>
   </object>
   <object id="113" gid="1308" x="-1312" y="-480" width="16" height="16"/>
   <object id="114" gid="1308" x="-1232" y="-480" width="16" height="16"/>
-  <object id="115" x="-1392" y="-496" width="240" height="16">
+  <object id="115" x="-1425" y="-496" width="273" height="16">
    <properties>
     <property name="type" value="patrol_area"/>
    </properties>
@@ -1358,6 +1358,8 @@ No Soliciting!</property>
   <object id="140" gid="1394" x="-1456" y="-880" width="16" height="16"/>
   <object id="142" gid="1398" x="-1200" y="-752" width="16" height="16"/>
   <object id="145" gid="1398" x="-1648" y="-768" width="16" height="16"/>
+  <object id="146" gid="1398" x="-1424" y="-480" width="16" height="16"/>
+  <object id="147" gid="1308" x="-1392" y="-480" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="8" name="Locations">
   <object id="21" x="393.125" y="8.625" width="15.75" height="23.875">

@@ -20,6 +20,26 @@ local RE_ENABLE_DIVE_THRESHOLD = 4
 local phase = {}
 phase.states = {}
 
+--- Set up ascend-off-screen state on enemy (shared by start_dive_loop and jump_off_screen).
+---@param enemy table The enemy instance
+local function begin_ascend(enemy)
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    enemy.invulnerable = true
+    enemy.gravity = 0
+    enemy.vx = 0
+    enemy.vy = 0
+
+    coordinator.activate_blocks()
+
+    enemy._ascend_start_y = enemy.y
+    enemy._ascend_target_y = coordinator.camera:get_y() - DIVE_OFF_SCREEN_OFFSET
+    enemy._ascend_timer = 0
+
+    enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+    enemy.animation.frame = 1
+    enemy.animation:pause()
+end
+
 --- Right button callback: disable spikes (module-level to avoid closure allocation).
 local function right_button_disable_spikes()
     coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
@@ -195,23 +215,7 @@ phase.states.landing = {
 --- Ascend off screen to begin dive loop. Used for first entry and after re-enable.
 phase.states.start_dive_loop = {
     name = "start_dive_loop",
-    start = function(enemy)
-        coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
-        enemy.invulnerable = true
-        enemy.gravity = 0
-        enemy.vx = 0
-        enemy.vy = 0
-
-        coordinator.activate_blocks()
-
-        enemy._ascend_start_y = enemy.y
-        enemy._ascend_target_y = coordinator.camera:get_y() - DIVE_OFF_SCREEN_OFFSET
-        enemy._ascend_timer = 0
-
-        enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
-        enemy.animation.frame = 1
-        enemy.animation:pause()
-    end,
+    start = begin_ascend,
     update = function(enemy, dt)
         enemy._ascend_timer = enemy._ascend_timer + dt
         local progress = math.min(1, enemy._ascend_timer / DIVE_JUMP_UP_DURATION)
@@ -280,20 +284,7 @@ phase.states.jump_off_screen = {
         end
 
         -- Continue dive loop: ascend off screen
-        enemy.invulnerable = true
-        enemy.gravity = 0
-        enemy.vx = 0
-        enemy.vy = 0
-
-        coordinator.activate_blocks()
-
-        enemy._ascend_start_y = enemy.y
-        enemy._ascend_target_y = coordinator.camera:get_y() - DIVE_OFF_SCREEN_OFFSET
-        enemy._ascend_timer = 0
-
-        enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
-        enemy.animation.frame = 1
-        enemy.animation:pause()
+        begin_ascend(enemy)
     end,
     update = function(enemy, dt)
         enemy._ascend_timer = enemy._ascend_timer + dt

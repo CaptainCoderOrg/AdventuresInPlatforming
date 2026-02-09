@@ -134,7 +134,7 @@ function victory.update(_dt)
         end
 
         -- Open the boss door
-        local door = Prop.find_by_id("valkrie_boss_door")
+        local door = Prop.find_by_id(coordinator.DOOR_ID)
         if door and not door.marked_for_destruction then
             Prop.set_state(door, "opening")
         end

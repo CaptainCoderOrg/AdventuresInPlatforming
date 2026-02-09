@@ -47,6 +47,8 @@ local BUTTON_IDS = {
     right = "right_button",
 }
 
+local DOOR_ID = "valkrie_boss_door"
+
 -- Lazy-loaded to avoid circular dependency
 local audio = nil
 local valk_common = nil
@@ -91,6 +93,7 @@ local coordinator = {
     boss_subtitle = "Shieldmaiden of the Crypts",
     blocks_active = false,
     blocks_timer = 0,
+    DOOR_ID = DOOR_ID,
 }
 
 -- ── Spike Sequencer ────────────────────────────────────────────────────────
@@ -552,7 +555,7 @@ end
 
 --- Check if a button is currently pressed.
 ---@param side string "left" or "right"
----@return boolean
+---@return boolean pressed True if the button on the given side is pressed
 function coordinator.is_button_pressed(side)
     local button = get_button(side)
     return button and button.is_pressed or false

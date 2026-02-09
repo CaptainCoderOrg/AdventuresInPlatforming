@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 419,
+  nextobjectid = 425,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -743,7 +743,7 @@ return {
             0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
-            0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
+            0, 0, 0, 0, 36, 18, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11,
             0, 0, 0, 0, 0, 0, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11
           }
@@ -3506,6 +3506,94 @@ return {
           gid = 93,
           visible = true,
           properties = {}
+        },
+        {
+          id = 419,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1792,
+          y = 400,
+          width = 18,
+          height = 26,
+          rotation = 0,
+          gid = 91,
+          visible = true,
+          properties = {
+            ["start_direction"] = "NW"
+          }
+        },
+        {
+          id = 420,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1456,
+          y = 400,
+          width = 18,
+          height = 26,
+          rotation = 0,
+          gid = 91,
+          visible = true,
+          properties = {
+            ["start_direction"] = "NE"
+          }
+        },
+        {
+          id = 421,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1792,
+          y = 528,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 93,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 422,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1760,
+          y = 528,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 93,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 423,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1776,
+          y = 464,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 84,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 424,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1488,
+          y = 464,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 84,
+          visible = true,
+          properties = {}
         }
       }
     },
@@ -4995,8 +5083,8 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = -1472,
-          y = 528,
+          x = -1456,
+          y = 464,
           width = 16,
           height = 16,
           rotation = 0,

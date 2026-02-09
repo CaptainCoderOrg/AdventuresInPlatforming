@@ -82,6 +82,8 @@ local function align_hitbox_bottom(enemy, zone)
 end
 
 --- Face the player toward the valkyrie's current position.
+---@param player table The player instance
+---@param enemy table The valkyrie enemy instance
 local function face_player_toward_enemy(player, enemy)
     if not player or not enemy then return end
     local dir = enemy.x > player.x and 1 or -1
@@ -265,10 +267,7 @@ function cinematic.start(player)
 
     music.fade_out(1)
 
-    if not player then
-        coordinator.start()
-        return
-    end
+    if not player then return end
 
     cinematic.player = player
 
@@ -276,11 +275,11 @@ function cinematic.start(player)
 
     local target_pos = platforms.spawn_points["valkyrie_boss_player_start_position"]
     if not target_pos then
-        coordinator.start()
+        coordinator.start(player)
         return
     end
 
-    cinematic.door = Prop.find_by_id("valkrie_boss_door")
+    cinematic.door = Prop.find_by_id(coordinator.DOOR_ID)
 
     player.cinematic_target = { x = target_pos.x }
     player.cinematic_on_complete = cinematic.on_walk_complete

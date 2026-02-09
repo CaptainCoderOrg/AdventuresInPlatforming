@@ -47,13 +47,13 @@ return {
     },
     {
       name = "unique_items",
-      firstgid = 512,
+      firstgid = 513,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     },
     {
       name = "gnomo_boss",
-      firstgid = 528,
+      firstgid = 529,
       filename = "gnomo_boss.tsx",
       exportfilename = "gnomo_boss.lua"
     }
@@ -2607,7 +2607,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 526,
+          gid = 527,
           visible = true,
           properties = {}
         },
@@ -2709,7 +2709,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 526,
+          gid = 527,
           visible = true,
           properties = {}
         },
@@ -3033,7 +3033,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 516,
+          gid = 517,
           visible = true,
           properties = {}
         },
@@ -3509,7 +3509,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 528,
+          gid = 529,
           visible = true,
           properties = {}
         },
@@ -3523,7 +3523,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 529,
+          gid = 530,
           visible = true,
           properties = {}
         },
@@ -3537,7 +3537,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 530,
+          gid = 531,
           visible = true,
           properties = {}
         },
@@ -3551,7 +3551,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 531,
+          gid = 532,
           visible = true,
           properties = {}
         },
@@ -3683,7 +3683,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 527,
+          gid = 528,
           visible = true,
           properties = {}
         },
@@ -3697,7 +3697,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 527,
+          gid = 528,
           visible = true,
           properties = {}
         },
@@ -3741,7 +3741,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 527,
+          gid = 528,
           visible = true,
           properties = {}
         },

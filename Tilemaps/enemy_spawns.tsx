@@ -115,7 +115,7 @@
    <property name="key" value="magician_purple"/>
    <property name="type" value="enemy"/>
   </properties>
-  <image source="../assets/sprites/enemies/magician/magician_puprle.png" width="176" height="80"/>
+  <image source="../assets/sprites/enemies/magician/magician_purple.png" width="176" height="80"/>
  </tile>
  <tile id="14" x="0" y="0" width="40" height="29">
   <properties>

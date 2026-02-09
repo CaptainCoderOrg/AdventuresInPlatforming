@@ -7,6 +7,7 @@ local common = require('Enemies/common')
 local Effects = require('Effects')
 local audio = require('audio')
 local Collectible = require('Collectible')
+local magician_common = require('Enemies/magician_common')
 
 local Enemy = {}
 Enemy.__index = Enemy
@@ -115,6 +116,7 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.get_armor = definition.get_armor
 	self.on_hit = definition.on_hit
 	self.on_perfect_blocked = definition.on_perfect_blocked
+	self.on_damage_player = definition.on_damage_player
 
 	-- Mark as enemy (for collision filtering)
 	self.is_enemy = true
@@ -265,6 +267,9 @@ function Enemy.update(dt, player, camera)
 		world.remove_hitbox(e)
 		Enemy.all[e] = nil
 	end
+
+	-- Update magic bolts unconditionally (not tied to magician visibility)
+	magician_common.update_bolts(dt, player)
 end
 
 --- Draws all enemies and their debug bounding boxes when config.bounding_boxes is enabled.
@@ -315,6 +320,9 @@ function Enemy.draw(camera)
 		end
 		enemy = next(Enemy.all, enemy)
 	end
+
+	-- Draw magic bolts unconditionally (not tied to magician visibility)
+	magician_common.draw_bolts()
 
 	if debug_mode then canvas.restore() end
 end

@@ -8,6 +8,7 @@ local prop_common = require('Prop.common')
 local shield = require('player.shield')
 local weapon_sync = require('player.weapon_sync')
 local upgrade_effects = require('upgrade/effects')
+local magician_common = require('Enemies/magician_common')
 
 
 --- Attack state: Player performs melee combo attacks.
@@ -105,6 +106,22 @@ local function check_attack_hits(player, hitbox, stats)
 		attack_hit_source.is_crit = is_crit
 		enemy:on_hit("weapon", attack_hit_source)
 		player.attack_state.hit_enemies[enemy] = true
+	end
+end
+
+--- Filter function for bolt hits
+---@param entity table Entity to check
+---@return boolean True if entity is a destroyable bolt
+local function bolt_filter(entity)
+	return entity.is_bolt and not entity.marked_for_destruction
+end
+
+--- Destroys magic bolts overlapping the weapon hitbox.
+---@param hitbox table Hitbox with x, y, w, h in tile coordinates
+local function check_bolt_hits(hitbox)
+	local hits = combat.query_rect(hitbox.x, hitbox.y, hitbox.w, hitbox.h, bolt_filter)
+	for i = 1, #hits do
+		magician_common.destroy_bolt(hits[i])
 	end
 end
 
@@ -245,6 +262,7 @@ function attack.update(player, dt)
 	if hitbox then
 		check_attack_hits(player, hitbox, stats)
 		check_lever_hits(player, hitbox)
+		check_bolt_hits(hitbox)
 	end
 	-- Lock player in place during attack animation (no movement, no gravity)
 	player.vx = 0

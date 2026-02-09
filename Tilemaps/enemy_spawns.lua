@@ -186,7 +186,7 @@ return {
         ["key"] = "magician_purple",
         ["type"] = "enemy"
       },
-      image = "../assets/sprites/enemies/magician/magician_puprle.png",
+      image = "../assets/sprites/enemies/magician/magician_purple.png",
       x = 0,
       y = 0,
       width = 16,

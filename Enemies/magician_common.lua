@@ -389,10 +389,6 @@ end
 local MagicBolt = {}
 MagicBolt.all = {}
 
--- Dirty flags ensure single-pass updates despite multiple magician instances
-MagicBolt.needs_update = true
-MagicBolt.needs_draw = false
-
 -- Shared across all bolts (dimensions never change per-bolt)
 local BOLT_BOX = { x = 0, y = 0, w = 6/16, h = 6/16 }
 local bolt_anim_opts = { flipped = 1 }
@@ -424,6 +420,7 @@ function MagicBolt.spawn(x, y, target_x, target_y, bolt_anim_def, bolt_hit_anim_
 		vx = vx,
 		vy = vy,
 		homing = true,
+		is_bolt = true,
 		particle_colors = PARTICLE_CYAN_COLORS,
 		box = BOLT_BOX,
 		animation = Animation.new(bolt_anim_def, bolt_anim_opts),
@@ -462,6 +459,7 @@ function MagicBolt.spawn_with_velocity(x, y, vx, vy, bolt_anim_def, bolt_hit_ani
 		vx = vx,
 		vy = vy,
 		homing = false,
+		is_bolt = true,
 		particle_colors = colors or PARTICLE_CYAN_COLORS,
 		box = BOLT_BOX,
 		animation = Animation.new(bolt_anim_def, bolt_anim_opts),
@@ -505,14 +503,10 @@ local function bolt_hit_wall(bolt)
 	return not is_position_clear(shape)
 end
 
---- Update all magic bolts (called once per frame via dirty flag)
+--- Update all magic bolts (called once per frame from Enemy.update)
 ---@param dt number Delta time in seconds
 ---@param player table Player instance for collision
 function MagicBolt.update_all(dt, player)
-	if not MagicBolt.needs_update then return end
-	MagicBolt.needs_update = false
-	MagicBolt.needs_draw = true
-
 	-- Update trail particles and puff particles
 	update_particles(dt)
 	update_puff_particles(dt)
@@ -604,12 +598,8 @@ function MagicBolt.update_all(dt, player)
 	end
 end
 
---- Draw all magic bolts (called once per frame via dirty flag)
+--- Draw all magic bolts (called once per frame from Enemy.draw)
 function MagicBolt.draw_all()
-	if not MagicBolt.needs_draw then return end
-	MagicBolt.needs_draw = false
-	MagicBolt.needs_update = true
-
 	-- Draw trail particles behind bolts
 	draw_particles()
 	draw_puff_particles()
@@ -641,9 +631,6 @@ function MagicBolt.clear_all()
 	MagicBolt.all = {}
 	clear_particles()
 	clear_puff_particles()
-	-- Reset dirty flags for clean state
-	MagicBolt.needs_update = true
-	MagicBolt.needs_draw = false
 end
 
 --------------------------------------------------------------------------------
@@ -659,7 +646,6 @@ local function update_common(enemy, dt)
 	enemy._wall_check_timer = math.max(0, (enemy._wall_check_timer or 0) - dt)
 	enemy._los_check_timer = math.max(0, (enemy._los_check_timer or 0) - dt)
 	enemy._path_check_timer = math.max(0, (enemy._path_check_timer or 0) - dt)
-	MagicBolt.update_all(dt, enemy.target_player)
 end
 
 --- Initialize common state properties: animation, velocity, and damage
@@ -831,7 +817,6 @@ local function draw_magician(enemy)
 	canvas.set_global_alpha(1)
 
 	enemy.y = original_y
-	MagicBolt.draw_all()
 end
 
 --------------------------------------------------------------------------------
@@ -1409,5 +1394,10 @@ function magician_common.create(sprite_set, cfg)
 		clear_bolts = MagicBolt.clear_all,
 	}
 end
+
+-- Expose bolt update/draw for Enemy.update/draw to call unconditionally
+magician_common.update_bolts = MagicBolt.update_all
+magician_common.draw_bolts = MagicBolt.draw_all
+magician_common.destroy_bolt = bolt_impact
 
 return magician_common

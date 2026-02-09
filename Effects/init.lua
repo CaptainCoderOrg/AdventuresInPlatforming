@@ -740,6 +740,38 @@ function Effects.create_collect_particles(x, y)
 	end
 end
 
+--- Factory: Creates particles that converge inward toward a center point.
+--- Used as a visual telegraph for enemy reappearance.
+---@param cx number Center X in tile coordinates
+---@param cy number Center Y in tile coordinates
+---@param radius number Spawn radius in tiles
+---@param count number Number of particles to spawn
+---@param color string Hex color for particles
+---@param size_min number Minimum particle size in pixels
+---@param size_range number Random size added to minimum
+function Effects.create_converge_particles(cx, cy, radius, count, color, size_min, size_range)
+	local lifetime = 1.2
+	local arrive_fraction = 0.7  -- Particles arrive at 70% of lifetime
+	for i = 1, count do
+		local angle = (i / count) * math.pi * 2 + (math.random() - 0.5) * 0.3
+		local dist = radius * (0.85 + math.random() * 0.3)  -- Slight radius variance
+		local cos_a = math.cos(angle)
+		local sin_a = math.sin(angle)
+		local speed = dist / (lifetime * arrive_fraction)
+		local particle = {
+			x = cx + cos_a * dist,
+			y = cy + sin_a * dist,
+			vx = -cos_a * speed,
+			vy = -sin_a * speed,
+			color = color,
+			size = size_min + math.random() * size_range,
+			lifetime = lifetime,
+			elapsed = 0,
+		}
+		state.collect_particles[particle] = true
+	end
+end
+
 --- Factory: Creates a flying object effect for boss defeat sequences.
 --- The object flies from start to target position with optional spin.
 ---@param start_x number Start X position in tile coordinates

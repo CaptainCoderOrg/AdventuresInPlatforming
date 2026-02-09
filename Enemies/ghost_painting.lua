@@ -3,6 +3,7 @@ local sprites = require('sprites')
 local canvas = require('canvas')
 local common = require('Enemies/common')
 local audio = require('audio')
+local Effects = require('Effects')
 
 --- Ghost Painting enemy: A haunted painting that attacks when player looks away.
 --- States: idle (wait for player), wait (player in range), prep_attack (wind up),
@@ -16,7 +17,7 @@ local SHAKE_FREQUENCY = 30          -- Hz
 local SHAKE_AMPLITUDE = 0.4         -- Tiles
 local FLOAT_SPEED = 1.5             -- Tiles/sec upward
 local ATTACK_ACCELERATION = 40      -- Tiles/sec^2
-local MAX_ATTACK_SPEED = 25         -- Tiles/sec
+local MAX_ATTACK_SPEED = 12         -- Tiles/sec
 local MAX_ATTACK_SPEED_SQ = MAX_ATTACK_SPEED * MAX_ATTACK_SPEED  -- Pre-computed for perf
 local OFFSCREEN_MARGIN = 2          -- Tiles beyond camera
 local REAPPEAR_DISTANCE = 6         -- Tiles from player
@@ -204,9 +205,9 @@ ghost_painting.states.reappear = {
 		enemy.fade_timer = 0
 
 		if enemy.target_player and enemy.camera then
-			local angle = math.random() * 2 * math.pi
-			local new_x = enemy.target_player.x + math.cos(angle) * REAPPEAR_DISTANCE
-			local new_y = enemy.target_player.y + math.sin(angle) * REAPPEAR_DISTANCE
+			local side = math.random() < 0.5 and -1 or 1
+			local new_x = enemy.target_player.x + side * REAPPEAR_DISTANCE
+			local new_y = enemy.target_player.y
 
 			-- Clamp to camera visible bounds to ensure ghost appears on screen
 			local min_x, min_y, max_x, max_y = enemy.camera:get_visible_bounds(sprites.tile_size, -1)
@@ -215,6 +216,10 @@ ghost_painting.states.reappear = {
 
 			enemy.direction = common.direction_to_player(enemy)
 			enemy.animation.flipped = enemy.direction
+
+			local cx = enemy.x + enemy.box.x + enemy.box.w / 2
+			local cy = enemy.y + enemy.box.y + enemy.box.h / 2
+			Effects.create_converge_particles(cx, cy, 6, 80, "#000000", 3, 4)
 		end
 	end,
 	update = function(enemy, dt)
@@ -291,7 +296,8 @@ ghost_painting.states.death = {
 --- Ghost loses 1 HP per hit as self-damage.
 ---@param self table The ghost_painting enemy
 local function on_damage_player(self)
-	self.health = self.health - 1
+	self.health = self.health - 0.75
+	self.damage = 0  -- Prevent repeated self-damage during overlap frames
 	audio.play_squish_sound()
 	if self.health <= 0 then
 		self:die()
@@ -313,7 +319,7 @@ return {
 	spawn_offset = { y = -0.5 },  -- -8 pixels to match decoy_painting
 	gravity = 0,
 	max_fall_speed = 0,
-	max_health = 2,
+	max_health = 2.5,
 	armor = 0,
 	damage = 0,
 	damages_shield = true,

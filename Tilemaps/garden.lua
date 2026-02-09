@@ -242,25 +242,12 @@ return {
           properties = {}
         },
         {
-          id = 141,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = -1344,
-          y = -960,
-          width = 384,
-          height = 176,
-          rotation = 0,
-          visible = true,
-          properties = {}
-        },
-        {
           id = 143,
           name = "",
           type = "",
           shape = "rectangle",
           x = -1344,
-          y = -832,
+          y = -896,
           width = 384,
           height = 176,
           rotation = 0,

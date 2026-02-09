@@ -51,8 +51,7 @@
   <object id="87" x="-1456" y="-624" width="704" height="176"/>
   <object id="88" x="-1728" y="-784" width="384" height="176"/>
   <object id="137" x="-1728" y="-960" width="384" height="176"/>
-  <object id="141" x="-1344" y="-960" width="384" height="176"/>
-  <object id="143" x="-1344" y="-832" width="384" height="176"/>
+  <object id="143" x="-1344" y="-896" width="384" height="176"/>
  </objectgroup>
  <layer id="13" name="Decorations Background" width="30" height="20">
   <data encoding="csv">

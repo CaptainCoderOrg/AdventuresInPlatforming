@@ -689,6 +689,8 @@ end
 function rest_screen.show_pause(player, camera)
     if state == STATE.HIDDEN then
         init_screen_state(MODE.PAUSE, player, camera, PAUSE_CONTINUE_DESC, "Continue")
+        active_save_slot = nil
+        current_level_id = nil
     end
 
     reset_navigation_state()

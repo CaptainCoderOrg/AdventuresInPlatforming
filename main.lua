@@ -653,8 +653,10 @@ init_level = function(level, spawn_override, player_data, options)
     local lvl_id = get_level_id(current_level)
     if lvl_id and player.visited_map and player.visited_map[lvl_id] then
         map_panel.set_visited(player.visited_map[lvl_id])
-    elseif player_data and player_data.visited_bounds then
-        map_panel.set_visited(player_data.visited_bounds)  -- legacy save fallback
+    elseif player_data and player_data.visited_bounds
+           and (not player.visited_map or not next(player.visited_map)) then
+        -- Legacy save fallback: visited_map not yet populated
+        map_panel.set_visited(player_data.visited_bounds)
     end
 
     camera = Camera.new(
@@ -840,6 +842,7 @@ local function on_start()
     ---@return nil
     local function return_to_title()
         active_slot = nil
+        boss_health_bar.reset()
         hud.show_title_screen()
         settings_dialog.set_difficulty(settings_storage.load_difficulty())
         audio.play_music(audio.title_screen)

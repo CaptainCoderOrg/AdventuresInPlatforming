@@ -150,7 +150,7 @@ SaveSlots.TRANSIENT_KEYS = { "damage", "energy_used", "stamina_used", "charge_st
 local SHALLOW_COPY_KEYS = {
     stat_upgrades = true, equipped_items = true, stackable_items = true,
     defeated_bosses = true, dialogue_flags = true, journal = true, journal_read = true,
-    upgrade_tiers = true, visited_map = true, ability_slots = true,
+    upgrade_tiers = true, ability_slots = true,
 }
 
 --- Copy a value, creating deep copies for tables (stat_upgrades, equipped_items) and arrays (unique_items)
@@ -166,6 +166,14 @@ local function copy_stat_value(key, value)
         local copy = {}
         for k, v in pairs(value) do
             copy[k] = { name = v.name, level_id = v.level_id, x = v.x, y = v.y }
+        end
+        return copy
+    elseif key == "visited_map" then
+        local copy = {}
+        for k, v in pairs(value) do
+            local inner = {}
+            for i = 1, #v do inner[i] = v[i] end
+            copy[k] = inner
         end
         return copy
     elseif SHALLOW_COPY_KEYS[key] then

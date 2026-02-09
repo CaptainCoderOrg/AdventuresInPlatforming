@@ -287,6 +287,9 @@ function boss_health_bar.draw()
     end
 
     if alpha <= 0 or not coordinator then return end
+    -- Don't draw over pause/rest screen
+    rest_screen = rest_screen or require("ui/rest_screen")
+    if rest_screen.is_active() then return end
 
     local scale = config.ui.SCALE
     local screen_width = config.ui.canvas_width

@@ -83,7 +83,7 @@ local state = {
     fall_start_y = 0,
     fall_end_x = 0,
     fall_end_y = 0,
-    -- Jump arc tween (bridge_left -> pillar_1)
+    -- Jump arc tween (bridge_left -> pillar_2)
     jump_start_x = 0,
     jump_start_y = 0,
     jump_end_x = 0,
@@ -230,12 +230,12 @@ local function cinematic_update(dt)
         return false
     end
 
-    -- Phase: Valkyrie lands on left bridge, then sets up jump to pillar 1
+    -- Phase: Valkyrie lands on left bridge, then sets up jump to pillar 2
     if state.phase == PHASE_VALKYRIE_LAND_LEFT then
         face_player_toward_enemy(player, enemy)
         if enemy and enemy.animation:is_finished() then
-            -- Set up arc jump to pillar 1
-            local pillar = coordinator.get_pillar_zone(1)
+            -- Set up arc jump to pillar 2
+            local pillar = coordinator.get_pillar_zone(2)
             if pillar then
                 local land_y = align_hitbox_bottom(enemy, pillar)
                 state.jump_start_x = enemy.x
@@ -254,7 +254,7 @@ local function cinematic_update(dt)
         return false
     end
 
-    -- Phase: Valkyrie arc jumps from left bridge to pillar 1
+    -- Phase: Valkyrie arc jumps from left bridge to pillar 2
     if state.phase == PHASE_VALKYRIE_JUMP then
         if enemy then
             local progress = math.min(1, state.timer / JUMP_DURATION)
@@ -286,7 +286,7 @@ local function cinematic_update(dt)
         return false
     end
 
-    -- Phase: Valkyrie lands on pillar 1, turns to face player
+    -- Phase: Valkyrie lands on pillar 2, turns to face player
     if state.phase == PHASE_VALKYRIE_LAND_RIGHT then
         if enemy and enemy.animation:is_finished() then
             -- Turn to face the player
@@ -315,6 +315,31 @@ local function cinematic_update(dt)
     if state.phase == PHASE_DIALOGUE then
         if not dialogue_screen.is_active() then
             advance_phase(PHASE_SHARD_DROP)
+            -- Apology delivered: set flag, remove item, record journal immediately
+            local player = state.player
+            if player then
+                player.dialogue_flags = player.dialogue_flags or {}
+                player.dialogue_flags["valkyrie_apology_delivered"] = true
+                if player.unique_items then
+                    for i, item in ipairs(player.unique_items) do
+                        if item == "valkyrie_apology" then
+                            table.remove(player.unique_items, i)
+                            break
+                        end
+                    end
+                end
+                if player.journal then
+                    player.journal["valkyrie_apology_delivered"] = player.journal["valkyrie_apology_delivered"] or "active"
+                end
+                if player.defeated_bosses then
+                    player.defeated_bosses[coordinator.boss_id] = true
+                end
+            end
+            -- Open the boss door
+            local door = Prop.find_by_id(coordinator.DOOR_ID)
+            if door and not door.marked_for_destruction then
+                Prop.set_state(door, "opening")
+            end
             -- Drop arcane shard from valkyrie
             if enemy then
                 local plat = get_platforms()
@@ -487,39 +512,8 @@ function apology_path.on_walk_complete()
     advance_phase(PHASE_DOOR_CLOSING)
 end
 
---- Complete the apology path and set flags.
+--- Complete the apology path (called after shard collection).
 function apology_path.complete()
-    local player = state.player
-
-    -- Mark boss as defeated
-    if player and player.defeated_bosses then
-        player.defeated_bosses[coordinator.boss_id] = true
-    end
-
-    -- Remove apology item from player inventory
-    if player and player.unique_items then
-        for i, item in ipairs(player.unique_items) do
-            if item == "valkyrie_apology" then
-                table.remove(player.unique_items, i)
-                break
-            end
-        end
-    end
-
-    -- Set flag for quest completion
-    dialogue_manager.set_flag("valkyrie_apology_delivered")
-
-    -- Journal: record apology delivery (written directly to avoid toast during cinematic)
-    if player and player.journal then
-        player.journal["valkyrie_apology_delivered"] = player.journal["valkyrie_apology_delivered"] or "active"
-    end
-
-    -- Open the door
-    local door = Prop.find_by_id(coordinator.DOOR_ID)
-    if door and not door.marked_for_destruction then
-        Prop.set_state(door, "opening")
-    end
-
     -- Mark valkyrie for destruction (may already be marked)
     if state.valkyrie and not state.valkyrie.marked_for_destruction then
         state.valkyrie.marked_for_destruction = true

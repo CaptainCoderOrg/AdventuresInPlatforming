@@ -157,7 +157,7 @@ function common.handle_ability(player)
 	local sec_id = weapon_sync.get_slot_secondary(player, slot)
 
 	-- Dash and shield are handled by dedicated handlers, not here
-	if sec_id == "dash_amulet" or sec_id == "shield" then return end
+	if sec_id == "dash_amulet" or sec_id == "shield" or sec_id == "adepts_shield" then return end
 
 	-- Melee secondary (hammer): consumes stamina, enters hammer state
 	if sec_id == "hammer" then
@@ -605,7 +605,7 @@ local function try_queued_combat_action(player)
 		player.input_queue.ability_slot = nil
 		local sec_id = weapon_sync.get_slot_secondary(player, queued_slot)
 		-- Dash and shield are handled by dedicated handlers, skip here
-		if sec_id == "dash_amulet" or sec_id == "shield" then return nil end
+		if sec_id == "dash_amulet" or sec_id == "shield" or sec_id == "adepts_shield" then return nil end
 		-- Melee secondary (hammer)
 		if sec_id == "hammer" and common.try_use_hammer(player, queued_slot) then
 			player.active_ability_slot = queued_slot

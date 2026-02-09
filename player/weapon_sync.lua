@@ -330,7 +330,7 @@ function weapon_sync.sync(player)
             if item and not is_valid_secondary(player, item) then
                 player.ability_slots[i] = nil
             elseif item == "dash_amulet" then player.dash_slot = i
-            elseif item == "shield" then player.shield_slot = i end
+            elseif item == "shield" or item == "adepts_shield" then player.shield_slot = i end
         end
     end
     player.can_dash = player.dash_slot ~= nil

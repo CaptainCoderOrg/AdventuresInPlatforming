@@ -18,7 +18,7 @@ return {
                 { text = "I delivered your apology.", next = "apology_delivered", condition = "apology_delivered_to_gnomos", condition2 = "not_received_orb" },
                 -- Shield quest paths
                 { text = "You look concerned.", next = "shield_quest_start", condition = "has_item_longsword", condition2 = "not_asked_about_shield", condition3 = "received_orb" },
-                { text = "I found your shield.", next = "shield_found_peaceful", condition = "has_item_adepts_shield", condition2 = "asked_about_shield", condition3 = "not_defeated_boss_valkyrie_boss", condition4 = "not_valkyrie_quest_resolved" },
+                { text = "I found your shield.", next = "shield_found_peaceful", condition = "has_item_adepts_shield", condition2 = "asked_about_shield", condition3 = "not_defeated_boss_valkyrie_boss", condition4 = "not_valkyrie_quest_resolved", condition5 = "not_valkyrie_apology_delivered" },
                 { text = "I found your shield.", next = "shield_found_too_late", condition = "has_item_adepts_shield", condition2 = "asked_about_shield", condition3 = "defeated_boss_valkyrie_boss", condition4 = "not_valkyrie_quest_resolved" },
                 { text = "About the Valkyrie...", next = "valkyrie_killed_tragic", condition = "defeated_boss_valkyrie_boss", condition2 = "asked_about_shield", condition3 = "not_has_item_adepts_shield", condition4 = "not_valkyrie_quest_resolved" },
                 { text = "About the apology to the Valkyrie...", next = "valkyrie_apology_reminder", condition = "has_item_valkyrie_apology", condition2 = "not_valkyrie_apology_delivered" },

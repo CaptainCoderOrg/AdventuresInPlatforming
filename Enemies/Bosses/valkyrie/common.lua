@@ -133,6 +133,31 @@ function common.clear_ghost_trails()
     end
 end
 
+--------------------------------------------------------------------------------
+-- Bridge landing AoE
+--------------------------------------------------------------------------------
+
+local BRIDGE_AOE_SIZE = 3
+local BRIDGE_AOE_DAMAGE = 3
+
+--- Deal AoE damage to player when landing on a bridge.
+--- Uses a 3-tile AABB centered on the valkyrie.
+---@param enemy table The enemy instance
+function common.bridge_landing_aoe(enemy)
+    local player = enemy.target_player
+    if not player or player:is_invincible() or player:health() <= 0 then return end
+
+    local enemy_cx = enemy.x + enemy.box.x + enemy.box.w / 2
+    local enemy_cy = enemy.y + enemy.box.y + enemy.box.h / 2
+    local player_cx = player.x + player.box.x + player.box.w / 2
+    local player_cy = player.y + player.box.y + player.box.h / 2
+
+    local half = BRIDGE_AOE_SIZE / 2
+    if math.abs(player_cx - enemy_cx) < half and math.abs(player_cy - enemy_cy) < half then
+        player:take_damage(BRIDGE_AOE_DAMAGE, enemy.x, enemy)
+    end
+end
+
 --- Draw valkyrie sprite (40x29 sprite with character anchored at bottom).
 --- Uses canvas transforms to flip visually while hitbox stays fixed.
 ---@param enemy table The enemy instance
@@ -470,7 +495,7 @@ common.states.jump = {
         local player = enemy.target_player
         if player and not player:is_invincible() and player:health() > 0 then
             if combat.collides(enemy, player) then
-                player:take_damage(JUMP_CONTACT_DAMAGE, enemy.x)
+                player:take_damage(JUMP_CONTACT_DAMAGE, enemy.x, enemy)
             end
         end
 
@@ -508,7 +533,7 @@ common.states.landing = {
 
 local DIVE_MAKE_CHOICE_DELAY = 0.8
 local DIVE_JUMP_UP_DURATION = 0.5
-local DIVE_WAIT = 1.0
+local DIVE_WAIT = 1.5
 local DIVE_DURATION = 0.75
 local DIVE_CONTACT_DAMAGE = 3
 local DIVE_TRAIL_INTERVAL = 0.05
@@ -522,6 +547,10 @@ common.states.hazard_landing = {
         enemy.gravity = 1.5
         enemy_common.set_animation(enemy, common.ANIMATIONS.LAND)
         audio.play_landing_sound()
+        -- AoE knockback when landing on a bridge
+        if enemy._entering_hazard_mode then
+            common.bridge_landing_aoe(enemy)
+        end
     end,
     update = function(enemy, _dt)
         if enemy.animation:is_finished() then
@@ -529,7 +558,7 @@ common.states.hazard_landing = {
                 enemy._entering_hazard_mode = false
                 enemy:set_state(enemy.states.bridge_attack)
             else
-                enemy:set_state(common.states.prep_attack)
+                enemy:set_state(enemy.states.prep_attack)
             end
         end
     end,
@@ -577,7 +606,7 @@ common.states.jump_off_screen = {
         combat.update(enemy)
 
         if progress >= 1 then
-            enemy:set_state(common.states.dive_bomb)
+            enemy:set_state(enemy.states.dive_bomb)
         end
     end,
     draw = common.draw_sprite,
@@ -677,17 +706,17 @@ common.states.dive_bomb = {
             local player = enemy.target_player
             if player and not player:is_invincible() and player:health() > 0 then
                 if combat.collides(enemy, player) then
-                    player:take_damage(DIVE_CONTACT_DAMAGE, enemy.x)
+                    player:take_damage(DIVE_CONTACT_DAMAGE, enemy.x, enemy)
                 end
             end
 
             if progress >= 1 then
                 if enemy._exit_dive_loop then
                     enemy._exit_dive_loop = false
-                    enemy:set_state(common.states.ground_landing)
+                    enemy:set_state(enemy.states.ground_landing)
                 else
                     audio.play_landing_sound()
-                    enemy:set_state(common.states.jump_off_screen)
+                    enemy:set_state(enemy.states.jump_off_screen)
                 end
             end
         end
@@ -740,7 +769,7 @@ common.states.dive_make_choice = {
         enemy._choice_timer = enemy._choice_timer + dt
         if enemy._choice_timer >= DIVE_MAKE_CHOICE_DELAY then
             common.set_jump_target_nearest_player(enemy)
-            enemy:set_state(common.states.prejump)
+            enemy:set_state(enemy.states.prejump)
         end
     end,
     draw = common.draw_sprite,
@@ -849,7 +878,7 @@ common.states.dash_attack = {
         local player = enemy.target_player
         if player and not player:is_invincible() and player:health() > 0 then
             if combat.collides(enemy, player) or spear_collides(enemy, player) then
-                player:take_damage(DASH_CONTACT_DAMAGE, enemy.x)
+                player:take_damage(DASH_CONTACT_DAMAGE, enemy.x, enemy)
             end
         end
 

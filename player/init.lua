@@ -379,6 +379,16 @@ function Player:take_damage(amount, source_x, source_enemy)
 	else
 		self:set_state(self.states.death)
 	end
+
+	-- Force drop through one-way platforms when hit by certain bosses.
+	-- Applied after set_state(hit) because hit.start clamps vy to max(0, vy).
+	if source_enemy and source_enemy.forces_drop_through then
+		self.wants_drop_through = true
+		self.drop_through_y = self.y + self.box.y + self.box.h
+		self.drop_through_timer = 0.5
+		self.is_grounded = false
+		self.vy = 1
+	end
 end
 
 --- Teleports the player to the specified position and updates collision grid.

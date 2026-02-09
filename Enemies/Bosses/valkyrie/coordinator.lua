@@ -7,7 +7,7 @@ local Prop = require("Prop")
 -- Lazy-loaded to avoid circular dependency (platforms → triggers → registry → valkyrie → coordinator)
 local platforms = nil
 
-local MAX_HEALTH = 100
+local MAX_HEALTH = 75
 local SOLID_DURATION = 3  -- How long blocks stay solid after activation
 
 -- Must match the "id" properties on boss_block props in viking_lair.tmx
@@ -16,6 +16,7 @@ local BLOCK_IDS = {
     "valkyrie_boss_block_1",
     "valkyrie_boss_block_2",
     "valkyrie_boss_block_3",
+    "valkyrie_boss_block_center",
 }
 
 local SPEAR_GROUP_PREFIX = "valkyrie_spear_"   -- groups 0-7
@@ -226,11 +227,6 @@ end
 function coordinator.report_damage(damage)
     local old_health = coordinator.total_health
     coordinator.total_health = math.max(0, coordinator.total_health - damage)
-
-    -- Re/activate arena walls each hit (resets the 3s solid timer)
-    if coordinator.active then
-        coordinator.activate_blocks()
-    end
 
     -- Check for phase transitions based on health thresholds
     local old_percent = old_health / coordinator.total_max_health

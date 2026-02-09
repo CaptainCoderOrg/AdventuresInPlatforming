@@ -101,6 +101,7 @@ function Enemy.spawn(type_key, x, y, spawn_data)
 	self.armor = definition.armor or 0
 	self.damages_shield = definition.damages_shield or false
 	self.directional_shield = definition.directional_shield or false  -- Phasing enemies use direction-based shield check
+	self.forces_drop_through = definition.forces_drop_through or false
 	self.shield_hit_cooldown = 0  -- Debounce timer for shield contact damage
 	self.marked_for_destruction = false
 

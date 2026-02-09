@@ -477,7 +477,7 @@ return {
 
         shield_quest_start = {
             text = "That chest... opening it triggered something. A memory. I had a shield once, from my warrior days. I remember now - I lost it in the battle against the Great Eye.",
-            actions = { "set_flag_asked_about_shield", "journal_add_find_adepts_shield" },
+            actions = { "set_flag_asked_about_shield", "journal_complete_adepts_longsword", "journal_add_find_adepts_shield" },
             options = {
                 { text = "Where is it now?", next = "shield_quest_blame" },
                 { text = "A shield?", next = "shield_quest_details" },

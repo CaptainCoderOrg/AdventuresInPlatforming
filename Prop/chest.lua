@@ -9,6 +9,7 @@ local Effects = require("Effects")
 local pickup_dialogue = require("ui/pickup_dialogue")
 local Prop = require("Prop")
 local TextDisplay = require("TextDisplay")
+local journal_toast = require("ui/journal_toast")
 local unique_item_registry = require("Prop.unique_item_registry")
 
 local CHEST_IDLE = Animation.create_definition(sprites.environment.brown_chest, 5, {
@@ -172,6 +173,15 @@ return {
                     local item_def = unique_item_registry[prop.item_id]
                     if item_def then
                         pickup_dialogue.show(prop.item_id, prop.last_player)
+                    end
+                    -- Add journal entry for longsword pickup
+                    if prop.item_id == "longsword" then
+                        local p = prop.last_player
+                        p.journal = p.journal or {}
+                        if not p.journal["adepts_longsword"] then
+                            p.journal["adepts_longsword"] = "active"
+                            journal_toast.push("adepts_longsword")
+                        end
                     end
                     prop.item_id = nil  -- Prevent re-giving on load
                 end

@@ -28,13 +28,15 @@ local PHASE_WALKING = 2
 local PHASE_DOOR_CLOSING = 3
 local PHASE_QUESTION = 4
 local PHASE_VALKYRIE_FALL = 5
-local PHASE_VALKYRIE_LAND = 6
-local PHASE_VALKYRIE_QUESTION = 7
-local PHASE_DIALOGUE = 8
-local PHASE_SHARD_DROP = 9
-local PHASE_VALKYRIE_EXIT = 10
-local PHASE_WAIT_COLLECT = 11
-local PHASE_COMPLETE = 12
+local PHASE_VALKYRIE_LAND_LEFT = 6
+local PHASE_VALKYRIE_JUMP = 7
+local PHASE_VALKYRIE_LAND_RIGHT = 8
+local PHASE_VALKYRIE_QUESTION = 9
+local PHASE_DIALOGUE = 10
+local PHASE_SHARD_DROP = 11
+local PHASE_VALKYRIE_EXIT = 12
+local PHASE_WAIT_COLLECT = 13
+local PHASE_COMPLETE = 14
 
 -- Timing constants (seconds)
 local DOOR_CLOSE_WAIT = 1.2
@@ -42,6 +44,8 @@ local QUESTION_DURATION = 1
 local FALL_DURATION = 1.2
 local FALL_START_OFFSET_Y = -8
 local VALKYRIE_QUESTION_DURATION = 0.8
+local JUMP_DURATION = 0.8
+local JUMP_ARC_HEIGHT = 4
 local EXIT_JUMP_DURATION = 0.8
 local EXIT_JUMP_HEIGHT = 6
 
@@ -79,6 +83,12 @@ local state = {
     fall_start_y = 0,
     fall_end_x = 0,
     fall_end_y = 0,
+    -- Jump arc tween (bridge_left -> pillar_1)
+    jump_start_x = 0,
+    jump_start_y = 0,
+    jump_end_x = 0,
+    jump_end_y = 0,
+    jump_switched_to_fall = false,
     -- Shard tracking
     shard_prop = nil,
     shard_landed = false,
@@ -212,7 +222,7 @@ local function cinematic_update(dt)
                 enemy.y = state.fall_end_y
                 enemy_common.set_animation(enemy, valk_common.ANIMATIONS.LAND)
                 audio.play_landing_sound()
-                advance_phase(PHASE_VALKYRIE_LAND)
+                advance_phase(PHASE_VALKYRIE_LAND_LEFT)
             end
         else
             advance_phase(PHASE_COMPLETE)
@@ -220,15 +230,72 @@ local function cinematic_update(dt)
         return false
     end
 
-    -- Phase: Valkyrie lands
-    if state.phase == PHASE_VALKYRIE_LAND then
+    -- Phase: Valkyrie lands on left bridge, then sets up jump to pillar 1
+    if state.phase == PHASE_VALKYRIE_LAND_LEFT then
         face_player_toward_enemy(player, enemy)
         if enemy and enemy.animation:is_finished() then
-            -- Valkyrie notices the letter
+            -- Set up arc jump to pillar 1
+            local pillar = coordinator.get_pillar_zone(1)
+            if pillar then
+                local land_y = align_hitbox_bottom(enemy, pillar)
+                state.jump_start_x = enemy.x
+                state.jump_start_y = enemy.y
+                state.jump_end_x = pillar.x
+                state.jump_end_y = land_y
+                state.jump_switched_to_fall = false
+
+                enemy.direction = 1
+                enemy_common.set_animation(enemy, valk_common.ANIMATIONS.JUMP)
+                advance_phase(PHASE_VALKYRIE_JUMP)
+            else
+                advance_phase(PHASE_VALKYRIE_QUESTION)
+            end
+        end
+        return false
+    end
+
+    -- Phase: Valkyrie arc jumps from left bridge to pillar 1
+    if state.phase == PHASE_VALKYRIE_JUMP then
+        if enemy then
+            local progress = math.min(1, state.timer / JUMP_DURATION)
+
+            -- Linear X interpolation
+            enemy.x = state.jump_start_x + (state.jump_end_x - state.jump_start_x) * progress
+
+            -- Parabolic Y arc: base lerp + arc offset
+            local base_y = state.jump_start_y + (state.jump_end_y - state.jump_start_y) * progress
+            local arc_offset = 4 * JUMP_ARC_HEIGHT * progress * (1 - progress)
+            enemy.y = base_y - arc_offset
+
+            -- Switch to fall animation at midpoint
+            if progress >= 0.5 and not state.jump_switched_to_fall then
+                state.jump_switched_to_fall = true
+                enemy_common.set_animation(enemy, valk_common.ANIMATIONS.FALL)
+            end
+
+            if progress >= 1 then
+                enemy.x = state.jump_end_x
+                enemy.y = state.jump_end_y
+                enemy_common.set_animation(enemy, valk_common.ANIMATIONS.LAND)
+                audio.play_landing_sound()
+                advance_phase(PHASE_VALKYRIE_LAND_RIGHT)
+            end
+        else
+            advance_phase(PHASE_COMPLETE)
+        end
+        return false
+    end
+
+    -- Phase: Valkyrie lands on pillar 1, turns to face player
+    if state.phase == PHASE_VALKYRIE_LAND_RIGHT then
+        if enemy and enemy.animation:is_finished() then
+            -- Turn to face the player
+            enemy.direction = -1
             enemy_common.set_animation(enemy, valk_common.ANIMATIONS.IDLE)
             if enemy.animation then
                 enemy.animation.flipped = enemy.direction
             end
+            face_player_toward_enemy(player, enemy)
             Effects.create_text(enemy.x, enemy.y - 0.3, "?", "#FFFF00", 12)
             advance_phase(PHASE_VALKYRIE_QUESTION)
         end
@@ -498,6 +565,11 @@ function apology_path.reset()
     state.fall_start_y = 0
     state.fall_end_x = 0
     state.fall_end_y = 0
+    state.jump_start_x = 0
+    state.jump_start_y = 0
+    state.jump_end_x = 0
+    state.jump_end_y = 0
+    state.jump_switched_to_fall = false
     state.shard_prop = nil
     state.shard_landed = false
     state.exit_start_x = 0

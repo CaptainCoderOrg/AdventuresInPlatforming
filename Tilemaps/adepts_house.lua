@@ -519,8 +519,7 @@ return {
             ["flip"] = true,
             ["gold"] = 200,
             ["id"] = "adepts_shield_chest",
-            ["item_id"] = "adepts_shield",
-            ["required_key"] = "gold_key"
+            ["item_id"] = "adepts_shield"
           }
         }
       }

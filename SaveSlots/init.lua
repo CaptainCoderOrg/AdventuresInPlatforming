@@ -287,4 +287,25 @@ function SaveSlots.format_playtime(seconds)
     return string.format("%02d:%02d:%02d", hours, minutes, secs)
 end
 
+--- Save data to a dev slot (bypasses normal slot range)
+---@param slot_num number Dev slot number (0 or 9)
+---@param data table Save data
+function SaveSlots.save_dev_slot(slot_num, data)
+    local key = "dev_slot_" .. tostring(slot_num)
+    local json_str = json.encode(data)
+    localstorage.set_item(key, json_str)
+end
+
+--- Load data from a dev slot
+---@param slot_num number Dev slot number (0 or 9)
+---@return table|nil data Slot data or nil if empty
+function SaveSlots.load_dev_slot(slot_num)
+    local key = "dev_slot_" .. tostring(slot_num)
+    local json_str = localstorage.get_item(key)
+    if not json_str then return nil end
+    local success, parsed = pcall(json.decode, json_str)
+    if success and type(parsed) == "table" then return parsed end
+    return nil
+end
+
 return SaveSlots

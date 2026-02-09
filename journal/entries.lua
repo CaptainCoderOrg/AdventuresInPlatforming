@@ -61,6 +61,13 @@ return {
         parent = "find_crystal_ball", sort_order = 5,
     },
 
+    -- Level 2: Adept's Longsword (child of The Adept)
+    adepts_longsword = {
+        title = "Adept's Longsword",
+        description = "I found a longsword in the Adept's chest. I should ask him about it.",
+        parent = "the_adept", sort_order = 5,
+    },
+
     -- Level 2: Find Adept's Shield (child of The Adept)
     find_adepts_shield = {
         title = "The Adept's Shield",

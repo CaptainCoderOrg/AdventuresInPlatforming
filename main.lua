@@ -246,6 +246,18 @@ local function user_input()
             player.has_shuriken = not player.has_shuriken
         elseif canvas.is_key_pressed(canvas.keys.F7) then
             toggle_debug_secondary(player, "shield")
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_9) then
+            local slot1 = SaveSlots.get(1)
+            if slot1 then
+                SaveSlots.set(3, slot1)
+                Effects.create_text(player.x, player.y - 0.5, "Slot 1 -> Slot 3", "#00FF00", 8)
+            else
+                Effects.create_text(player.x, player.y - 0.5, "Slot 1 empty", "#FF0000", 8)
+            end
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_0) then
+            local save_data = SaveSlots.build_player_data(player, current_level.id, "Dev Save")
+            SaveSlots.save_dev_slot(0, save_data)
+            Effects.create_text(player.x, player.y - 0.5, "Saved to Dev Slot 0", "#00FF00", 8)
         elseif canvas.is_key_pressed(canvas.keys.H) then
             -- Grant and equip Minor Healing ability
             if not player.equipped_items.minor_healing then
@@ -757,6 +769,21 @@ local started = false
 ---@param slot_index number Slot index (1-3)
 ---@return nil
 local function load_slot(slot_index)
+    -- Dev slot loading: slot_index is "dev_0" or "dev_9"
+    local dev_num = type(slot_index) == "string" and slot_index:match("^dev_(%d+)$")
+    if dev_num then
+        dev_num = tonumber(dev_num)
+        local dev_data = SaveSlots.load_dev_slot(dev_num)
+        if dev_data then
+            active_slot = 3
+            SaveSlots.set(3, dev_data)
+            hud.hide_title_screen()
+            continue_from_checkpoint()
+            settings_dialog.set_difficulty(player.difficulty)
+        end
+        return
+    end
+
     active_slot = slot_index
     local data = SaveSlots.get(slot_index)
 

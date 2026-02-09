@@ -150,6 +150,21 @@ function slot_screen.input()
     if state ~= STATE.OPEN then return end
 
     if mode == MODE.SELECTING then
+        -- Dev slot loading (keyboard shortcut, debug only)
+        if canvas.is_key_pressed(canvas.keys.DIGIT_9) and SaveSlots.load_dev_slot(9) then
+            hide()
+            if slot_callback then
+                slot_callback("dev_9")
+            end
+            return
+        elseif canvas.is_key_pressed(canvas.keys.DIGIT_0) and SaveSlots.load_dev_slot(0) then
+            hide()
+            if slot_callback then
+                slot_callback("dev_0")
+            end
+            return
+        end
+
         -- Navigation - Up/Down for rows
         if controls.menu_up_pressed() then
             mouse_active = false

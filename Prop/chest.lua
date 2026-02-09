@@ -10,6 +10,7 @@ local pickup_dialogue = require("ui/pickup_dialogue")
 local Prop = require("Prop")
 local TextDisplay = require("TextDisplay")
 local journal_toast = require("ui/journal_toast")
+local map_panel = require("ui/map_panel")
 local unique_item_registry = require("Prop.unique_item_registry")
 
 local CHEST_IDLE = Animation.create_definition(sprites.environment.brown_chest, 5, {
@@ -159,6 +160,7 @@ return {
             start = function(prop, def)
                 prop.animation = Animation.new(CHEST_OPENING)
                 prop.is_open = true
+                map_panel.remove_collectible(prop.x, prop.y)
 
                 -- Spawn gold particles that will be collected by player
                 if prop.gold_amount > 0 then

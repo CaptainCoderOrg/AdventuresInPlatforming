@@ -2178,11 +2178,14 @@ function rest_screen.draw()
             if i == 3 and journal_has_unread then
                 canvas.save()
                 canvas.set_font_family("menu_font")
-                canvas.set_font_size(8)
+                canvas.set_font_size(7)
+                local label_metrics = canvas.get_text_metrics(btn.label)
+                local label_x = btn.x + (btn.width - label_metrics.width) / 2
+                canvas.set_font_size(10)
                 canvas.set_text_baseline("middle")
-                canvas.set_text_align("left")
+                canvas.set_text_align("right")
                 canvas.set_color("#FFD700")
-                canvas.draw_text(btn.x + LEVEL_UP_ICON_INSET, btn.y + btn.height / 2, "*")
+                canvas.draw_text(label_x - 1, btn.y + btn.height / 2, "*")
                 canvas.restore()
             end
 

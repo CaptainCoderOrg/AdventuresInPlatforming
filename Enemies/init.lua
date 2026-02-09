@@ -435,7 +435,8 @@ function Enemy:on_hit(source_type, source)
 	local is_crit = source and source.is_crit
 
 	-- Apply armor reduction, then crit multiplier (minimum 0 damage)
-	damage = math.max(0, damage - self:get_armor())
+	local ignores_armor = source and source.ignores_armor
+	damage = ignores_armor and damage or math.max(0, damage - self:get_armor())
 	if is_crit then
 		damage = damage * 2
 	end

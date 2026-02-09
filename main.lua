@@ -146,11 +146,30 @@ local function find_spawn_by_symbol(level, symbol)
     return nil
 end
 
+--- Extracts the level ID from a level module.
+--- Supports both ASCII levels (id at top level) and Tiled levels (id in properties).
+---@param level table|nil Level module to extract ID from
+---@return string|nil level_id The level ID or nil if not found
+local function get_level_id(level)
+    if not level then return nil end
+    if level.id then return level.id end
+    if level.properties and level.properties.id then return level.properties.id end
+    return nil
+end
+
 --- Get player data for preservation during level transitions
---- Combines core stats and transient state for mid-level preservation
+--- Combines core stats and transient state for mid-level preservation.
+--- Flushes current map fog-of-war into player.visited_map before copying stats.
 ---@param p table Player instance
 ---@return table data Player stats to preserve
 local function get_player_save_data(p)
+    -- Flush current level's map exploration into visited_map before copying stats
+    local level_id = get_level_id(current_level)
+    if level_id then
+        p.visited_map = p.visited_map or {}
+        p.visited_map[level_id] = map_panel.get_visited()
+    end
+
     local data = SaveSlots.get_player_stats(p)
     local transient = SaveSlots.get_transient_state(p)
     for key, value in pairs(transient) do
@@ -627,8 +646,11 @@ init_level = function(level, spawn_override, player_data, options)
 
     -- Build minimap after props are spawned (campfires are cached during build)
     map_panel.build(level_info.width, level_info.height, level_info.camera_bounds)
-    if player_data and player_data.visited_bounds then
-        map_panel.set_visited(player_data.visited_bounds)
+    local lvl_id = get_level_id(current_level)
+    if lvl_id and player.visited_map and player.visited_map[lvl_id] then
+        map_panel.set_visited(player.visited_map[lvl_id])
+    elseif player_data and player_data.visited_bounds then
+        map_panel.set_visited(player_data.visited_bounds)  -- legacy save fallback
     end
 
     camera = Camera.new(

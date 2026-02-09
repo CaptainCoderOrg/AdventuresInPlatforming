@@ -4,6 +4,7 @@
 local audio = require("audio")
 local canvas = require("canvas")
 local common = require("Prop/common")
+local map_panel = require("ui/map_panel")
 local dialogue_manager = require("dialogue/manager")
 local Effects = require("Effects")
 local ITEMS = require("Prop/stackable_item_registry")
@@ -108,6 +109,7 @@ return {
             start = function(prop)
                 -- Mark as collected for persistence
                 prop.collected = true
+                map_panel.remove_collectible(prop.x, prop.y)
 
                 -- Add to player's stackable items
                 if prop.last_player then

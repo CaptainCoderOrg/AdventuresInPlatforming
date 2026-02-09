@@ -158,6 +158,7 @@ function Projectile:on_collision(collision)
         _projectile_hit_source.damage = self.damage
         _projectile_hit_source.vx = self.vx
         _projectile_hit_source.is_crit = is_crit
+        _projectile_hit_source.ignores_armor = self.ignores_armor
         enemy:on_hit("projectile", _projectile_hit_source)
     else
         audio.play_solid_sound()
@@ -232,15 +233,19 @@ end
 ---@return table The created projectile instance
 function Projectile.create_shuriken(x, y, direction, owner)
     audio.play_shuriken_throw_sound()
-    local damage = upgrade_effects.get_projectile_damage(owner, "shuriken", 2)
+    local damage = upgrade_effects.get_projectile_damage(owner, "shuriken", 3)
     local vx = direction * 24
     local sx, sy = x + 0.5, y + 0.25
     local first = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 0, 0, direction, Effects.create_shuriken_hit, damage, owner)
+    first.ignores_armor = true
     if owner and upgrade_effects.has_triple_projectile(owner, "shuriken") then
-        Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -14, 0, direction, Effects.create_shuriken_hit, damage, owner)
-        Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 14, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        local p2 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -14, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        local p3 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 14, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        p2.ignores_armor = true
+        p3.ignores_armor = true
     elseif owner and upgrade_effects.has_double_projectile(owner, "shuriken") then
-        Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -8, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        local p2 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -8, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        p2.ignores_armor = true
     end
     return first
 end
@@ -259,7 +264,7 @@ _shuriken_spec = {
     name = "Shuriken",
     sprite = sprites.projectiles.shuriken,
     icon = sprites.projectiles.shuriken_icon,
-    damage = 2,
+    damage = 3,
     stamina_cost = 0,
     energy_cost = 1,
     create = Projectile.create_shuriken,

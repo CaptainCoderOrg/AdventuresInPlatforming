@@ -5,6 +5,7 @@ local Animation = require("Animation")
 local audio = require("audio")
 local canvas = require("canvas")
 local common = require("Prop/common")
+local map_panel = require("ui/map_panel")
 local Effects = require("Effects")
 local ITEMS = require("Prop/unique_item_registry")
 local pickup_dialogue = require("ui/pickup_dialogue")
@@ -157,6 +158,7 @@ return {
         collect = {
             ---@param prop table The unique_item prop instance
             start = function(prop)
+                map_panel.remove_collectible(prop.x, prop.y)
                 -- Check if this item type is equippable (shows dialogue)
                 local item_type = prop.item.type
                 local is_equippable = item_type and item_type ~= "no_equip"

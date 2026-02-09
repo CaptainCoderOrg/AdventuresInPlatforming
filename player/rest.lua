@@ -4,6 +4,7 @@ local controls = require('controls')
 local common = require('player.common')
 local Enemy = require('Enemies')
 local hud = require('ui/hud')
+local map_panel = require('ui/map_panel')
 local Prop = require('Prop')
 local prop_common = require('Prop/common')
 local SaveSlots = require('SaveSlots')
@@ -84,6 +85,12 @@ function rest.start(player)
 			x = campfire.x,
 			y = campfire.y,
 		}
+	end
+
+	-- Flush current level's map exploration into visited_map before saving
+	if level_id then
+		player.visited_map = player.visited_map or {}
+		player.visited_map[level_id] = map_panel.get_visited()
 	end
 
 	if rest.active_slot and level_id then

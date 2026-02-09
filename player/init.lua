@@ -103,6 +103,7 @@ function Player.new()
 	self.journal = { awakening = "active" }  -- Quest journal entries (entry_id -> "active"|"complete")
 	self.journal_read = {}  -- Tracks which journal entries the player has viewed (entry_id -> true)
 	self.upgrade_tiers = {} -- Equipment upgrade tiers purchased (item_id -> tier_number)
+	self.visited_map = {}   -- Per-level map fog-of-war (level_id -> array of visited bounds indices)
 	self.deaths = 0             -- Total death count (persisted across reloads)
 	self.difficulty = "normal"  -- Difficulty setting ("normal" or "easy")
 

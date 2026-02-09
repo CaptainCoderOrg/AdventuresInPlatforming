@@ -12,6 +12,8 @@ local map_panel = {}
 local wall_positions = {}
 -- Cached campfire positions (flat array of {x, y, bi})
 local campfire_positions = {}
+-- Cached collectible positions (flat array of {x, y, bi})
+local collectible_positions = {}
 local level_w = 0
 local level_h = 0
 local bounds = {}  -- Camera bounds regions: array of {x, y, width, height}
@@ -110,6 +112,41 @@ function map_panel.build(width, height, camera_bounds)
             campfire_positions[cn] = { x = fire.x, y = fire.y, bi = bi }
         end
     end
+
+    -- Cache collectible positions (uncollected chests, unique items, stackable items)
+    collectible_positions = {}
+    local cn2 = 0
+    local chests = Prop.get_all_of_type("chest")
+    for i = 1, #chests do
+        local chest = chests[i]
+        if not chest.is_open then
+            local bi = has_bounds and find_bounds_index(chest.x, chest.y) or nil
+            if not has_bounds or bi then
+                cn2 = cn2 + 1
+                collectible_positions[cn2] = { x = chest.x, y = chest.y, bi = bi }
+            end
+        end
+    end
+    local uniques = Prop.get_all_of_type("unique_item")
+    for i = 1, #uniques do
+        local item = uniques[i]
+        local bi = has_bounds and find_bounds_index(item.x, item.y) or nil
+        if not has_bounds or bi then
+            cn2 = cn2 + 1
+            collectible_positions[cn2] = { x = item.x, y = item.y, bi = bi }
+        end
+    end
+    local stackables = Prop.get_all_of_type("stackable_item")
+    for i = 1, #stackables do
+        local item = stackables[i]
+        if not item.collected then
+            local bi = has_bounds and find_bounds_index(item.x, item.y) or nil
+            if not has_bounds or bi then
+                cn2 = cn2 + 1
+                collectible_positions[cn2] = { x = item.x, y = item.y, bi = bi }
+            end
+        end
+    end
 end
 
 --- Get the set of visited bounds indices for saving.
@@ -131,6 +168,20 @@ function map_panel.set_visited(visited_indices)
     if visited_indices then
         for _, i in ipairs(visited_indices) do
             visited[i] = true
+        end
+    end
+end
+
+--- Remove a collectible dot from the minimap by position.
+--- Called when a chest/item is collected for immediate visual feedback.
+---@param x number Tile X coordinate
+---@param y number Tile Y coordinate
+function map_panel.remove_collectible(x, y)
+    for i = #collectible_positions, 1, -1 do
+        local pos = collectible_positions[i]
+        if pos.x == x and pos.y == y then
+            table.remove(collectible_positions, i)
+            return
         end
     end
 end
@@ -213,6 +264,23 @@ function map_panel.draw(x, y, width, height, player, elapsed_time)
             canvas.draw_image(sprites.environment.campfire,
                 cx, cy, CAMPFIRE_SIZE, CAMPFIRE_SIZE,
                 0, 0, FRAME_SIZE, FRAME_SIZE)
+        end
+    end
+    canvas.set_global_alpha(1)
+
+    -- Draw collectible dots (blinking blue)
+    local collect_alpha = 0.4 + 0.6 * (0.5 + 0.5 * math.sin(elapsed_time * BLINK_SPEED * 0.9))
+    canvas.set_global_alpha(collect_alpha)
+    canvas.set_color("#4488FF")
+    local dot_half = PLAYER_DOT_SIZE / 2
+    for i = 1, #collectible_positions do
+        local pos = collectible_positions[i]
+        if pos.x >= vis_x1 and pos.x <= vis_x2 and pos.y >= vis_y1 and pos.y <= vis_y2 then
+            if not has_bounds or visited[pos.bi] then
+                canvas.fill_rect(ox + (pos.x + 0.5) * TILE_PX - dot_half,
+                    oy + (pos.y + 0.5) * TILE_PX - dot_half,
+                    PLAYER_DOT_SIZE, PLAYER_DOT_SIZE)
+            end
         end
     end
     canvas.set_global_alpha(1)

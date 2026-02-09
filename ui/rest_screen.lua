@@ -1654,6 +1654,26 @@ local function draw_audio_panel(x, y, width, height)
     utils.draw_outlined_text(value_text, toggle_x + left_metrics.width, toggle_y, value_color)
     canvas.set_color(arrow_color)
     canvas.draw_text(toggle_x + left_metrics.width + value_metrics.width, toggle_y, arrow_right)
+
+    -- Draw "Full Screen: Press F11" hint at bottom of settings panel
+    local hint_y = y + height - 14
+    local hint_alpha = 0.4 + 0.6 * (0.5 + 0.5 * math.sin(elapsed_time * 6))
+    canvas.set_global_alpha(hint_alpha)
+    canvas.set_font_size(6)
+    canvas.set_text_baseline("middle")
+
+    local fs_text = "Full Screen: Press "
+    local f11_text = "F11"
+    local fs_metrics = canvas.get_text_metrics(fs_text)
+    local f11_metrics = canvas.get_text_metrics(f11_text)
+    local total_w = fs_metrics.width + f11_metrics.width
+    local hint_x = label_center_x - total_w / 2
+
+    canvas.set_color("#FFFF00")
+    canvas.draw_text(hint_x, hint_y, fs_text)
+    canvas.set_color("#00FF00")
+    canvas.draw_text(hint_x + fs_metrics.width, hint_y, f11_text)
+    canvas.set_global_alpha(1)
 end
 
 --- Draw the controls settings panel (keybind rows)

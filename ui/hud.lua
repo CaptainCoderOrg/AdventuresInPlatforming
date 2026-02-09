@@ -40,6 +40,7 @@ function hud.init()
     game_over.init()
     rest_screen.init()
     title_screen.init()
+    credits_screen.init()
     slot_screen.init()
     selector_widget = projectile_selector.create({ x = 8, y = 8, alpha = 1.0 })
     secondary_widget = secondary_bar.create()
@@ -325,6 +326,12 @@ end
 ---@param fn function Function to call when Settings is selected
 function hud.set_title_settings_callback(fn)
     title_screen.set_settings_callback(fn)
+end
+
+--- Set the credits callback for title screen
+---@param fn function Function to call when Credits is selected
+function hud.set_title_credits_callback(fn)
+    title_screen.set_credits_callback(fn)
 end
 
 --- Show the slot selection screen

@@ -12,6 +12,7 @@ audio.title_screen = canvas.assets.load_music("title_screen", "music/title-scree
 audio.level1 = canvas.assets.load_music("level1", "music/level-1.ogg")
 audio.rest = canvas.assets.load_music("rest", "music/rest.ogg")
 audio.gnomo_boss = canvas.assets.load_music("gnomo_boss", "music/gnomo-boss.ogg")
+audio.credits = canvas.assets.load_music("credits", "music/credits.ogg")
 
 audio.dash = canvas.assets.load_sound("dash", "sfx/dash.ogg")
 audio.sound_check = canvas.assets.load_sound("sound_check", "sfx/sound-check.ogg")

@@ -851,6 +851,7 @@ local function on_start()
     hud.set_title_audio_callback(audio_dialog.show)
     hud.set_title_controls_callback(controls_dialog.show)
     hud.set_title_settings_callback(settings_dialog.show)
+    hud.set_title_credits_callback(hud.show_credits_screen)
 
     -- Slot screen callbacks (back navigates to title which is already shown beneath)
     hud.set_slot_callback(load_slot)

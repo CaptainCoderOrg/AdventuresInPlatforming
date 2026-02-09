@@ -24,11 +24,13 @@ local MENU_ITEMS = {
     { id = "audio", label = "Audio" },
     { id = "controls", label = "Controls" },
     { id = "settings", label = "Settings" },
+    { id = "credits", label = "Credits" },
 }
 
 local state = STATE.HIDDEN
 local fade_progress = 0
 local focused_index = 1  -- Default to "Play Game" (index 1)
+local blink_time = 0
 
 -- Cursor animation (player idle sprite)
 local cursor_animation = nil
@@ -38,6 +40,7 @@ local play_game_callback = nil
 local audio_callback = nil
 local controls_callback = nil
 local settings_callback = nil
+local credits_callback = nil
 
 -- Mouse input tracking
 local mouse_active = false
@@ -91,6 +94,12 @@ function title_screen.set_settings_callback(fn)
     settings_callback = fn
 end
 
+--- Set the credits callback function
+---@param fn function Function to call when Credits is selected
+function title_screen.set_credits_callback(fn)
+    credits_callback = fn
+end
+
 --- Show the title screen with fade-in animation
 --- Resets focus to Play Game
 ---@return nil
@@ -135,6 +144,8 @@ local function trigger_selection()
     elseif item.id == "settings" then
         -- Settings dialog opens on top of title screen, don't hide
         if settings_callback then settings_callback() end
+    elseif item.id == "credits" then
+        if credits_callback then credits_callback() end
     end
 end
 
@@ -171,6 +182,8 @@ function title_screen.update(dt, block_mouse)
     if cursor_animation then
         cursor_animation:play(dt)
     end
+
+    blink_time = blink_time + dt
 
     -- Handle fade transitions
     if state == STATE.FADING_IN then
@@ -287,6 +300,27 @@ function title_screen.draw()
         canvas.set_color(focused and "#FFFF00" or "#FFFFFF")
         canvas.draw_text(item_x, item_y, item.label)
     end
+
+    -- Draw "Full Screen: Press F11" hint at bottom
+    local hint_y = screen_h / scale - 12
+    local hint_alpha = 0.4 + 0.6 * (0.5 + 0.5 * math.sin(blink_time * 6))
+    canvas.set_global_alpha(alpha * hint_alpha)
+    canvas.set_font_size(6)
+    canvas.set_text_baseline("middle")
+
+    local fs_text = "Full Screen: Press "
+    local f11_text = "F11"
+    local fs_metrics = canvas.get_text_metrics(fs_text)
+    local f11_metrics = canvas.get_text_metrics(f11_text)
+    local total_w = fs_metrics.width + f11_metrics.width
+    local hint_x = center_x - total_w / 2
+
+    canvas.set_color("#FFFF00")
+    canvas.draw_text(hint_x, hint_y, fs_text)
+    canvas.set_color("#00FF00")
+    canvas.draw_text(hint_x + fs_metrics.width, hint_y, f11_text)
+
+    canvas.set_global_alpha(alpha)
 
     canvas.restore()  -- Exit scaled context for cursor drawing
 

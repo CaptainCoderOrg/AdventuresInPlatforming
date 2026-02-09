@@ -34,7 +34,7 @@ end
 --- Dialogue trees and shop IDs are specified via Tiled properties:
 ---   - on_dialogue: dialogue tree ID (from dialogue/registry)
 ---   - shop_id: shop inventory ID (from shop/registry)
----@param config {sprite: string, frame_count: number, ms_per_frame: number, width: number, height: number, dialogue: string|nil, box_size: number|nil, draw_width: number|nil} NPC configuration
+---@param config {sprite: string, frame_count: number, ms_per_frame: number, width: number, height: number, dialogue: string|nil, box_size: number|nil, draw_width: number|nil, on_dialogue_close: fun(player: table, camera: table, original_camera_y: number)|nil} NPC configuration
 ---@return table NPC prop definition
 function npc_common.create(config)
     local animation_def = Animation.create_definition(config.sprite, config.frame_count, {
@@ -63,6 +63,11 @@ function npc_common.create(config)
                 return true
             elseif prop.on_dialogue and player_ref and camera_ref then
                 dialogue_screen.start(prop.on_dialogue, player_ref, camera_ref)
+                if config.on_dialogue_close then
+                    dialogue_screen.set_on_close(function(saved_player, camera, original_camera_y)
+                        config.on_dialogue_close(saved_player, camera, original_camera_y)
+                    end)
+                end
                 return true
             elseif prop.dialogue_display then
                 -- Fall back to simple dialogue display

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="425">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="426">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -3069,6 +3069,7 @@
    </properties>
   </object>
   <object id="418" gid="113" x="-272" y="240" width="16" height="16"/>
+  <object id="425" gid="113" x="-1168" y="992" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="10" name="Decorations">
   <object id="39" gid="132" x="-472" y="304" width="16" height="32"/>

@@ -60,4 +60,40 @@ return {
         description = "The Adept imbued the crystal ball with magic and gave it to me as the Orb of Teleportation. I can use it to travel to any campfire I've visited.",
         parent = "find_crystal_ball", sort_order = 5,
     },
+
+    -- Level 2: Find Adept's Shield (child of The Adept)
+    find_adepts_shield = {
+        title = "The Adept's Shield",
+        description = "The Adept believes the Valkyrie in the Crypt stole his shield.",
+        parent = "the_adept", sort_order = 6,
+    },
+
+    -- Level 3: Shield quest sub-entries (children of Find Adept's Shield)
+    shield_found_attic = {
+        title = "Shield Found in Attic",
+        description = "The Adept's shield was in the attic all along. The Valkyrie was innocent.",
+        parent = "find_adepts_shield", sort_order = 1,
+    },
+    valkyrie_apology_letter = {
+        title = "Apology to the Valkyrie",
+        description = "The Adept wrote a letter of apology for the Valkyrie.",
+        parent = "find_adepts_shield", sort_order = 2,
+    },
+    valkyrie_apology_delivered = {
+        title = "Valkyrie Forgives",
+        description = "The Valkyrie accepted the Adept's apology and forgave him.",
+        parent = "find_adepts_shield", sort_order = 3,
+    },
+    killed_valkyrie = {
+        title = "Valkyrie Defeated",
+        description = "The Valkyrie of the Crypts has been slain.",
+        parent = "find_adepts_shield", sort_order = 4,
+    },
+
+    -- Level 2: Purgatory Reveal (child of The Adept)
+    purgatory_revealed = {
+        title = "The Truth",
+        description = "The Adept revealed the truth about this realm.",
+        parent = "the_adept", sort_order = 7,
+    },
 }

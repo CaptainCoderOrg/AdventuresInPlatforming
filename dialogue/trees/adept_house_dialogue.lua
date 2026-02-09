@@ -16,7 +16,17 @@ return {
                 { text = "About the apology letter...", next = "apology_reminder", condition = "has_item_adept_apology", condition2 = "not_apology_delivered_to_gnomos" },
                 { text = "The gnomos are dead.", next = "gnomos_defeated_check", condition = "met_adept", condition2 = "defeated_boss_gnomo_brothers", condition3 = "not_crystal_returned" },
                 { text = "I delivered your apology.", next = "apology_delivered", condition = "apology_delivered_to_gnomos", condition2 = "not_received_orb" },
-                { text = "What can you tell me about myself?", next = "memory_loss", condition = "met_adept" },
+                -- Shield quest paths
+                { text = "You look concerned.", next = "shield_quest_start", condition = "has_item_longsword", condition2 = "not_asked_about_shield", condition3 = "received_orb" },
+                { text = "I found your shield.", next = "shield_found_peaceful", condition = "has_item_adepts_shield", condition2 = "asked_about_shield", condition3 = "not_defeated_boss_valkyrie_boss", condition4 = "not_valkyrie_quest_resolved" },
+                { text = "I found your shield.", next = "shield_found_too_late", condition = "has_item_adepts_shield", condition2 = "asked_about_shield", condition3 = "defeated_boss_valkyrie_boss", condition4 = "not_valkyrie_quest_resolved" },
+                { text = "About the Valkyrie...", next = "valkyrie_killed_tragic", condition = "defeated_boss_valkyrie_boss", condition2 = "asked_about_shield", condition3 = "not_has_item_adepts_shield", condition4 = "not_valkyrie_quest_resolved" },
+                { text = "About the apology to the Valkyrie...", next = "valkyrie_apology_reminder", condition = "has_item_valkyrie_apology", condition2 = "not_valkyrie_apology_delivered" },
+                { text = "I delivered your apology to the Valkyrie.", next = "valkyrie_apology_return", condition = "valkyrie_apology_delivered", condition2 = "not_valkyrie_quest_resolved" },
+                -- Purgatory reveal (endgame)
+                { text = "Tell me about myself.", next = "purgatory_reveal", condition = "valkyrie_quest_resolved", condition2 = "not_purgatory_revealed" },
+                -- General options
+                { text = "What can you tell me about myself?", next = "memory_loss", condition = "met_adept", condition2 = "not_valkyrie_quest_resolved" },
                 { text = "About that chest...", next = "about_chest", condition = "met_adept", condition2 = "not_asked_about_chest" },
                 { text = "Any luck finding the crystal ball?", next = "crystal_reminder", condition = "asked_about_chest", condition2 = "not_crystal_returned" },
                 { text = "Tell me about the orb.", next = "orb_info", condition = "received_orb" },
@@ -458,6 +468,240 @@ return {
             text = "The Orb of Teleportation will serve you well in your journeys. Focus on a place you've been, and it will take you there. Be careful where you use it - some places don't take kindly to sudden arrivals.",
             options = {
                 { text = "Leave", next = nil },
+            },
+        },
+
+        -- ══════════════════════════════════════════════════════════════
+        -- Shield Quest: Valkyrie accusation arc
+        -- ══════════════════════════════════════════════════════════════
+
+        shield_quest_start = {
+            text = "That chest... opening it triggered something. A memory. I had a shield once, from my warrior days. I remember now - I lost it in the battle against the Great Eye.",
+            actions = { "set_flag_asked_about_shield", "journal_add_find_adepts_shield" },
+            options = {
+                { text = "Where is it now?", next = "shield_quest_blame" },
+                { text = "A shield?", next = "shield_quest_details" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_quest_details = {
+            text = "A fine shield. It served me well in my warrior days. I carried it through many battles before I retired to this life of study.",
+            options = {
+                { text = "Where is it now?", next = "shield_quest_blame" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_quest_blame = {
+            text = "The Valkyrie. She dwells in the old crypt beneath the viking lair. I've seen her carrying a shield that looks just like mine. She must have taken it.",
+            options = {
+                { text = "Are you sure it's yours?", next = "shield_quest_sure" },
+                { text = "I'll look into it.", next = "shield_quest_accept" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_quest_sure = {
+            text = "She lives among the undead and monsters. Who else would steal from an old man? It must be her.",
+            options = {
+                { text = "I'll look into it.", next = "shield_quest_accept" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_quest_accept = {
+            text = "Be careful in those crypts. The Valkyrie is no gnomo - she is a warrior born.",
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- Peaceful path: Found shield in attic, valkyrie still alive
+        shield_found_peaceful = {
+            text = "You found it? Where was it?",
+            options = {
+                { text = "In the attic. It was here all along.", next = "shield_found_attic_alive" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_found_attic_alive = {
+            text = "The attic? No... not again. I've done it again, haven't I? Blamed an innocent for my own carelessness.",
+            actions = { "journal_add_shield_found_attic" },
+            options = {
+                { text = "The Valkyrie is still alive. You can make amends.", next = "shield_attic_make_amends", condition = "not_gnomos_wrongly_killed" },
+                { text = "The Valkyrie is still alive. You can make amends.", next = "shield_attic_make_amends_guilt", condition = "gnomos_wrongly_killed" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_attic_make_amends = {
+            text = "You're right. Here - take this letter. It contains my apology. Please deliver it to her in the crypt.",
+            actions = { "give_item_valkyrie_apology", "journal_add_valkyrie_apology_letter" },
+            options = {
+                { text = "I'll deliver it.", next = "valkyrie_apology_accept" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_attic_make_amends_guilt = {
+            text = "First the gnomos, now this... I am a foolish old man. Here, take this letter. My apology to the Valkyrie. Please, deliver it before I cause any more harm.",
+            actions = { "give_item_valkyrie_apology", "journal_add_valkyrie_apology_letter" },
+            options = {
+                { text = "I'll deliver it.", next = "valkyrie_apology_accept" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        valkyrie_apology_accept = {
+            text = "The Valkyrie dwells in the crypt beneath the viking lair. Approach carefully - she may not be welcoming to strangers.",
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- Tragic path: Found shield in attic, but valkyrie already killed
+        shield_found_too_late = {
+            text = "You found it? Where?",
+            options = {
+                { text = "In the attic.", next = "shield_found_attic_dead" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_found_attic_dead = {
+            text = "My shield was here all along... and you killed her because of me.",
+            actions = { "journal_add_shield_found_attic" },
+            options = {
+                { text = "You didn't know.", next = "shield_dead_comfort", condition = "not_gnomos_wrongly_killed" },
+                { text = "You didn't know.", next = "shield_dead_comfort_guilt", condition = "gnomos_wrongly_killed" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_dead_comfort = {
+            text = "Didn't I? I should have looked harder. I should have checked my own house before condemning someone. Another life lost to my foolishness.",
+            actions = { "set_flag_valkyrie_quest_resolved", "journal_complete_find_adepts_shield" },
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        shield_dead_comfort_guilt = {
+            text = "Another innocent killed because of me. First the gnomos, now the Valkyrie... How many more must suffer for my carelessness?",
+            actions = { "set_flag_valkyrie_quest_resolved", "journal_complete_find_adepts_shield" },
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- Tragic path: Killed valkyrie, no shield found yet
+        valkyrie_killed_tragic = {
+            text = "The Valkyrie is dead? Did she have my shield?",
+            options = {
+                { text = "She dropped a shield, but...", next = "valkyrie_killed_wrong_shield" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        valkyrie_killed_wrong_shield = {
+            text = "But what?",
+            options = {
+                { text = "It wasn't yours. It was hers.", next = "valkyrie_killed_realization", condition = "not_gnomos_wrongly_killed" },
+                { text = "It wasn't yours. It was hers.", next = "valkyrie_killed_realization_guilt", condition = "gnomos_wrongly_killed" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        valkyrie_killed_realization = {
+            text = "Not mine? Then... then she never had it. What have I done? I sent you to kill an innocent woman over a shield that was never hers.",
+            actions = { "set_flag_valkyrie_quest_resolved", "journal_complete_find_adepts_shield" },
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        valkyrie_killed_realization_guilt = {
+            text = "Not mine? Another innocent... First the gnomos, now the Valkyrie. I keep sending you to fight my imagined enemies, and they keep dying for nothing.",
+            actions = { "set_flag_valkyrie_quest_resolved", "journal_complete_find_adepts_shield" },
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- Apology reminder
+        valkyrie_apology_reminder = {
+            text = "You still have my letter? Please, deliver it to the Valkyrie in the crypt beneath the viking lair. I need to make amends.",
+            options = {
+                { text = "I'll deliver it.", next = nil },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- Return after delivering apology
+        valkyrie_apology_return = {
+            text = "She forgave me? Truly? After what I accused her of?",
+            options = {
+                { text = "She did. She holds no grudge.", next = "valkyrie_apology_relief" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        valkyrie_apology_relief = {
+            text = "This realm needs more like you. Someone who chooses peace when violence would be easier. Thank you, friend.",
+            actions = { "set_flag_valkyrie_quest_resolved", "journal_add_valkyrie_apology_delivered", "journal_complete_find_adepts_shield" },
+            options = {
+                { text = "Leave", next = nil },
+            },
+        },
+
+        -- ══════════════════════════════════════════════════════════════
+        -- Purgatory Reveal: Endgame dialogue chain
+        -- ══════════════════════════════════════════════════════════════
+
+        purgatory_reveal = {
+            text = "You want to know who you are? I've kept this from you long enough.",
+            options = {
+                { text = "Tell me.", next = "purgatory_reveal_2" },
+                { text = "Leave", next = nil },
+            },
+        },
+
+        purgatory_reveal_2 = {
+            text = "You are dead. We all are. This realm... it is not the world of the living. It is a place between. A purgatory.",
+            options = {
+                { text = "Dead?", next = "purgatory_reveal_3" },
+                { text = "Purgatory?", next = "purgatory_reveal_3" },
+            },
+        },
+
+        purgatory_reveal_3 = {
+            text = "Everyone here has unfinished business. Something that binds their spirit, prevents them from moving on. For some it is guilt. For others, a promise unkept.",
+            options = {
+                { text = "What about me?", next = "purgatory_reveal_4" },
+            },
+        },
+
+        purgatory_reveal_4 = {
+            text = "I don't know what binds you here. Your memories were taken - stripped away by the Evil Eye that watches over this realm. It feeds on forgotten souls.",
+            options = {
+                { text = "The Evil Eye?", next = "purgatory_reveal_5" },
+            },
+        },
+
+        purgatory_reveal_5 = {
+            text = "To know yourself, you must defeat the Evil Eye. Reclaim your memories. Only then will you know why you are here... and how to move on.",
+            options = {
+                { text = "Where do I find it?", next = "purgatory_reveal_6" },
+            },
+        },
+
+        purgatory_reveal_6 = {
+            text = "Beyond the furthest reaches of this realm, in a place none have returned from. But that... is an adventure for the future.",
+            actions = { "set_flag_purgatory_revealed", "set_flag_show_credits", "journal_add_purgatory_revealed", "journal_complete_purgatory_revealed" },
+            options = {
+                { text = "Thank you for telling me the truth.", next = nil },
             },
         },
     },

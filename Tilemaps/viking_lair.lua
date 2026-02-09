@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 425,
+  nextobjectid = 426,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -5729,6 +5729,20 @@ return {
           shape = "rectangle",
           x = -272,
           y = 240,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 113,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 425,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1168,
+          y = 992,
           width = 16,
           height = 16,
           rotation = 0,

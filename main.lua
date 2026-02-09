@@ -218,7 +218,7 @@ local function user_input()
 
     if hud.is_title_screen_active() or hud.is_game_over_active() or hud.is_rest_screen_active()
         or hud.is_pickup_dialogue_active() or hud.is_dialogue_active() or hud.is_shop_active()
-        or hud.is_upgrade_active() then
+        or hud.is_upgrade_active() or hud.is_credits_active() then
         return
     end
 
@@ -280,7 +280,8 @@ local OUT_OF_BOUNDS_MARGIN = 5  -- Tiles beyond world edge before triggering rec
 ---@param dt number Delta time in seconds (already capped)
 ---@return nil
 local function update(dt)
-    if hud.is_title_screen_active() or hud.is_slot_screen_active() or hud.is_game_over_active() then
+    if hud.is_title_screen_active() or hud.is_slot_screen_active() or hud.is_game_over_active()
+        or hud.is_credits_active() then
         Playtime.pause()
         return
     end
@@ -806,6 +807,7 @@ local function on_start()
     hud.set_slot_callback(load_slot)
 
     rest_screen.set_return_to_title_callback(return_to_title)
+    hud.set_credits_close_callback(return_to_title)
 
     hud.show_title_screen()
     audio.play_music(audio.title_screen)

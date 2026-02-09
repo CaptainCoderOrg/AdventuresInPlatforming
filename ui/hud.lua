@@ -16,6 +16,7 @@ local dialogue_screen = require("ui/dialogue_screen")
 local shop_screen = require("ui/shop_screen")
 local upgrade_screen = require("ui/upgrade_screen")
 local journal_toast = require("ui/journal_toast")
+local credits_screen = require("ui/credits_screen")
 
 local hud = {}
 
@@ -45,8 +46,14 @@ function hud.init()
 end
 
 --- Process HUD input for all overlay screens
---- Priority: audio dialog > controls dialog > pickup dialogue > dialogue screen > shop screen > pause/rest toggle > slot screen > title screen > game over > rest screen
+--- Priority: credits > audio dialog > controls dialog > pickup dialogue > dialogue screen > shop screen > pause/rest toggle > slot screen > title screen > game over > rest screen
 function hud.input()
+    -- Credits screen blocks all input when open
+    if credits_screen.is_active() then
+        credits_screen.input()
+        return
+    end
+
     -- Audio dialog blocks other input when open
     if audio_dialog.is_active() then
         audio_dialog.input()
@@ -121,6 +128,7 @@ end
 ---@param dt number Delta time in seconds
 ---@param player table Player instance with max_health and damage properties
 function hud.update(dt, player)
+    credits_screen.update(dt)
     audio_dialog.update(dt)
     controls_dialog.update(dt)
     settings_dialog.update(dt)
@@ -141,7 +149,7 @@ function hud.update(dt, player)
     -- Pause toast timer while overlay screens are active (so it shows after dialogue closes)
     local toast_paused = dialogue_screen.is_active() or shop_screen.is_active()
         or upgrade_screen.is_active() or rest_screen.is_active() or game_over.is_active()
-        or title_screen.is_active() or slot_screen.is_active()
+        or title_screen.is_active() or slot_screen.is_active() or credits_screen.is_active()
     journal_toast.update(dt, toast_paused)
     selector_widget:update(dt, player)
     secondary_widget:update(dt, player)
@@ -187,6 +195,8 @@ function hud.draw(player)
     dialogue_screen.draw()
     shop_screen.draw()
     upgrade_screen.draw()
+    -- Credits screen drawn on top of game screens
+    credits_screen.draw()
     -- Dialogs drawn last so they appear on top of everything
     pickup_dialogue.draw()
     audio_dialog.draw()
@@ -332,6 +342,23 @@ end
 ---@param fn function Function to call with slot_index when a slot is selected
 function hud.set_slot_callback(fn)
     slot_screen.set_slot_callback(fn)
+end
+
+--- Show the credits screen
+function hud.show_credits_screen()
+    credits_screen.show()
+end
+
+--- Check if credits screen is blocking game input
+---@return boolean is_active True if credits screen is visible
+function hud.is_credits_active()
+    return credits_screen.is_active()
+end
+
+--- Set the credits close callback (return to title screen)
+---@param fn function Callback when credits close
+function hud.set_credits_close_callback(fn)
+    credits_screen.set_on_close(fn)
 end
 
 --- Set references needed for pause screen functionality

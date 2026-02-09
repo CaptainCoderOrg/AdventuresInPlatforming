@@ -170,6 +170,19 @@ return {
         type = "usable",
         static_sprite = sprites.items.orb_of_teleportation,
     },
+    adepts_shield = {
+        name = "Adept's Shield",
+        description = "The Adept's old shield from his warrior days. Block incoming attacks. Assign to an ability slot to use.",
+        type = "secondary",
+        static_sprite = sprites.items.adepts_shield,
+    },
+    valkyrie_apology = {
+        name = "Adept's Apology",
+        description = "A letter containing an apology to the Valkyrie.",
+        type = "no_equip",
+        static_sprite = sprites.items.valkyrie_apology,
+        collect_sfx = audio.pick_up_key,
+    },
     minor_healing = {
         name = "Minor Healing",
         description = "Hold the assigned ability key to slowly convert energy into health.",

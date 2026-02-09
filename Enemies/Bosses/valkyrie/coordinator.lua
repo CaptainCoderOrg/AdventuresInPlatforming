@@ -53,6 +53,7 @@ local DOOR_ID = "valkrie_boss_door"
 local audio = nil
 local valk_common = nil
 local victory = nil
+local apology_path = nil
 
 -- Cached prop references (populated on first use, cleared on reset)
 local cached_blocks = nil
@@ -380,13 +381,18 @@ function coordinator.update(dt)
     -- Update victory sequence (shield drop, shard, door)
     victory = victory or require("Enemies/Bosses/valkyrie/victory")
     victory.update(dt)
+
+    -- Update apology path (peaceful resolution)
+    apology_path = apology_path or require("Enemies/Bosses/valkyrie/apology_path")
+    apology_path.update(dt)
 end
 
---- Check if the victory sequence is complete.
----@return boolean True if shield collected and door opened
+--- Check if any ending sequence (victory or apology) is complete.
+---@return boolean True if boss encounter has concluded
 function coordinator.is_sequence_complete()
     victory = victory or require("Enemies/Bosses/valkyrie/victory")
-    return victory.is_complete()
+    apology_path = apology_path or require("Enemies/Bosses/valkyrie/apology_path")
+    return victory.is_complete() or apology_path.is_complete()
 end
 
 --- Set references needed by sub-modules.
@@ -395,6 +401,8 @@ end
 function coordinator.set_refs(player, camera)
     coordinator.player = player
     coordinator.camera = camera
+    apology_path = apology_path or require("Enemies/Bosses/valkyrie/apology_path")
+    apology_path.set_refs(player, camera)
 end
 
 -- ── Spear API ────────────────────────────────────────────────────────────────
@@ -589,6 +597,10 @@ function coordinator.reset()
 
     victory = victory or require("Enemies/Bosses/valkyrie/victory")
     victory.reset()
+
+    -- Reset apology path state
+    apology_path = apology_path or require("Enemies/Bosses/valkyrie/apology_path")
+    apology_path.reset()
 end
 
 return coordinator

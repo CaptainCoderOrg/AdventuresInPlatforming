@@ -22,6 +22,7 @@ local Playtime = require("Playtime")
 local rest_state = require("player.rest")
 local proximity_audio = require("proximity_audio")
 local shield = require("player.shield")
+local dash = require("player.dash")
 
 -- UI
 local hud = require("ui/hud")
@@ -230,7 +231,7 @@ local function user_input()
     hud.input()
 
     -- Profiler toggle works on any screen
-    if canvas.is_key_pressed(canvas.keys.O) then
+    if config.DEV_MODE and canvas.is_key_pressed(canvas.keys.O) then
         profiler.toggle()
         config.profiler = profiler.enabled
     end
@@ -246,60 +247,62 @@ local function user_input()
         return
     end
 
-    if canvas.is_key_pressed(canvas.keys.P) then
-        config.bounding_boxes = not config.bounding_boxes
-        config.debug = not config.debug
-    elseif config.debug then
-        -- Debug mode: F1-F7 toggle ability flags (avoids conflict with ability key bindings)
-        if canvas.is_key_pressed(canvas.keys.F1) then
-            player.has_double_jump = not player.has_double_jump
-        elseif canvas.is_key_pressed(canvas.keys.F2) then
-            toggle_debug_secondary(player, "dash_amulet")
-        elseif canvas.is_key_pressed(canvas.keys.F3) then
-            player.has_wall_slide = not player.has_wall_slide
-        elseif canvas.is_key_pressed(canvas.keys.F4) then
-            toggle_debug_secondary(player, "hammer")
-        elseif canvas.is_key_pressed(canvas.keys.F5) then
-            player.has_axe = not player.has_axe
-        elseif canvas.is_key_pressed(canvas.keys.F6) then
-            player.has_shuriken = not player.has_shuriken
-        elseif canvas.is_key_pressed(canvas.keys.F7) then
-            toggle_debug_secondary(player, "shield")
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_9) then
-            local slot1 = SaveSlots.get(1)
-            if slot1 then
-                SaveSlots.set(3, slot1)
-                Effects.create_text(player.x, player.y - 0.5, "Slot 1 -> Slot 3", "#00FF00", 8)
-            else
-                Effects.create_text(player.x, player.y - 0.5, "Slot 1 empty", "#FF0000", 8)
-            end
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_0) then
-            local save_data = SaveSlots.build_player_data(player, current_level.id, "Dev Save")
-            SaveSlots.save_dev_slot(0, save_data)
-            Effects.create_text(player.x, player.y - 0.5, "Saved to Dev Slot 0", "#00FF00", 8)
-        elseif canvas.is_key_pressed(canvas.keys.H) then
-            -- Grant and equip Minor Healing ability
-            if not player.equipped_items.minor_healing then
-                table.insert(player.unique_items, "minor_healing")
-                player.equipped_items.minor_healing = true
-                -- Assign to first empty ability slot
-                if player.ability_slots then
-                    for i = 1, controls.ABILITY_SLOT_COUNT do
-                        if not player.ability_slots[i] then
-                            player.ability_slots[i] = "minor_healing"
-                            break
+    if config.DEV_MODE then
+        if canvas.is_key_pressed(canvas.keys.P) then
+            config.bounding_boxes = not config.bounding_boxes
+            config.debug = not config.debug
+        elseif config.debug then
+            -- Debug mode: F1-F7 toggle ability flags (avoids conflict with ability key bindings)
+            if canvas.is_key_pressed(canvas.keys.F1) then
+                player.has_double_jump = not player.has_double_jump
+            elseif canvas.is_key_pressed(canvas.keys.F2) then
+                toggle_debug_secondary(player, "dash_amulet")
+            elseif canvas.is_key_pressed(canvas.keys.F3) then
+                player.has_wall_slide = not player.has_wall_slide
+            elseif canvas.is_key_pressed(canvas.keys.F4) then
+                toggle_debug_secondary(player, "hammer")
+            elseif canvas.is_key_pressed(canvas.keys.F5) then
+                player.has_axe = not player.has_axe
+            elseif canvas.is_key_pressed(canvas.keys.F6) then
+                player.has_shuriken = not player.has_shuriken
+            elseif canvas.is_key_pressed(canvas.keys.F7) then
+                toggle_debug_secondary(player, "shield")
+            elseif canvas.is_key_pressed(canvas.keys.DIGIT_9) then
+                local slot1 = SaveSlots.get(1)
+                if slot1 then
+                    SaveSlots.set(3, slot1)
+                    Effects.create_text(player.x, player.y - 0.5, "Slot 1 -> Slot 3", "#00FF00", 8)
+                else
+                    Effects.create_text(player.x, player.y - 0.5, "Slot 1 empty", "#FF0000", 8)
+                end
+            elseif canvas.is_key_pressed(canvas.keys.DIGIT_0) then
+                local save_data = SaveSlots.build_player_data(player, current_level.id, "Dev Save")
+                SaveSlots.save_dev_slot(0, save_data)
+                Effects.create_text(player.x, player.y - 0.5, "Saved to Dev Slot 0", "#00FF00", 8)
+            elseif canvas.is_key_pressed(canvas.keys.H) then
+                -- Grant and equip Minor Healing ability
+                if not player.equipped_items.minor_healing then
+                    table.insert(player.unique_items, "minor_healing")
+                    player.equipped_items.minor_healing = true
+                    -- Assign to first empty ability slot
+                    if player.ability_slots then
+                        for i = 1, controls.ABILITY_SLOT_COUNT do
+                            if not player.ability_slots[i] then
+                                player.ability_slots[i] = "minor_healing"
+                                break
+                            end
                         end
                     end
+                    require("player.weapon_sync").sync(player)
                 end
-                require("player.weapon_sync").sync(player)
             end
-        end
-    else
-        -- Normal mode: 1-2 switch music
-        if canvas.is_key_pressed(canvas.keys.DIGIT_1) then
-            audio.play_music(audio.level1)
-        elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
-            audio.play_music(audio.title_screen)
+        else
+            -- Normal mode: 1-2 switch music
+            if canvas.is_key_pressed(canvas.keys.DIGIT_1) then
+                audio.play_music(audio.level1)
+            elseif canvas.is_key_pressed(canvas.keys.DIGIT_2) then
+                audio.play_music(audio.title_screen)
+            end
         end
     end
     player:input()
@@ -548,6 +551,7 @@ init_level = function(level, spawn_override, player_data, options)
     level = level or current_level
     current_level = level
 
+    dash.clear_ghost_trails()
     player = Player.new()
 
     -- Restore player stats if provided

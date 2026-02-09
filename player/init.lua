@@ -423,6 +423,8 @@ end
 --- Applies invincibility alpha blink effect when post-hit immunity is active.
 --- Also draws debug bounding box if enabled in config.
 function Player:draw()
+	self.states.dash.draw_ghost_trails()
+
 	if self:is_invincible() then
 		local blink_time = self.invincible_time
 		if self.state == self.states.dash then
@@ -456,6 +458,7 @@ function Player:update(dt)
 	self.pressure_plate_lift = 0  -- Clear before pressure plates set it
 	self.invincible_time = math.max(0, self.invincible_time - dt)
 	self.state.update(self, dt)
+	self.states.dash.update_ghost_trails(dt)
 	heal_channel.update(self, dt)
 
 	self.animation.flipped = self.direction

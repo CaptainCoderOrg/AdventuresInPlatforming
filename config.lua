@@ -1,4 +1,5 @@
 return {
+	DEV_MODE = false,
 	debug = false,
 	bounding_boxes = false,
 	profiler = false,

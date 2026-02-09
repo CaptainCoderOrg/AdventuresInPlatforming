@@ -37,9 +37,9 @@ controls_config.keyboard_defaults = {
     ability_2   = controls_config.MOUSE_RIGHT,
     ability_3   = canvas.keys.E,
     ability_4   = canvas.keys.Z,
-    ability_5   = canvas.keys.C,
+    ability_5   = canvas.keys.SHIFT,
     ability_6   = canvas.keys.F,
-    swap_weapon = canvas.keys.TAB,
+    swap_weapon = canvas.keys.R,
 }
 
 -- Default gamepad bindings (action_id -> canvas.buttons.* constant)

@@ -337,10 +337,10 @@ end
 ---@param player table The player object
 ---@param _cols table Collision results (unused, kept for interface consistency)
 function common.check_hit(player, _cols)
-    if canvas.is_key_pressed(canvas.keys.Y) and not player:is_invincible() then
+    if config.DEV_MODE and canvas.is_key_pressed(canvas.keys.Y) and not player:is_invincible() then
         player:take_damage(1)
     end
-    if canvas.is_key_pressed(canvas.keys.DIGIT_8) then
+    if config.DEV_MODE and canvas.is_key_pressed(canvas.keys.DIGIT_8) then
         player.experience = player.experience + 8000
     end
 end

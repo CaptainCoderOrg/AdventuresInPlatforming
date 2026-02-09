@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 14,
-  nextobjectid = 145,
+  nextobjectid = 146,
   properties = {
     ["id"] = "garden"
   },
@@ -52,37 +52,37 @@ return {
     },
     {
       name = "spawns",
-      firstgid = 1317,
+      firstgid = 1318,
       filename = "spawns.tsx",
       exportfilename = "spawns.lua"
     },
     {
       name = "decorations",
-      firstgid = 1336,
+      firstgid = 1337,
       filename = "decorations.tsx",
       exportfilename = "decorations.lua"
     },
     {
       name = "unique_items",
-      firstgid = 1382,
+      firstgid = 1383,
       filename = "unique_items.tsx",
       exportfilename = "unique_items.lua"
     },
     {
       name = "NPCS",
-      firstgid = 1398,
+      firstgid = 1399,
       filename = "NPCS.tsx",
       exportfilename = "NPCS.lua"
     },
     {
       name = "tombstones",
-      firstgid = 1402,
+      firstgid = 1403,
       filename = "tombstones.tsx",
       exportfilename = "tombstones.lua"
     },
     {
       name = "caves_tileset",
-      firstgid = 1466,
+      firstgid = 1467,
       filename = "caves_tileset.tsx",
       exportfilename = "caves_tileset.lua"
     }
@@ -1040,7 +1040,7 @@ return {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1324, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1325, 0
           }
         },
         {
@@ -1109,8 +1109,8 @@ return {
         {
           x = 16, y = 0, width = 16, height = 16,
           data = {
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1324, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1323, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1322, 0,
             146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146, 146,
             26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
             26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,
@@ -1391,11 +1391,11 @@ return {
             652, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1578, 0, 0, 246, 247, 248,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1579, 0, 0, 246, 247, 248,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 651, 652, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 621,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1578, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1579, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
           }
         },
@@ -1415,9 +1415,9 @@ return {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 246, 247, 248, 224,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 1539, 1540, 0, 0, 0, 1578, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 1540, 1541, 0, 0, 0, 1579, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 621,
-            0, 0, 0, 0, 651, 652, 0, 0, 1577, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 651, 652, 0, 0, 1578, 0, 0, 0, 0, 0, 0, 0
           }
         },
         {
@@ -1486,7 +1486,7 @@ return {
         {
           x = -64, y = -32, width = 16, height = 16,
           data = {
-            0, 1577, 1578, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 1578, 1579, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 225, 226, 227, 0, 0, 0, 0, 0, 246, 247, 248, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -1993,7 +1993,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1334,
+          gid = 1335,
           visible = true,
           properties = {
             ["gold"] = 0,
@@ -2010,7 +2010,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1320,
+          gid = 1321,
           visible = true,
           properties = {
             ["name"] = "Adept's Cottage"
@@ -2026,7 +2026,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "Jump: {jump}"
@@ -2042,7 +2042,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "Drop: {move_down} + {jump}"
@@ -2072,7 +2072,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "Inventory: {menu}"
@@ -2102,7 +2102,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1388,
+          gid = 1389,
           visible = true,
           properties = {}
         },
@@ -2130,7 +2130,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "[color=#FF0000]BEWARE[/color] of [color=#FFB100]WORMS[/color]"
@@ -2146,7 +2146,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "{down_arrow} Gnomo Hideout\nNo Soliciting!"
@@ -2162,7 +2162,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "Nothing over here yet. Go back."
@@ -2178,7 +2178,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1328,
+          gid = 1329,
           visible = true,
           properties = {
             ["text"] = "Journal: {menu}"
@@ -2194,7 +2194,7 @@ return {
           width = 32,
           height = 32,
           rotation = 0,
-          gid = 1398,
+          gid = 1399,
           visible = true,
           properties = {}
         },
@@ -2251,7 +2251,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1320,
+          gid = 1321,
           visible = true,
           properties = {
             ["name"] = "Cliffside"
@@ -2613,7 +2613,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1397,
+          gid = 1398,
           visible = true,
           properties = {}
         },
@@ -2627,7 +2627,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1397,
+          gid = 1398,
           visible = true,
           properties = {}
         },
@@ -2641,7 +2641,7 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1393,
+          gid = 1394,
           visible = true,
           properties = {}
         },
@@ -2655,7 +2655,21 @@ return {
           width = 16,
           height = 16,
           rotation = 0,
-          gid = 1397,
+          gid = 1398,
+          visible = true,
+          properties = {}
+        },
+        {
+          id = 145,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -1648,
+          y = -768,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 1398,
           visible = true,
           properties = {}
         }

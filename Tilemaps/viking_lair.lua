@@ -10,7 +10,7 @@ return {
   tilewidth = 16,
   tileheight = 16,
   nextlayerid = 12,
-  nextobjectid = 418,
+  nextobjectid = 419,
   properties = {
     ["id"] = "viking_lair"
   },
@@ -5633,6 +5633,20 @@ return {
             ["id"] = "valkyrie_boss_block_center",
             ["type"] = "boss_block"
           }
+        },
+        {
+          id = 418,
+          name = "",
+          type = "",
+          shape = "rectangle",
+          x = -272,
+          y = 240,
+          width = 16,
+          height = 16,
+          rotation = 0,
+          gid = 113,
+          visible = true,
+          properties = {}
         }
       }
     },
@@ -6683,22 +6697,6 @@ return {
           properties = {
             ["name"] = "Valkyrie's Ledge"
           }
-        },
-        {
-          id = 346,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = -1776,
-          y = 528,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 67,
-          visible = true,
-          properties = {
-            ["name"] = "Boss Fight Test"
-          }
         }
       }
     },
@@ -6761,20 +6759,6 @@ return {
           properties = {
             ["required_key"] = "brass_key"
           }
-        },
-        {
-          id = 344,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = -2528,
-          y = 592,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 110,
-          visible = true,
-          properties = {}
         }
       }
     },

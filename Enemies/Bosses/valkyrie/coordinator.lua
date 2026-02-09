@@ -1,7 +1,5 @@
 --- Valkyrie Boss Coordinator: Manages state for the single-entity valkyrie boss encounter.
 --- Implements the interface needed by boss_health_bar (is_active, get_health_percent, etc).
-local boss_health_bar = require("ui/boss_health_bar")
-local music = require("audio/music")
 local Prop = require("Prop")
 
 -- Lazy-loaded to avoid circular dependency (platforms → triggers → registry → valkyrie → coordinator)
@@ -46,6 +44,7 @@ local BUTTON_IDS = {
 -- Lazy-loaded to avoid circular dependency
 local audio = nil
 local valk_common = nil
+local victory = nil
 
 -- Health thresholds for phase transitions (percentage of max health)
 -- Phase 1: 100%-75%, Phase 2: 75%-50%, Phase 3: 50%-25%, Phase 4: 25%-0%
@@ -80,8 +79,6 @@ local coordinator = {
     boss_id = "valkyrie_boss",
     boss_name = "The Valkyrie",
     boss_subtitle = "Shieldmaiden of the Crypts",
-    victory_pending = false,
-    victory_timer = 0,
     blocks_active = false,
     blocks_timer = 0,
 }
@@ -271,7 +268,7 @@ function coordinator.is_active()
     return coordinator.active
 end
 
---- Trigger victory - kill the valkyrie and start defeated sequence.
+--- Trigger victory - kill the valkyrie and start cinematic victory sequence.
 function coordinator.trigger_victory()
     coordinator.active = false
 
@@ -284,20 +281,14 @@ function coordinator.trigger_victory()
     coordinator.disable_spears(0, 7)
     coordinator.deactivate_spikes(0, 3)
 
+    -- Start victory sequence (captures enemy position before death)
+    victory = victory or require("Enemies/Bosses/valkyrie/victory")
+    victory.start(coordinator.enemy)
+
     -- Kill the enemy
     if coordinator.enemy and not coordinator.enemy.marked_for_destruction then
         coordinator.enemy:die()
     end
-
-    -- Fade out boss music
-    music.fade_out(1)
-
-    -- Show defeated animation
-    boss_health_bar.show_defeated()
-
-    -- Start victory timer to wait for defeated animation
-    coordinator.victory_pending = true
-    coordinator.victory_timer = 0
 end
 
 --- Update victory sequence, block timers, and ghost trails.
@@ -344,34 +335,16 @@ function coordinator.update(dt)
         end
     end
 
-    if not coordinator.victory_pending then return end
-
-    coordinator.victory_timer = coordinator.victory_timer + dt
-
-    if boss_health_bar.is_defeated_complete() then
-        -- Mark boss as defeated
-        local player = coordinator.player
-        if player and player.defeated_bosses then
-            player.defeated_bosses[coordinator.boss_id] = true
-        end
-
-        -- Open the boss door
-        local door = Prop.find_by_id("valkrie_boss_door")
-        if door and not door.marked_for_destruction then
-            Prop.set_state(door, "opening")
-        end
-
-        coordinator.victory_pending = false
-    end
+    -- Update victory sequence (shield drop, shard, door)
+    victory = victory or require("Enemies/Bosses/valkyrie/victory")
+    victory.update(dt)
 end
 
 --- Check if the victory sequence is complete.
----@return boolean True if defeated animation finished
+---@return boolean True if shield collected and door opened
 function coordinator.is_sequence_complete()
-    if coordinator.victory_pending then return false end
-    return (coordinator.player
-        and coordinator.player.defeated_bosses
-        and coordinator.player.defeated_bosses[coordinator.boss_id]) == true
+    victory = victory or require("Enemies/Bosses/valkyrie/victory")
+    return victory.is_complete()
 end
 
 --- Set references needed by sub-modules.
@@ -561,8 +534,6 @@ function coordinator.reset()
     coordinator.enemy = nil
     coordinator.player = nil
     coordinator.camera = nil
-    coordinator.victory_pending = false
-    coordinator.victory_timer = 0
     coordinator.blocks_active = false
     coordinator.blocks_timer = 0
 
@@ -577,6 +548,9 @@ function coordinator.reset()
 
     local cinematic = require("Enemies/Bosses/valkyrie/cinematic")
     cinematic.reset()
+
+    victory = victory or require("Enemies/Bosses/valkyrie/victory")
+    victory.reset()
 end
 
 return coordinator

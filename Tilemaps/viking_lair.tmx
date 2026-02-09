@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="418">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="24" height="11" tilewidth="16" tileheight="16" infinite="1" nextlayerid="12" nextobjectid="419">
  <editorsettings>
   <export target="viking_lair.lua" format="lua"/>
  </editorsettings>
@@ -3054,6 +3054,7 @@
     <property name="type" value="boss_block"/>
    </properties>
   </object>
+  <object id="418" gid="113" x="-272" y="240" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="10" name="Decorations">
   <object id="39" gid="132" x="-472" y="304" width="16" height="32"/>
@@ -3173,11 +3174,6 @@
     <property name="name" value="Valkyrie's Ledge"/>
    </properties>
   </object>
-  <object id="346" gid="67" x="-1776" y="528" width="16" height="16">
-   <properties>
-    <property name="name" value="Boss Fight Test"/>
-   </properties>
-  </object>
  </objectgroup>
  <objectgroup id="9" name="Doors &amp; Keys">
   <object id="20" gid="73" x="-3280" y="496" width="16" height="32">
@@ -3191,7 +3187,6 @@
     <property name="required_key" value="brass_key"/>
    </properties>
   </object>
-  <object id="344" gid="110" x="-2528" y="592" width="16" height="16"/>
  </objectgroup>
  <objectgroup id="7" name="Locations" locked="1">
   <object id="15" x="10" y="48" width="55.5" height="86.417">

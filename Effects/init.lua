@@ -710,18 +710,18 @@ function Effects.create_collect_particles(x, y)
 	end
 end
 
---- Factory: Creates a flying axe effect for boss defeat sequences.
---- The axe flies from start to target position over 1.5 seconds.
+--- Factory: Creates a flying object effect for boss defeat sequences.
+--- The object flies from start to target position with optional spin.
 ---@param start_x number Start X position in tile coordinates
 ---@param start_y number Start Y position in tile coordinates
 ---@param target_x number Target X position in tile coordinates
 ---@param target_y number Target Y position in tile coordinates
----@param on_complete function|nil Callback when axe arrives
+---@param opts table Options: sprite (required), sprite_size (default 16), flight_duration (default 1.5), rotations (default 3), on_complete (callback)
 ---@return table Flying object instance
-function Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)
-	-- Calculate rotation: 3 full rotations ending upright
+function Effects.create_flying_object(start_x, start_y, target_x, target_y, opts)
+	local rotations = opts.rotations or 3
 	local two_pi = math.pi * 2
-	local end_rotation = 3 * two_pi
+	local end_rotation = rotations * two_pi
 
 	local obj = {
 		x = start_x,
@@ -735,14 +735,29 @@ function Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_comp
 		end_rotation = end_rotation,
 		elapsed = 0,
 		phase = "flying",
-		sprite = sprites_items.axe_icon,
-		sprite_size = 16,
-		flight_duration = 1.5,    -- 1.5 seconds to reach target
-		on_complete = on_complete,
+		sprite = opts.sprite,
+		sprite_size = opts.sprite_size or 16,
+		flight_duration = opts.flight_duration or 1.5,
+		on_complete = opts.on_complete,
 	}
 
 	state.flying_objects[obj] = true
 	return obj
+end
+
+--- Factory: Creates a flying axe effect for boss defeat sequences.
+--- Convenience wrapper around create_flying_object for the gnomo boss.
+---@param start_x number Start X position in tile coordinates
+---@param start_y number Start Y position in tile coordinates
+---@param target_x number Target X position in tile coordinates
+---@param target_y number Target Y position in tile coordinates
+---@param on_complete function|nil Callback when axe arrives
+---@return table Flying object instance
+function Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)
+	return Effects.create_flying_object(start_x, start_y, target_x, target_y, {
+		sprite = sprites_items.axe_icon,
+		on_complete = on_complete,
+	})
 end
 
 --- Clears all effects (for level reloading)

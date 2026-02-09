@@ -10,6 +10,23 @@ local coordinator = nil
 local phase = {}
 phase.states = {}
 
+--- Spike hazard cleanup (module-level to avoid per-entry closure allocation).
+local function spike_hazard_cleanup()
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    coordinator.stop_spike_sequencer()
+    coordinator.deactivate_spikes(0, 3)
+end
+
+--- Right button callback: exit dive loop and clean up spikes.
+local function right_button_pressed()
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    local enemy = coordinator.enemy
+    if enemy then
+        enemy._exit_dive_loop = true
+        if enemy._hazard_cleanup then enemy._hazard_cleanup() end
+    end
+end
+
 -- ── Shared states from common ───────────────────────────────────────────────
 
 phase.states.prejump = common.states.prejump
@@ -82,17 +99,9 @@ phase.states.bridge_attack = {
         coordinator.start_spike_sequencer()
         coordinator.activate_blocks()
 
-        -- Set phase-specific hazard cleanup
-        enemy._hazard_cleanup = function()
-            coordinator.stop_spike_sequencer()
-            coordinator.deactivate_spikes(0, 3)
-        end
+        enemy._hazard_cleanup = spike_hazard_cleanup
 
-        -- Button callback: exit dive loop when player presses right button
-        coordinator.set_button_callback("right", function()
-            enemy._exit_dive_loop = true
-            if enemy._hazard_cleanup then enemy._hazard_cleanup() end
-        end)
+        coordinator.set_button_callback("right", right_button_pressed)
     end,
     update = function(enemy, _dt)
         if enemy.animation:is_finished() then

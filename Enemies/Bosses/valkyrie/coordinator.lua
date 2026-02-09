@@ -20,6 +20,12 @@ local BLOCK_IDS = {
 local SPEAR_GROUP_PREFIX = "valkyrie_spear_"   -- groups 0-7
 local SPIKE_GROUP_PREFIX = "valkyrie_spikes_"  -- groups 0-3
 
+-- Pre-computed group name strings (avoid per-call concatenation)
+local SPEAR_GROUP_NAMES = {}
+for i = 0, 7 do SPEAR_GROUP_NAMES[i] = SPEAR_GROUP_PREFIX .. i end
+local SPIKE_GROUP_NAMES = {}
+for i = 0, 3 do SPIKE_GROUP_NAMES[i] = SPIKE_GROUP_PREFIX .. i end
+
 local ZONE_IDS = {
     top = "valkyrie_boss_top",
     left = "valkyrie_boss_left",
@@ -45,6 +51,10 @@ local BUTTON_IDS = {
 local audio = nil
 local valk_common = nil
 local victory = nil
+
+-- Cached prop references (populated on first use, cleared on reset)
+local cached_blocks = nil
+local cached_buttons = nil
 
 -- Health thresholds for phase transitions (percentage of max health)
 -- Phase 1: 100%-75%, Phase 2: 75%-50%, Phase 3: 50%-25%, Phase 4: 25%-0%
@@ -113,12 +123,12 @@ local function execute_spike_step(step_data)
     if not step_data then return end
     if step_data.extend then
         for _, idx in ipairs(step_data.extend) do
-            Prop.group_action(SPIKE_GROUP_PREFIX .. idx, "extending")
+            Prop.group_action(SPIKE_GROUP_NAMES[idx], "extending")
         end
     end
     if step_data.retract then
         for _, idx in ipairs(step_data.retract) do
-            Prop.group_action(SPIKE_GROUP_PREFIX .. idx, "retracting")
+            Prop.group_action(SPIKE_GROUP_NAMES[idx], "retracting")
         end
     end
 end
@@ -129,7 +139,7 @@ end
 local function execute_spear_step(step_index)
     local group = SPEAR_SEQ_PATTERN[step_index]
     if group ~= nil then
-        Prop.group_action(SPEAR_GROUP_PREFIX .. group, "single_fire")
+        Prop.group_action(SPEAR_GROUP_NAMES[group], "single_fire")
     end
 end
 
@@ -195,10 +205,38 @@ function coordinator.get_phase()
     return coordinator.phase
 end
 
+--- Get cached block prop references (populated on first call).
+---@return table Array of block prop references
+local function get_blocks()
+    if not cached_blocks then
+        cached_blocks = {}
+        for i = 1, #BLOCK_IDS do
+            cached_blocks[i] = Prop.find_by_id(BLOCK_IDS[i])
+        end
+    end
+    return cached_blocks
+end
+
+--- Get a cached button prop reference by side.
+---@param side string "left" or "right"
+---@return table|nil button The button prop
+local function get_button(side)
+    local id = BUTTON_IDS[side]
+    if not id then return nil end
+    if not cached_buttons then
+        cached_buttons = {}
+    end
+    if cached_buttons[side] == nil then
+        cached_buttons[side] = Prop.find_by_id(id) or false
+    end
+    return cached_buttons[side] or nil
+end
+
 --- Activate arena blocks (solid walls with fade-in).
 function coordinator.activate_blocks()
+    local blocks = get_blocks()
     for i = 1, #BLOCK_IDS do
-        local block = Prop.find_by_id(BLOCK_IDS[i])
+        local block = blocks[i]
         if block and not block.marked_for_destruction and block.definition.activate then
             block.definition.activate(block)
         end
@@ -209,8 +247,9 @@ end
 
 --- Deactivate arena blocks (passable with fade-out).
 local function deactivate_blocks()
+    local blocks = get_blocks()
     for i = 1, #BLOCK_IDS do
-        local block = Prop.find_by_id(BLOCK_IDS[i])
+        local block = blocks[i]
         if block and not block.marked_for_destruction and block.definition.deactivate then
             block.definition.deactivate(block)
         end
@@ -362,7 +401,7 @@ end
 ---@param to number End index (0-7)
 function coordinator.fire_spears(from, to)
     for i = from, to do
-        Prop.group_action(SPEAR_GROUP_PREFIX .. i, "fire")
+        Prop.group_action(SPEAR_GROUP_NAMES[i], "fire")
     end
 end
 
@@ -371,7 +410,7 @@ end
 ---@param to number End index (0-7)
 function coordinator.enable_spears(from, to)
     for i = from, to do
-        Prop.group_action(SPEAR_GROUP_PREFIX .. i, "enable")
+        Prop.group_action(SPEAR_GROUP_NAMES[i], "enable")
     end
 end
 
@@ -380,7 +419,7 @@ end
 ---@param to number End index (0-7)
 function coordinator.disable_spears(from, to)
     for i = from, to do
-        Prop.group_action(SPEAR_GROUP_PREFIX .. i, "disable")
+        Prop.group_action(SPEAR_GROUP_NAMES[i], "disable")
     end
 end
 
@@ -392,7 +431,7 @@ end
 ---@param config table|nil Optional {extend_time, retract_time} override
 function coordinator.activate_spikes(from, to, config)
     for i = from, to do
-        Prop.group_action(SPIKE_GROUP_PREFIX .. i, "set_alternating", config)
+        Prop.group_action(SPIKE_GROUP_NAMES[i], "set_alternating", config)
     end
 end
 
@@ -401,7 +440,7 @@ end
 ---@param to number End index (0-3)
 function coordinator.deactivate_spikes(from, to)
     for i = from, to do
-        Prop.group_action(SPIKE_GROUP_PREFIX .. i, "retract")
+        Prop.group_action(SPIKE_GROUP_NAMES[i], "retract")
     end
 end
 
@@ -496,9 +535,7 @@ end
 ---@param side string "left" or "right"
 ---@param callback function|nil Callback to fire when pressed (nil to clear)
 function coordinator.set_button_callback(side, callback)
-    local id = BUTTON_IDS[side]
-    if not id then return end
-    local button = Prop.find_by_id(id)
+    local button = get_button(side)
     if button then
         button.on_press = callback
     end
@@ -507,9 +544,7 @@ end
 --- Reset a button to unpressed state (plays reverse animation).
 ---@param side string "left" or "right"
 function coordinator.reset_button(side)
-    local id = BUTTON_IDS[side]
-    if not id then return end
-    local button = Prop.find_by_id(id)
+    local button = get_button(side)
     if button and button.definition.reset then
         button.definition.reset(button)
     end
@@ -519,9 +554,7 @@ end
 ---@param side string "left" or "right"
 ---@return boolean
 function coordinator.is_button_pressed(side)
-    local id = BUTTON_IDS[side]
-    if not id then return false end
-    local button = Prop.find_by_id(id)
+    local button = get_button(side)
     return button and button.is_pressed or false
 end
 
@@ -536,6 +569,8 @@ function coordinator.reset()
     coordinator.camera = nil
     coordinator.blocks_active = false
     coordinator.blocks_timer = 0
+    cached_blocks = nil
+    cached_buttons = nil
 
     -- Deactivate all arena hazards
     coordinator.stop_spike_sequencer()

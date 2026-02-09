@@ -10,6 +10,22 @@ local coordinator = nil
 local phase = {}
 phase.states = {}
 
+--- Spear hazard cleanup (module-level to avoid per-entry closure allocation).
+local function spear_hazard_cleanup()
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    coordinator.stop_spear_sequencer()
+end
+
+--- Left button callback: exit dive loop and clean up spears.
+local function left_button_pressed()
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    local enemy = coordinator.enemy
+    if enemy then
+        enemy._exit_dive_loop = true
+        if enemy._hazard_cleanup then enemy._hazard_cleanup() end
+    end
+end
+
 -- ── Shared states from common ───────────────────────────────────────────────
 
 phase.states.prejump = common.states.prejump
@@ -87,16 +103,9 @@ phase.states.bridge_attack = {
         coordinator.start_spear_sequencer()
         coordinator.activate_blocks()
 
-        -- Set phase-specific hazard cleanup
-        enemy._hazard_cleanup = function()
-            coordinator.stop_spear_sequencer()
-        end
+        enemy._hazard_cleanup = spear_hazard_cleanup
 
-        -- Button callback: exit dive loop when player presses left button
-        coordinator.set_button_callback("left", function()
-            enemy._exit_dive_loop = true
-            if enemy._hazard_cleanup then enemy._hazard_cleanup() end
-        end)
+        coordinator.set_button_callback("left", left_button_pressed)
     end,
     update = function(enemy, _dt)
         if enemy.animation:is_finished() then

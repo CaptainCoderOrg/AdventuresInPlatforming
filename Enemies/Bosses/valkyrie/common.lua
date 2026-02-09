@@ -61,19 +61,38 @@ common.ANIMATIONS = {
 
 local ghost_trails = {}
 
+-- Ghost trail table pool (avoids per-spawn allocation)
+local ghost_pool = {}
+local ghost_pool_count = 0
+
+local function acquire_ghost()
+    if ghost_pool_count > 0 then
+        local ghost = ghost_pool[ghost_pool_count]
+        ghost_pool[ghost_pool_count] = nil
+        ghost_pool_count = ghost_pool_count - 1
+        return ghost
+    end
+    return {}
+end
+
+local function release_ghost(ghost)
+    ghost_pool_count = ghost_pool_count + 1
+    ghost_pool[ghost_pool_count] = ghost
+end
+
 --- Snapshot current position/direction/frame into the ghost trail array.
 ---@param enemy table The enemy instance
 function common.spawn_ghost_trail(enemy)
     if not enemy.animation then return end
-    ghost_trails[#ghost_trails + 1] = {
-        x = enemy.x,
-        y = enemy.y,
-        direction = enemy.direction,
-        definition = enemy.animation.definition,
-        frame = enemy.animation.frame,
-        elapsed = 0,
-        lifetime = GHOST_TRAIL_LIFETIME,
-    }
+    local ghost = acquire_ghost()
+    ghost.x = enemy.x
+    ghost.y = enemy.y
+    ghost.direction = enemy.direction
+    ghost.definition = enemy.animation.definition
+    ghost.frame = enemy.animation.frame
+    ghost.elapsed = 0
+    ghost.lifetime = GHOST_TRAIL_LIFETIME
+    ghost_trails[#ghost_trails + 1] = ghost
 end
 
 --- Age ghost trail entries and remove expired ones.
@@ -87,6 +106,8 @@ function common.update_ghost_trails(dt)
         if ghost.elapsed < ghost.lifetime then
             write = write + 1
             ghost_trails[write] = ghost
+        else
+            release_ghost(ghost)
         end
     end
     for i = write + 1, n do
@@ -126,9 +147,10 @@ function common.draw_ghost_trails()
     end
 end
 
---- Clear all ghost trails.
+--- Clear all ghost trails (returns tables to pool).
 function common.clear_ghost_trails()
     for i = #ghost_trails, 1, -1 do
+        release_ghost(ghost_trails[i])
         ghost_trails[i] = nil
     end
 end
@@ -649,9 +671,8 @@ common.states.dive_bomb = {
                     -- Clamp within camera horizontal bounds
                     local cam = coordinator.camera
                     if cam then
-                        local spr = require("sprites")
                         local cam_left = cam:get_x()
-                        local cam_right = cam_left + cam:get_viewport_width() / spr.tile_size
+                        local cam_right = cam_left + cam:get_viewport_width() / sprites.tile_size
                         local enemy_left = target_x + box.x
                         local enemy_right = target_x + box.x + box.w
                         if enemy_left < cam_left then
@@ -662,16 +683,14 @@ common.states.dive_bomb = {
                     end
 
                     enemy.x = target_x
+                    enemy._dive_target_x = player_cx - (box.x + box.w / 2)
                 end
 
                 local middle_zone = coordinator.get_zone("middle")
                 local floor_y = middle_zone and (middle_zone.y + (middle_zone.height or 0)) or enemy.y
                 enemy._dive_target_y = floor_y - (box.y + box.h)
 
-                if player then
-                    local player_cx = player.x + (player.box.x + player.box.w / 2)
-                    enemy._dive_target_x = player_cx - (box.x + box.w / 2)
-                else
+                if not player then
                     enemy._dive_target_x = enemy.x
                 end
                 enemy._dive_start_x = enemy.x

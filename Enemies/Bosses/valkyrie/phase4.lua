@@ -20,6 +20,19 @@ local RE_ENABLE_DIVE_THRESHOLD = 4
 local phase = {}
 phase.states = {}
 
+--- Right button callback: disable spikes (module-level to avoid closure allocation).
+local function right_button_disable_spikes()
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    coordinator.stop_spike_sequencer()
+    coordinator.deactivate_spikes(0, 3)
+end
+
+--- Left button callback: disable spears (module-level to avoid closure allocation).
+local function left_button_disable_spears()
+    coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
+    coordinator.stop_spear_sequencer()
+end
+
 -- ── Shared states from common ───────────────────────────────────────────────
 
 phase.states.prejump = common.states.prejump
@@ -90,11 +103,7 @@ phase.states.bridge_attack_spikes = {
         coordinator.start_spike_sequencer()
         coordinator.activate_blocks()
 
-        -- Button callback: stop spikes (no _exit_dive_loop in phase 4)
-        coordinator.set_button_callback("right", function()
-            coordinator.stop_spike_sequencer()
-            coordinator.deactivate_spikes(0, 3)
-        end)
+        coordinator.set_button_callback("right", right_button_disable_spikes)
     end,
     update = function(enemy, _dt)
         if enemy.animation:is_finished() then
@@ -140,10 +149,7 @@ phase.states.bridge_attack_spears = {
         coordinator.start_spear_sequencer()
         coordinator.activate_blocks()
 
-        -- Button callback: stop spears (no _exit_dive_loop in phase 4)
-        coordinator.set_button_callback("left", function()
-            coordinator.stop_spear_sequencer()
-        end)
+        coordinator.set_button_callback("left", left_button_disable_spears)
 
         enemy._dive_count = 0
     end,
@@ -319,10 +325,7 @@ phase.states.bridge_re_enable_spikes = {
         coordinator.reset_button("right")
         coordinator.activate_blocks()
 
-        coordinator.set_button_callback("right", function()
-            coordinator.stop_spike_sequencer()
-            coordinator.deactivate_spikes(0, 3)
-        end)
+        coordinator.set_button_callback("right", right_button_disable_spikes)
 
         enemy._dive_count = 0
     end,
@@ -348,9 +351,7 @@ phase.states.bridge_re_enable_spears = {
         coordinator.reset_button("left")
         coordinator.activate_blocks()
 
-        coordinator.set_button_callback("left", function()
-            coordinator.stop_spear_sequencer()
-        end)
+        coordinator.set_button_callback("left", left_button_disable_spears)
 
         enemy._dive_count = 0
     end,

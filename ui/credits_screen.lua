@@ -1,6 +1,6 @@
 --- Credits screen with scrolling attributions and animated enemy decorations
 --- Sequence: fade to black -> fade in content -> title hold -> scroll to typewriter ->
---- typewriter -> hold -> scroll credits -> hold end -> fade out
+--- typewriter -> hold -> scroll credits -> fade out
 local canvas = require("canvas")
 local config = require("config")
 local controls = require("controls")
@@ -20,7 +20,6 @@ local STATE = {
     TYPEWRITER = "typewriter",
     HOLD_TYPEWRITER = "hold_typewriter",
     SCROLL_CREDITS = "scroll_credits",
-    HOLD_END = "hold_end",
     FADING_OUT = "fading_out",
 }
 
@@ -46,8 +45,8 @@ local TYPEWRITER_TEXT = "Thank you for playing!"
 -- Scroll math: screen_y = content_y - scroll_offset
 -- Title at content Y=0, screen center at 108 (216/2) => initial offset = -108
 local INITIAL_SCROLL = -108
--- Final text at Y=910 centered on screen => offset = 910 - 108 = 802
-local MAX_SCROLL = 802
+-- Scroll until all content (last at Y=910) is off the top of the screen
+local MAX_SCROLL = 940
 
 -- Decoration sprite X positions (1x scale, screen is 384px wide)
 local DECO_LEFT_X = 50
@@ -124,33 +123,13 @@ local on_close_callback = nil
 -- Each entry: { y, side, anims={Animation...}, durations={number...}, current, timer }
 local deco_sprites = {}
 
---- Detect any key, mouse, or gamepad button press this frame
----@return boolean
-local function any_press()
-    if #canvas.get_keys_pressed() > 0 then return true end
-    if canvas.is_mouse_pressed(0) then return true end
-    if canvas.is_gamepad_connected(1) then
-        local btns = canvas.buttons
-        if canvas.is_gamepad_button_pressed(1, btns.SOUTH) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.EAST) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.WEST) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.NORTH) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.START) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.BACK) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.LB) then return true end
-        if canvas.is_gamepad_button_pressed(1, btns.RB) then return true end
-    end
-    return false
-end
-
 --- Create a decoration sprite entry with multiple cycling animations
 ---@param y number Content Y position
----@param side string|number "left", "right", or numeric X position (1x scale)
+---@param side string "left" or "right"
 ---@param flipped number 1 (facing right) or -1 (facing left)
 ---@param anim_specs table Array of {asset, frames, w, h, ms, row?, loop?}
----@param duration_override? table Explicit durations per animation (for synced scene pairs)
 ---@return table Decoration sprite entry
-local function create_deco(y, side, flipped, anim_specs, duration_override)
+local function create_deco(y, side, flipped, anim_specs)
     local anims = {}
     local durations = {}
     for i, spec in ipairs(anim_specs) do
@@ -162,15 +141,11 @@ local function create_deco(y, side, flipped, anim_specs, duration_override)
             loop = spec.loop or false,
         })
         anims[i] = Animation.new(def, { flipped = flipped })
-        if duration_override then
-            durations[i] = duration_override[i]
+        local natural_secs = spec.frames * spec.ms / 1000
+        if spec.loop then
+            durations[i] = math.max(natural_secs * 2, LOOP_CYCLE_SECS)
         else
-            local natural_secs = spec.frames * spec.ms / 1000
-            if spec.loop then
-                durations[i] = math.max(natural_secs * 2, LOOP_CYCLE_SECS)
-            else
-                durations[i] = math.max(natural_secs, 0.5)
-            end
+            durations[i] = math.max(natural_secs, 0.5)
         end
     end
     return {
@@ -188,10 +163,6 @@ function credits_screen.init()
     local e = sprites.enemies
     local p = sprites.player
     local n = sprites.npcs
-    local env = sprites.environment
-
-    -- Synced duration arrays for interactive scene pairs (action -> idle cycle)
-    local scene_sync = { 0.5, 2.5 }
 
     deco_sprites = {
         -- Y=170: Game Design header
@@ -206,16 +177,6 @@ function credits_screen.init()
             { asset = e.shieldmaiden.sheet, frames = 5, w = 40, h = 29, ms = 60, row = 0 },
             { asset = e.shieldmaiden.sheet, frames = 3, w = 40, h = 29, ms = 100, row = 1 },
         }),
-
-        -- Y=225: Scene - Player attacking Zombie
-        create_deco(225, 152, 1, {
-            { asset = p.attack_0, frames = 5, w = 32, h = 16, ms = 60 },
-            { asset = p.idle, frames = 6, w = 16, h = 16, ms = 240, loop = true },
-        }, scene_sync),
-        create_deco(225, 186, -1, {
-            { asset = e.zombie.hit, frames = 5, w = 16, h = 16, ms = 60 },
-            { asset = e.zombie.idle, frames = 6, w = 16, h = 16, ms = 200, loop = true },
-        }, scene_sync),
 
         -- Y=260: Art header
         create_deco(260, "left", 1, {
@@ -246,14 +207,6 @@ function credits_screen.init()
         create_deco(350, "right", -1, {
             { asset = e.red_slime.idle, frames = 5, w = 16, h = 16, ms = 150, loop = true },
             { asset = e.red_slime.jump, frames = 4, w = 16, h = 16, ms = 225 },
-        }),
-
-        -- Y=385: Scene - Spear vs blocking Player
-        create_deco(385, 164, 1, {
-            { asset = env.spear, frames = 3, w = 16, h = 8, ms = 100, loop = true },
-        }),
-        create_deco(385, 188, -1, {
-            { asset = p.block_step, frames = 4, w = 16, h = 16, ms = 160, loop = true },
         }),
 
         -- Y=420: Audio header
@@ -287,16 +240,6 @@ function credits_screen.init()
             { asset = e.magician_blue.sheet, frames = 4, w = 16, h = 16, ms = 100, row = 2, loop = true },
             { asset = e.magician_blue.sheet, frames = 11, w = 16, h = 16, ms = 120, row = 0 },
         }),
-
-        -- Y=570: Scene - Player throwing at Ratto
-        create_deco(570, 164, 1, {
-            { asset = p.throw, frames = 7, w = 16, h = 16, ms = 33 },
-            { asset = p.idle, frames = 6, w = 16, h = 16, ms = 240, loop = true },
-        }, scene_sync),
-        create_deco(570, 188, -1, {
-            { asset = e.ratto.hit, frames = 5, w = 16, h = 8, ms = 80 },
-            { asset = e.ratto.idle, frames = 6, w = 16, h = 8, ms = 200, loop = true },
-        }, scene_sync),
 
         -- Y=600: Special Thanks header
         create_deco(600, "left", 1, {
@@ -404,8 +347,9 @@ end
 
 --- Process credits screen input
 function credits_screen.input()
-    if state == STATE.SCROLL_CREDITS or state == STATE.HOLD_END then
-        if any_press() then
+    if state ~= STATE.HIDDEN and state ~= STATE.FADE_TO_BLACK
+       and state ~= STATE.FADE_IN_CONTENT and state ~= STATE.FADING_OUT then
+        if controls.menu_back_pressed() then
             credits_screen.hide()
         end
     end
@@ -479,7 +423,9 @@ function credits_screen.update(dt)
         scroll_offset = scroll_offset + SCROLL_SPEED * dt
         if scroll_offset >= MAX_SCROLL then
             scroll_offset = MAX_SCROLL
-            state = STATE.HOLD_END
+            state = STATE.FADING_OUT
+            fade_progress = 0
+            music.fade_out(FADE_OUT_DURATION)
         end
 
     elseif state == STATE.FADING_OUT then
@@ -512,7 +458,7 @@ function credits_screen.draw()
         bg_alpha = 1
         content_alpha = fade_progress
     elseif state == STATE.FADING_OUT then
-        bg_alpha = 1 - fade_progress
+        bg_alpha = 1
         content_alpha = 1 - fade_progress
     end
 
@@ -595,7 +541,7 @@ function credits_screen.draw()
     end
 
     -- Skip hint in bottom-right (only during skippable phases)
-    if state == STATE.SCROLL_CREDITS or state == STATE.HOLD_END then
+    if state == STATE.SCROLL_CREDITS then
         canvas.set_font_size(7)
         canvas.set_text_baseline("middle")
         canvas.set_text_align("right")
@@ -624,14 +570,7 @@ function credits_screen.draw()
     for _, deco in ipairs(deco_sprites) do
         local sy = deco.y - scroll_offset
         if sy > -50 and sy < h_1x + 50 then
-            local x
-            if type(deco.side) == "number" then
-                x = deco.side
-            elseif deco.side == "left" then
-                x = DECO_LEFT_X
-            else
-                x = DECO_RIGHT_X
-            end
+            local x = deco.side == "left" and DECO_LEFT_X or DECO_RIGHT_X
             deco.anims[deco.current]:draw(x * scale, sy * scale)
         end
     end

@@ -130,6 +130,7 @@ end
 ---@param player table Player instance with max_health and damage properties
 function hud.update(dt, player)
     credits_screen.update(dt)
+    if credits_screen.is_active() then return end
     audio_dialog.update(dt)
     controls_dialog.update(dt)
     settings_dialog.update(dt)

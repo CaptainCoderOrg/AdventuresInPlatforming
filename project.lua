@@ -1,5 +1,5 @@
 return {
-  name = "Demo Game",
+  name = "KnightmareStandalone",
   main = "main.lua",
   type = "canvas",
   canvas = {

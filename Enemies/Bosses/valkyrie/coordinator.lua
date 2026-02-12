@@ -14,7 +14,6 @@ local BLOCK_IDS = {
     "valkyrie_boss_block_1",
     "valkyrie_boss_block_2",
     "valkyrie_boss_block_3",
-    "valkyrie_boss_block_center",
 }
 
 local SPEAR_GROUP_PREFIX = "valkyrie_spear_"   -- groups 0-7
@@ -109,7 +108,7 @@ local SPIKE_SEQ_CYCLE_END = 5
 -- Fires spear groups in an outside-in pattern: 0,7,1,6,2,5,3,4.
 
 local spear_seq = { active = false, timer = 0, current_step = 0 }
-local SPEAR_SEQ_INTERVAL = 0.5
+local SPEAR_SEQ_INTERVAL = 0.75
 local SPEAR_SEQ_PATTERN = {0, 7, 1, 6, 2, 5, 3, 4}
 
 local SPIKE_SEQ_STEPS = {

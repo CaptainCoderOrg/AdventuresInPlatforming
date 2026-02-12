@@ -410,9 +410,9 @@ common.states.landing = {
 --------------------------------------------------------------------------------
 
 local DIVE_MAKE_CHOICE_DELAY = 0.8
-local DIVE_JUMP_UP_DURATION = 0.5
-local DIVE_WAIT = 1.5
-local DIVE_DURATION = 0.75
+local DIVE_JUMP_UP_DURATION = 0.75
+local DIVE_WAIT = 2.0
+local DIVE_DURATION = 0.9
 local DIVE_CONTACT_DAMAGE = 3
 local DIVE_TRAIL_INTERVAL = 0.05
 local DIVE_OFF_SCREEN_OFFSET = 3  -- tiles above camera:get_y()
@@ -475,6 +475,8 @@ common.states.jump_off_screen = {
         enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
         enemy.animation.frame = 1
         enemy.animation:pause()
+
+        audio.play_sfx(audio.dash, 0.15)
     end,
     update = function(enemy, dt)
         enemy._ascend_timer = enemy._ascend_timer + dt

@@ -504,6 +504,7 @@ function Player:update(dt)
 		self.fatigue_particle_timer = 0
 	end
 
+	self.prev_y = self.y
 	self.x = self.x + (self.vx * dt)
 	self.y = self.y + (self.vy * dt)
 	local cols = world.move(self, self._cols)

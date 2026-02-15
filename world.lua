@@ -59,10 +59,20 @@ local function should_skip_bridge(obj, bridge)
 	local player_bottom = obj.y + obj.box.y + obj.box.h
 	local overlap = player_bottom - bridge_top
 
-	-- Allow pass-through when player is more than 0.3 tiles into the bridge.
+	-- Allow pass-through when entity is more than 0.3 tiles into the bridge.
 	-- This threshold (slightly larger than bridge collider height of 0.2) prevents
 	-- snapping onto bridges when jumping up through them.
-	if overlap > 0.3 then return true end
+	-- However, if prev_y shows the entity was above the bridge last frame,
+	-- this is tunneling from a frame drop — resolve the collision instead.
+	if overlap > 0.3 then
+		if obj.prev_y then
+			local prev_bottom = obj.prev_y + obj.box.y + obj.box.h
+			if prev_bottom <= bridge_top + 0.1 then
+				return false -- Was above bridge last frame → land on it
+			end
+		end
+		return true -- Was already below bridge → allow jump-through
+	end
 
 	-- Must be falling to land on bridge
 	if obj.vy <= 0 then return true end
@@ -426,70 +436,134 @@ function world.move(obj, cols)
 		end
 	end
 
-	-- Y PASS: Move vertically, resolve Y collisions
+	-- Y PASS: Move vertically, resolve Y collisions (with sub-stepping for large drops)
 	local _, cur_y, _, _ = shape:bbox()
 	local target_y = (obj.y + obj.box.y) * ts
-	local dy = target_y - cur_y
-	if dy ~= 0 then
-		shape:move(0, dy)
-	end
+	local total_dy = target_y - cur_y
 
-	-- Always check for Y collisions (needed for ceiling slopes during horizontal dash)
-	for _ = 1, MAX_ITERATIONS do
-		local collisions = world.hc:collisions(shape)
-		local any_collision = false
+	if total_dy ~= 0 then
+		-- Sub-step when vertical displacement exceeds half a tile to prevent
+		-- tunneling through thin geometry during frame drops
+		local MAX_Y_STEP = ts * 0.5
+		local num_steps = math.max(1, math.ceil(math.abs(total_dy) / MAX_Y_STEP))
+		local step_dy = total_dy / num_steps
 
-		for other, sep in pairs(collisions) do
-			if is_non_solid(other, cols) then goto skip_y_collision end
-			if should_skip_collision(obj, other) then goto skip_y_collision end
-			if other.is_shield then
-				cols.shield = true
-				cols.shield_owner = other.owner
-			end
-			-- Detect ladder top collision before one-way platform check
-			-- This ensures standing_on_ladder_top works even when pressing down
-			if other.owner and other.owner.is_ladder_top then
-				cols.is_ladder_top = true
-				cols.ladder_from_top = other.owner.ladder
-				-- One-way platform: pass-through from below, when pressing down, or when climbing
-				if obj.vy < 0 or controls.down_down() or obj.is_climbing then
-					goto skip_y_collision
-				end
-			end
-			-- Detect bridge collision (one-way platform)
-			if other.owner and other.owner.is_bridge then
-				if should_skip_bridge(obj, other.owner) then
-					goto skip_y_collision
-				end
-				cols.is_bridge = true
-			end
-			if other ~= shape and sep.y ~= 0 then
-				any_collision = true
-				if sep.y > 0 then
-					-- Ceiling: apply full separation to prevent sliding on angled ceilings
-					shape:move(sep.x, sep.y)
-					cols.ceiling = true
-					if cols.ceiling_normal then
-						local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
-						if len > 0 then
-							cols.ceiling_normal.x = sep.x / len
-							cols.ceiling_normal.y = sep.y / len
-							cols.has_ceiling_normal = true
+		for step = 1, num_steps do
+			shape:move(0, step_dy)
+
+			for _ = 1, MAX_ITERATIONS do
+				local collisions = world.hc:collisions(shape)
+				local any_collision = false
+
+				for other, sep in pairs(collisions) do
+					if is_non_solid(other, cols) then goto skip_y_collision end
+					if should_skip_collision(obj, other) then goto skip_y_collision end
+					if other.is_shield then
+						cols.shield = true
+						cols.shield_owner = other.owner
+					end
+					-- Detect ladder top collision before one-way platform check
+					-- This ensures standing_on_ladder_top works even when pressing down
+					if other.owner and other.owner.is_ladder_top then
+						cols.is_ladder_top = true
+						cols.ladder_from_top = other.owner.ladder
+						-- One-way platform: pass-through from below, when pressing down, or when climbing
+						if obj.vy < 0 or controls.down_down() or obj.is_climbing then
+							goto skip_y_collision
 						end
 					end
-				else
-					-- Ground: only apply Y to allow slope walking
-					shape:move(0, sep.y)
-					set_ground_from_sep(cols, sep)
-					if world.debug_collisions and obj.is_player then
-						print("[COLLISION] Ground from Y-pass: " .. identify_shape(other))
+					-- Detect bridge collision (one-way platform)
+					if other.owner and other.owner.is_bridge then
+						if should_skip_bridge(obj, other.owner) then
+							goto skip_y_collision
+						end
+						cols.is_bridge = true
+					end
+					if other ~= shape and sep.y ~= 0 then
+						any_collision = true
+						if sep.y > 0 then
+							-- Ceiling: apply full separation to prevent sliding on angled ceilings
+							shape:move(sep.x, sep.y)
+							cols.ceiling = true
+							if cols.ceiling_normal then
+								local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+								if len > 0 then
+									cols.ceiling_normal.x = sep.x / len
+									cols.ceiling_normal.y = sep.y / len
+									cols.has_ceiling_normal = true
+								end
+							end
+						else
+							-- Ground: only apply Y to allow slope walking
+							shape:move(0, sep.y)
+							set_ground_from_sep(cols, sep)
+							if world.debug_collisions and obj.is_player then
+								print("[COLLISION] Ground from Y-pass: " .. identify_shape(other))
+							end
+						end
+					end
+					::skip_y_collision::
+				end
+
+				if not any_collision then break end
+			end
+
+			-- Stop sub-stepping early if we hit ground or ceiling
+			if cols.ground or cols.ceiling then break end
+		end
+	else
+		-- No vertical movement, but still check for Y collisions
+		-- (needed for ceiling slopes during horizontal dash)
+		for _ = 1, MAX_ITERATIONS do
+			local collisions = world.hc:collisions(shape)
+			local any_collision = false
+
+			for other, sep in pairs(collisions) do
+				if is_non_solid(other, cols) then goto skip_y_static end
+				if should_skip_collision(obj, other) then goto skip_y_static end
+				if other.is_shield then
+					cols.shield = true
+					cols.shield_owner = other.owner
+				end
+				if other.owner and other.owner.is_ladder_top then
+					cols.is_ladder_top = true
+					cols.ladder_from_top = other.owner.ladder
+					if obj.vy < 0 or controls.down_down() or obj.is_climbing then
+						goto skip_y_static
 					end
 				end
+				if other.owner and other.owner.is_bridge then
+					if should_skip_bridge(obj, other.owner) then
+						goto skip_y_static
+					end
+					cols.is_bridge = true
+				end
+				if other ~= shape and sep.y ~= 0 then
+					any_collision = true
+					if sep.y > 0 then
+						shape:move(sep.x, sep.y)
+						cols.ceiling = true
+						if cols.ceiling_normal then
+							local len = math.sqrt(sep.x * sep.x + sep.y * sep.y)
+							if len > 0 then
+								cols.ceiling_normal.x = sep.x / len
+								cols.ceiling_normal.y = sep.y / len
+								cols.has_ceiling_normal = true
+							end
+						end
+					else
+						shape:move(0, sep.y)
+						set_ground_from_sep(cols, sep)
+						if world.debug_collisions and obj.is_player then
+							print("[COLLISION] Ground from Y-pass: " .. identify_shape(other))
+						end
+					end
+				end
+				::skip_y_static::
 			end
-			::skip_y_collision::
-		end
 
-		if not any_collision then break end
+			if not any_collision then break end
+		end
 	end
 
 	-- GROUND PROBE: If ground not detected, probe downward to find nearby ground

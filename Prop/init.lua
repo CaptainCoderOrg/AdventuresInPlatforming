@@ -359,7 +359,12 @@ function Prop.get_persistent_states()
         end
         prop = next(Prop.all, prop)
     end
-    return state.accumulated_states
+    -- Return a shallow copy so callers don't hold a mutable reference
+    local snapshot = {}
+    for k, v in pairs(state.accumulated_states) do
+        snapshot[k] = v
+    end
+    return snapshot
 end
 
 --- Restore persistent prop states from saved data
@@ -369,8 +374,12 @@ end
 function Prop.restore_persistent_states(states)
     if not states then return end
 
-    -- Initialize accumulator from save data so states from other levels are preserved
-    state.accumulated_states = states
+    -- Copy input so accumulated_states doesn't share a reference with the save slot
+    local copy = {}
+    for k, v in pairs(states) do
+        copy[k] = v
+    end
+    state.accumulated_states = copy
 
     local prop = next(Prop.all)
     while prop do

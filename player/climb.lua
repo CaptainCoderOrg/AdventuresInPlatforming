@@ -54,8 +54,13 @@ function climb.input(player)
 	-- Jump off ladder
 	if controls.jump_pressed() then
 		player.is_climbing = false
-		player.vy = -common.AIR_JUMP_VELOCITY
-		audio.play_jump_sound()
+		if controls.down_down() then
+			-- Drop off: no jump, just fall
+			player.vy = 0
+		else
+			player.vy = -common.AIR_JUMP_VELOCITY
+			audio.play_jump_sound()
+		end
 		player:set_state(player.states.air)
 		return
 	end

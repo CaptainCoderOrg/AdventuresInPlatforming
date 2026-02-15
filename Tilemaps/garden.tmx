@@ -1145,37 +1145,37 @@
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="38" x="800" y="-16" width="46.5" height="8.5">
+  <object id="38" x="800" y="-16" width="46.5" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="42" x="-192" y="-432" width="46.5" height="8.5">
+  <object id="42" x="-192" y="-432" width="46.5" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="45" x="864.75" y="-47.3409" width="159.159" height="8.5">
+  <object id="45" x="864.75" y="-47.3409" width="159.159" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="46" x="912.375" y="-15.5" width="63.5" height="8.5">
+  <object id="46" x="912.375" y="-15.5" width="63.5" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="81" x="728.75" y="-0.25" width="46.5" height="8.5">
+  <object id="81" x="720" y="0" width="46.5" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="82" x="-256" y="-480" width="46.5" height="8.5">
+  <object id="82" x="-256" y="-480" width="46.5" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
   </object>
-  <object id="83" x="-448" y="-480" width="46.5" height="8.5">
+  <object id="83" x="-448" y="-480" width="46.5" height="16">
    <properties>
     <property name="type" value="one_way_platform"/>
    </properties>
@@ -1356,7 +1356,6 @@ No Soliciting!</property>
   <object id="138" gid="1398" x="-1712" y="-816" width="16" height="16"/>
   <object id="140" gid="1394" x="-1456" y="-880" width="16" height="16"/>
   <object id="142" gid="1398" x="-1200" y="-752" width="16" height="16"/>
-  <object id="145" gid="1398" x="-1648" y="-768" width="16" height="16"/>
   <object id="146" gid="1398" x="-1424" y="-480" width="16" height="16"/>
   <object id="147" gid="1308" x="-1392" y="-480" width="16" height="16"/>
  </objectgroup>

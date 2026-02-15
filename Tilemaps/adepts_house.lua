@@ -490,20 +490,6 @@ return {
           }
         },
         {
-          id = 20,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = 80,
-          y = -16,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 217,
-          visible = true,
-          properties = {}
-        },
-        {
           id = 21,
           name = "",
           type = "",

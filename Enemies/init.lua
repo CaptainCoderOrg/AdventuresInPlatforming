@@ -156,6 +156,7 @@ local to_remove = {}
 ---@param dt number Delta time in seconds
 local function update_ground_enemy(enemy, dt)
 	common.apply_gravity(enemy, dt)
+	enemy.prev_y = enemy.y
 	enemy.x = enemy.x + enemy.vx * dt
 	enemy.y = enemy.y + enemy.vy * dt
 

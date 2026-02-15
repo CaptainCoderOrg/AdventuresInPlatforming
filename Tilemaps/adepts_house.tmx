@@ -225,7 +225,6 @@
     <property name="required_key" value="adept_key"/>
    </properties>
   </object>
-  <object id="20" gid="217" x="80" y="-16" width="16" height="16"/>
   <object id="21" gid="200" x="240" y="-128" width="16" height="16">
    <properties>
     <property name="flip" type="bool" value="true"/>

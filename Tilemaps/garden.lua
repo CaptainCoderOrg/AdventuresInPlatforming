@@ -1629,7 +1629,7 @@ return {
           x = 800,
           y = -16,
           width = 46.5,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1644,7 +1644,7 @@ return {
           x = -192,
           y = -432,
           width = 46.5,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1659,7 +1659,7 @@ return {
           x = 864.75,
           y = -47.3409,
           width = 159.159,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1674,7 +1674,7 @@ return {
           x = 912.375,
           y = -15.5,
           width = 63.5,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1686,10 +1686,10 @@ return {
           name = "",
           type = "",
           shape = "rectangle",
-          x = 728.75,
-          y = -0.25,
+          x = 720,
+          y = 0,
           width = 46.5,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1704,7 +1704,7 @@ return {
           x = -256,
           y = -480,
           width = 46.5,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -1719,7 +1719,7 @@ return {
           x = -448,
           y = -480,
           width = 46.5,
-          height = 8.5,
+          height = 16,
           rotation = 0,
           visible = true,
           properties = {
@@ -2560,20 +2560,6 @@ return {
           shape = "rectangle",
           x = -1200,
           y = -752,
-          width = 16,
-          height = 16,
-          rotation = 0,
-          gid = 1398,
-          visible = true,
-          properties = {}
-        },
-        {
-          id = 145,
-          name = "",
-          type = "",
-          shape = "rectangle",
-          x = -1648,
-          y = -768,
           width = 16,
           height = 16,
           rotation = 0,

@@ -239,6 +239,11 @@ Enemies/Bosses/valkyrie/
 └── phase4.lua        -- Phase 4 state machine (combined hazards + dual buttons)
 ```
 
+**Encounter Coordinator** (`Enemies/Bosses/encounter_coordinator.lua`):
+- Central manager for all boss coordinators, provides single interface for main.lua
+- Functions: `register(boss_id, coordinator)`, `update(dt, player, camera)`, `is_any_sequence_complete()`, `set_refs(player, camera)`, `reset()`, `get(boss_id)`
+- Registered coordinators are updated each frame and reset on level cleanup
+
 **Defeated Boss Tracking:**
 - `player.defeated_bosses` tracks which bosses have been defeated (boss_id → true)
 - Persisted via `SaveSlots.PLAYER_STAT_KEYS` when resting at campfire
@@ -565,6 +570,39 @@ animation:draw(x, y - lift)
   - API: `definition.activate(prop)` (fade to solid), `definition.deactivate(prop)` (fade to passable), `definition.reset(prop)` (instant faded)
   - Uses tile_render_info from Tiled for tileset-matched visuals with flip support
   - Used by boss coordinators (Valkyrie) for arena walls
+- **Trap Door** - Collapsing platform triggered by player standing on it
+  - States: closed, opening, open, resetting
+  - 2 tiles wide, 3px thin top collider
+  - Triggers after 0.4s of player standing on it, stays open for 2s before resetting
+  - Audio on opening
+- **Stairs** - Level transition point with player climb animation
+  - Two variants: "up" and "down" with different sprites/prompts
+  - Configurable `target_level` and `target_spawn`
+  - Triggers player transition to "stairs_up" or "stairs_down" state
+  - Uses TextDisplay for interaction prompt
+- **Interactable** - Invisible trigger areas with custom handlers
+  - Configurable dimensions (width, height)
+  - Resolves handler functions from path strings (e.g., "garden.on_open_cottage")
+  - Shows optional text prompt when player is nearby
+- **Sign** - Interactive text display triggered by player proximity
+  - Shows text with `{action_id}` variable substitution for control bindings
+  - Uses TextDisplay for rendering
+  - Spawned via `type = "sign"` in level symbols or Tiled objects
+- **Boss Door** - Programmatically controlled door (no key requirement)
+  - States: open, closed, closing, opening
+  - Controlled via `group_action` or `set_state`
+  - Persistent across saves (`default_reset = false`)
+  - Audio on open/close transitions
+- **Chest** - Interactive treasure chest with shine animation
+  - States: idle, opening, opened
+  - Optional `required_key` field for locked chests
+  - Spawns gold particles and gives unique items via pickup_dialogue
+  - Periodic shine animation (5 frames, 2s pause between cycles)
+  - Persistent across saves
+- **Group Config** - Invisible configurator that applies actions to prop groups
+  - 0x0 box (invisible, no collision)
+  - Places configuration metadata in Tiled
+  - Consumed during level load by `Prop.apply_group_configs()`
 - **Decoration** - Non-interactive visual props rendered from Tiled tilesets
   - No collision (box is 0x0), purely visual
   - No state machine (uses simple draw function)
@@ -773,6 +811,7 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/blue_slime.lua` - Blue slime enemy (passive, evasive behavior)
 - `Enemies/red_slime.lua` - Red slime enemy (aggressive, pursuit behavior)
 - `Enemies/gnomo_axe_thrower.lua` - Gnomo axe thrower enemy (ranged attacker, manages GnomoAxe projectile pool)
+- `Enemies/Bosses/encounter_coordinator.lua` - Central boss coordinator manager
 - `Enemies/Bosses/gnomo/init.lua` - Gnomo boss definition (on_start trigger, on_hit routing)
 - `Enemies/Bosses/gnomo/coordinator.lua` - Gnomo boss coordinator (shared health, phase transitions)
 - `Enemies/Bosses/gnomo/common.lua` - Gnomo boss shared utilities (state factories, intangibility, lerp)
@@ -809,6 +848,13 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/explorer_npc.lua` - Explorer NPC definition
 - `Prop/adept_npc.lua` - Adept NPC definition
 - `Prop/boss_block.lua` - Boss block prop (dynamic arena wall with alpha fade and collider toggling)
+- `Prop/sign.lua` - Sign prop (interactive text display with variable substitution)
+- `Prop/trap_door.lua` - Trap door prop (collapsing platform)
+- `Prop/stairs.lua` - Stairs prop (level transition point)
+- `Prop/interactable.lua` - Interactable prop (custom handler trigger areas)
+- `Prop/boss_door.lua` - Boss door prop (programmatically controlled arena door)
+- `Prop/chest.lua` - Chest prop (treasure chest with shine animation)
+- `Prop/group_config.lua` - Group config prop (invisible group action configurator)
 - `Prop/decoration.lua` - Decoration prop (non-interactive visual tiles)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

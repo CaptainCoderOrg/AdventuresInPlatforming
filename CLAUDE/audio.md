@@ -44,7 +44,7 @@ pool.create({
 
 - Looping ambient sounds with dynamic volume
 - `audio.update_spatial_sound(sound_id, volume)` - 0 stops, >0 plays
-- Currently supports: "campfire", "spear_trap"
+- Currently supports: "campfire"
 
 ## Door Sounds
 

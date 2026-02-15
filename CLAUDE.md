@@ -31,7 +31,6 @@ Debug controls:
   - Orange boxes: Sign hitboxes / Spear projectile hitboxes
   - Blue boxes: Player shield collider
 - `O` - Toggle profiler overlay (per-system timing breakdown)
-- `Y` - Test hit state
 - `H` - Grant Minor Healing and assign to first empty ability slot
 - `F1`-`F7` - Toggle abilities (double jump, dash, wall slide, hammer, axe, shuriken, shield)
 - `0` - Save to dev slot (localstorage)
@@ -125,10 +124,12 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/weapon_sync.lua` - Equipped weapon/secondary management and ability sync
 - `player/heal_channel.lua` - Heal channeling system (energy-to-health conversion)
 - `player/dash.lua` - Dash state and ghost trail visual system (object-pooled translucent snapshots)
+- `player/stairs_common.lua` - Factory for stairs_up/stairs_down state definitions
 - `Animation/init.lua` - Delta-time animation system
 
 ### Entities
 - `Enemies/init.lua` - Enemy manager
+- `Enemies/Bosses/encounter_coordinator.lua` - Central boss coordinator manager
 - `Enemies/Bosses/gnomo/` - Gnomo boss encounter (coordinator, phases 0-4, cinematic, victory)
 - `Enemies/Bosses/valkyrie/` - Valkyrie boss encounter (coordinator, phases 0-4, cinematic, victory, apology_path)
 - `Prop/init.lua` - Prop system manager
@@ -145,21 +146,25 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `proximity_audio/init.lua` - Distance-based volume
 
 ### UI
-- `ui/hud.lua` - Screen aggregator
-- `ui/boss_health_bar.lua` - Boss encounter health bar with intro animation
+- `ui/hud.lua` - Screen aggregator and input priority coordinator
 - `ui/title_screen.lua`, `ui/slot_screen.lua`, `ui/rest_screen.lua`
+- `ui/game_over.lua` - Game over screen
+- `ui/dialogue_screen.lua` - Split-screen NPC dialogue with typewriter text
+- `ui/shop_screen.lua` - Split-screen merchant shop overlay
+- `ui/upgrade_screen.lua` - Equipment upgrade workshop UI (split-screen with NPC)
+- `ui/credits_screen.lua` - Scrolling credits with typewriter effect and animated sprites
+- `ui/boss_health_bar.lua` - Boss encounter health bar with intro animation
+- `ui/pickup_dialogue.lua` - Equip/inventory dialogue for collectible items
+- `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
+- `ui/settings_dialog.lua` - Difficulty selection dialog
 - `ui/status_panel.lua` - Player stats and inventory panel
 - `ui/inventory_grid.lua` - 5x3 item grid with equipment management
 - `ui/ability_slots.lua` - Ability slot assignment component for status panel
 - `ui/secondary_bar.lua` - Secondary abilities HUD widget (6 fixed ability slots)
-- `ui/pickup_dialogue.lua` - Equip/inventory dialogue for collectible items
-- `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprites
 - `ui/map_panel.lua` - Minimap panel with fog-of-war for rest/pause screen
 - `ui/fast_travel_panel.lua` - Fast travel destination panel for rest screen
 - `ui/journal_panel.lua` - Quest journal panel for rest/pause screen
 - `ui/journal_toast.lua` - Toast notification for new journal entries
-- `ui/upgrade_screen.lua` - Equipment upgrade workshop UI (split-screen with NPC)
-- `ui/credits_screen.lua` - Scrolling credits with typewriter effect and animated sprites
 
 ### Upgrade
 - `upgrade/registry.lua` - Upgrade tier definitions (costs, materials, effects per item)
@@ -180,7 +185,6 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `triggers/init.lua` - Event trigger zone manager
 - `triggers/registry.lua` - Static mapping of trigger names to handler functions
 - `Camera/init.lua` - Camera following
-- `Sign/init.lua` - Interactive signs
 
 ## Conventions
 

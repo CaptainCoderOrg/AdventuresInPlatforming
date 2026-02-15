@@ -6,7 +6,7 @@
 - Tiled: Layer/tile type property determines collision behavior
 - Entity symbols: configurable via symbols table (ASCII) or object properties (Tiled)
 - Camera: Camera/init.lua with entity following
-- Signs: Sign/init.lua with {action_id} variable substitution
+- Signs: Prop/sign.lua with {action_id} variable substitution
 -->
 
 ## Level Format
@@ -235,14 +235,14 @@ height_offset = (tile_image.height / BASE_TILE - 1) * tile_size
 
 ## Sign System
 
-Interactive text displays triggered by player proximity.
+Interactive text displays triggered by player proximity. Implemented as a prop type in `Prop/sign.lua`.
 
 ### Architecture
 
-- Object pool in `Sign/init.lua` with state in `Sign/state.lua`
+- Registered as a prop type via `Prop.register("sign", ...)`
 - Proximity detection via bounding box overlap
-- Alpha fade in/out (0.25s duration)
-- Variable substitution for control bindings
+- Uses `TextDisplay` module for rendering text above the sign
+- Variable substitution for control bindings via `simple_dialogue`
 
 ### Variable Substitution
 
@@ -253,16 +253,7 @@ Signs support `{action_id}` placeholders replaced with bound keys/buttons:
 -- Displays "Press A to jump!" on gamepad
 ```
 
-### Usage
-
-```lua
-Sign.new(x, y, "Press {attack} to attack!")
-Sign.update(dt, player)  -- Check proximity, update fade
-Sign.draw()              -- Render signs and text popups
-Sign.clear()             -- Reset for level reload
-```
-
-**Level Symbol:** Configurable via `symbols` table with `type = "sign"` and `text` property.
+**Level Symbol:** Configurable via `symbols` table with `type = "sign"` and `text` property. Also placed via Tiled object layers with type "sign".
 
 ## Camera System
 
@@ -311,7 +302,6 @@ Configuration in `config/camera.lua` (lerp speeds, framing ratios, look-ahead di
 - `platforms/tiled_loader.lua` - Tiled format parser
 - `triggers/init.lua` - Trigger zone manager (create, check, clear)
 - `triggers/registry.lua` - Static mapping of trigger names to handler functions
-- `Sign/init.lua` - Interactive sign system
-- `Sign/state.lua` - Sign state management
+- `Prop/sign.lua` - Interactive sign prop (proximity text display)
 - `Camera/init.lua` - Camera system with following and framing
 - `config/camera.lua` - Camera configuration (lerp, framing, look-ahead)

@@ -156,7 +156,7 @@ cleanup_level()                    -- Remove colliders before reload
 4. `rest.start()` saves full state to active slot
 5. `Playtime.pause()` stops timer
 6. Rest screen shows with circular viewport
-7. All enemies respawn via `Enemy.respawn()`
+7. All enemies cleared and re-spawned from level data via `Enemy.clear()` + `Enemy.spawn()` loop
 8. "Continue" -> `continue_from_checkpoint()` reloads level
 
 ### Active Slot Tracking

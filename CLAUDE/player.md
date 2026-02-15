@@ -165,7 +165,7 @@ Resource management for abilities with fatigue mechanic.
 ```lua
 ATTACK_STAMINA_COST = 2      -- Per sword swing
 AIR_JUMP_STAMINA_COST = 1    -- Double jump
-DASH_STAMINA_COST = 2.5      -- Dash ability
+DASH_STAMINA_COST = 4        -- Dash ability
 WALL_JUMP_STAMINA_COST = 1   -- Wall jump
 -- Hammer stamina cost (5) is defined in unique_item_registry.hammer.stats
 ```
@@ -257,6 +257,8 @@ self.max_health = 3             -- Starting health
 self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
 self.prev_y = 0                 -- Y position from previous frame (used by world.lua anti-tunneling)
+self.unique_items = {}          -- Permanently collected key items (array of item_id strings)
+self.stackable_items = {}       -- Consumable stackable items (item_id -> count)
 self.active_weapon = nil        -- Currently equipped weapon item_id (synced via weapon_sync)
 self.ability_slots = { nil, nil, nil, nil, nil, nil }  -- 6 ability slots, each holds item_id or nil
 self.active_ability_slot = nil  -- Which slot (1-6) triggered current throw/heal
@@ -275,6 +277,8 @@ self.visited_campfires = {}     -- Visited campfires keyed by "level_id:name" ->
 self.dialogue_flags = {}        -- Dialogue condition flags (flag_name -> true), managed by dialogue/manager.lua
 self.journal = {}               -- Quest journal entries (entry_id -> "active"|"complete")
 self.journal_read = {}          -- Read tracking for journal unread indicators (entry_id -> true)
+self.visited_map = {}           -- Per-level fog-of-war data (level_id -> visited bounds)
+self.deaths = 0                 -- Total death count
 self.difficulty = "normal"      -- Difficulty setting ("normal" or "easy")
 self.attack_state = {           -- Combo tracking
     count, next_anim_ix, remaining_time, queued, hit_enemies
@@ -375,4 +379,5 @@ end
 - `player/shield.lua` - Shield lifecycle, damage blocking, knockback physics
 - `player/hit.lua` - Hit stun with invincibility and input queueing
 - `player/rest.lua` - Rest state (campfire interaction, save trigger)
+- `player/stairs_common.lua` - Factory for stairs_up/stairs_down state definitions
 - `Animation/init.lua` - Delta-time animation system

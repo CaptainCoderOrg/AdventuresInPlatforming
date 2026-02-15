@@ -2,7 +2,7 @@
 
 <!-- QUICK REFERENCE
 - State pattern: HIDDEN, FADING_IN, OPEN, FADING_OUT
-- Input priority: Audio/Controls > Slot > Title > GameOver > Rest
+- Input priority: Credits > Audio/Controls/Settings > Pickup > Dialogue > Shop > Upgrade > Pause > Slot > Title > GameOver/Rest
 - Title: title_screen.show(), set callbacks for menu items
 - Slot: slot_screen.show(), set_slot_callback()
 - Rest: rest_screen.show(x, y, camera, player) or show_pause()
@@ -17,15 +17,18 @@ All screens use identical states: `HIDDEN`, `FADING_IN`, `OPEN`, `FADING_OUT`
 
 ## Input Priority (highest to lowest)
 
-1. Audio/Controls/Settings dialogs
-2. Pickup dialogue
-3. Dialogue screen
-4. Shop screen
-5. Upgrade screen
-6. Pause toggle (ESC/START)
-7. Slot screen
-8. Title screen
-9. Game over / Rest screen
+1. Credits screen
+2. Audio dialog
+3. Controls dialog
+4. Settings dialog
+5. Pickup dialogue
+6. Dialogue screen
+7. Shop screen
+8. Upgrade screen
+9. Pause toggle (ESC/START)
+10. Slot screen
+11. Title screen
+12. Game over / Rest screen
 
 ## Title Screen (`ui/title_screen.lua`)
 
@@ -204,6 +207,84 @@ credits_screen.draw()              -- Render credits
 
 **Integration:** `hud.show_credits_screen()` triggers display. `hud.set_credits_close_callback(fn)` sets the close callback (e.g., return to title).
 
+## Dialogue Screen (`ui/dialogue_screen.lua`)
+
+- Split-screen NPC dialogue overlay with typewriter text reveal
+- Top area shows map view (48px), bottom area shows dialogue (168px)
+- Supports branching choices with navigation
+- Camera shifts to frame player in the map view area
+- Integration with `dialogue/manager.lua` for flags, conditions, and actions
+
+```lua
+dialogue_screen.show(tree_name, player, camera, npc_sprite)
+dialogue_screen.set_on_close(callback)    -- Callback after fade-out: (player, camera, original_camera_y)
+dialogue_screen.is_active()
+dialogue_screen.input()
+dialogue_screen.update(dt)
+dialogue_screen.draw()
+dialogue_screen.get_camera_offset_y()     -- World render Y offset (0 when hidden)
+```
+
+## Shop Screen (`ui/shop_screen.lua`)
+
+- Split-screen shop overlay for merchant purchases
+- Same layout pattern as dialogue_screen (map view + shop interface)
+- Gold display and purchase transactions via `shop/transactions.lua`
+
+```lua
+shop_screen.start(shop_id, player, camera)
+shop_screen.is_active()
+shop_screen.input()
+shop_screen.update(dt)
+shop_screen.draw()
+shop_screen.get_camera_offset_y()         -- World render Y offset (0 when hidden)
+```
+
+## Pickup Dialogue (`ui/pickup_dialogue.lua`)
+
+- Item pickup dialogue with equip/inventory options
+- Shows item icon, name, and description
+- Options: "Equip" and "Add to Inventory" for equippable items
+- Non-equippable items (`no_equip`) added to inventory immediately
+- Secondary items trigger ability slot assignment flow
+
+```lua
+pickup_dialogue.show(item_id, player, on_complete)
+pickup_dialogue.show_no_equip(item_id, player, on_complete)
+pickup_dialogue.show_info_only(item_id, player, on_complete)
+pickup_dialogue.is_active()
+pickup_dialogue.should_block_input()
+pickup_dialogue.input()
+pickup_dialogue.update(dt)
+pickup_dialogue.draw()
+```
+
+## Simple Dialogue (`ui/simple_dialogue.lua`)
+
+- 9-slice dialogue box rendering utility
+- Supports `{action_id}` placeholder substitution with control icon sprites
+- Word wrapping with mixed text and sprite rendering
+
+```lua
+simple_dialogue.draw(x, y, width, height, text, alpha)
+simple_dialogue.measure_height(text, width)
+```
+
+## Settings Dialog (`ui/settings_dialog.lua`)
+
+- Difficulty selection dialog (Normal/Hard)
+- Accessible from title screen
+- Persisted via `settings_storage` module
+
+```lua
+settings_dialog.init()
+settings_dialog.show()
+settings_dialog.is_active()
+settings_dialog.input()
+settings_dialog.update(dt)
+settings_dialog.draw()
+```
+
 ## Audio Dialog (`ui/audio_dialog.lua`)
 
 - Standalone dialog for volume settings (Master, Music, SFX sliders)
@@ -341,14 +422,21 @@ grid:draw()
 
 ## Key Files
 
+- `ui/hud.lua` - UI screen aggregator and input/draw coordinator
 - `ui/title_screen.lua` - Title menu with animated cursor
 - `ui/slot_screen.lua` - Save slot selection with delete confirmation
 - `ui/rest_screen.lua` - Circular viewport rest interface
-- `ui/hud.lua` - UI screen aggregator and input/draw coordinator
 - `ui/game_over.lua` - Game over screen
+- `ui/dialogue_screen.lua` - Split-screen NPC dialogue with typewriter text and choices
+- `ui/shop_screen.lua` - Split-screen merchant shop overlay
+- `ui/upgrade_screen.lua` - Equipment upgrade workshop UI (split-screen with NPC)
+- `ui/credits_screen.lua` - Scrolling credits with typewriter effect and animated sprites
 - `ui/boss_health_bar.lua` - Boss encounter health bar with intro animation
+- `ui/pickup_dialogue.lua` - Item pickup equip/inventory dialogue
+- `ui/simple_dialogue.lua` - 9-slice dialogue box with keybinding sprite substitution
 - `ui/audio_dialog.lua` - Audio settings dialog with volume sliders
 - `ui/controls_dialog.lua` - Controls settings dialog with keybind panel
+- `ui/settings_dialog.lua` - Difficulty selection dialog
 - `ui/control_icon.lua` - Shared control icon rendering utility for HUD widgets
 - `ui/projectile_selector.lua` - Resource meters HUD widget (HP/SP/EP)
 - `ui/secondary_bar.lua` - Secondary abilities HUD widget (6 fixed ability slots)
@@ -359,4 +447,3 @@ grid:draw()
 - `ui/fast_travel_panel.lua` - Fast travel destination picker for rest screen
 - `ui/journal_panel.lua` - Quest journal panel with hierarchical entries and unread indicators
 - `ui/journal_toast.lua` - Toast notification for new journal entries
-- `ui/credits_screen.lua` - Scrolling credits with typewriter effect and animated sprites

@@ -5,7 +5,8 @@
       "Bash(git show:*)",
       "Bash(ls \"C:\\\\Users\\\\User\\\\Desktop\\\\Lua Projects\\\\new-project\\\\assets\\\\sprites\\\\enemies\\\\magician\"\" 2>/dev/null || echo \"Directory not found or empty \")",
       "Bash(cd:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(grep:*)"
     ]
   }
 }

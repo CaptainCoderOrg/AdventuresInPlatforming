@@ -25,6 +25,8 @@ state = {
 
 States are registered in `player/init.lua`. Common utilities (gravity, jump, collision checks, ability handlers) are in `player/common.lua`.
 
+**Climb Drop:** Pressing Jump + Down while climbing drops with `vy = 0` (no jump impulse, no jump sound). Implemented in `player/climb.lua`.
+
 ## Learnable Abilities
 
 Abilities are gated behind unlock flags (set via progression/items). Checked in `player/common.lua`.
@@ -40,6 +42,8 @@ Abilities are gated behind unlock flags (set via progression/items). Checked in 
 | Shuriken | `has_shuriken` | `weapon_sync.is_secondary_unlocked()` |
 
 **Note:** `can_dash` is the unlock flag (derived from `dash_slot` presence). Dash uses the charge system (`max_charges=1, recharge=1s`) instead of a ground-reset cooldown.
+
+**Dash Ghost Trails (`player/dash.lua`):** Object-pooled translucent sprite snapshots spawned at intervals during dash state. Functions: `update_ghost_trails(dt)`, `draw_ghost_trails()`, `clear_ghost_trails()`, `spawn_ghost_trail(player)`.
 
 **Secondary Items:** Up to 6 secondary items can be assigned to ability slots (`player.ability_slots[1..6]`). Each slot is bound to a dedicated key (`ability_1` through `ability_6`). `player.active_ability_slot` tracks which slot triggered the current throw/heal/dash action. Secondaries come in several types:
 - **Throwable** (e.g., throwing axe, shuriken): Press the slot's ability key to launch a projectile. `weapon_sync.get_secondary_spec(player, slot)` returns the projectile spec, or nil for non-throwable secondaries.
@@ -61,7 +65,7 @@ Player combat abilities managed through state machine.
    - Hold window: 0.16s after animation for combo input
    - Cooldown: 0.2s between combo chains
    - **Weapon Switching**: `player/weapon_sync.lua` manages equipped weapon
-     - Cycle with E key or Gamepad SELECT
+     - Cycle with R key or Gamepad SELECT
      - `player.active_weapon` tracks currently selected weapon item_id
      - Stats flow from `unique_item_registry.lua` via `weapon_sync.get_weapon_stats()`
    - **Per-Weapon Stats** (from equipped weapon):
@@ -72,6 +76,7 @@ Player combat abilities managed through state machine.
      - `animation` - Variant: "default", "short", or "wide"
    - **Active Frames**: Frame 2 to (frame_count - 2)
    - **Hit Tracking**: `attack_state.hit_enemies` prevents double-hits per swing
+   - **Bolt Destruction**: `check_bolt_hits(hitbox)` queries combat spatial index for magician magic bolts during active frames and destroys them on contact
 
 2. **Throw (Ability)** - `player/throw.lua`
    - Launches selected projectile on entry (Axe or Shuriken)
@@ -251,6 +256,7 @@ panel:cancel_upgrades()        -- Discard pending upgrades
 self.max_health = 3             -- Starting health
 self.damage = 0                 -- Cumulative damage taken
 self.invincible_time = 0        -- Invincibility countdown (seconds)
+self.prev_y = 0                 -- Y position from previous frame (used by world.lua anti-tunneling)
 self.active_weapon = nil        -- Currently equipped weapon item_id (synced via weapon_sync)
 self.ability_slots = { nil, nil, nil, nil, nil, nil }  -- 6 ability slots, each holds item_id or nil
 self.active_ability_slot = nil  -- Which slot (1-6) triggered current throw/heal
@@ -362,6 +368,7 @@ end
 - `player/attack.lua` - Combat combo system (includes weapon hitbox)
 - `player/weapon_sync.lua` - Equipped weapon management, cycling, and ability flag sync
 - `player/heal_channel.lua` - Heal channeling system (hold ability to convert energy to health)
+- `player/dash.lua` - Dash state with ghost trail visual system
 - `player/throw.lua` - Projectile throwing state
 - `player/hammer.lua` - Heavy attack state
 - `player/block.lua` - Defensive stance

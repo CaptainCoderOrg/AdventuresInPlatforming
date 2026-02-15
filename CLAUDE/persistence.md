@@ -48,7 +48,7 @@ Multi-slot save system using localStorage with 3 save slots.
     stackable_items = {},            -- Consumable items with counts (item_id -> count)
     equipped_items = {},             -- Set of equipped item_ids {throwing_axe=true, ...}
     active_weapon = nil,             -- Currently active weapon item_id (for quick swap)
-    ability_slots = {},              -- 4 ability slots {item_id or nil, ...}
+    ability_slots = {},              -- 6 ability slots {item_id or nil, ...}
     visited_campfires = {},          -- Fast travel locations {level_id:name -> {name, level_id, x, y}}
     defeated_bosses = {},            -- Set of defeated boss ids {boss_id -> true}
     dialogue_flags = {},             -- Dialogue condition flags {flag_name -> true}
@@ -81,9 +81,28 @@ SaveSlots.clear(slot_index)         -- Delete slot data
 SaveSlots.format_playtime(seconds)  -- Format HH:MM:SS display string
 ```
 
+### Deep Copy Handlers
+
+`copy_stat_value()` has dedicated handlers for complex data types that require more than shallow copy:
+
+- **`visited_map`** — Deep-copies nested array structure (each entry is array of bounds). Not in `SHALLOW_COPY_KEYS`.
+- **`ability_slots`** — Creates 6-element array with `false` for nil entries (ensures correct JSON serialization of sparse arrays). Not in `SHALLOW_COPY_KEYS`.
+
+### Dev Slots
+
+Development save/load using localstorage with `"dev_slot_N"` keys. Only available when `config.DEV_MODE = true`.
+
+```lua
+SaveSlots.save_dev_slot(slot_num, data)  -- Save to dev slot
+SaveSlots.load_dev_slot(slot_num)        -- Load from dev slot (returns data or nil)
+```
+
+Debug keys: `0` saves to dev slot, `9` copies slot 1 to slot 3.
+
 ### LocalStorage Keys
 
 - `"save_slot_1"`, `"save_slot_2"`, `"save_slot_3"`
+- `"dev_slot_N"` — Dev save slots (DEV_MODE only)
 - Legacy: `"restore_point"` (auto-migrated to slot 1 if found)
 
 ## Playtime System

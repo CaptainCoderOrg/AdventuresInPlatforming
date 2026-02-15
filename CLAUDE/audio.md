@@ -57,6 +57,15 @@ pool.create({
 - `audio.play_death_sound(key)` - falls back to default if key not found
 - Supports: "ratto", "spike_slug", default (squish)
 
+### Music Tracks
+
+Loaded via `canvas.assets.load_music()`:
+- `audio.level1` - Main level music (`music/level-1.ogg`)
+- `audio.title_screen` - Title screen music (`music/title-screen.ogg`)
+- `audio.rest` - Rest screen / campfire music (`music/rest.ogg`)
+- `audio.gnomo_boss` - Gnomo boss encounter music (`music/gnomo-boss.ogg`)
+- `audio.credits` - Credits screen music (`music/credits.ogg`)
+
 ## Key Methods
 
 ```lua

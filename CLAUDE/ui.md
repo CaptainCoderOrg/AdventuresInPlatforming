@@ -184,6 +184,26 @@ upgrade_screen.get_camera_offset_y()                     -- World render Y offse
 
 **Integration:** Started from witch NPC's `on_close` callback. Dialogue sets `open_upgrades` flag; witch NPC checks/clears it and calls `upgrade_screen.start()`. Uses `upgrade/registry.lua` for item lists, `upgrade/transactions.lua` for purchase validation/execution.
 
+## Credits Screen (`ui/credits_screen.lua`)
+
+- Full scrolling credits with multi-phase presentation
+- Phases: fade to black → title hold → scroll to typewriter text → typewriter effect → scroll credits → hold end → fade out
+- Animated enemy sprites along sides during scroll
+- Accessible from title screen menu and rest/pause menu
+
+```lua
+credits_screen.init()              -- Initialize decoration sprite animations
+credits_screen.show()              -- Show with fade-in
+credits_screen.hide()              -- Hide with fade-out
+credits_screen.is_active()         -- Check if blocking game input
+credits_screen.set_on_close(fn)    -- Set callback for when screen closes
+credits_screen.input()             -- Process input (skip/advance)
+credits_screen.update(dt)          -- Update state machine, scroll, typewriter
+credits_screen.draw()              -- Render credits
+```
+
+**Integration:** `hud.show_credits_screen()` triggers display. `hud.set_credits_close_callback(fn)` sets the close callback (e.g., return to title).
+
 ## Audio Dialog (`ui/audio_dialog.lua`)
 
 - Standalone dialog for volume settings (Master, Music, SFX sliders)
@@ -339,3 +359,4 @@ grid:draw()
 - `ui/fast_travel_panel.lua` - Fast travel destination picker for rest screen
 - `ui/journal_panel.lua` - Quest journal panel with hierarchical entries and unread indicators
 - `ui/journal_toast.lua` - Toast notification for new journal entries
+- `ui/credits_screen.lua` - Scrolling credits with typewriter effect and animated sprites

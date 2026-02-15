@@ -100,9 +100,10 @@ states = {
   - Detection range: 3 tiles, attack triggers when player leaves range while not facing ghost
   - Prep attack: Floats upward with shake effect for 1 second
   - Attack: Accelerates toward player (max 25 tiles/sec), continues until off-screen
-  - Reappear: Teleports to random position 6 tiles from player, fades in over 1.5s
+  - Reappear: Spawns converge particle telegraph (black particles converging to center), then teleports to player's Y at fixed distance left or right, fades in over 1.5s
   - Fade out: Triggered by player hit or shield block, fades over 0.75s then reappears
   - Directional shield check (phases through collision shapes)
+  - Has `on_damage_player` callback (self-damage on player contact)
   - Perfect block: Instant death
   - Spawned via `P` symbol in level map
 - **Magician** - Flying mage that casts homing projectiles and teleports to dodge
@@ -116,6 +117,7 @@ states = {
   - Return: Teleports to spawn when player out of range or LOS lost
   - Unstuck: Emergency teleport when stuck in wall geometry
   - Manages own projectile pool (MagicBolt) with trail and puff particle effects
+  - Player can destroy bolts with weapon swings (see `player/attack.lua` `check_bolt_hits()`)
   - Throttled expensive checks (dodge: 0.05s, wall: 0.15s, LOS: 0.12s, path: 0.08s)
   - Spawned via `M` symbol in level map
 - **Guardian** - Heavy enemy with spiked club that jumps to engage
@@ -213,10 +215,13 @@ Enemies/Bosses/gnomo/
 - Phase transitions at 75%, 50%, 25% health thresholds
 - Coordinator manages arena hazards: spike traps, spear traps, boss blocks, and pressure-plate buttons
 - Phase 0: Intro (cinematic walk, door close, valkyrie drop). Phase 1: Ground combat (jump-attack pattern)
-- Phase 2: Spike mode (dive bomb loop + rolling spike waves, right button disables). Phase 3: Spear mode (same pattern, left button)
-- Phase 4: Combined mode (both hazards + dual buttons, re-enable mechanic after 4 dives)
-- Victory sequence: shield flies to waypoint, DEFEATED text, shield descends to pillar as collectible, arcane shard drops to floor
+- Phase 2: Spike mode (dive bomb loop + rolling spike waves, right button disables)
+- Phase 3: Spear mode — boss goes off-screen and dive-bombs player repeatedly. Spear sequencer fires spear groups in outside-in pattern at intervals. Player presses left button to disable spears and force ground mode
+- Phase 4: Combined mode — both spikes AND spears with dual button mechanics. Boss visits both bridges, then enters dive-bomb loop. Both buttons required for ground mode. Re-enables hazards after 4 dives
+- Common dive-bomb states shared across phases 2-4 (`common.lua`): `hazard_landing`, `jump_off_screen`, `dive_bomb`, `ground_landing`, `dive_make_choice`
+- Victory sequence: shield flies to waypoint, "DEFEATED" text, shield descends to pillar as collectible, arcane shard drops to floor
 - Door opens only after player collects the shield
+- Apology path (`apology_path.lua`): Peaceful resolution when player has `valkyrie_apology` item. Multi-phase cinematic: walk, door, valkyrie falls/lands, dialogue, shard drop, valkyrie fades, player collects
 
 **Valkyrie File Structure:**
 ```
@@ -226,6 +231,7 @@ Enemies/Bosses/valkyrie/
 ├── common.lua        -- Shared animations, draw, state definitions (jump, attack, dive bomb)
 ├── cinematic.lua     -- Intro sequence (walk to position, door closes, valkyrie falls/jumps)
 ├── victory.lua       -- Defeat sequence (flying shield, arcane shard, collectible spawn, door opens)
+├── apology_path.lua  -- Peaceful resolution (valkyrie_apology item, cinematic exit)
 ├── phase0.lua        -- Phase 0 state machine (intro idle)
 ├── phase1.lua        -- Phase 1 state machine (ground combat)
 ├── phase2.lua        -- Phase 2 state machine (spike mode + dive bombs)
@@ -298,6 +304,7 @@ Enemy definitions can override this for custom reactions:
 - `Enemy:check_player_overlap(player)` called each frame
 - Deals `enemy.damage` to player on collision
 - Player invincibility frames prevent rapid hits
+- Optional `on_damage_player` callback invoked after dealing damage (e.g., ghost painting self-damage)
 
 ### Common Utilities (`Enemies/common.lua`)
 
@@ -550,6 +557,14 @@ animation:draw(x, y - lift)
   - 1-tile collision box, 5-frame idle animation
 - **Adept NPC** - Interactable NPC with dialogue
   - 1-tile collision box, 6-frame reading animation
+- **Boss Block** - Dynamic wall that fades between solid and passable states for boss arenas
+  - States: hidden, appearing, visible, disappearing, faded
+  - Collider toggling: solid when visible/appearing, passable when hidden/faded/disappearing
+  - Alpha transitions: 0.5s fade duration, scaled by distance to target alpha
+  - Faded state renders at alpha 0.2 (visible but passable, hints at arena boundary)
+  - API: `definition.activate(prop)` (fade to solid), `definition.deactivate(prop)` (fade to passable), `definition.reset(prop)` (instant faded)
+  - Uses tile_render_info from Tiled for tileset-matched visuals with flip support
+  - Used by boss coordinators (Valkyrie) for arena walls
 - **Decoration** - Non-interactive visual props rendered from Tiled tilesets
   - No collision (box is 0x0), purely visual
   - No state machine (uses simple draw function)
@@ -575,6 +590,8 @@ return npc_common.create({
 ```
 
 Adding a new NPC requires only a configuration file using this factory.
+
+Supports `on_dialogue_close` callback in config, invoked after dialogue fade-out with `(player, camera, original_camera_y)`. Used by Adept NPC to trigger credits screen.
 
 ### Common Utilities (`Prop/common.lua`)
 
@@ -623,11 +640,10 @@ gravity = 20                 -- gravity scale
 
 Projectiles only collide with solid world geometry (walls, platforms, slopes). Filtered to ignore triggers and player.
 
-### Projectile Switching
+### Projectile Selection
 
-- Player can toggle between projectile types (0 key or Gamepad SELECT)
-- Available: `Projectile.get_axe()`, `Projectile.get_shuriken()`
-- Current projectile spec retrieved via `weapon_sync.get_secondary_spec(player)`
+- Each ability slot can hold a different secondary item (throwable, channeled, dash, shield)
+- Current projectile spec retrieved via `weapon_sync.get_secondary_spec(player, slot)`
 
 ### Current Projectiles
 
@@ -669,6 +685,7 @@ Visual feedback system for transient effects including animations, floating text
 - Fatigue particles - Sweat droplets when stamina exhausted
 - Collect particles - Gold/yellow burst when collecting unique items
 - Heal particles - Pink/red particles that converge toward player center during channeling
+- Converge particles - Ring of particles converging to center point (configurable color, count, radius). Used for ghost painting telegraph
 
 **Flying Objects:**
 - Flying object - Generalized boss defeat animation (fly between positions, configurable sprite/rotation/duration, completion callback)
@@ -692,11 +709,14 @@ Effects.create_perfect_block_text(x, y)       -- "Perfect Block" (yellow)
 Effects.create_gold_text(x, y, amount, player)  -- Accumulating gold pickup
 Effects.create_xp_text(x, y, amount, player)    -- Accumulating XP pickup
 Effects.create_heal_text(x, y, amount, player)  -- Accumulating heal "+X.X HP" (green)
+Effects.create_hp_loot_text(x, y, amount, player)      -- Accumulating HP loot text (red)
+Effects.create_energy_loot_text(x, y, amount, player)   -- Accumulating energy loot text (blue)
 
 -- Particles
 Effects.create_fatigue_particle(x, y)           -- Sweat particle
 Effects.create_collect_particles(x, y)          -- Item collection burst
 Effects.create_heal_particle(cx, cy)            -- Pink converging heal particle
+Effects.create_converge_particles(cx, cy, r, count, color, min_s, max_s) -- Ring converging to center
 
 -- Flying objects
 Effects.create_flying_object(start_x, start_y, target_x, target_y, opts)     -- Generalized (opts: sprite, rotations, flight_duration, on_complete)
@@ -704,6 +724,28 @@ Effects.create_flying_axe(start_x, start_y, target_x, target_y, on_complete)  --
 ```
 
 Effects are positioned in tile coordinates and converted to screen pixels for rendering.
+
+## Collectible System
+
+Loot particle system for items dropped by enemies and chests (`Collectible/init.lua`).
+
+### Architecture
+
+- Particles explode outward from source, then home toward the player after a brief delay
+- Types: gold (yellow), XP (green), health (red), energy (blue)
+- Health collectibles only spawn when player is damaged; energy collectibles only spawn when player has spent energy
+- Enemies define loot via `health` and `energy` fields in loot tables (value per collectible particle)
+
+### Key Methods
+
+```lua
+Collectible.spawn_loot(x, y, loot_def, player)  -- Enemy death loot (gold, xp, health, energy)
+Collectible.spawn_gold_burst(x, y, amount)       -- Chest/upward gold burst
+Collectible.spawn_xp_burst(x, y, amount)         -- Quest reward XP burst
+Collectible.update(dt, player)                    -- Physics, homing, collection
+Collectible.draw()                               -- Render particles
+Collectible.clear()                              -- Clear all collectibles
+```
 
 ### Creating Custom Effects
 
@@ -743,7 +785,9 @@ Effects use the object pool pattern. New effect types require:
 - `Enemies/Bosses/valkyrie/common.lua` - Valkyrie boss shared animations, draw, state definitions
 - `Enemies/Bosses/valkyrie/cinematic.lua` - Valkyrie boss intro sequence (walk, door close, fall/jump)
 - `Enemies/Bosses/valkyrie/victory.lua` - Valkyrie boss defeat sequence (flying shield, shard, door open)
+- `Enemies/Bosses/valkyrie/apology_path.lua` - Valkyrie peaceful resolution (cinematic, valkyrie_apology item)
 - `Enemies/Bosses/valkyrie/phase0-4.lua` - Phase-specific state machines
+- `Collectible/init.lua` - Loot collectible particles (gold, XP, health, energy)
 - `Prop/init.lua` - Prop system manager (spawn, groups, state transitions)
 - `Prop/state.lua` - Persistent state tables for hot reload (types, all, groups, global_draws, accumulated_states)
 - `Prop/common.lua` - Shared prop utilities (draw, player_touching, damage_player)
@@ -764,6 +808,7 @@ Effects use the object pool pattern. New effect types require:
 - `Prop/witch_npc.lua` - Witch merchant NPC definition
 - `Prop/explorer_npc.lua` - Explorer NPC definition
 - `Prop/adept_npc.lua` - Adept NPC definition
+- `Prop/boss_block.lua` - Boss block prop (dynamic arena wall with alpha fade and collider toggling)
 - `Prop/decoration.lua` - Decoration prop (non-interactive visual tiles)
 - `Projectile/init.lua` - Throwable projectiles with physics
 - `Effects/init.lua` - Visual effects manager (hit effects, particles)

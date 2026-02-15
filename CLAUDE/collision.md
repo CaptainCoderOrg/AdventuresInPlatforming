@@ -11,11 +11,21 @@
 ## HC Library Usage
 
 Uses HC library (`APIS/hc.lua`) with spatial hashing. Key patterns:
-- Separated X/Y collision passes to prevent tunneling
+- Separated X/Y collision passes with anti-tunneling sub-stepping
 - Ground probing for slope walking (`world.ground_probe()`)
 - Trigger volumes for ladders and hit zones
 - One-way platform support
 - Probe shapes for non-colliding queries
+
+### Anti-Tunneling Sub-Stepping
+
+The Y collision pass in `world.lua` sub-steps when vertical displacement exceeds half a tile (`MAX_Y_STEP = ts * 0.5`). Each sub-step performs full collision detection. Stops early on ground/ceiling contact. This prevents entities from tunneling through thin geometry during frame drops.
+
+```lua
+num_steps = math.max(1, math.ceil(math.abs(total_dy) / MAX_Y_STEP))
+```
+
+**`prev_y` requirement:** Player and enemies must set `prev_y = y` before position updates each frame. Used by bridge tunneling detection (see below).
 
 ## Entity Filtering
 
@@ -92,6 +102,7 @@ One-way platforms that can be jumped through from below or dropped through from 
 - Drop through by pressing down while standing on bridge
 - `player.standing_on_bridge` tracks when on bridge surface
 - `player.wants_drop_through` triggers pass-through mode
+- **Bridge tunneling fix:** `should_skip_bridge()` uses `prev_y` to detect landing-from-above vs pass-through. When entity was above bridge last frame but has overlap > 0.3, collision resolves as landing
 
 **Level Symbol:** `-` (hyphen)
 

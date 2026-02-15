@@ -19,7 +19,9 @@ The game uses the Canvas framework. API documentation is in `APIS/docs/canvas.md
 
 ## Running the Game
 
-The game runs via the Canvas framework runtime. Debug controls:
+The game runs via the Canvas framework runtime. All debug keys require `config.DEV_MODE = true` in `config.lua`.
+
+Debug controls:
 - `P` - Toggle debug overlay (FPS, player state, bounding boxes)
   - Red boxes: Player hitbox
   - Yellow boxes: Projectile hitboxes / Patrol areas (filled)
@@ -30,7 +32,10 @@ The game runs via the Canvas framework runtime. Debug controls:
   - Blue boxes: Player shield collider
 - `O` - Toggle profiler overlay (per-system timing breakdown)
 - `Y` - Test hit state
-- `H` - Grant Minor Healing and assign to first empty ability slot (debug mode only)
+- `H` - Grant Minor Healing and assign to first empty ability slot
+- `F1`-`F7` - Toggle abilities (double jump, dash, wall slide, hammer, axe, shuriken, shield)
+- `0` - Save to dev slot (localstorage)
+- `9` - Copy slot 1 to slot 3
 - `1`/`2` - Switch between level1/title music (non-debug mode only)
 
 ## Architecture
@@ -79,20 +84,21 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 **Combat:**
 - Attack: Mouse Left / Gamepad WEST (combo)
-- Ability 1: Mouse Right / Gamepad NORTH
-- Ability 2: 2 / Gamepad EAST
-- Ability 3: 3 / Gamepad LB
-- Ability 4: 4 / Gamepad LT
+- Ability 1: Q / Gamepad NORTH
+- Ability 2: Mouse Right / Gamepad EAST
+- Ability 3: E / Gamepad LB
+- Ability 4: Z / Gamepad LT
 - Ability 5: Shift / Gamepad RB
-- Ability 6: Q / Gamepad RT
-- Swap Weapon: E / Gamepad SELECT (cycle equipped weapons)
+- Ability 6: F / Gamepad RT
+- Swap Weapon: R / Gamepad SELECT (cycle equipped weapons)
 
 **Interaction:**
-- Interact: Up Arrow / D-pad UP (rest at campfires, open chests, collect items, unlock doors)
+- Interact: W / D-pad UP (rest at campfires, open chests, collect items, unlock doors)
 
 **Movement:**
-- Arrow keys / D-pad / Left Stick
+- WASD / D-pad / Left Stick
 - Jump: Space / Gamepad SOUTH
+- Climb drop: Jump + S while climbing (drops without jumping)
 
 **Camera:**
 - Right analog stick - Manual look (gamepad only)
@@ -101,7 +107,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 
 ### Core
 - `main.lua` - Game loop (on_start, tick, draw)
-- `config.lua` - Debug flags, UI scaling (`config.ui.TILE`, `config.ui.SCALE`)
+- `config.lua` - Debug flags, UI scaling (`config.ui.TILE`, `config.ui.SCALE`), `DEV_MODE` gates debug shortcuts
 - `controls.lua` - Unified keyboard/gamepad input handling
 - `config/controls.lua` - Control action definitions, default bindings, display names
 - `world.lua` - HC collision engine wrapper
@@ -118,17 +124,20 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `player/stats.lua` - Stat percentage calculations (diminishing returns)
 - `player/weapon_sync.lua` - Equipped weapon/secondary management and ability sync
 - `player/heal_channel.lua` - Heal channeling system (energy-to-health conversion)
+- `player/dash.lua` - Dash state and ghost trail visual system (object-pooled translucent snapshots)
 - `Animation/init.lua` - Delta-time animation system
 
 ### Entities
 - `Enemies/init.lua` - Enemy manager
 - `Enemies/Bosses/gnomo/` - Gnomo boss encounter (coordinator, phases 0-4, cinematic, victory)
-- `Enemies/Bosses/valkyrie/` - Valkyrie boss encounter (coordinator, phases 0-4, cinematic, victory)
+- `Enemies/Bosses/valkyrie/` - Valkyrie boss encounter (coordinator, phases 0-4, cinematic, victory, apology_path)
 - `Prop/init.lua` - Prop system manager
 - `Prop/npc_common.lua` - NPC factory for dialogue NPCs
 - `Prop/unique_item_registry.lua` - Item definitions and equipment types
+- `Prop/boss_block.lua` - Dynamic wall prop for boss encounters (appear/disappear with collider toggling)
 - `Projectile/init.lua` - Throwable projectiles
 - `Effects/init.lua` - Visual effects
+- `Collectible/init.lua` - Loot collectibles (gold, XP, health, energy particles)
 - `sprites/npcs.lua` - NPC sprite asset loader
 
 ### Audio
@@ -150,6 +159,7 @@ Unified input system in `controls.lua` supporting keyboard and gamepad.
 - `ui/journal_panel.lua` - Quest journal panel for rest/pause screen
 - `ui/journal_toast.lua` - Toast notification for new journal entries
 - `ui/upgrade_screen.lua` - Equipment upgrade workshop UI (split-screen with NPC)
+- `ui/credits_screen.lua` - Scrolling credits with typewriter effect and animated sprites
 
 ### Upgrade
 - `upgrade/registry.lua` - Upgrade tier definitions (costs, materials, effects per item)

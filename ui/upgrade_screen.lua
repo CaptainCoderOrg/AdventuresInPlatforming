@@ -436,7 +436,11 @@ function upgrade_screen.draw()
                     price_text = "MAXED"
                 else
                     local next_tier = upgrade_def.tiers[current_tier + 1]
-                    if next_tier.material then
+                    if next_tier.material and next_tier.gold > 0 then
+                        local mat_def = stackable_item_registry[next_tier.material]
+                        local mat_name = mat_def and mat_def.name or next_tier.material
+                        price_text = tostring(next_tier.gold) .. "g + " .. mat_name
+                    elseif next_tier.material then
                         local mat_def = stackable_item_registry[next_tier.material]
                         price_text = mat_def and mat_def.name or next_tier.material
                     else
@@ -493,7 +497,7 @@ function upgrade_screen.draw()
                     local desc_y = box_y + box_h - TEXT_PADDING_TOP - LINE_HEIGHT + 2
 
                     if next_tier.material then
-                        -- Draw description in gray, then "Requires: " in green, material name in gold
+                        -- Draw description in gray, then "Requires: " in green, cost in gold
                         canvas.set_color("#AAAAAA")
                         canvas.draw_text(text_x, desc_y, desc)
                         local desc_w = canvas.get_text_width(desc)
@@ -505,8 +509,12 @@ function upgrade_screen.draw()
 
                         local mat_def = stackable_item_registry[next_tier.material]
                         local mat_name = mat_def and mat_def.name or next_tier.material
+                        local cost_text = mat_name
+                        if next_tier.gold > 0 then
+                            cost_text = tostring(next_tier.gold) .. "g + " .. mat_name
+                        end
                         canvas.set_color("#CC9933")
-                        canvas.draw_text(text_x + desc_w + req_w, desc_y, mat_name)
+                        canvas.draw_text(text_x + desc_w + req_w, desc_y, cost_text)
                     else
                         canvas.set_color("#AAAAAA")
                         canvas.draw_text(text_x, desc_y, desc)

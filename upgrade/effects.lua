@@ -45,6 +45,7 @@ local function collect_effects(player, item_id)
     _result.wall_slide_delay = nil
     _result.double_projectile = nil
     _result.triple_projectile = nil
+    _result.penta_projectile = nil
 
     for i = 1, math.min(tier_num, #def.tiers) do
         local tier = def.tiers[i]
@@ -164,6 +165,15 @@ end
 function effects.has_triple_projectile(player, item_id)
     local fx = collect_effects(player, item_id)
     return fx.triple_projectile or false
+end
+
+--- Check if player has penta projectile (5-shuriken fan) from upgrade
+---@param player table Player instance
+---@param item_id string Secondary item ID
+---@return boolean True if penta projectile is active
+function effects.has_penta_projectile(player, item_id)
+    local fx = collect_effects(player, item_id)
+    return fx.penta_projectile or false
 end
 
 --- Get effective recharge time (override from upgrades, or base)

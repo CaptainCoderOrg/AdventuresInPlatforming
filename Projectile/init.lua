@@ -238,7 +238,16 @@ function Projectile.create_shuriken(x, y, direction, owner)
     local sx, sy = x + 0.5, y + 0.25
     local first = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 0, 0, direction, Effects.create_shuriken_hit, damage, owner)
     first.ignores_armor = true
-    if owner and upgrade_effects.has_triple_projectile(owner, "shuriken") then
+    if owner and upgrade_effects.has_penta_projectile(owner, "shuriken") then
+        local p2 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -20, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        local p3 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -10, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        local p4 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 10, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        local p5 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 20, 0, direction, Effects.create_shuriken_hit, damage, owner)
+        p2.ignores_armor = true
+        p3.ignores_armor = true
+        p4.ignores_armor = true
+        p5.ignores_armor = true
+    elseif owner and upgrade_effects.has_triple_projectile(owner, "shuriken") then
         local p2 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, -14, 0, direction, Effects.create_shuriken_hit, damage, owner)
         local p3 = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 14, 0, direction, Effects.create_shuriken_hit, damage, owner)
         p2.ignores_armor = true
@@ -266,7 +275,7 @@ _shuriken_spec = {
     icon = sprites.projectiles.shuriken_icon,
     damage = 3,
     stamina_cost = 0,
-    energy_cost = 1,
+    energy_cost = 0,
     create = Projectile.create_shuriken,
 }
 

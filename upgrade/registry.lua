@@ -10,9 +10,9 @@ registry.sword = {
     tiers = {
         { gold = 7,   effects = { weapon_damage_add = 0.2 },
           result = "I was able to increase the damage of the shortsword." },
-        { gold = 35,  effects = { weapon_damage_add = 0.3 },
+        { gold = 10,  effects = { weapon_damage_add = 0.3 },
           result = "The enchantment grows stronger..." },
-        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 0.5, stamina_cost = 0.5 },
+        { gold = 35, material = "arcane_shard", effects = { weapon_damage_add = 0.5, stamina_cost = 0.5 },
           result = "A powerful dark energy flows through the blade now." },
     },
 }
@@ -23,9 +23,9 @@ registry.minor_healing = {
     tiers = {
         { gold = 18,  effects = { heal_rate = 1 },
           result = "Now you will heal faster." },
-        { gold = 70,  effects = { energy_ratio = 1.5 },
+        { gold = 25,  effects = { energy_ratio = 1.5 },
           result = "Your energy flows more efficiently now." },
-        { gold = 0, material = "arcane_shard", effects = { heal_rate = 3, energy_ratio = 1 },
+        { gold = 70, material = "arcane_shard", effects = { heal_rate = 3, energy_ratio = 1 },
           result = "Life force surges through you with incredible speed." },
     },
 }
@@ -36,9 +36,9 @@ registry.longsword = {
     tiers = {
         { gold = 35,  effects = { weapon_damage_add = 0.5, stamina_cost_add = -0.25 },
           result = "The blade feels lighter and strikes harder." },
-        { gold = 140, effects = { weapon_damage_add = 0.5, ms_per_frame = 70 },
+        { gold = 75, effects = { weapon_damage_add = 0.5, ms_per_frame = 70 },
           result = "The enchantment quickens the blade's swing." },
-        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
+        { gold = 100, material = "arcane_shard", effects = { weapon_damage_add = 1.0, stamina_cost_add = -0.25, ms_per_frame = 60 },
           result = "A masterwork edge. Swift, deadly, and effortless." },
     },
 }
@@ -49,9 +49,9 @@ registry.throwing_axe = {
     tiers = {
         { gold = 35,  effects = { recharge = 1.5, max_charges_add = 1 },
           result = "The enchantment hastens the axe's return." },
-        { gold = 105, effects = { projectile_damage = 2, max_charges_add = 1, double_projectile = true },
+        { gold = 35, effects = { projectile_damage = 2, max_charges_add = 1, double_projectile = true },
           result = "The axes strike with renewed vigor." },
-        { gold = 0, material = "arcane_shard", effects = { recharge = 1, max_charges_add = 1 },
+        { gold = 100, material = "arcane_shard", effects = { recharge = 1, max_charges_add = 1 },
           result = "The axes return almost instantly." },
     },
 }
@@ -62,10 +62,10 @@ registry.shuriken = {
     tiers = {
         { gold = 35,  effects = { max_charges_add = 2, projectile_damage = 4, double_projectile = true },
           result = "The shurikens multiply and strike with greater force." },
-        { gold = 140, effects = { max_charges_add = 2, energy_cost = 0.5 },
-          result = "The summoning requires less energy now." },
-        { gold = 0, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 5, triple_projectile = true },
-          result = "Pure arcane energy. A fan of shurikens at your command." },
+        { gold = 75, effects = { max_charges_add = 2, projectile_damage = 6 },
+          result = "The shurikens strike with greater force." },
+        { gold = 100, material = "arcane_shard", effects = { max_charges_add = 2, penta_projectile = true },
+          result = "Pure arcane energy. A storm of shurikens at your command." },
     },
 }
 
@@ -75,9 +75,9 @@ registry.grip_boots = {
     tiers = {
         { gold = 35,  effects = { stamina_cost_add = -0.5 },
           result = "The boots grip tighter. Wall jumping requires less effort." },
-        { gold = 140, effects = { wall_slide_delay = 1 },
+        { gold = 75, effects = { wall_slide_delay = 1 },
           result = "The enchantment lets you cling to walls longer before sliding." },
-        { gold = 0, material = "arcane_shard", effects = { stamina_cost = 0, wall_slide_delay = 2 },
+        { gold = 100, material = "arcane_shard", effects = { stamina_cost = 0, wall_slide_delay = 2 },
           result = "You can hang on walls effortlessly for an extended time." },
     },
 }
@@ -88,9 +88,9 @@ registry.hammer = {
     tiers = {
         { gold = 35,  effects = { weapon_damage_add = 5 },
           result = "The hammer strikes with greater force." },
-        { gold = 140, effects = { stamina_cost_add = -4 },
+        { gold = 75, effects = { stamina_cost_add = -4 },
           result = "The enchantment makes the hammer feel lighter." },
-        { gold = 0, material = "arcane_shard", effects = { ms_per_frame = 112 },
+        { gold = 100, material = "arcane_shard", effects = { ms_per_frame = 112 },
           result = "The hammer swings with blinding speed." },
     },
 }
@@ -101,9 +101,9 @@ registry.great_sword = {
     tiers = {
         { gold = 53,  effects = { weapon_damage_add = 1.5 },
           result = "The blade's edge gleams with arcane sharpness." },
-        { gold = 175, effects = { weapon_damage_add = 1, stamina_cost_add = -1 },
+        { gold = 120, effects = { weapon_damage_add = 1, stamina_cost_add = -1, ms_per_frame = 80 },
           result = "The blade strikes harder and feels lighter in your hands." },
-        { gold = 0, material = "arcane_shard", effects = { weapon_damage_add = 2.5, stamina_cost_add = -1 },
+        { gold = 100, material = "arcane_shard", effects = { weapon_damage_add = 2.5, stamina_cost_add = -1, ms_per_frame = 70 },
           result = "An unstoppable force. Each swing devastates with minimal effort." },
     },
 }
@@ -112,11 +112,11 @@ registry.dash_amulet = {
     label = "Enchant",
     description = "Imbue the Dash Amulet with arcane energy.",
     tiers = {
-        { gold = 35,  effects = { max_charges_add = 1 },
-          result = "The amulet hums with energy. You can now dash twice before recharging." },
-        { gold = 140, effects = { stamina_cost_add = -2 },
+        { gold = 35,  effects = { stamina_cost_add = -2 },
           result = "The amulet feels lighter. Dashing requires less effort." },
-        { gold = 0, material = "arcane_shard", effects = { dash_invulnerable = true },
+        { gold = 75, effects = { max_charges_add = 1 },
+          result = "The amulet hums with energy. You can now dash twice before recharging." },
+        { gold = 100, material = "arcane_shard", effects = { dash_invulnerable = true },
           result = "The amulet pulses with a protective aura. You will be invulnerable while dashing." },
     },
 }

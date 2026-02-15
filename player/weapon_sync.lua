@@ -242,7 +242,7 @@ function weapon_sync.consume_charge(player)
     if not def or not state then return end
     local max = upgrade_effects.get_max_charges(player, sec_id, def.max_charges)
     state.used_charges = math.min(state.used_charges + 1, max)
-    if state.recharge_timer == 0 then
+    if def.recharge and def.recharge > 0 and state.recharge_timer == 0 then
         local recharge = upgrade_effects.get_recharge(player, sec_id, def.recharge)
         state.recharge_timer = recharge
         state.effective_recharge = recharge

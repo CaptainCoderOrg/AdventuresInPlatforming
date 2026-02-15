@@ -17,7 +17,7 @@ local audio = require("audio")
 ---@field collected_frames number|nil Frame count for collected animation
 ---@field collect_sfx string|nil Sound effect on collection
 ---@field max_charges number|nil Max charges for charge-based secondaries (nil = unlimited)
----@field recharge number|nil Seconds per charge to recharge (required if max_charges is set)
+---@field recharge number|nil Seconds per charge to recharge (nil = no auto-recharge)
 
 ---@type table<string, UniqueItemDef>
 return {
@@ -140,8 +140,7 @@ return {
         description = "Summon a magic shuriken. Assign to an ability slot to use.",
         type = "secondary",
         static_sprite = sprites.items.shuriken_icon,
-        max_charges = 2,
-        recharge = 20,
+        max_charges = 4,
     },
     crystal_ball = {
         name = "Crystal Ball",

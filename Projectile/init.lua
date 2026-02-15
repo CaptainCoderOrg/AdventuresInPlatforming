@@ -233,7 +233,7 @@ end
 ---@return table The created projectile instance
 function Projectile.create_shuriken(x, y, direction, owner)
     audio.play_shuriken_throw_sound()
-    local damage = upgrade_effects.get_projectile_damage(owner, "shuriken", 3)
+    local damage = upgrade_effects.get_projectile_damage(owner, "shuriken", 2)
     local vx = direction * 24
     local sx, sy = x + 0.5, y + 0.25
     local first = Projectile.new("shuriken", Projectile.animations.SHURIKEN, sx, sy, vx, 0, 0, direction, Effects.create_shuriken_hit, damage, owner)
@@ -273,7 +273,7 @@ _shuriken_spec = {
     name = "Shuriken",
     sprite = sprites.projectiles.shuriken,
     icon = sprites.projectiles.shuriken_icon,
-    damage = 3,
+    damage = 2,
     stamina_cost = 0,
     energy_cost = 0,
     create = Projectile.create_shuriken,

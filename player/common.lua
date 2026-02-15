@@ -177,7 +177,9 @@ function common.handle_ability(player)
 
 	-- Block ability when no charges available
 	if not weapon_sync.has_throw_charges(player, slot) then
-		Effects.create_text(player.x, player.y, "Cooldown")
+		local def = unique_item_registry[sec_id]
+		local label = (def and def.recharge and def.recharge > 0) and "Cooldown" or "Depleted"
+		Effects.create_text(player.x, player.y, label)
 		return
 	end
 

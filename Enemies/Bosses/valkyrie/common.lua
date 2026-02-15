@@ -416,8 +416,9 @@ local DIVE_CONTACT_DAMAGE = 3
 local DIVE_TRAIL_INTERVAL = 0.05
 local DIVE_OFF_SCREEN_OFFSET = 3  -- tiles above camera:get_y()
 local DIVE_SWOOP_DURATION = 0.4       -- Seconds for diagonal swoop to pillar (fast dash)
-local DIVE_LAUNCH_SPEED = 20          -- Tiles per second during launch through player
 local DIVE_SWOOP_TRAIL_INTERVAL = 0.03 -- Faster trail spawn during swoop for denser trails
+local DIVE_RISE_SPEED = 28             -- Tiles per second rising to player's Y
+local DIVE_DASH_SPEED = 24            -- Tiles per second for horizontal dash
 
 --- Hazard-aware landing: routes to bridge_attack in hazard mode, prep_attack otherwise.
 common.states.hazard_landing = {
@@ -492,8 +493,8 @@ common.states.jump_off_screen = {
     draw = common.draw_sprite,
 }
 
---- Dive bomb: wait off-screen, swoop to far pillar, launch through player.
---- Sub-phases tracked via enemy._dive_phase: "wait" -> "swoop" -> "launch"
+--- Dive bomb: wait off-screen, swoop to ground at far pillar, rise to player Y, dash horizontal.
+--- Sub-phases: "wait" -> "swoop" -> "pre_rise" -> "rise" -> "dash"
 common.states.dive_bomb = {
     name = "dive_bomb",
     start = function(enemy)
@@ -506,6 +507,7 @@ common.states.dive_bomb = {
         enemy._dive_phase = "wait"
         enemy._dive_timer = 0
         enemy._dive_trail_timer = 0
+        enemy._dash_redirected = false
     end,
     update = function(enemy, dt)
         coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
@@ -529,10 +531,15 @@ common.states.dive_bomb = {
                     end
                 end
 
-                -- Compute swoop target from pillar zone
-                common.set_jump_target_pillar(enemy, pillar_index)
-                enemy._swoop_target_x = enemy._jump_target_x
-                enemy._swoop_target_y = enemy._jump_target_y
+                -- Swoop target: pillar X, but ground level Y (middle zone floor)
+                local pillar_zone = coordinator.get_pillar_zone(pillar_index)
+                local middle_zone = coordinator.get_zone("middle")
+                if pillar_zone and middle_zone then
+                    local box = enemy.box
+                    local ground_y = middle_zone.y + (middle_zone.height or 0)
+                    enemy._swoop_target_x = pillar_zone.x
+                    enemy._swoop_target_y = ground_y - (box.y + box.h)
+                end
                 enemy._swoop_start_x = enemy.x
                 enemy._swoop_start_y = enemy.y
 
@@ -545,7 +552,7 @@ common.states.dive_bomb = {
                 -- Refresh boss blocks
                 coordinator.activate_blocks()
 
-                -- Disable contact damage during swoop (check_player_overlap uses enemy.damage)
+                -- Disable contact damage during swoop
                 enemy._saved_damage = enemy.damage
                 enemy.damage = 0
 
@@ -557,7 +564,7 @@ common.states.dive_bomb = {
             end
 
         elseif phase == "swoop" then
-            -- Swoop phase: linear tween from off-screen to pillar
+            -- Swoop phase: linear tween from off-screen to ground at far pillar
             enemy._dive_timer = enemy._dive_timer + dt
             local progress = math.min(1, enemy._dive_timer / DIVE_SWOOP_DURATION)
 
@@ -574,12 +581,12 @@ common.states.dive_bomb = {
             end
 
             if progress >= 1 then
-                -- Snap to pillar
+                -- Snap to ground at pillar
                 enemy.x = enemy._swoop_target_x
                 enemy.y = enemy._swoop_target_y
                 combat.update(enemy)
 
-                -- Face toward player for pre-launch hold
+                -- Face toward player
                 local player = enemy.target_player
                 if player then
                     local enemy_cx = enemy.x + enemy.box.x + enemy.box.w / 2
@@ -589,68 +596,92 @@ common.states.dive_bomb = {
                     end
                 end
 
-                -- Pre-jump frame (frame 0), hold for 3/60s
+                -- Pre-rise: JUMP frame 0 (prejump crouch)
                 enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
                 enemy.animation.frame = 0
                 enemy.animation:pause()
                 enemy.animation.flipped = enemy.direction
 
+                -- Restore contact damage
+                enemy.damage = enemy._saved_damage or 1
+
                 enemy._dive_timer = 0
-                enemy._dive_phase = "pre_launch"
+                enemy._dive_phase = "pre_rise"
             end
 
-        elseif phase == "pre_launch" then
-            -- Brief pre-jump hold at pillar
+        elseif phase == "pre_rise" then
+            -- Brief prejump crouch hold at ground level
             enemy._dive_timer = enemy._dive_timer + dt
             if enemy._dive_timer >= PREJUMP_MS / 1000 then
-                -- Calculate launch direction toward player
+                -- Rise target: align hitbox bottoms with player
+                enemy._rise_start_y = enemy.y
                 local player = enemy.target_player
-                local box = enemy.box
-                local enemy_cx = enemy.x + box.x + box.w / 2
-                local enemy_cy = enemy.y + box.y + box.h / 2
-
-                local dir_x, dir_y = 0, -1 -- default: straight up
                 if player then
-                    local player_cx = player.x + (player.box.x + player.box.w / 2)
-                    local player_cy = player.y + (player.box.y + player.box.h / 2)
-                    local dx = player_cx - enemy_cx
-                    local dy = player_cy - enemy_cy
-                    local dist = math.sqrt(dx * dx + dy * dy)
-                    if dist >= 0.01 then
-                        dir_x = dx / dist
-                        dir_y = dy / dist
-                    end
+                    local player_bottom = player.y + player.box.y + player.box.h
+                    local enemy_box_bottom = enemy.box.y + enemy.box.h
+                    enemy._rise_target_y = player_bottom - enemy_box_bottom
+                else
+                    enemy._rise_target_y = enemy.y
                 end
 
-                enemy._launch_dir_x = dir_x
-                enemy._launch_dir_y = dir_y
-                enemy._launch_origin_x = enemy.x
-                enemy._launch_origin_y = enemy.y
-                enemy._launch_dist = 0
-
-                -- Face launch direction
-                if dir_x ~= 0 then
-                    enemy.direction = dir_x > 0 and 1 or -1
-                end
+                -- JUMP frame 1 (airborne pose)
+                enemy.invulnerable = true
                 enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
                 enemy.animation.frame = 1
                 enemy.animation:pause()
                 enemy.animation.flipped = enemy.direction
 
-                -- Restore contact damage for launch
-                enemy.damage = enemy._saved_damage or 1
-
-                enemy._dive_trail_timer = 0
-                enemy._dive_phase = "launch"
+                enemy._dive_timer = 0
+                enemy._dive_phase = "rise"
             end
 
-        elseif phase == "launch" then
-            -- Launch phase: move along direction at fixed speed
-            local move = DIVE_LAUNCH_SPEED * dt
-            enemy._launch_dist = enemy._launch_dist + move
+        elseif phase == "rise" then
+            -- Rise straight up at constant speed toward player's Y
+            enemy.y = enemy.y - DIVE_RISE_SPEED * dt
+            combat.update(enemy)
 
-            enemy.x = enemy._launch_origin_x + enemy._launch_dir_x * enemy._launch_dist
-            enemy.y = enemy._launch_origin_y + enemy._launch_dir_y * enemy._launch_dist
+            -- Ghost trails during rise
+            enemy._dive_trail_timer = enemy._dive_trail_timer + dt
+            if enemy._dive_trail_timer >= DIVE_TRAIL_INTERVAL then
+                enemy._dive_trail_timer = enemy._dive_trail_timer - DIVE_TRAIL_INTERVAL
+                common.spawn_ghost_trail(enemy)
+            end
+
+            -- Start dash when at or above player
+            if enemy.y <= enemy._rise_target_y then
+                -- Face player for horizontal dash
+                local player = enemy.target_player
+                if player then
+                    local enemy_cx = enemy.x + enemy.box.x + enemy.box.w / 2
+                    local player_cx = player.x + (player.box.x + player.box.w / 2)
+                    if player_cx ~= enemy_cx then
+                        enemy.direction = player_cx > enemy_cx and 1 or -1
+                    end
+                end
+
+                enemy._dash_dir = enemy.direction
+                enemy._dash_redirected = false
+                enemy._dive_trail_timer = 0
+
+                -- ATTACK frame 2 (paused) for horizontal dash
+                enemy.invulnerable = true
+                enemy_common.set_animation(enemy, common.ANIMATIONS.ATTACK)
+                enemy.animation.frame = 2
+                enemy.animation:pause()
+                enemy.animation.flipped = enemy.direction
+
+                audio.play_sfx(audio.dash, 0.15)
+
+                enemy._dive_phase = "dash"
+            end
+
+        elseif phase == "dash" then
+            -- Horizontal dash (or upward after redirect)
+            if enemy._dash_redirected then
+                enemy.y = enemy.y - DIVE_DASH_SPEED * dt
+            else
+                enemy.x = enemy.x + enemy._dash_dir * DIVE_DASH_SPEED * dt
+            end
 
             combat.update(enemy)
 
@@ -661,37 +692,44 @@ common.states.dive_bomb = {
                 common.spawn_ghost_trail(enemy)
             end
 
-            -- Contact damage
-            local player = enemy.target_player
-            if player and not player:is_invincible() and player:health() > 0 then
-                if combat.collides(enemy, player) then
-                    player:take_damage(DIVE_CONTACT_DAMAGE, enemy.x, enemy)
+            if not enemy._dash_redirected then
+                -- Contact damage — redirect up on hit
+                local player = enemy.target_player
+                if player and not player:is_invincible() and player:health() > 0 then
+                    if combat.collides(enemy, player) then
+                        player:take_damage(DIVE_CONTACT_DAMAGE, enemy.x, enemy)
+                        enemy._dash_redirected = true
+                        enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+                        enemy.animation.frame = 1
+                        enemy.animation:pause()
+                        enemy.animation.flipped = enemy.direction
+                    end
                 end
-            end
 
-            -- Wall check: redirect straight up if hitting camera side boundary
-            local cam = coordinator.camera
-            if cam then
-                local box = enemy.box
-                local cam_left = cam:get_x()
-                local cam_right = cam_left + cam:get_viewport_width() / sprites.tile_size
-                local enemy_left = enemy.x + box.x
-                local enemy_right = enemy.x + box.x + box.w
+                -- Wall check — redirect up on wall hit
+                local cam = coordinator.camera
+                if cam and not enemy._dash_redirected then
+                    local box = enemy.box
+                    local cam_left = cam:get_x() + 2
+                    local cam_right = cam_left + cam:get_viewport_width() / sprites.tile_size - 3
+                    local enemy_left = enemy.x + box.x
+                    local enemy_right = enemy.x + box.x + box.w
 
-                if enemy_left < cam_left then
-                    enemy.x = cam_left - box.x
-                    enemy._launch_dir_x = 0
-                    enemy._launch_dir_y = -1
-                    enemy._launch_origin_x = enemy.x
-                    enemy._launch_origin_y = enemy.y
-                    enemy._launch_dist = 0
-                elseif enemy_right > cam_right then
-                    enemy.x = cam_right - box.x - box.w
-                    enemy._launch_dir_x = 0
-                    enemy._launch_dir_y = -1
-                    enemy._launch_origin_x = enemy.x
-                    enemy._launch_origin_y = enemy.y
-                    enemy._launch_dist = 0
+                    if enemy_left < cam_left then
+                        enemy.x = cam_left - box.x
+                        enemy._dash_redirected = true
+                        enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+                        enemy.animation.frame = 1
+                        enemy.animation:pause()
+                        enemy.animation.flipped = enemy.direction
+                    elseif enemy_right > cam_right then
+                        enemy.x = cam_right - box.x - box.w
+                        enemy._dash_redirected = true
+                        enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+                        enemy.animation.frame = 1
+                        enemy.animation:pause()
+                        enemy.animation.flipped = enemy.direction
+                    end
                 end
             end
 
@@ -719,24 +757,37 @@ common.states.dive_bomb = {
             -- Ghost trails only (no full sprite)
             common.draw_ghost_trails()
         else
-            -- Pre-launch / launch: full sprite + ghost trails
+            -- pre_rise / rise / dash: full sprite + ghost trails
             common.draw_sprite(enemy)
         end
     end,
 }
 
---- Landing after dive bomb exit: transition to ground attack pattern.
+--- Landing after dive bomb exit: fall to ground, then transition to ground attack mode.
 common.states.ground_landing = {
     name = "ground_landing",
     start = function(enemy)
         enemy.invulnerable = false
         enemy.gravity = 1.5
-        enemy_common.set_animation(enemy, common.ANIMATIONS.LAND)
-        audio.play_landing_sound()
+        enemy.vx = 0
+
+        -- Start with FALL animation while descending
+        enemy_common.set_animation(enemy, common.ANIMATIONS.FALL)
+        enemy._has_landed = false
     end,
     update = function(enemy, _dt)
-        if enemy.animation:is_finished() then
-            enemy:set_state(enemy.states.dive_make_choice)
+        if not enemy._has_landed then
+            -- Wait for ground contact
+            if enemy.is_grounded then
+                enemy._has_landed = true
+                enemy_common.set_animation(enemy, common.ANIMATIONS.LAND)
+                audio.play_landing_sound()
+            end
+        else
+            -- On ground, wait for LAND animation to finish
+            if enemy.animation:is_finished() then
+                enemy:set_state(enemy.states.dive_make_choice)
+            end
         end
     end,
     draw = common.draw_sprite,

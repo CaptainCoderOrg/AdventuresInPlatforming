@@ -412,10 +412,12 @@ common.states.landing = {
 local DIVE_MAKE_CHOICE_DELAY = 0.8
 local DIVE_JUMP_UP_DURATION = 0.75
 local DIVE_WAIT = 2.0
-local DIVE_DURATION = 0.9
 local DIVE_CONTACT_DAMAGE = 3
 local DIVE_TRAIL_INTERVAL = 0.05
 local DIVE_OFF_SCREEN_OFFSET = 3  -- tiles above camera:get_y()
+local DIVE_SWOOP_DURATION = 0.4       -- Seconds for diagonal swoop to pillar (fast dash)
+local DIVE_LAUNCH_SPEED = 20          -- Tiles per second during launch through player
+local DIVE_SWOOP_TRAIL_INTERVAL = 0.03 -- Faster trail spawn during swoop for denser trails
 
 --- Hazard-aware landing: routes to bridge_attack in hazard mode, prep_attack otherwise.
 common.states.hazard_landing = {
@@ -475,8 +477,6 @@ common.states.jump_off_screen = {
         enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
         enemy.animation.frame = 1
         enemy.animation:pause()
-
-        audio.play_sfx(audio.dash, 0.15)
     end,
     update = function(enemy, dt)
         enemy._ascend_timer = enemy._ascend_timer + dt
@@ -492,7 +492,8 @@ common.states.jump_off_screen = {
     draw = common.draw_sprite,
 }
 
---- Dive bomb: wait off-screen, then plunge at player position.
+--- Dive bomb: wait off-screen, swoop to far pillar, launch through player.
+--- Sub-phases tracked via enemy._dive_phase: "wait" -> "swoop" -> "launch"
 common.states.dive_bomb = {
     name = "dive_bomb",
     start = function(enemy)
@@ -502,77 +503,158 @@ common.states.dive_bomb = {
         enemy.vx = 0
         enemy.vy = 0
 
-        enemy._dive_waiting = true
+        enemy._dive_phase = "wait"
         enemy._dive_timer = 0
         enemy._dive_trail_timer = 0
     end,
     update = function(enemy, dt)
         coordinator = coordinator or require("Enemies/Bosses/valkyrie/coordinator")
-        enemy._dive_timer = enemy._dive_timer + dt
+        local phase = enemy._dive_phase
 
-        if enemy._dive_waiting then
+        if phase == "wait" then
             -- Wait phase: invisible off-screen
+            enemy._dive_timer = enemy._dive_timer + dt
             if enemy._dive_timer >= DIVE_WAIT then
-                enemy._dive_waiting = false
-                enemy._dive_timer = 0
-
-                -- Move valkyrie to player's X (invisible off-screen)
-                -- Floor Y = bottom of valkyrie_boss_middle zone
+                -- Pick pillar 0 or 4 (furthest from player)
                 local player = enemy.target_player
-                local box = enemy.box
-
+                local pillar_index = 4
                 if player then
                     local player_cx = player.x + (player.box.x + player.box.w / 2)
-                    local offset = (math.random() < 0.5) and -3 or 3
-                    local target_x = player_cx - (box.x + box.w / 2) + offset
-
-                    -- Clamp within camera horizontal bounds
-                    local cam = coordinator.camera
-                    if cam then
-                        local cam_left = cam:get_x()
-                        local cam_right = cam_left + cam:get_viewport_width() / sprites.tile_size
-                        local enemy_left = target_x + box.x
-                        local enemy_right = target_x + box.x + box.w
-                        if enemy_left < cam_left then
-                            target_x = target_x + (cam_left - enemy_left)
-                        elseif enemy_right > cam_right then
-                            target_x = target_x - (enemy_right - cam_right)
-                        end
+                    local zone0 = coordinator.get_pillar_zone(0)
+                    local zone4 = coordinator.get_pillar_zone(4)
+                    if zone0 and zone4 then
+                        local dist0 = math.abs(player_cx - (zone0.x + (zone0.width or 0) / 2))
+                        local dist4 = math.abs(player_cx - (zone4.x + (zone4.width or 0) / 2))
+                        pillar_index = dist0 > dist4 and 0 or 4
                     end
-
-                    enemy.x = target_x
-                    enemy._dive_target_x = player_cx - (box.x + box.w / 2)
                 end
 
-                local middle_zone = coordinator.get_zone("middle")
-                local floor_y = middle_zone and (middle_zone.y + (middle_zone.height or 0)) or enemy.y
-                enemy._dive_target_y = floor_y - (box.y + box.h)
+                -- Compute swoop target from pillar zone
+                common.set_jump_target_pillar(enemy, pillar_index)
+                enemy._swoop_target_x = enemy._jump_target_x
+                enemy._swoop_target_y = enemy._jump_target_y
+                enemy._swoop_start_x = enemy.x
+                enemy._swoop_start_y = enemy.y
 
-                if not player then
-                    enemy._dive_target_x = enemy.x
-                end
-                enemy._dive_start_x = enemy.x
-                enemy._dive_start_y = enemy.y
+                -- Face toward pillar, set FALL animation
+                local dir = enemy._swoop_target_x > enemy.x and 1 or -1
+                enemy.direction = dir
+                enemy_common.set_animation(enemy, common.ANIMATIONS.FALL)
+                enemy.animation.flipped = dir
 
                 -- Refresh boss blocks
                 coordinator.activate_blocks()
 
-                -- Switch to FALL animation, face toward target
-                enemy_common.set_animation(enemy, common.ANIMATIONS.FALL)
-                local dir = enemy._dive_target_x > enemy.x and 1 or -1
-                enemy.direction = dir
-                enemy.animation.flipped = dir
-            end
-        else
-            -- Descent phase: linear tween to target
-            local progress = math.min(1, enemy._dive_timer / DIVE_DURATION)
+                -- Disable contact damage during swoop (check_player_overlap uses enemy.damage)
+                enemy._saved_damage = enemy.damage
+                enemy.damage = 0
 
-            enemy.x = enemy._dive_start_x + (enemy._dive_target_x - enemy._dive_start_x) * progress
-            enemy.y = enemy._dive_start_y + (enemy._dive_target_y - enemy._dive_start_y) * progress
+                audio.play_sfx(audio.dash, 0.15)
+
+                enemy._dive_timer = 0
+                enemy._dive_trail_timer = 0
+                enemy._dive_phase = "swoop"
+            end
+
+        elseif phase == "swoop" then
+            -- Swoop phase: linear tween from off-screen to pillar
+            enemy._dive_timer = enemy._dive_timer + dt
+            local progress = math.min(1, enemy._dive_timer / DIVE_SWOOP_DURATION)
+
+            enemy.x = enemy._swoop_start_x + (enemy._swoop_target_x - enemy._swoop_start_x) * progress
+            enemy.y = enemy._swoop_start_y + (enemy._swoop_target_y - enemy._swoop_start_y) * progress
 
             combat.update(enemy)
 
-            -- Ghost trail
+            -- Dense ghost trails during swoop
+            enemy._dive_trail_timer = enemy._dive_trail_timer + dt
+            if enemy._dive_trail_timer >= DIVE_SWOOP_TRAIL_INTERVAL then
+                enemy._dive_trail_timer = enemy._dive_trail_timer - DIVE_SWOOP_TRAIL_INTERVAL
+                common.spawn_ghost_trail(enemy)
+            end
+
+            if progress >= 1 then
+                -- Snap to pillar
+                enemy.x = enemy._swoop_target_x
+                enemy.y = enemy._swoop_target_y
+                combat.update(enemy)
+
+                -- Face toward player for pre-launch hold
+                local player = enemy.target_player
+                if player then
+                    local enemy_cx = enemy.x + enemy.box.x + enemy.box.w / 2
+                    local player_cx = player.x + (player.box.x + player.box.w / 2)
+                    if player_cx ~= enemy_cx then
+                        enemy.direction = player_cx > enemy_cx and 1 or -1
+                    end
+                end
+
+                -- Pre-jump frame (frame 0), hold for 3/60s
+                enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+                enemy.animation.frame = 0
+                enemy.animation:pause()
+                enemy.animation.flipped = enemy.direction
+
+                enemy._dive_timer = 0
+                enemy._dive_phase = "pre_launch"
+            end
+
+        elseif phase == "pre_launch" then
+            -- Brief pre-jump hold at pillar
+            enemy._dive_timer = enemy._dive_timer + dt
+            if enemy._dive_timer >= PREJUMP_MS / 1000 then
+                -- Calculate launch direction toward player
+                local player = enemy.target_player
+                local box = enemy.box
+                local enemy_cx = enemy.x + box.x + box.w / 2
+                local enemy_cy = enemy.y + box.y + box.h / 2
+
+                local dir_x, dir_y = 0, -1 -- default: straight up
+                if player then
+                    local player_cx = player.x + (player.box.x + player.box.w / 2)
+                    local player_cy = player.y + (player.box.y + player.box.h / 2)
+                    local dx = player_cx - enemy_cx
+                    local dy = player_cy - enemy_cy
+                    local dist = math.sqrt(dx * dx + dy * dy)
+                    if dist >= 0.01 then
+                        dir_x = dx / dist
+                        dir_y = dy / dist
+                    end
+                end
+
+                enemy._launch_dir_x = dir_x
+                enemy._launch_dir_y = dir_y
+                enemy._launch_origin_x = enemy.x
+                enemy._launch_origin_y = enemy.y
+                enemy._launch_dist = 0
+
+                -- Face launch direction
+                if dir_x ~= 0 then
+                    enemy.direction = dir_x > 0 and 1 or -1
+                end
+                enemy_common.set_animation(enemy, common.ANIMATIONS.JUMP)
+                enemy.animation.frame = 1
+                enemy.animation:pause()
+                enemy.animation.flipped = enemy.direction
+
+                -- Restore contact damage for launch
+                enemy.damage = enemy._saved_damage or 1
+
+                enemy._dive_trail_timer = 0
+                enemy._dive_phase = "launch"
+            end
+
+        elseif phase == "launch" then
+            -- Launch phase: move along direction at fixed speed
+            local move = DIVE_LAUNCH_SPEED * dt
+            enemy._launch_dist = enemy._launch_dist + move
+
+            enemy.x = enemy._launch_origin_x + enemy._launch_dir_x * enemy._launch_dist
+            enemy.y = enemy._launch_origin_y + enemy._launch_dir_y * enemy._launch_dist
+
+            combat.update(enemy)
+
+            -- Ghost trails
             enemy._dive_trail_timer = enemy._dive_trail_timer + dt
             if enemy._dive_trail_timer >= DIVE_TRAIL_INTERVAL then
                 enemy._dive_trail_timer = enemy._dive_trail_timer - DIVE_TRAIL_INTERVAL
@@ -587,21 +669,59 @@ common.states.dive_bomb = {
                 end
             end
 
-            if progress >= 1 then
+            -- Wall check: redirect straight up if hitting camera side boundary
+            local cam = coordinator.camera
+            if cam then
+                local box = enemy.box
+                local cam_left = cam:get_x()
+                local cam_right = cam_left + cam:get_viewport_width() / sprites.tile_size
+                local enemy_left = enemy.x + box.x
+                local enemy_right = enemy.x + box.x + box.w
+
+                if enemy_left < cam_left then
+                    enemy.x = cam_left - box.x
+                    enemy._launch_dir_x = 0
+                    enemy._launch_dir_y = -1
+                    enemy._launch_origin_x = enemy.x
+                    enemy._launch_origin_y = enemy.y
+                    enemy._launch_dist = 0
+                elseif enemy_right > cam_right then
+                    enemy.x = cam_right - box.x - box.w
+                    enemy._launch_dir_x = 0
+                    enemy._launch_dir_y = -1
+                    enemy._launch_origin_x = enemy.x
+                    enemy._launch_origin_y = enemy.y
+                    enemy._launch_dist = 0
+                end
+            end
+
+            -- Off-screen check: above camera top
+            local off_screen_y = coordinator.camera:get_y() - DIVE_OFF_SCREEN_OFFSET
+            if enemy.y <= off_screen_y then
+                enemy.y = off_screen_y
+                combat.update(enemy)
+
                 if enemy._exit_dive_loop then
                     enemy._exit_dive_loop = false
                     enemy:set_state(enemy.states.ground_landing)
                 else
-                    audio.play_landing_sound()
                     enemy:set_state(enemy.states.jump_off_screen)
                 end
             end
         end
     end,
     draw = function(enemy)
-        -- Invisible during wait phase
-        if enemy._dive_waiting then return end
-        common.draw_sprite(enemy)
+        local phase = enemy._dive_phase
+        if phase == "wait" then
+            -- Invisible during wait
+            return
+        elseif phase == "swoop" then
+            -- Ghost trails only (no full sprite)
+            common.draw_ghost_trails()
+        else
+            -- Pre-launch / launch: full sprite + ghost trails
+            common.draw_sprite(enemy)
+        end
     end,
 }
 

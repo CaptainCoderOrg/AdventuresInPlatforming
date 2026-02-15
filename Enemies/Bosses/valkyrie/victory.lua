@@ -1,7 +1,6 @@
 --- Valkyrie Boss Victory Sequence: Coordinates the defeat cinematic.
 --- Phases: shield flies up to waypoint above pillar 2, pauses during DEFEATED text,
---- descends to pillar 2 as collectible. Arcane shard falls to arena floor.
---- Door opens only after player collects the shield.
+--- descends to pillar 2 as collectible. Door opens only after player collects the shield.
 local boss_health_bar = require("ui/boss_health_bar")
 local coordinator = require("Enemies/Bosses/valkyrie/coordinator")
 local Effects = require("Effects")
@@ -27,7 +26,6 @@ local drop_x = 0
 local drop_y = 0
 local waypoint_x = 0
 local waypoint_y = 0
-local ground_y = 0
 local shield_prop = nil  -- Reference to spawned shield for collection detection
 
 --- Called when the flying shield reaches the waypoint above pillar 2.
@@ -35,12 +33,6 @@ local shield_prop = nil  -- Reference to spawned shield for collection detection
 local function on_shield_reached_waypoint()
     boss_health_bar.show_defeated()
     phase = PHASE_SHOW_DEFEATED
-end
-
---- Called when the arcane shard lands on the arena floor.
---- Spawns a collectible stackable_item.
-local function on_shard_landed()
-    Prop.spawn("stackable_item", death_x, ground_y, { item_id = "arcane_shard" })
 end
 
 --- Called when the flying shield lands at pillar 2.
@@ -74,15 +66,6 @@ function victory.start(enemy)
         print("[victory] Warning: valkyrie_right_pillar_2 spawn point not found")
     end
 
-    -- Get ground floor from middle zone
-    local middle = coordinator.get_zone("middle")
-    if middle then
-        ground_y = middle.y + middle.height - 1
-    else
-        ground_y = death_y + 3
-        print("[victory] Warning: valkyrie_boss_middle zone not found")
-    end
-
     -- Fade out boss music
     music.fade_out(1)
 
@@ -90,14 +73,6 @@ function victory.start(enemy)
     Effects.create_flying_object(death_x, death_y, waypoint_x, waypoint_y, {
         sprite = sprites_items.shield,
         on_complete = on_shield_reached_waypoint,
-    })
-
-    -- Create falling shard: death position -> arena floor
-    Effects.create_flying_object(death_x, death_y, death_x, ground_y, {
-        sprite = sprites_items.arcane_shard,
-        rotations = 0,
-        flight_duration = 0.75,
-        on_complete = on_shard_landed,
     })
 
     phase = PHASE_SHIELD_TO_WAYPOINT
@@ -165,7 +140,6 @@ function victory.reset()
     drop_y = 0
     waypoint_x = 0
     waypoint_y = 0
-    ground_y = 0
     shield_prop = nil
 end
 

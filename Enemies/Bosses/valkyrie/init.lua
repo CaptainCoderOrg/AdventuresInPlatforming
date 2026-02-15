@@ -111,7 +111,7 @@ valkyrie.definition = {
     armor = 1.5,
     damage = 1,
     forces_drop_through = true,
-    loot = { xp = 50 },
+    loot = { xp = 1000, gold = { min = 1000, max = 1000 } },
     states = default_states,
     initial_state = "idle",
     on_spawn = on_spawn,

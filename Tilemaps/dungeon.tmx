@@ -16,7 +16,7 @@
  <imagelayer id="3" name="Background" offsetx="0" offsety="-64" repeatx="1" repeaty="1">
   <image source="../assets/Tilesets/caves_background_00.png" width="240" height="160"/>
  </imagelayer>
- <objectgroup id="4" name="Camera Areas">
+ <objectgroup id="4" name="Camera Areas" locked="1">
   <properties>
    <property name="type" value="camera_bounds"/>
   </properties>
@@ -215,7 +215,7 @@
 </chunk>
    <chunk x="-16" y="0" width="16" height="16">
 0,0,0,0,0,0,381,0,0,0,0,0,0,0,0,0,
-0,0,0,0,0,0,348,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,266,267,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,275,276,
@@ -1889,7 +1889,6 @@
   </object>
   <object id="26" gid="527" x="-656" y="96" width="16" height="16"/>
   <object id="27" gid="1073742201" x="-64" y="16" width="16" height="16"/>
-  <object id="29" gid="381" x="-160" y="32" width="16" height="16"/>
   <object id="32" gid="502" x="-368" y="96" width="16" height="8"/>
   <object id="36" gid="500" x="928" y="80" width="16" height="8"/>
   <object id="41" gid="292" x="1904" y="80" width="16" height="16">

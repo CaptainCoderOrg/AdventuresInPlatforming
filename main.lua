@@ -872,28 +872,38 @@ local function on_start()
     started = true
 end
 
+local MAX_STEP_DT = 1/30    -- Maximum dt per simulation step (prevents physics tunneling)
+local MAX_FRAME_DT = 0.25   -- Maximum accumulated time per frame (prevents death spiral)
+
 --- Main game loop - called every frame by canvas.tick
 ---@return nil
 local function game()
     profiler.begin_frame()
     on_start()
-    local dt = math.min(canvas.get_delta(), 1/30) -- Cap dt to 33ms to prevent physics tunneling during frame spikes
+    local frame_dt = math.min(canvas.get_delta(), MAX_FRAME_DT)
 
     profiler.start("audio")
-    audio.update(dt)
+    audio.update(frame_dt)
     profiler.stop("audio")
 
     profiler.start("hud")
-    hud.update(dt, player)
-    screen_fade.update(dt)
+    hud.update(frame_dt, player)
+    screen_fade.update(frame_dt)
     profiler.stop("hud")
 
     profiler.start("input")
     user_input()
     profiler.stop("input")
 
+    -- Sub-step the gameplay update to keep simulation in sync with real time
+    -- while keeping each step small enough for physics correctness
     profiler.start("update")
-    update(dt)
+    local remaining = frame_dt
+    while remaining > 0.001 do
+        local step = math.min(remaining, MAX_STEP_DT)
+        update(step)
+        remaining = remaining - step
+    end
     profiler.stop("update")
 
     profiler.start("draw")

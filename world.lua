@@ -56,6 +56,13 @@ end
 --- @return boolean True if collision should be skipped (allow pass-through)
 local function should_skip_bridge(obj, bridge)
 	local bridge_top = bridge.y + bridge.box.y
+
+	-- Drop-through takes priority over anti-tunneling: player explicitly
+	-- requested to pass through this bridge via Jump+Down.
+	if obj.wants_drop_through and obj.drop_through_y then
+		if bridge_top < obj.drop_through_y + 0.5 then return true end
+	end
+
 	local player_bottom = obj.y + obj.box.y + obj.box.h
 	local overlap = player_bottom - bridge_top
 
@@ -76,13 +83,6 @@ local function should_skip_bridge(obj, bridge)
 
 	-- Must be falling to land on bridge
 	if obj.vy <= 0 then return true end
-
-	-- Drop-through: skip bridges at or slightly below where drop started.
-	-- The 0.5 tile buffer ensures the player clears the bridge they're standing
-	-- on before collision re-enables, preventing immediate re-landing.
-	if obj.wants_drop_through and obj.drop_through_y then
-		if bridge_top < obj.drop_through_y + 0.5 then return true end
-	end
 
 	return false
 end

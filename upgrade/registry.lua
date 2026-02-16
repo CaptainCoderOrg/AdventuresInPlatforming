@@ -60,11 +60,11 @@ registry.shuriken = {
     label = "Study",
     description = "Imbue shurikens with arcane power.",
     tiers = {
-        { gold = 35,  effects = { max_charges_add = 2, projectile_damage = 3 },
+        { gold = 35,  effects = { max_charges_add = 1, projectile_damage = 2.5 },
           result = "The shurikens strike with greater force." },
-        { gold = 75, effects = { max_charges_add = 2, projectile_damage = 4, double_projectile = true },
+        { gold = 75, effects = { max_charges_add = 1, projectile_damage = 3, double_projectile = true },
           result = "The shurikens multiply and strike with greater force." },
-        { gold = 100, material = "arcane_shard", effects = { max_charges_add = 2, projectile_damage = 5, penta_projectile = true },
+        { gold = 100, material = "arcane_shard", effects = { max_charges_add = 1, projectile_damage = 3.5, penta_projectile = true },
           result = "Pure arcane energy. A storm of shurikens at your command." },
     },
 }

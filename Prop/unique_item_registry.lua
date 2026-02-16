@@ -140,7 +140,7 @@ return {
         description = "Summon a magic shuriken. Assign to an ability slot to use.",
         type = "secondary",
         static_sprite = sprites.items.shuriken_icon,
-        max_charges = 4,
+        max_charges = 3,
     },
     crystal_ball = {
         name = "Crystal Ball",
